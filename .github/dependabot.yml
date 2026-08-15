@@ -1,0 +1,31 @@
+# pinned GitHub Actions와 Gradle dependency의 갱신 PR을 주기적으로 만들고 실제 반영은 CI 검증 뒤 결정합니다.
+version: 2
+
+updates:
+  # workflow의 full commit SHA를 유지하면서 공식 Action의 새 release를 매주 검토합니다.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # Gradle plugin과 application dependency는 하나의 update group으로 묶고 Wrapper 기반 check로 검증합니다.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:15"
+      timezone: Asia/Seoul
+    open-pull-requests-limit: 5
+    groups:
+      gradle-dependencies:
+        patterns:
+          - "*"

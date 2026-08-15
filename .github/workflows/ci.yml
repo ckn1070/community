@@ -1,0 +1,159 @@
+# main push와 모든 pull request에서 애플리케이션 품질을 검증합니다.
+name: CI
+run-name: >-
+  CI · ${{ github.event_name == 'pull_request'
+    && format('PR #{0} · {1}', github.event.pull_request.number, github.event.pull_request.title)
+    || format('main · {0}', github.event.head_commit.message || github.sha) }}
+
+# main에 반영될 변경과 모든 PR을 검증하고, 별도 feature branch push의 중복 실행은 만들지 않습니다.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+# CI는 source만 읽고 repository 상태나 외부 인프라를 변경하지 않습니다.
+permissions:
+  contents: read
+
+# PR 중복 실행만 정리하고 main 검증은 exact revision의 품질 증거로 끝까지 보존합니다.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # 이 job은 Java build·PostgreSQL Testcontainers·coverage·Sonar Quality Gate를 독립 검증하며 AWS·cluster credential과 다른 job의 결과를 사용하지 않습니다.
+  application-quality:
+    name: Application quality
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        # Sonar SCM 분석이 commit 이력을 사용하므로 shallow clone 대신 현재 ref의 전체 이력을 가져옵니다.
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 고정
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Java
+        # repository와 Dockerfile이 사용하는 Temurin Java 21 toolchain을 GitHub 공식 Action으로 준비합니다.
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0 고정
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        # 실제 Gradle version과 distribution checksum은 Wrapper가 소유하고, 이 Action은 Wrapper JAR 검증과 공개 구현인 basic cache를 준비합니다.
+        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0 고정
+        with:
+          cache-provider: basic
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Verify Docker for PostgreSQL integration tests
+        # 같은 runner에서 Docker daemon을 먼저 확인해 PostgreSQL 통합 테스트가 실행되지 않은 상태를 성공으로 보고하지 않습니다.
+        shell: bash
+        run: docker info
+
+      - name: Run Gradle checks
+        # Gradle과 Testcontainers가 unit·integration test의 실행과 실패를 직접 소유하며 이전 task 결과는 재사용하지 않습니다.
+        shell: bash
+        run: ./gradlew check --no-daemon --rerun-tasks --console=plain
+
+      - name: Determine Sonar execution scope
+        id: sonar-scope
+        # 공개본은 Sonar 설정을 명시적으로 활성화한 경우에만 분석하고, fork와 Dependabot PR은 항상 분석에서 제외합니다.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          CURRENT_REPOSITORY: ${{ github.repository }}
+          SONAR_ENABLED: ${{ vars.SONAR_ENABLED }}
+        run: |
+          set -euo pipefail
+          # GitHub는 이 step에 고유한 GITHUB_OUTPUT 파일 경로를 제공하며, 기록한 run·skip-reason은 sonar-scope step output으로 같은 job의 후속 조건에서 읽힙니다.
+          if [[ "${SONAR_ENABLED}" != "true" ]]; then
+            {
+              echo "run=false"
+              echo "skip-reason=disabled"
+            } >> "${GITHUB_OUTPUT}"
+          elif [[ "${EVENT_NAME}" == "pull_request" && "${ACTOR}" == "dependabot[bot]" ]]; then
+            {
+              echo "run=false"
+              echo "skip-reason=dependabot"
+            } >> "${GITHUB_OUTPUT}"
+          elif [[ "${EVENT_NAME}" == "pull_request" && "${HEAD_REPOSITORY}" != "${CURRENT_REPOSITORY}" ]]; then
+            {
+              echo "run=false"
+              echo "skip-reason=fork"
+            } >> "${GITHUB_OUTPUT}"
+          else
+            {
+              echo "run=true"
+              echo "skip-reason="
+            } >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Explain untrusted pull request Sonar skip
+        # secret을 받지 않는 fork·Dependabot PR은 기본 검증을 유지하고 Sonar 미실행 이유를 log에 남깁니다.
+        if: steps.sonar-scope.outputs.run == 'false'
+        env:
+          SKIP_REASON: ${{ steps.sonar-scope.outputs.skip-reason }}
+        run: |
+          set -euo pipefail
+          if [[ "${SKIP_REASON}" == "disabled" ]]; then
+            echo "SONAR_ENABLED=true가 설정되지 않아 Sonar 분석을 실행하지 않습니다."
+          elif [[ "${SKIP_REASON}" == "fork" ]]; then
+            echo "Fork pull request는 SONAR_TOKEN을 받지 않으므로 Sonar 분석을 명시적으로 건너뜁니다."
+          else
+            echo "Dependabot pull request는 일반 Actions secret을 받지 않으므로 Sonar 분석을 명시적으로 건너뜁니다."
+          fi
+
+      - name: Validate Sonar settings
+        # Sonar를 활성화한 same-repository PR과 main에서는 credential이나 project 설정 누락을 CI 실패로 처리합니다.
+        if: steps.sonar-scope.outputs.run == 'true'
+        env:
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "${SONAR_ORGANIZATION}"
+          test -n "${SONAR_PROJECT_KEY}"
+          test -n "${SONAR_TOKEN}"
+
+      - name: Run SonarQube Cloud analysis
+        # 이 step에만 Sonar secret을 주입하고 main push commit 또는 PR merge commit을 분석 revision으로 전달한 뒤 Gradle 설정의 Quality Gate 결과를 기다립니다.
+        if: steps.sonar-scope.outputs.run == 'true'
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: bash
+        run: ./gradlew sonar -Dsonar.scm.revision="${GITHUB_SHA}"
+
+      - name: Classify image publishing change
+        id: image-publish-scope
+        # Push payload의 before..after 전체를 사용해 rebase·multi-commit merge도 마지막 commit 하나로 축소하지 않습니다.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          DECISION_PATH: ${{ runner.temp }}/publish-image-change/decision.env
+        run: |
+          set -euo pipefail
+          ./scripts/quality/classify-image-publishing-change.sh \
+            "${BEFORE_SHA}" "${AFTER_SHA}" "${RUN_ATTEMPT}" "${DECISION_PATH}"
+
+      - name: Upload image publishing decision
+        # Privileged workflow가 성공한 이 exact CI run의 전체 push 분류만 소비하도록 작은 artifact를 전달합니다.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 고정
+        with:
+          name: publish-image-change-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/publish-image-change/decision.env
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
