@@ -1,0 +1,339 @@
+# 문서화 워크플로우
+
+이 문서는 저장소 Markdown의 source-first 의미·구조 대조, 작성·이관과 문서 관계·링크·
+번호 검증 깊이를 소유합니다. 문서 유형·canonical owner·보존·관계 표현·번호 체계는
+[100 문서 정보 구조 가이드](../100-documentation-guide.md), 요청·권한·공통 상태·의존·최종
+discovery와 closure는 [100 작업 실행 워크플로우](100-work-execution-workflow.md)가
+소유합니다.
+
+## 1. Source와 owner 후보 복원
+
+exact write target은 아직 고정하지 않습니다. 다음을 편집 전에 실제 디스크에서 읽어
+owner 후보를 복원합니다.
+
+1. `AGENTS.md`, [000 문서 목차](../000-index.md)와 관련 그룹 router
+2. 문서 정보 구조 가이드와 관련 directory의 실제 문서 topology
+3. 주장을 결정하는 코드·설정·schema·공식 계약·live 관찰 같은 authoritative source
+4. 같은 독자 질문이나 사실을 소유할 수 있는 기존 문서와 inbound·outbound link
+5. 번호가 있으면 direct-directory router, 같은 범위의 sibling과 실제 directory
+   topology; 상위 router가 없는 고정명 artifact면 canonical entrypoint와 consumer
+
+문서화 판단에 필요한 다음 연결만 세션에 둡니다.
+
+```text
+독자 질문
+→ 필요한 정보와 authoritative source
+→ 기존 owner 후보 또는 비보존 후보
+→ 현재 topology·link·번호·consumer
+```
+
+현재 작업에서 마지막으로 읽었거나 수정한 문서, 다음 단계가 적힌 문서와 사용자가 지정한
+파일은 모두 변경 표면 또는 owner 후보일 뿐 자동으로 write target이 되지 않습니다.
+현재 문서에 새 의미를 쓸 수 있는지는 작업 실행 워크플로우의 의미 authority와 문서
+source를 함께 따릅니다.
+
+## 2. 변경 깊이 선택
+
+작업 실행 워크플로우에서 요청 계약과 변경 범위를 확정하고 앞 절에서 source·owner 후보를
+복원한 뒤, 파일 이름이나 줄 수가 아니라 현재 확인한 문서의 의미·topology 효과로 초기
+깊이를 잠정 선택합니다. 구조 gate에서 owner·관계·번호·이동 범위를 닫은 뒤 이 깊이를
+반드시 다시 확정합니다.
+
+| 깊이 | 실제 효과 | 문서 고유 검증 |
+| --- | --- | --- |
+| 국소 | 오탈자, 한 링크, source로 확정된 현재 값처럼 의미 owner와 구조가 유지됨 | 대상 전체, 직접 source, 인접 구조를 편집 전후 대조 |
+| 일반 | 한 문서 또는 연결된 소수 문서의 내용·outline이 바뀌지만 canonical owner와 topology는 유지됨 | 의미·구조 gate, 관련 source·문서 범위와 작성자 두 번째 source-first 대조 |
+| 중대한 final | canonical SOT·workflow·router·runbook의 신설·대규모 재작성, 문서 간 owner·관계 변경, 전체 적용·coverage 주장 | 일반 깊이와 동결 후보의 fresh 독립 final 감사 |
+| 중대한 구조 | 다문서 병합·분리·이동·삭제, canonical entrypoint·번호 group·탐색 topology 변경, 광범위 corpus 개편 | actual filesystem 전수 분류, 작성 전 fresh proposal 감사와 동결 후보 final 감사 |
+
+모든 깊이에서 현재 Agent가 원래 요청과 source를 직접 복원하고 작성 뒤 두 번째로
+대조합니다. 국소·일반 변경은 이 대조로 닫으며 `$verify-documentation`을 추가 호출하지
+않습니다. 중대한 final·구조 변경만 fresh 독립 전문 감사를 적용합니다. 계획·개발 결과의
+일반 검증은 routine 동반 문서를 함께 감사할 수 있지만, 중대한 owner·topology·coverage
+후보의 `$verify-documentation` phase와 verdict를 대신하지 않습니다. 같은 reviewer가 두
+역할을 수행해도 각 phase의 독립 입력·감사 축·verdict가 실제 trace에 없으면 중대한 문서
+전문 감사가 수행된 것으로 판정하지 않습니다.
+
+`누락 없이`, `전체 구조`, `전면 이관`처럼 집합 전체의 완결성이 결과이면 실제
+filesystem에서 대상 root와 include·exclude 범위를 수집합니다. 변경하지 않을 문서도
+판정 대상에 포함하되 inventory·coverage map은 작업 중 증거로만 사용하고 repository에
+새 catalog로 저장하지 않습니다.
+
+## 3. 의미 gate
+
+outline을 고르기 전에 다음 두 방향을 닫습니다.
+
+```text
+독자 질문·source → 필요한 정보와 owner: 누락 없음
+남길 정보 → 독자 필요·source·보존 이유: 임의 확장 없음
+```
+
+각 주장은 현재 사실, 결정, 계획, 절차, 결과 또는 사건 중 무엇인지 구분하고 그 유형에
+맞는 source를 연결합니다. 문서끼리 일치한다는 사실을 repository 실행 사실로, local
+정적 검증을 live 환경 성공으로, 절차의 존재를 외부 책임 완료로 확대하지 않습니다.
+
+설명 문서의 coverage는 문서 유형별 증거를 분리해 판정합니다.
+
+- Reference/SOT는 현재 개념, 구성요소, lifecycle, trigger, actor, artifact·전달값,
+  소비자, 결과와 실패 관계를 설명해야 합니다.
+- Decision/Design은 선택 이유와 대안의 근거이지 현재 설명의 대체 owner가 아닙니다.
+- Procedure는 실제 순서·명령의 source가 될 수 있지만 Reference/SOT의 설명 coverage로
+  계산하지 않습니다.
+- 구현 source가 wiring을 증명해도 독자가 source를 직접 해독해야만 전체 관계를 알 수
+  있으면 설명 공백입니다.
+
+실질적 의미 변화는 다음처럼 다룹니다.
+
+| 분류 | 처리 |
+| --- | --- |
+| 보존·재배치 | 기존 canonical 의미를 바꾸지 않고 새 구조로 옮김 |
+| source 결정 수정 | authoritative source가 유일하게 결정하는 범위만 바로잡음 |
+| 확정된 새 설계 | 사용자 요구나 승인된 design의 결정 범위만 반영함 |
+| 미결정 발견 | 현재 사실로 쓰지 않고 정확한 공백·owner로 분리함 |
+
+특히 Procedure에 새 actor·외부 mutation·credential 또는 증거 lifecycle·상태 전이·
+보안·실패·rollback·복구 정책·orchestration을 추가하는 것은 문장 보완이 아니라 별도
+설계 의미입니다. 문서 source만으로 확정되지 않으면 완결된 현재 절차를 만들어 공백을
+숨기지 않습니다.
+
+광범위한 source는 파일마다 prose를 만드는 대신 각 source를 `현재 owner`, `새 owner
+필요`, `근거 있는 제외`로 분류합니다. 전체 흐름이나 corpus 이해가 목표이면 세부 문장
+전에 단계·분기·actor·실행 위치·목적·현재 owner·handoff의 저상세 관계 골격을 전체
+범위에서 한 번 대조합니다. source에 없는 exact 절차는 `현재 실행 불가`, 결정 owner와
+확정에 필요한 source로 경계를 표시합니다.
+
+## 4. 구조 gate
+
+의미 gate를 통과한 정보에 문서 정보 구조 가이드를 적용합니다.
+
+1. 독자 행동과 정보 수명에 맞는 문서 유형을 선택합니다.
+2. 독자 질문, source, 갱신 주기와 보존 기간으로 병합·분리를 정합니다.
+3. canonical owner를 고르고 기존 owner 전체를 대조합니다. 새 owner라면 router·번호·
+   consumer 관계를 먼저 연결합니다.
+4. 현재 기준·결정 근거·구현 source·작업 상태·실행 절차·대체 문서의 방향을 정합니다.
+5. 번호가 있으면 가이드의 번호 class와 scope를 실제 sibling·router group map 또는
+   work item body·companion에서 복원합니다. 새 numbered document link 또는 현재 작업에서
+   target·anchor·표시 이름 중 하나를 실질적으로 수정하는 numbered document link는 대상
+   번호와 책임이 표시 이름에 함께 드러나는지 확인합니다.
+6. 이동·삭제가 있으면 old path, 새 owner, before/after topology와 모든 inbound link의
+   변경 범위를 연결합니다.
+7. 앞선 owner·관계·번호·topology 대조가 끝난 뒤 exact write target을 고정합니다.
+8. 각 section이 답할 질문을 하나로 정하고 일반 개념에서 판단·행동 순으로 배열합니다.
+9. 정보 단위의 순서·분기·계층·호출·의존·값 전달·상태·경계 관계를 판정하고 가장
+   작은 표현을 고릅니다.
+10. 같은 독자 질문은 하나의 주된 표현이 소유하게 하고 표·그림·본문의 반복을 없앱니다.
+
+시스템 설명과 운영 절차가 함께 있는 corpus를 신설·개편할 때는 exact write target을
+고정하기 전에 다음 세션 매트릭스를 실제 문서 section 단위까지 작성합니다.
+
+```text
+운영 상황·생애주기
+→ 사람의 trigger·목표·실행 위치·재개 지점
+→ 필요한 개념 또는 절차 정보
+→ 정보 유형과 canonical owner
+→ 서로 넘겨줄 link와 기존 section의 새 owner
+```
+
+매트릭스는 최소한 다음 질문을 닫아야 합니다.
+
+- Reference/SOT만 읽고 최초 구축·평소 반복·변경·복구에서 시스템의 actor, 구성요소,
+  artifact·값 전달, 자동화·수동 경계와 결과를 복원할 수 있는가
+- Operations router에서 현재 존재하는 각 운영 상황을 선택하고 한 목적의 runbook으로
+  진입할 수 있는가
+- 각 runbook의 상위 section이 사람이 시작·관찰·중단·재개·복구하는 행동에 필요한가
+- 이동·삭제할 기존 section마다 고유 정보와 새 owner가 연결됐는가
+
+새 executable이나 수동 절차가 최초 target 상태를 만들면 실제 caller, trigger, 입력·
+credential, postcondition과 중단·재개 경계를 먼저 복원합니다. Archive에 포함됐거나
+downstream consumer가 선행 조건으로 사용한다는 사실은 실행 완료나 canonical Procedure
+owner의 근거가 아닙니다. 사람이 직접 시작하는 독립 lifecycle이면 그 사람 목표에서
+Procedure와 router까지 하나의 owner path로 연결하고, README는 interface 설명과 canonical
+Procedure link만 소유합니다.
+
+Procedure를 쓰거나 실질적으로 확장하기 전에는 정상·실패 경로의 각 사람 행동을 다음
+실행 계약으로 복원합니다.
+
+```text
+사람의 trigger·목표
+→ actor·실행 host·현재 directory
+→ exact entrypoint(script·workflow·Console·표준 단일 명령)
+→ 사람이 준비할 입력과 secret source
+→ 직접 관찰할 기대 결과
+→ 실패 시 중단·재실행 entrypoint
+```
+
+이 계약은 문서용 표를 만들기 위한 형식이 아니라 source와 구현의 실행 가능성을 판정하는
+입력입니다. 반복 가능한 검증·값 조립·secret 전달·여러 command의 오류 처리처럼 하나의
+결과를 만드는 shell logic이 필요한데 canonical repository entrypoint가 없으면, 그 공백을
+긴 code block으로 구현해 Procedure에 넣지 않습니다. `현재 안전한 entrypoint 없음`과 필요한
+구현 owner를 미충족 dependency로 반환합니다. 현재 사용자 원자가 해당 구현까지 독립적으로
+포함하지 않으면 문서 writer는 개발 script를 계획·작성하거나 `$develop`을 호출하지 않고,
+문서 결과의 차단 여부·선택지·영향을 보고해 별도 논의와 실행 결정을 기다립니다. 이 반환은
+구현 결과와의 관계를 표시할 뿐 현재 작업 범위를 자동 확장하지 않습니다. 반대로 표준 도구의
+단일 명령과 사람이 직접 판단해야 하는 Console 단계까지 무조건 wrapper script로 만들지
+않습니다.
+
+기술 이름이나 script 번호가 같다는 이유만으로 서로 다른 생애주기·사람 목표를 한
+runbook에 합치지 않습니다. 반대로 같은 개념을 각 runbook에 복제하지 않고 개념 owner와
+양방향으로 연결합니다. 이 매트릭스는 작업 중 coverage 증거이므로 repository에 별도
+catalog로 저장하지 않습니다.
+
+구조 gate에서 새 owner, 문서 이동·삭제, 번호나 router·inbound link topology 변경이
+드러나면 2절의 변경 깊이를 다시 판정합니다. 초기 분류가 국소·일반이었더라도 실제 효과가
+중대한 구조 변경이면 중대로 올리고, 아래 proposal 감사와 final 감사를 생략하지 않습니다.
+
+중대한 구조 작업은 이 제안을 작성 전에 fresh reviewer의
+`$verify-documentation proposal`로 감사합니다. proposal은 문장을 미리 승인하는 단계가
+아니라 독자 질문·source·owner·보존·outline·topology가 작성 가능한지를 판정합니다.
+
+둘 이상의 문서나 반복 section이 같은 정보 구조·설명 깊이·coverage 계약을 소비하면,
+proposal 통과 뒤 작성 전에 다음 authoring contract를 작업 중 증거로 고정합니다.
+
+```text
+공통 독자 질문과 사용자 품질 차원
+→ 공통 section·heading hierarchy와 각 level의 설명 책임
+→ 전체 문서·section·source·고유 정보 inventory
+→ 전체 범위의 저상세 골격
+→ 상세 대표 문서 하나와 source-first closure oracle
+→ 대표 문서가 닫힌 뒤 확장할 나머지 문서
+```
+
+상단 요약과 하단 상세처럼 두 단계 이상의 설명 깊이가 요구되면, 각 level이 답할 질문과
+상·하위 관계를 contract에 포함합니다. 명령·field·option처럼 유한한 producer 집합을
+설명하는 문서는 producer inventory와 `producer → 설명 위치 → 출력·판정·다음 탐색`의
+coverage를 대표 oracle에 포함합니다. 개수 상한이나 만능 문서 template를 새로 만들지
+않고, 사용자가 요구한 품질 차원과 실제 source가 요구하는 관계만 고정합니다.
+
+전체 저상세 골격을 먼저 대조하고 상세 대표 문서 하나를 완성해 6절의 작성자 source-first
+대조를 통과하기 전에는 같은 contract를 소비하는 나머지 문서를 작성하지 않습니다.
+Proposal reviewer는 구조의 작성 가능성을 판정할 뿐 이 대표 결과를 대신하지 않으며,
+final reviewer를 미완성 문장의 점진적 작성 oracle로 사용하지 않습니다.
+
+## 5. 작성과 이관
+
+1. 반복 문서 contract가 있으면 전체 저상세 골격과 상세 대표 문서 하나를 먼저 작성·
+   대조하고, 대표 oracle을 통과한 같은 contract로 나머지 문서를 확장합니다.
+2. 첫 화면에 목적, 책임, 핵심 결론·관계와 다음 탐색 경로를 둡니다.
+3. 독자의 판단·행동에 필요한 상세만 하위 계층에 둡니다.
+4. 다른 owner의 현재 사실은 복제하지 않고 방향이 표시된 link로 연결합니다.
+5. 새 내용을 append하기 전에 outline과 owner를 다시 보고 충돌·중복·폐기 결론을
+   같은 범위에서 제거합니다.
+6. 계획이 결과로 바뀌면 실행 기록을 누적하지 않고 Result/Status 책임에 맞게
+   정규화합니다.
+7. 병합·분리·이동·삭제 전에 모든 고유 정보의 새 owner를 연결합니다.
+8. router, 제목, 번호, 상대 link·anchor, 용어와 대체 관계를 같은 변경에서
+   동기화합니다.
+
+이관 중 `유지`로 분류한 문서도 내용 검증 면제는 아닙니다. 현재 owner와 독자 질문을
+actual source에서 복원할 수 있어야 합니다. 전체 적용을 주장하지 않는 변경은 건드리지
+않은 corpus를 임의로 완료 범위에 포함하지 않습니다.
+
+## 6. 결과 gate: 작성자의 두 번째 source-first 대조
+
+모든 Markdown 변경은 편집 뒤 작성자의 기존 판단이나 완료표부터 보지 않고, 이 작업
+깊이에서 정한 source·문서 범위를 다시 수집해 두 번째로 대조합니다. 이 단계는 routine
+변경의 문서 검증 owner이며 독립 verifier 호출로 대체하지 않습니다.
+
+| 방향 | 확인할 내용 |
+| --- | --- |
+| source·독자 질문 → 후보 | 필요한 현재 사실과 답이 빠지지 않았는가 |
+| 후보 section·예시 → source·독자 필요 | 근거 없는 주장, 반복·과잉 상세와 새 의미가 없는가 |
+| router → canonical owner → 상세 source | 탐색 방향과 owner가 하나로 이어지는가 |
+| 현재 사실 → 관련 문서 | 폐기 결론, 중복 owner와 현재성 충돌이 남지 않았는가 |
+
+후보만으로 핵심 개념·순서·분기·계층·호출·값 전달·상태를 하나의 의미로 복원한 뒤
+source의 구성요소·방향·조건·전달값과 비교합니다. static source·syntax 확인과 실제
+환경 실행 증거를 구분합니다.
+
+Markdown topology는 다음 깊이로 직접 확인합니다.
+
+- local link target과 명시한 anchor가 존재합니다.
+- 구조 번호는 actual sibling과 direct-directory router의 group map에서 다시
+  계산합니다.
+- work item 번호는 유형·연도 디렉터리의 actual body가 `001`부터 이어지고 companion이
+  같은 번호·slug를 공유하는지 확인합니다.
+- 이동·삭제는 old path의 모든 inbound link, 대체 owner, 최종 directory topology와
+  의도하지 않은 빈 디렉터리를 확인합니다.
+- 전체·특정 집합 적용 주장은 변경하지 않은 artifact까지 대조했거나 적용 제외와 남은
+  이관 범위를 분명히 합니다.
+- 새 numbered document link 또는 현재 작업에서 target·anchor·표시 이름 중 하나를
+  실질적으로 수정한 numbered document link는 대상 파일의 세 자리 번호와 책임을 함께
+  표시합니다. 번호가 없는 artifact에는 임의 번호를 만들지 않고, 건드리지 않은 기존
+  corpus는 점진 이관 범위에서 제외합니다.
+
+새 자연어 schema·catalog·custom 의미 verifier를 만들어 이 대조를 자기일관성 검사로
+바꾸지 않습니다. 결정적인 filesystem·link 사실은 기존 표준 도구로 확인하고 의미는
+source-first 대조로 판정합니다.
+
+시스템 설명과 운영 절차 corpus는 다음 중 하나라도 남으면 실패합니다.
+
+- 시스템의 작동 원리·actor·artifact 전달·자동화 경계를 Procedure를 읽어야만 복원할 수
+  있습니다.
+- Runbook 하나가 서로 독립적인 최초 구축·반복 운영·변경·장애 복구 상황이나 사람
+  목표를 함께 소유합니다. 같은 상황·목표 안의 단계별 복구 checkpoint는 여기에
+  해당하지 않습니다.
+- Runbook의 상위 section이 사람의 입력·행동·관찰·성공·복구가 아니라 자동화 내부 구현
+  또는 선택되지 않은 설계를 주로 설명합니다.
+- Runbook의 단계에서 actor·실행 host·현재 directory·exact entrypoint·입력 source·기대
+  결과·재실행 지점 중 하나를 독자가 주변 section이나 shell 구현을 해독해 추론해야 합니다.
+- 반복 가능한 shell orchestration이 Procedure code block에만 존재하고, 이를 실행·검증·
+  재사용할 canonical repository entrypoint가 없거나 그 공백을 명시하지 않았습니다.
+- 사람이 직접 시작하는 lifecycle의 canonical Procedure·router가 없고, downstream consumer
+  runbook의 선행 section이나 README를 찾아야만 caller·입력·postcondition·재개 경계를
+  복원할 수 있습니다.
+- Router가 기술 목록만 제공해 독자가 현재 운영 상황에 맞는 canonical procedure를
+  선택할 수 없습니다.
+- Operations Scenario의 실행 항목만 읽어서는 행동, actor·실행 위치, exact script·workflow·
+  Console·표준 명령 진입점과 완료 조건을 복원할 수 없습니다. Repository script가 없는
+  수동 단계인데 실제 진입점과 script 부재도 명시하지 않은 경우를 포함합니다. 안전한
+  진입점이 미확정인데 실행 가능한 명령을 지어내거나, 실행 불가·결정 owner·중단 지점을
+  표시하지 않은 경우도 실패합니다.
+- 이동·삭제한 기존 section의 고유 정보가 새 concept 또는 operation owner 어디에도
+  대응되지 않습니다.
+
+이 대조는 개념 문서와 operations corpus를 각각 독립적으로 읽은 뒤, 방향이 표시된
+link로 서로 이동할 수 있는지도 확인합니다. 두 corpus를 합쳐 읽었을 때만 누락이
+가려진다면 통과로 판정하지 않습니다.
+
+## 7. 중대한 문서 전문 감사
+
+중대한 구조 proposal과 작성자 대조가 끝난 중대한 final 후보만
+`$verify-documentation`의 문서 전문 축에 보냅니다.
+
+- proposal은 작성 전에 고정된 독자 질문·source·owner·보존·outline·topology 후보를
+  감사합니다.
+- final은 더 이상 의도된 수정이 없는 동결 artifact와 실제 source를 감사합니다.
+- final이 여러 문서에 공통인 hierarchy·coverage contract 결함을 처음 발견하면 finding별
+  patch loop를 열지 않습니다. 작업 실행 workflow에 공통 contract·inventory·대표 결과를
+  `Invalidated`로 반환하고, 새 authoring contract에서 대표 문서부터 다시 닫습니다.
+- reviewer는 작성 맥락·진단·기대 답을 받지 않은 fresh context에서 원래 목적과 source로
+  범위를 독립 복원합니다.
+- routine 국소·일반 변경에는 이 전문 축을 추가하지 않습니다.
+- 계획·개발 verifier의 일반 문서 축은 중대한 문서 final을 대체하지 않습니다. 해당
+  verifier가 `$verify-documentation final`의 독립 입력·전체 감사 축·verdict까지 명시적으로
+  수행한 경우에만 같은 specialist phase를 이름만 바꾸어 중복하지 않습니다.
+
+독립 감사의 축과 `통과`·`실패`·`판정 불가` 판정은 verify-documentation이 소유합니다.
+감사 결과는 작업 실행 워크플로우의 discovery·closure에 반환하며, 이 문서에서 별도
+상태 전이·반복 횟수·차단·완료 알고리즘을 만들지 않습니다.
+
+## 8. 문서 검증 결과 인계
+
+다음을 작업 실행 워크플로우의 최종 discovery·closure 입력으로 넘깁니다.
+
+- 적용한 문서 깊이와 actual source·문서 범위
+- 변경한 canonical owner·관계와 동기화한 router·link·번호
+- 작성자의 두 번째 source-first 대조 결과
+- 해당할 때 fresh proposal·final 감사 판정
+- 전체 적용 주장의 제외 또는 남은 이관 범위
+- static 확인과 live 실행 증거의 경계
+
+전체 상태와 사용자 보고는 작업 실행 워크플로우와
+[140 완료 및 작업 보고 워크플로우](140-completion-reporting-workflow.md)가 소유합니다.
+
+## 관련 문서
+
+- **문서 유형·owner·보존·관계·번호**: [100 문서 정보 구조 가이드](../100-documentation-guide.md)
+- **요청·권한·공통 lifecycle·closure**: [100 작업 실행 워크플로우](100-work-execution-workflow.md)
+- **작업 문서 전환**: [100 작업 문서 생명주기](../work-items/100-work-item-lifecycle.md)
+- **사용자 보고**: [140 완료 및 작업 보고 워크플로우](140-completion-reporting-workflow.md)
