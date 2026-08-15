@@ -1,0 +1,5 @@
+# 기술 설명 skill의 UI 표시 정보입니다.
+interface:
+  display_name: "기술 설명"
+  short_description: "기술 흐름·과거 판단 근거를 source로 설명"
+  default_prompt: "Use $explain-tech to explain a technical flow or trace the actual source and chronology behind a prior answer or decision."

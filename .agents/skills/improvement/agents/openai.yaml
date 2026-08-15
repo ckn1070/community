@@ -1,0 +1,5 @@
+# improvement 스킬의 UI 표시와 기본 호출 문구를 정의합니다.
+interface:
+  display_name: "개선"
+  short_description: "기존 artifact의 품질을 종합 비교해 개선안을 선택"
+  default_prompt: "Use $improvement to inspect this artifact through the relevant domain lenses, compare meaningful alternatives, and recommend the best evidence-backed improvement."

@@ -1,0 +1,5 @@
+# 심화 회고 skill의 UI 표시 정보입니다.
+interface:
+  display_name: "심화 회고"
+  short_description: "exact control identity와 live invocation까지 방어 생애주기를 감사"
+  default_prompt: "Use $deep-retrospective to examine two incidents and the lifecycle failure of the previously completed defense, verify the exact applied control identity and live invocation, and preserve an inherited execution retrospective through control changes, validation, and their exact-path local commit."

@@ -1,0 +1,5 @@
+# 병렬 작업 시작 스킬의 UI 표시 메타데이터를 정의합니다.
+interface:
+  display_name: "병렬 작업 시작"
+  short_description: "workflow 입력을 bundled helper에 전달해 격리 worktree를 준비"
+  default_prompt: "Use $parallel-start to inspect the requested worktree inputs and, when creation is authorized, run the bundled helper without changing the current checkout or main ref."

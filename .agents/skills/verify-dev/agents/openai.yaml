@@ -1,0 +1,5 @@
+# 개발 검증 스킬의 UI 표시와 기본 호출 문구를 정의합니다.
+interface:
+  display_name: "개발 검증"
+  short_description: "개발 결과의 구현·테스트·주석·문서를 독립 감사"
+  default_prompt: "Use $verify-dev to admit candidate effects only from the original objective or independent sources, audit admitted effects against implementation and executable evidence, and require $verify-documentation final for major owner or topology changes."

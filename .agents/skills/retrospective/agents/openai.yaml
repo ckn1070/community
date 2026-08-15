@@ -1,0 +1,5 @@
+# 회고 skill의 UI 표시 정보입니다.
+interface:
+  display_name: "회고"
+  short_description: "회고 대상·인과를 판정하고 실행 회고를 local commit까지 마무리"
+  default_prompt: "Use $retrospective to preserve each explicitly separated incident contract, immediately accept an explicitly requested upper grouping while retaining every lower incident identity, distinguish read-only questions from execution retrospectives, and keep the general/deep subtype unresolved until incident-time control introduction and invocation are proven. Trace each failure to its system cause, and for an execution retrospective apply and validate only the control-owner changes and finish their exact-path local commit."

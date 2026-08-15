@@ -1,0 +1,5 @@
+# 작업 보고 skill의 UI 표시 정보입니다.
+interface:
+  display_name: "작업 보고"
+  short_description: "확정된 전체 작업 상태와 책임을 사용자에게 보고"
+  default_prompt: "Use $report-task only to project verified overall task and decision status from the full operation map frozen by the common workflow; route standalone next-step or recommendation questions to $explain-tech. Restore each selected shorthand value from its enclosing decision atom and canonical consumer without reopening a uniquely mapped choice, read every in-scope atom's canonical source, keep closed and inactive results as dependency evidence, and show an in-scope blocker beside runnable results without reviving an explicitly excluded atom or redefining canonical scope and state."

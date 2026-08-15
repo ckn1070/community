@@ -1,0 +1,5 @@
+# 문서화 스킬의 UI 표시 정보와 기본 호출 문구를 정의합니다.
+interface:
+  display_name: "문서화"
+  short_description: "저장소 Markdown의 canonical source·구조 동기화"
+  default_prompt: "Use $documentation to route this repository Markdown change through canonical owner and operator-lifecycle discovery, source-first authoring, and the required specialist final for major owner or topology changes."

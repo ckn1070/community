@@ -1,0 +1,5 @@
+# 계획 최종 검증 스킬의 사용자 표시 정보와 기본 호출 prompt를 정의합니다.
+interface:
+  display_name: "계획 검증"
+  short_description: "개발 계획의 목적·설계·실행 가능성을 독립 감사"
+  default_prompt: "Use $verify-plan to independently audit this candidate development plan against its original objective, decisions, repository sources, and implementation risks."

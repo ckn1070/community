@@ -1,0 +1,5 @@
+# Codex가 개발 스킬을 표시하고 기본 호출 프롬프트를 구성하는 UI 메타데이터입니다.
+interface:
+  display_name: "개발"
+  short_description: "기능·버그·구조 변경을 개발 전문 절차로 구현"
+  default_prompt: "Use $develop to admit only effects traceable to the frozen user result or an independent source, preserve exact control and candidate identity through one finite round, and hand Git only a verified candidate with no task-owned residual."

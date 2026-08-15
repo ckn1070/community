@@ -1,0 +1,4 @@
+interface:
+  display_name: "문서 검증"
+  short_description: "중대한 Markdown 구조·동결 후보의 fresh 독립 감사"
+  default_prompt: "Use $verify-documentation as the required fresh specialist to audit this major Markdown structure proposal or frozen final candidate against the original objective, actual sources, canonical ownership, operator lifecycle, numbering, links, and topology."
