@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: car-community-stg
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: car-community-gitops-bootstrap
+spec:
+  project: car-community
+  source:
+    repoURL: https://github.com/ckn1070/community.git
+    targetRevision: main
+    path: deploy/overlays/stg
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: car-community
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      name: car-community
+      namespace: car-community
+      jsonPointers:
+        - /spec/template/metadata/annotations/car-community.io~1notification-secret-resource-version
+  syncPolicy:
+    automated:
+      enabled: true
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - RespectIgnoreDifferences=true

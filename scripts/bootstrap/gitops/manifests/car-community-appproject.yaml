@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: car-community
+  namespace: argocd
+  labels:
+    app.kubernetes.io/managed-by: car-community-gitops-bootstrap
+spec:
+  description: car-community staging GitOps deployment boundary
+  sourceRepos:
+    - https://github.com/ckn1070/community.git
+  destinations:
+    - namespace: car-community
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: ConfigMap
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: batch
+      kind: Job
