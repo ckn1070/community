@@ -1,0 +1,9 @@
+# build context는 기본 차단하고 빌드에 필요한 Gradle 계약과 source만 허용해 secret과 저장소 이력이 image layer에 들어가지 않게 합니다.
+**
+!build.gradle
+!settings.gradle
+!gradlew
+!gradle
+!gradle/**
+!src
+!src/**

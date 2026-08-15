@@ -1,0 +1,71 @@
+server:
+  port: 9097
+
+spring:
+  application:
+    name: carmunity-api
+
+  # 로컬 개발용 .env를 선택적으로 읽습니다. 운영 환경은 OS 환경변수 주입을 기본으로 봅니다.
+  config:
+    import: optional:file:.env[.properties]
+
+  # JPA와 Flyway가 함께 사용하는 데이터베이스 접속 정보입니다.
+  datasource:
+    # 로컬 기본값만 두고, 환경별 접속 정보는 DB_URL로 덮어씁니다.
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/carmunity}
+    # 계정과 비밀번호는 저장소에 남기지 않고 외부에서 주입합니다.
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  # 스키마 변경은 Flyway가 담당하고, Hibernate는 검증만 수행합니다.
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+    # 지연로딩은 트랜잭션 안에서 처리하도록 OSIV를 끕니다.
+    open-in-view: false
+
+    properties:
+      hibernate:
+        format_sql: true
+
+    # 개발 중 쿼리 확인용입니다. 운영에서는 로그 레벨로 제어하는 편이 낫습니다.
+    show-sql: true
+
+  # DB 스키마 변경 이력은 src/main/resources/db/migration 아래 SQL로 관리합니다.
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+carmunity:
+  auth:
+    jwt:
+      issuer: ${AUTH_JWT_ISSUER:carmunity-api}
+      access-token-ttl: ${AUTH_JWT_ACCESS_TOKEN_TTL:15m}
+      # 운영 secret은 저장소에 두지 않고 환경변수나 secret manager로 주입합니다.
+      hmac-secret: ${AUTH_JWT_HMAC_SECRET}
+    login:
+      identifier-hash:
+        # 원문 email을 auth_event에 남기지 않기 위한 HMAC secret입니다. JWT secret과 분리합니다.
+        hmac-secret: ${AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}
+  notification:
+    email:
+      resend:
+        api-key: ${RESEND_API_KEY:}
+      from: ${NOTIFICATION_EMAIL_FROM:}
+      verification:
+        base-url: ${EMAIL_VERIFICATION_BASE_URL:}
+      admin-invitation:
+        base-url: ${ADMIN_INVITATION_BASE_URL:}
+      password-reset:
+        base-url: ${PASSWORD_RESET_BASE_URL:}
+
+logging:
+  # 로컬 기본 콘솔 로그에서도 request id를 함께 보여서 API 오류와 운영 문의를 빠르게 상관분석합니다.
+  pattern:
+    level: "requestId:%X{requestId} %5p"

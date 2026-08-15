@@ -1,0 +1,54 @@
+# production profile의 종료, DB 장애 감지, 관리 endpoint 노출, 로그 정책을 개발 기본값 위에 덮어씁니다.
+server:
+  # 운영 process 종료 시 새 요청을 막고 진행 중 요청을 정리하도록 graceful shutdown을 사용합니다.
+  shutdown: graceful
+
+spring:
+  datasource:
+    hikari:
+      # DB 장애를 readiness에서 신속히 감지하도록 연결 획득은 1.5초, 연결 검증은 1초로 제한합니다.
+      connection-timeout: 1500
+      validation-timeout: 1000
+  lifecycle:
+    # 외부 process manager가 종료를 무기한 기다리지 않도록 Spring 종료 phase는 최대 30초만 기다립니다.
+    timeout-per-shutdown-phase: 30s
+  web:
+    resources:
+      # 운영 API에 정적 resource의 기본 공개 경로를 만들지 않습니다.
+      add-mappings: false
+  jpa:
+    # 운영 SQL은 console에 직접 출력하거나 포맷하지 않고 구조화된 application log만 사용합니다.
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 운영 HTTP 관리 endpoint는 상태 점검에 필요한 health만 공개합니다.
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        # DB 장애는 트래픽만 차단하도록 readiness에만 포함하고, liveness 재시작 조건에서는 제외합니다.
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
+
+springdoc:
+  # 운영 환경에서는 API 문서와 UI endpoint를 모두 닫고 별도 승인 없이 다시 노출하지 않습니다.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  structured:
+    format:
+      # 운영 profile은 사람이 읽는 console보다 수집기 친화적인 ECS JSON을 기본값으로 사용합니다.
+      console: ecs
