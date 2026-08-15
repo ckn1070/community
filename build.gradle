@@ -2,10 +2,10 @@
 plugins {
 	id 'java'
 	id 'jacoco'
-	id 'org.springframework.boot' version '4.0.6'
+	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
-	id 'com.diffplug.spotless' version '8.6.0'
-	id 'org.sonarqube' version '7.2.3.7755'
+	id 'com.diffplug.spotless' version '8.9.0'
+	id 'org.sonarqube' version '7.4.0.8496'
 }
 
 group = 'com.ronams'
@@ -44,11 +44,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.bouncycastle:bcprov-jdk18on:1.81'
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'
 	implementation 'org.flywaydb:flyway-database-postgresql'
-	implementation 'com.resend:resend-java:v4.15.0'
+	implementation 'com.resend:resend-java:v4.18.0'
 	implementation 'org.springframework.modulith:spring-modulith-api'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -58,7 +58,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
-	testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.2'
+	testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.0'
 	testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
 	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
