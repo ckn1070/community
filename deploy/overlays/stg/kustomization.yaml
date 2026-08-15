@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: car-community
+
+resources:
+  - ../../base
+  - pre-sync
+
+configMapGenerator:
+  - name: car-community-notification-config
+    literals:
+      # 승인된 staging sender와 공개 URL을 application notification 설정으로 제공합니다.
+      - NOTIFICATION_EMAIL_FROM=noreply@example.com
+      - EMAIL_VERIFICATION_BASE_URL=https://example.com/verify-email
+      - ADMIN_INVITATION_BASE_URL=https://example.com/admin/invitations
+      - PASSWORD_RESET_BASE_URL=https://example.com/reset-password
+
+images:
+  - name: registry.invalid/car-community
+    newName: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/car-community
+    # 현재 node에서 pull·ARM64 실행·imageID 일치를 확인한 runtime manifest입니다.
+    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000

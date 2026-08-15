@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: car-community-db-migration
+  annotations:
+    # 일반 resource보다 먼저 schema를 맞추고 실패하면 해당 Argo CD sync를 중단합니다.
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-1"
+    # 성공한 Job은 정리하고 같은 이름의 이전 hook이 남았을 때만 다음 실행 전에 교체합니다.
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
+  labels:
+    app.kubernetes.io/name: car-community
+    app.kubernetes.io/component: database-migration
+    app.kubernetes.io/part-of: car-community
+    app.kubernetes.io/managed-by: argocd
+spec:
+  activeDeadlineSeconds: 300
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: car-community
+        app.kubernetes.io/component: database-migration
+        app.kubernetes.io/part-of: car-community
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/arch: arm64
+        kubernetes.io/os: linux
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migration
+          # Deployment와 같은 image를 사용해 실행 artifact와 migration source의 revision을 일치시킵니다.
+          image: registry.invalid/car-community
+          imagePullPolicy: IfNotPresent
+          args:
+            - --spring.main.web-application-type=none
+            - --spring.main.lazy-initialization=true
+            - --spring.flyway.enabled=true
+            # Runtime 권한 callback은 staging Migration Job에서만 활성화합니다.
+            - --spring.flyway.callback-locations=classpath:db/callback
+            - --spring.jpa.hibernate.ddl-auto=validate
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: production
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: car-community-config
+                  key: DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-db-migrator
+                  key: DB_MIGRATOR_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-db-migrator
+                  key: DB_MIGRATOR_PASSWORD
+            - name: AUTH_JWT_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-auth
+                  key: AUTH_JWT_HMAC_SECRET
+            - name: AUTH_LOGIN_IDENTIFIER_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-auth
+                  key: AUTH_LOGIN_IDENTIFIER_HMAC_SECRET
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: rds-ca
+              mountPath: /etc/car-community/rds-ca
+              readOnly: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: rds-ca
+          configMap:
+            name: car-community-rds-ca
+            items:
+              - key: ap-northeast-2-bundle.pem
+                path: ap-northeast-2-bundle.pem

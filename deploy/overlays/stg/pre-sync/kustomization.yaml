@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+configMapGenerator:
+  - name: car-community-config
+    literals:
+      # 현재 staging RDS endpoint를 TLS hostname·CA 검증과 함께 사용합니다.
+      - DB_URL=jdbc:postgresql://example.cluster-abcdefghijkl.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem
+  - name: car-community-rds-ca
+    files:
+      - ap-northeast-2-bundle.pem
+
+generatorOptions:
+  disableNameSuffixHash: true
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  labels:
+    app.kubernetes.io/name: car-community
+    app.kubernetes.io/component: application-configuration
+    app.kubernetes.io/part-of: car-community
+    app.kubernetes.io/managed-by: argocd
