@@ -1,0 +1,35 @@
+# 작업 문서 목차
+
+이 문서 그룹은 기능, 버그, 개선, 조사 작업의 결과와 의사결정 맥락을 소유합니다.
+현재 장기 기준은 project, domain, tech-stack 등 영구 SOT에서 확인합니다.
+
+## 번호 그룹
+
+| 번호대 | 책임 |
+| --- | --- |
+| `100`~`190` | 모든 work item의 상태 label·본문·ID 문서 구조 |
+
+## 작업 유형
+
+- [features](features/000-index.md): 신규 제품 기능
+- [bugs](bugs/000-index.md): 기대 동작과 다른 결함
+- [improvements](improvements/000-index.md): 기존 시스템, 구조, workflow 개선
+- [spikes](spikes/000-index.md): 제한 시간 안에 불확실성을 줄이는 조사
+- [backlog](backlog/000-index.md): 아직 실행 작업으로 전환되지 않은 후보
+- [templates](templates/000-index.md): 작업 유형별 최소 문서 골격
+
+## 읽는 방법
+
+1. Open backlog는 상단 `목적` 또는 `배경`, Proposed·Planned는 상단 `달성할 결과`, In Progress·Blocked·Done은 상단 `결과`, Closed backlog는 상단 처분 `결과`에서 현재 상태와 새 owner를 확인합니다.
+2. 범위와 확정 결정 색인을 확인합니다.
+3. 상세 근거가 필요할 때만 같은 번호의 `-design`을 읽습니다.
+4. 과거 실패 증거가 필요할 때만 선택형 `-history`를 읽습니다.
+5. 실제 운영 명령은 연결된 operations runbook을 사용합니다.
+
+## 작성 기준
+
+- 상태, 결과, 범위, 결정, 검증을 대화 없이 복원할 수 있어야 합니다.
+- `In Progress`·`Blocked`·`Done`과 `Closed`는 상단 `결과` 한 곳만 현재 상태를 소유합니다.
+- 기술적 결정은 근거를 보존하고 실행 날짜·dirty 상태·반복 commit 기록은 Git으로 돌립니다.
+- 현재 기준으로 남길 내용은 완료 시 적절한 영구 SOT에 승격합니다.
+- 상세 구조는 [작업 문서 생명주기](100-work-item-lifecycle.md)를 따릅니다.
