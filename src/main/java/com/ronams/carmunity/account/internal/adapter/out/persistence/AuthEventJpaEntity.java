@@ -220,8 +220,7 @@ class AuthEventJpaEntity {
       UUID invitationPublicId,
       String targetEmailNormalized,
       String roleCode,
-      boolean previousInvitationRevoked,
-      boolean notificationSuccessful) {
+      boolean previousInvitationRevoked) {
     AuthEventJpaEntity event =
         new AuthEventJpaEntity(
             inviterAccountId, ADMIN_INVITATION_CREATED_EVENT_TYPE, SUCCESS_RESULT);
@@ -231,16 +230,14 @@ class AuthEventJpaEntity {
           "invitationPublicId": "%s",
           "targetEmailHash": "%s",
           "roleCode": "%s",
-          "previousInvitationRevoked": %s,
-          "notificationResult": "%s"
+          "previousInvitationRevoked": %s
         }
         """
             .formatted(
                 invitationPublicId,
                 sha256Hex(targetEmailNormalized),
                 roleCode,
-                previousInvitationRevoked,
-                notificationSuccessful ? SUCCESS_RESULT : FAILURE_RESULT);
+                previousInvitationRevoked);
     return event;
   }
 

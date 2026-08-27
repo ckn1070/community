@@ -3,19 +3,21 @@
 SSH로 guest OS를 볼 수 없을 때 AWS control plane에서 먼저 확인할 경계를 설명합니다.
 Instance health, resource metric과 packet이 EC2까지 도달하는 경로를 구분합니다.
 
+**기본 실행 위치:** 장애 대상 AWS account·region의 AWS Console
+
 ## 상단 수동 확장 조회
 
 다음 항목을 **같은 장애 시각** 기준으로 AWS Console에서 기록합니다. 설정은 바꾸지 않습니다.
 
-| 순서 | Console 위치 | 기록할 값 |
-| --- | --- | --- |
-| 1 | EC2 Instance summary | Instance ID·state·type·AZ·public/private IPv4 |
-| 2 | Status checks | System check·Instance check·Scheduled event |
-| 3 | Monitoring | CPUUtilization·CPUCreditBalance·StatusCheckFailed·NetworkIn/Out |
-| 4 | EBS volume·metric | Attachment state·VolumeQueueLength·VolumeAvgReadLatency·VolumeAvgWriteLatency |
-| 5 | Network interface | ENI·subnet·public IPv4·attached Security Group |
-| 6 | Security Group | 운영자 public IPv4 `/32` → TCP 22 ingress |
-| 7 | Route table | Public subnet의 `0.0.0.0/0` → Internet Gateway |
+| 순서 | Console 위치 | 확인 목적 | 먼저 볼 이상 신호 | 기록할 값 |
+| --- | --- | --- | --- | --- |
+| 1 | EC2 Instance summary | Instance가 실행 중이고 조사 대상이 맞는지 확인 | `stopped`·다른 AZ·변경된 public IPv4 | Instance ID·state·type·AZ·public/private IPv4 |
+| 2 | Status checks | AWS host 문제와 guest 응답 문제를 분리 | System 또는 Instance check 실패·Scheduled event | System check·Instance check·Scheduled event |
+| 3 | Monitoring | 장애 시각의 CPU·network·status check 추세 확인 | CPU credit 고갈·status check 실패·traffic 급변 | CPUUtilization·CPUCreditBalance·StatusCheckFailed·NetworkIn/Out |
+| 4 | EBS volume·metric | Volume 연결과 I/O 지연 여부 확인 | Attachment 불완전·queue와 latency의 지속 증가 | Attachment state·VolumeQueueLength·VolumeAvgReadLatency·VolumeAvgWriteLatency |
+| 5 | Network interface | Packet이 도달할 실제 ENI·subnet·주소 확인 | 다른 subnet·public IPv4 누락·예상하지 않은 Security Group | ENI·subnet·public IPv4·attached Security Group |
+| 6 | Security Group | 현재 운영자 주소에서 SSH가 허용되는지 확인 | TCP 22 규칙 누락·source `/32` 불일치 | 운영자 public IPv4 `/32` → TCP 22 ingress |
+| 7 | Route table | Public subnet의 인터넷 경로 확인 | Default route 누락·Internet Gateway가 아닌 target | Public subnet의 `0.0.0.0/0` → Internet Gateway |
 
 ## 해석 순서
 
@@ -107,7 +109,7 @@ inbound rule은 필요하지 않습니다. Network ACL을 별도로 제한했다
 
 - **전체 outline**: [100 Kubernetes platform 핵심 진단 outline](100-kubernetes-platform-diagnostic-outline.md)
 - **Guest network**: [150 Linux network 진단](150-linux-network.md)
-- **현재 EC2 구성**: [110 EC2 Kubernetes node](../../project/infrastructure/110-ec2-kubernetes-node.md)
+- **현재 EC2 구성**: [120 EC2 Kubernetes node](../../project/infrastructure/120-ec2-kubernetes-node.md)
 - **현재 구성과 최초 postcondition 재확인**: [120 EC2 node 최초 구축](../120-ec2-node-provisioning-runbook.md)
 
 `120`은 현재 EC2 구성과 최초 postcondition을 확인하는 절차이며 일반 host 장애 복구를

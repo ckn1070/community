@@ -37,7 +37,7 @@ class EnvExampleFileTest {
             .filter(line -> !line.isEmpty())
             .filter(line -> !line.startsWith("#"))
             .map(ENV_ASSIGNMENT::matcher)
-            .filter(matcher -> matcher.matches())
+            .filter(java.util.regex.Matcher::matches)
             .collect(
                 java.util.stream.Collectors.toUnmodifiableMap(
                     matcher -> matcher.group(0).substring(0, matcher.group(0).indexOf('=')),
@@ -50,8 +50,8 @@ class EnvExampleFileTest {
             .toList();
 
     assertThat(entriesWithValues).isEmpty();
-    assertThat(assignments).containsKeys(REQUIRED_STAGING_KEYS.toArray(String[]::new));
     assertThat(assignments)
+        .containsKeys(REQUIRED_STAGING_KEYS.toArray(String[]::new))
         .doesNotContainKeys("STG_DB_URL", "STG_DB_RUNTIME_USERNAME", "STG_DB_MIGRATOR_USERNAME");
   }
 }

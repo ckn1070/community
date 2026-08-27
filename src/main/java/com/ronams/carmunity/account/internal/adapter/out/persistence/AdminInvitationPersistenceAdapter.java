@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 관리자 초대 저장 port의 JPA adapter입니다. */
@@ -44,7 +43,7 @@ class AdminInvitationPersistenceAdapter
   private final AuthEventJpaRepository authEventRepository;
 
   /**
-   * 같은 email의 기존 open 초대를 폐기하고 새 초대를 저장합니다.
+   * 같은 email의 기존 open 초대를 폐기하고 새 초대와 생성 감사 이벤트를 저장합니다.
    *
    * <p>open email partial unique index와 pessimistic lock을 함께 사용해 동시 재초대가 open row를 둘 이상 남기지 못하게
    * 합니다.
@@ -69,22 +68,16 @@ class AdminInvitationPersistenceAdapter
     AdminInvitationJpaEntity saved =
         invitationRepository.saveAndFlush(
             AdminInvitationJpaEntity.issue(request, inviter.id(), role.id()));
-
-    return saved.toRecord(RoleCode.valueOf(role.code()), !openInvitations.isEmpty());
-  }
-
-  /** commit 이후 초대 발송 결과를 관리자 초대 생성 감사 이벤트로 저장합니다. */
-  @Override
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void recordCreated(AdminInvitationRecord invitation, boolean notificationSuccessful) {
-    authEventRepository.save(
+    AdminInvitationRecord invitation =
+        saved.toRecord(RoleCode.valueOf(role.code()), !openInvitations.isEmpty());
+    authEventRepository.saveAndFlush(
         AuthEventJpaEntity.adminInvitationCreated(
             invitation.invitedByAccountId(),
             invitation.publicId(),
             invitation.email(),
             invitation.roleCode().name(),
-            invitation.previousInvitationRevoked(),
-            notificationSuccessful));
+            invitation.previousInvitationRevoked()));
+    return invitation;
   }
 
   /**

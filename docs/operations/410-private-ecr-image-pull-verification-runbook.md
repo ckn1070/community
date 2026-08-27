@@ -7,7 +7,7 @@ Kubelet ECR credential provider 설치가 끝난 cluster에서 지정한 private
 소유합니다.
 
 점검의 actor·credential·artifact 경계는
-[Container image delivery](../project/infrastructure/200-container-image-delivery.md), resource
+[210 Container image delivery](../project/infrastructure/210-container-image-delivery.md), resource
 lifecycle과 timeout의 정적 계약은
 [ECR verify README](../../scripts/verify/ecr/README.md)에서 확인합니다.
 
@@ -17,8 +17,9 @@ lifecycle과 timeout의 정적 계약은
 | --- | --- |
 | 언제 | Kubelet ECR provider 설치 뒤 새 exact digest 또는 기존 digest의 node pull 경로를 점검할 때 반복합니다. |
 | 누가 | Target EC2에 SSH 접속하고 cluster-admin kubeconfig와 `sudo`를 사용할 수 있는 운영자가 실행합니다. |
-| 어디서 | EC2 terminal의 `/home/ubuntu/car-community-scripts`입니다. |
-| 무엇을 | `sudo ./verify/ecr/verify-private-image-pull.sh "${IMAGE_REFERENCE}"` |
+| 기본 실행 위치 | EC2 terminal입니다. |
+| 기본 시작 directory | 제한 없음 |
+| 무엇을 | `sudo /home/ubuntu/car-community-scripts/verify/ecr/verify-private-image-pull.sh "${IMAGE_REFERENCE}"` |
 | 왜 | EC2 instance profile→credential provider→ECR→container runtime 경로가 실제 digest를 pull·실행하는지 확인하기 위해서입니다. |
 | 완료·재개 | Script exit `0`, exact `imageID`와 smoke namespace 삭제를 확인합니다. 실패하면 같은 digest로 verify script만 재실행합니다. |
 
@@ -28,7 +29,8 @@ lifecycle과 timeout의 정적 계약은
 - EC2 instance profile은 target `car-community` private ECR pull 최소 권한을 가집니다.
 - [GitHub ECR image 게시](400-github-ecr-image-publishing-runbook.md)의 job summary와 ECR
   Console에서 같은 exact digest reference를 확인했습니다.
-- EC2의 `/home/ubuntu/car-community-scripts`에 현재 전달 archive의
+- [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md)을 완료해 EC2의
+  `/home/ubuntu/car-community-scripts`에 현재 전달 archive의
   `verify/ecr/verify-private-image-pull.sh`가 있습니다.
 - `car-community-ecr-smoke` namespace가 없습니다. 이미 있으면 다른 actor 또는 이전 실패의
   resource인지 확인하기 전에는 삭제하지 않습니다.
@@ -38,9 +40,8 @@ lifecycle과 timeout의 정적 계약은
 Publishing job summary의 full reference를 넣고 EC2 terminal에서 실행합니다.
 
 ```bash
-cd /home/ubuntu/car-community-scripts
 IMAGE_REFERENCE='<ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com/car-community@sha256:<DIGEST>'
-sudo ./verify/ecr/verify-private-image-pull.sh "${IMAGE_REFERENCE}"
+sudo /home/ubuntu/car-community-scripts/verify/ecr/verify-private-image-pull.sh "${IMAGE_REFERENCE}"
 ```
 
 Mutable tag, 다른 region·repository 또는 digest 없는 reference를 입력하지 않습니다.
@@ -93,7 +94,7 @@ Local test는 live IAM·ECR·pull 성공을 대신하지 않습니다. 같은 �
 
 ## 관련 문서
 
-- **현재 image 전달 개념**: [Container image delivery](../project/infrastructure/200-container-image-delivery.md)
+- **현재 image identity·node pull 개념**: [210 Container image delivery](../project/infrastructure/210-container-image-delivery.md)
 - **Provider 최초 설치**: [Kubelet ECR credential provider 설치](330-kubelet-ecr-credential-provider-installation-runbook.md)
 - **Verify script 공개 계약**: [ECR verify README](../../scripts/verify/ecr/README.md)
 - **Digest 생산 절차**: [GitHub ECR image 게시](400-github-ecr-image-publishing-runbook.md)

@@ -62,22 +62,16 @@ jobs:
 
       - name: Determine Sonar execution scope
         id: sonar-scope
-        # 공개본은 Sonar 설정을 명시적으로 활성화한 경우에만 분석하고, fork와 Dependabot PR은 항상 분석에서 제외합니다.
+        # fork와 Dependabot PR에는 일반 Actions secret이 전달되지 않으므로 Sonar만 건너뛰고, 나머지 same-repository PR과 main은 분석을 요구합니다.
         env:
           EVENT_NAME: ${{ github.event_name }}
           ACTOR: ${{ github.actor }}
           HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           CURRENT_REPOSITORY: ${{ github.repository }}
-          SONAR_ENABLED: ${{ vars.SONAR_ENABLED }}
         run: |
           set -euo pipefail
           # GitHub는 이 step에 고유한 GITHUB_OUTPUT 파일 경로를 제공하며, 기록한 run·skip-reason은 sonar-scope step output으로 같은 job의 후속 조건에서 읽힙니다.
-          if [[ "${SONAR_ENABLED}" != "true" ]]; then
-            {
-              echo "run=false"
-              echo "skip-reason=disabled"
-            } >> "${GITHUB_OUTPUT}"
-          elif [[ "${EVENT_NAME}" == "pull_request" && "${ACTOR}" == "dependabot[bot]" ]]; then
+          if [[ "${EVENT_NAME}" == "pull_request" && "${ACTOR}" == "dependabot[bot]" ]]; then
             {
               echo "run=false"
               echo "skip-reason=dependabot"
@@ -101,16 +95,14 @@ jobs:
           SKIP_REASON: ${{ steps.sonar-scope.outputs.skip-reason }}
         run: |
           set -euo pipefail
-          if [[ "${SKIP_REASON}" == "disabled" ]]; then
-            echo "SONAR_ENABLED=true가 설정되지 않아 Sonar 분석을 실행하지 않습니다."
-          elif [[ "${SKIP_REASON}" == "fork" ]]; then
+          if [[ "${SKIP_REASON}" == "fork" ]]; then
             echo "Fork pull request는 SONAR_TOKEN을 받지 않으므로 Sonar 분석을 명시적으로 건너뜁니다."
           else
             echo "Dependabot pull request는 일반 Actions secret을 받지 않으므로 Sonar 분석을 명시적으로 건너뜁니다."
           fi
 
       - name: Validate Sonar settings
-        # Sonar를 활성화한 same-repository PR과 main에서는 credential이나 project 설정 누락을 CI 실패로 처리합니다.
+        # same-repository PR과 main에서 credential이나 project 설정이 빠지면 조용히 skip하지 않고 CI를 실패시킵니다.
         if: steps.sonar-scope.outputs.run == 'true'
         env:
           SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}

@@ -7,8 +7,9 @@
 ## 시작
 
 1. 이 파일과 [문서 목차](docs/000-index.md)를 읽습니다.
-2. 새 사용자 메시지마다 첫 답변·도구 호출·review·mutation 전에 작업 실행
-   워크플로우의 Bootstrap으로 다시 진입합니다.
+2. 새 사용자 메시지마다 첫 commentary를 포함한 답변·도구 호출·review·mutation 전에
+   작업 실행 워크플로우의 Bootstrap으로 다시 진입합니다. Bootstrap 판정 전에는 과거
+   작업이나 pending 효과의 재개·정리·조사·검증을 약속하거나 시작하지 않습니다.
 3. 사용자가 사용할 수 있는 skill을 이름·tag·link로 명시하면, 첫 실질 답변·판단·계획
    전에 해당 `SKILL.md` 전체와 필수 공통 owner를 읽습니다. 그 전 안내는 읽을 source와
    source read가 선행한다는 사실만 말하며 specialist·mode·효과·terminal을 확정하지
@@ -45,6 +46,15 @@ workflow와 history를 기본으로 읽지 않습니다.
 - 병렬 작업은 입력·수용 기준·증거와 write set이 독립적일 때만 허용합니다. 공유 계약,
   producer와 consumer, 동결 후보를 다시 여는 검토는 직렬화합니다.
 - 기존 dirty 변경과 다른 작업자의 변경을 되돌리거나 이번 결과에 포함하지 않습니다.
+- 운영 안내에 사용하는 runbook은 현재 authoritative source를 반영한 재사용 가능한 실행
+  문서여야 합니다. Source 대조로 runbook 자체의 결함을 직접 확정하면 어떤 mutation이나
+  우회 명령보다 먼저 별도 commentary에서 exact 결함·관찰 결과·중단 지점을 사용자에게
+  알립니다. Source를 읽겠다는 사전 안내는 이 통지로 계산하지 않습니다. 결함 발견이나
+  수정 금지의 부재는 상태 변경 권한이 아닙니다. 현재 원문이 canonical runbook 수정을
+  명시적으로 요청해 작업 실행 워크플로우의 권한 gate를 통과한 경우에만
+  [150 문서화 워크플로우의 runbook 결함 복구 gate](docs/workflow/150-documentation-workflow.md#runbook-결함-복구-gate)로
+  canonical 원문을 수정·검증한 뒤 수정된 실행 단위를 그대로 인용합니다. 질문·설명·검토
+  요청이면 결함과 안전한 후속만 답하고 mutation하지 않습니다.
 - 실패나 누락을 발견하면 사건의 명사를 규칙으로 추가하지 않습니다. 작업 실행
   워크플로우의 통제 생애주기로 첫 단절과 기존 방어를 먼저 판정합니다.
 - 완료·검증된 방어 범위의 재발은 [심화 회고](.agents/skills/deep-retrospective/SKILL.md),

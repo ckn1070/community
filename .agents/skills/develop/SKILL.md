@@ -49,6 +49,8 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 ```text
 상위 결과 → 이번 라운드의 concrete 결과·완료 oracle
 → 활성 결정과 source → 포함·제외·복귀점
+→ raw batch 항목별 문장 기능·요청 효과·positive 권한 source 또는 미확정 사유
+→ 모든 항목의 처분이 닫힌 batch admission
 → 예정 artifact별 관찰 효과·실행 방식·blocking 여부·전문 owner 처분
 → 실제 control 기준선 R·요청 generation G·target candidate C·호출 전 상태 S0
 → 앞 phase의 전문 결과·candidate 제약·필수 후속 gate P
@@ -72,6 +74,13 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 Bootstrap 또는 실제 결정 owner로 돌아간다. 라운드 계약의 field 의미, 새 발견·차단 판정,
 후보 상태와 discovery·correction·closure lifecycle은 작업 실행 workflow만 소유하며 이
 skill이 다시 정하지 않는다.
+
+같은 사용자 실행 batch에 질문·비교·우려·미확정 선택이 하나라도 남으면, 승인된 다른 항목의
+writer도 먼저 위임하지 않는다. 현재 Agent는 첫 worker 호출 전에 batch coverage 전체를
+workflow에 되돌리고, 미확정 이유와 선택 차원의 논의가 끝난 새 generation을 기다린다. Writer는
+일부 승인 항목만 받은 handoff를 완전한 batch admission으로 보정하거나 인접 승인으로 빈 권한을
+채우지 않는다. 모든 항목이 명시 승인됐거나 사용자가 미확정 항목을 제외·취소했다면 이 gate를
+이유로 추가 승인을 요구하지 않는다.
 
 라운드 중 처음 드러난 필수 보장이 동결 artifact만으로 만들어지지 않으면 해당 단위를 더
 구현하지 않고 설계 단계로 돌린다. 이때 새로 필요한 사용자 소유 결정은 항목별로 즉시 묻지

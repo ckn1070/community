@@ -12,7 +12,7 @@ readonly POSTGRESQL_CLIENT_MAJOR_VERSION="16"
 readonly RDS_CA_URL="https://truststore.pki.rds.amazonaws.com/ap-northeast-2/ap-northeast-2-bundle.pem"
 readonly RDS_CA_SHA256="913fb5b814f17af79d4c1622584a8d0ceddf5b0d76fe353d0c7d1186cdd6b229"
 readonly RDS_CA_MOUNT_PATH="/etc/car-community/rds-ca/ap-northeast-2-bundle.pem"
-readonly DATABASE_URL="jdbc:postgresql://example.cluster-abcdefghijkl.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem"
+readonly DATABASE_URL="jdbc:postgresql://stg-car-community-postgres.cjemi62mqsl6.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem"
 
 DATABASE_MASTER_PASSWORD=""
 RUNTIME_PASSWORD=""

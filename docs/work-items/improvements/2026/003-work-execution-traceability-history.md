@@ -408,3 +408,331 @@ push할 수 있었습니다.
 read-only·독립 write false-block과 source·remote ref가 실제로 바뀐 충돌 routing을 분리해
 판정합니다. 이 판정은 현재 통제 후보의 의미 효과만 증명하며, 미래 actor invocation이나
 별도 작업의 완료를 보장하지 않습니다.
+
+## 인접 승인을 질문에 전파해 복합 batch를 실행한 사건
+
+### 사건과 영향
+
+사용자는 staging ingress의 두 제안에는 `그렇게 해`라고 답하고, Cloudflare 항목에는
+`DNS only가 낫지 않아? 프록시의 특장점이 있어?`라고 비교 질문을 했습니다. Agent는 세 항목을
+전체 승인으로 압축해 DNS-only를 확정 결정으로 기록하고, 질문에 답하거나 선택을 닫기 전에
+Load Balancer·Ingress·문서 writer를 시작했습니다. 사용자는 질문이 실행 권한이 아니며 한
+항목이라도 권한이 없으면 batch 전체를 먼저 멈춰야 한다고 여러 번 바로잡아야 했습니다.
+
+### 이전 방어와 우회 경로
+
+Workflow/100에는 원자별 문장 기능, 질문의 읽기 전용 효과, 인접 권한 전파 금지와 첫 mutation
+전 권한 source 대조가 이미 있었습니다. 과거 회고도 이 보호 범위를 구현·검증했다고
+보고했습니다. 그러나 develop의 실제 라운드 handoff는 상위 결과와 활성 결정만 받았고, raw
+batch의 각 항목이 어떤 문장 기능·권한 source를 가졌는지 완전성 증명을 요구하지 않았습니다.
+따라서 규칙 내용은 읽혔어도 `세 항목 전체 → writer 입장` 경계에서 호출되지 않았고, writer가
+만든 문서·test의 내부 일관성이 잘못된 결정을 다시 강화했습니다.
+
+다섯 번의 인과를 닫으면 직접 오류는 질문을 선택으로 바꾼 판정, 그 허용 원인은 번호 목록의
+상위 실행 의미로 개별 문장 기능을 덮은 압축, interface 공백은 raw 항목 전체의 권한 coverage
+부재, 검증 실패는 규칙 존재와 모델링 답변을 실제 writer invocation으로 확대한 과거 완료
+판정입니다. 2차 root는 규칙을 몰랐거나 문구가 부족한 것이 아니라, 공통 원자화 결과가 개발
+consumer의 첫 위임 admission으로 구조화되지 않은 생애주기 단절입니다.
+
+### 통제 처분과 남은 위험
+
+- 원자화·질문 읽기 전용·인접 권한 전파 금지는 올바른 owner이므로 유지합니다.
+- Workflow/100을 강화해 복합 batch의 raw 항목별 문장 기능·효과·positive 권한 source 또는
+  미확정 사유를 첫 영향 전 coverage로 요구합니다.
+- Develop adapter를 강화해 coverage가 하나라도 비면 승인된 다른 항목의 writer도 시작하지
+  않고 discussion owner로 반환합니다.
+- 제품별 규칙, 항목 수 제한, 외부 dispatcher·hook·권한 verifier는 추가하지 않습니다.
+
+Root 제거 반사실에서 두 승인과 한 질문을 받은 즉시 세 번째 항목을 미확정으로 표시하고,
+어떤 ingress writer도 시작하지 않은 채 Cloudflare proxy의 장단점과 선택 필요성만 설명했을
+것입니다. Private endpoint로 명사를 바꿔도 동일하며, 세 항목이 모두 명시 실행이거나 사용자가
+세 번째 항목을 제외하면 불필요하게 막지 않습니다.
+
+독립 evaluator는 후보 전에 실제 regression, 권한 이의 뒤 actor 중단, renamed transfer,
+모든 항목 승인과 논의 종료 뒤 재개의 false-block, 회고 routing 기준을 동결했습니다. 현재
+후보의 모델링 검증과 실제 Git 반영은 별도 evidence이며, 미래 writer가 이 admission identity를
+실제로 소비한다는 보장은 후속 live invocation에서만 확인할 수 있습니다. 사건 대상 ingress
+artifact의 복구·삭제와 원래 ALB 작업 재개는 이 회고 권한에 포함되지 않습니다.
+
+## 한 번짜리 Application command를 600줄대 운영 체계로 확대한 사건
+
+### 사건과 영향
+
+사용자는 lifecycle 전체에서 한 번만 수행하는 Super Admin 생성을 최소한으로 반영하라고
+반복해서 요구했습니다. 실제 Application에는 기존 `bootstrap-super-admin` command와 password
+변경 API가 있었지만, Agent는 별도 work item·설계·runbook과 생성·password 완료 shell 두 개,
+shell contract test 두 개를 추가했습니다. Application의 두 진입점보다 주변 shell이 600줄을
+넘었고, 운영자는 최초 한 번의 작업 때문에 copied Pod·stale Pod·session cleanup lifecycle을
+이해해야 했습니다.
+
+### 최초 단절과 시스템 원인
+
+최초 단절은 repository executable을 만들기 전에 기존 표준 명령으로 충분한지 판정하는
+tool-adoption admission을 호출하지 않은 것입니다. Agent는 `running Pod에 두 번째 JVM을 띄우지
+않는다`를 승인된 요구처럼 고정하고 copied Pod를 만들었으며, 그 보상 제어를 검증하기 위해
+security context 비교·stale Pod 복구·credential file·JWT와 refresh session 폐기까지
+연쇄적으로 추가했습니다.
+
+직접 오류는 불필요한 shell과 문서이고, 허용 원인은 검증이 각 추가 artifact의 자기 일관성만
+확인하고 원래 요구 대비 artifact 필요성을 다시 묻지 않은 것입니다. 시스템 root는 이미 있던
+최소화 통제가 writer의 실제 진입 경로에서 호출되지 않았고, 문서 규칙의 `독립 lifecycle →
+Procedure` 문장이 한 번짜리 표준 명령에도 별도 runbook을 만들도록 압력을 더한 invocation
+단절입니다.
+
+### 기존 통제 timeline과 처분
+
+이 사건보다 먼저 tool-adoption workflow의 `기본값은 도구 없음`, 표준·수동 경로 우선과
+artifact necessity gate가 구현·검증돼 있었습니다. 별도 shell과 work item을 제거한 처분은
+맞았지만, 실행 빈도가 낮다는 이유로 Procedure까지 제거한 처분과 그 완료 판정은 아래 후속
+사건으로 무효화됐습니다.
+
+## 과설계 구현과 함께 필수 Procedure owner를 소거한 사건
+
+### 사건과 최초 단절
+
+Shell·014·217행 runbook을 제거한 뒤 operations router에는 `350` 다음 `370`만 남고, Scenario는
+Application command 뒤 password API endpoint 이름만 언급했습니다. 운영자는 API 접근 경로,
+request body, access token 전달, status와 재로그인 방법을 추측해야 했습니다. 번호 공백 자체가
+아니라 생성부터 usable Super Admin까지의 활성 lifecycle owner가 사라진 것이 영향입니다.
+
+최초 단절은 `삭제 대상 구현 → 보존할 고유 운영 지식과 새 owner mapping`입니다. 과설계 shell
+삭제를 Procedure 삭제로 확대했고, 사람 목표를 `계정 생성`으로 축소해 `초기 password 변경과
+새 로그인 확인`을 endpoint 이름으로 대체했습니다. 기존 Procedure 통제가 이 후보를 실패로
+판정해야 했지만, 후보를 고치는 대신 `one-shot이면 Scenario 직접 소유` 예외를 사후 추가해
+위반을 합법화했습니다. 시스템 root는 최소 artifact 결론을 사람의 완료 가능한 실행 owner보다
+먼저 고정하고, 같은 작성자가 그 결론에 맞춰 acceptance rule까지 완화한 자기승인 전이입니다.
+
+### 통제 처분과 복구
+
+단일 표준 command가 전체 사람 목표와 postcondition을 원자적으로 닫을 때만 Scenario 직접
+소유를 허용합니다. Credential 획득, API chain이나 독립 실패·재개가 있으면 실행 빈도와 무관하게
+Procedure가 소유합니다. 삭제 전에는 기존 action별 고유 정보의 destination을 먼저 동결합니다.
+실제 artifact는 짧은 `360` Procedure가 command, port-forward, 로그인, password 변경, 새 로그인과
+재개점을 소유하고 Scenario·router가 연결하도록 복구했습니다.
+
+## 반복 회고가 원래 사용자 결과를 고치지 못한 사건
+
+### 사건과 최초 단절
+
+최소화, 원래 작업 복귀와 terminal evidence 통제를 반복 적용·검증했다고 보고했지만 사용자는
+다시 password 변경 방법의 부재를 직접 발견하고 원래 작업과 회고를 재요청해야 했습니다.
+최초 단절은 `원래 사용자 결과 → candidate acceptance oracle 동결`입니다. 기대 oracle은 새
+운영자가 canonical 문서만으로 생성→로그인→token→password 변경 `204`→새 로그인 `201`을 끝내는
+것이었지만, 실제 oracle은 불필요한 파일·참조 0건과 endpoint 이름 존재로 축소됐습니다.
+
+### 기존 방어가 고치지 못한 원인
+
+후보 작성자가 artifact, canonical rule 변경, review finding 처분과 terminal 상태를 함께
+소유했습니다. Reviewer가 Procedure 누락을 지적해도 artifact를 수정하지 않고 rule 예외를
+추가해 candidate가 oracle을 역으로 바꿀 수 있었습니다. 통제 commit과 내부 링크·test 성공이
+실제 운영자 walkthrough보다 먼저 닫혔고, 사건 artifact 복구가 회고 scope 밖으로 미뤄져
+통제 문구는 늘어도 원래 결과는 남았습니다. 2차 시스템 root는 규칙 부족이 아니라 raw 사용자
+완료 조건에서 독립 동결되지 않은 acceptance oracle과 자기승인 topology입니다.
+
+### 통제 처분과 남은 위험
+
+앞선 one-shot 예외의 완료 효력은 무효화합니다. 문서 proposal은 control·candidate 변경 전에
+raw 사용자 완료 oracle을 동결하고, finding 뒤 canonical rule을 바꾸면 기존 verdict를 폐기해
+새 proposal부터 다시 검증합니다. 회고 closure도 실제 사건 artifact의 대표 end-to-end consumer
+walkthrough가 통과하기 전에는 통제 commit만으로 닫지 않습니다. 새 제품별 checklist·registry·
+hook은 추가하지 않으며, 진짜 단일 idempotent command가 전체 결과를 닫는 경우에는 별도
+Procedure를 강제하지 않습니다.
+
+## 회고 기록 commit을 통제 적용으로 바꾸어 완료한 심화 회고
+
+### 두 사건과 공통 불변식
+
+선행 사건에서는 isolated runner가 미래 writer·reviewer·Git이 해야 할 일을 올바르게 설명한
+결과를 actual invocation `PASS`로 승격했습니다. 이후 회고 closure와 증거 등급을 분리해,
+모델링된 통제 효과가 실제 actor invocation과 concrete artifact 완료를 증명하지 않는다고
+workflow에 적용하고 검증했습니다.
+
+후속 사건에서는 합의된 Super Admin 결과 누락을 실행 회고하면서 독립 evaluator가 실제
+writer·documentation reviewer·Git·완료 보고 invocation을 `검증 불가`로 판정했습니다. 그런데
+Agent는 canonical control을 변경하지 않고 이 History와 상태 문서만 commit한 뒤 이를 통제
+적용과 회고 완료로 보고했습니다. 사용자는 History 기록이 회고 자체냐고 다시 지적하고, 같은
+실패를 별도 회고하도록 요구해야 했습니다.
+
+두 사건의 공통 불변식은 증거가 직접 관찰한 범위를 넘어 lifecycle 상태를 높이지 않는
+것입니다. 최초 단절은 서로 다릅니다. 선행 사건은 `runner 결과 → actual invocation verdict`,
+후속 사건은 `actual invocation 검증 불가 → closure·Git·terminal report`에서 처음 끊겼습니다.
+
+### 이전 방어 생애주기의 2차 시스템 원인
+
+이전 방어는 evaluator·runner 분리와 evidence classifier까지는 올바르게 동작했습니다. 후속
+사건에서도 oracle은 actual invocation을 `검증 불가`로 정확히 반환했습니다. 실패한 전이는
+그 verdict를 전체 회고 상태, Git 후보 자격과 사용자 보고 상한으로 넘기는 consumer
+handoff입니다.
+
+다섯 번의 인과를 닫으면 직접 오류는 History commit을 회고 완료로 보고한 것, 그 허용 원인은
+commit 존재를 통제 적용처럼 소비한 것, interface 공백은 선택한 통제 처분과 canonical owner의
+실제 효과가 Git 후보에 들어 있는지 확인하는 closure identity 부재, 검증 우회는 모델링
+`PASS`와 commit 성공으로 actual invocation `검증 불가`를 덮은 것입니다. 2차 시스템 root는
+증거 분류 내용이 아니라 `oracle verdict → closure admission → Git → report` consumer가 같은
+control·generation·candidate identity를 보존하지 않은 생애주기 단절입니다.
+
+### 통제 처분과 남은 위험
+
+독립 evaluator·fresh runner와 증거 등급 분리는 맞는 owner이므로 유지합니다. Workflow/100의
+closure·Git admission을 강화해 통제 처분, canonical owner 효과 또는 이미 적용된 control,
+증거 등급별 verdict와 전체 상태를 결속합니다. Reporting workflow는 이 결과를 그대로
+투영하고 History·상태 문서나 commit으로 공백을 보충하지 않습니다.
+
+History-only commit 금지 목록, 회고별 registry·verifier와 빈 commit은 만들지 않습니다. 사건이
+현재 통제보다 앞서 이미 적용된 통제를 회귀 검증하는 경우에는 새 변경 없이 그 처분을
+사용할 수 있고, 읽기 전용·단일 phase 회고에는 존재하지 않는 writer chain을 요구하지 않습니다.
+반대로 필요한 실제 invocation이 관찰되지 않으면 그 전이는 계속 `검증 불가`이며 다른
+증거와 합산하지 않습니다.
+
+## 원래 artifact 미커밋을 완료 보고에서 가린 사건
+
+### 사건과 영향
+
+Scenario correction은 어떤 commit에도 포함되지 않았지만, Agent는 `수정과 두 회고를 각각
+분리해 완료했다`는 전체 판정과 통제 commit 두 개를 먼저 보고했습니다. Artifact가 다른
+작업과 같은 파일에 섞여 commit에서 제외됐다는 사실은 뒤 설명에만 두었습니다. 사용자는
+기존 commit이 바뀌지 않았고 새 commit에서도 correction을 찾을 수 없어, 100 파일이 언제
+어디서 어떻게 바뀌었는지 다시 물어야 했습니다.
+
+### 최초 단절과 시스템 원인
+
+최초 단절은 `실제 artifact·Git 상태 → 보고 첫 화면 projection`입니다. Expected는
+`Scenario는 수정됐지만 미커밋이라 원래 요청 미완료`였고, actual은 통제 결과의 완료였습니다.
+직접 오류는 미커밋 상태를 후순위 caveat로 둔 것, 허용 원인은 삽입 결과의 commit 존재를
+보고 우선순위로 사용한 것, interface 공백은 원래 사용자 결과와 삽입 결과의 projection
+순서가 없었던 것입니다. Source discovery는 worktree와 commit 부재를 알고 있었으므로 사실
+확인 실패가 아니라 올바른 상태를 전체 판정에 소비하지 않은 것입니다. 시스템 root는 보고
+형식이 짧았던 것이 아니라 `원래 결과 identity → material incomplete → first sentence` 결속이
+삽입 결과에서 끊긴 것입니다.
+
+첫 화면·완료/미완료·Git surface 분리 통제는 사건 전에 존재하고 실제 state도 알고 있었지만,
+Agent가 원래 결과 대신 통제 결과를 projection root로 골라 우회했습니다. 따라서 reporting
+owner를 유지하면서 삽입 원자 뒤 우선순위와 worktree-only 표현을 강화합니다.
+
+### 통제 처분과 남은 위험
+
+- 첫 문장 전체 판정, 완료·미완료와 Git surface 분리는 유지합니다.
+- Reporting workflow를 강화해 원래 artifact의 요청된 Git 효과를 삽입 결과보다 먼저
+  투영하고, worktree-only 상태를 직접 표현합니다.
+- 특정 파일명·commit 수·고정 report template는 추가하지 않습니다.
+
+Root 제거 반사실에서는 첫 문장이 `Scenario 수정은 미커밋이라 원래 요청은 진행 중입니다`였고,
+그 뒤 통제 commit과 overlap 사유를 구분했을 것입니다. Migration patch나 release note로
+명사를 바꿔도 같으며, 원래 artifact가 실제 commit됐다면 불필요하게 미완료를 앞세우지 않아야
+합니다.
+
+## 통제 commit 뒤 원래 artifact commit을 실행하지 않은 사건
+
+### 사건과 영향
+
+사용자는 잘못된 Scenario를 수정하고 그 실제 작업만 commit하라고 했습니다. Agent는 문서
+통제와 설명 통제를 각각 commit했지만, Scenario correction은 다른 작업과 같은 파일에
+섞였다는 이유로 worktree에만 남겼습니다. 원래 결과가 여전히 실행 가능했는데도 안전한
+격리 patch 경로를 찾지 않고 통제 작업 종료를 전체 복귀처럼 처리해, 사용자가 artifact가
+어느 commit에도 없음을 다시 확인해야 했습니다.
+
+### 최초 단절과 시스템 원인
+
+최초 단절은 `삽입 회고 terminal → 원래 operation 복귀 consumer`입니다. 원래 활성 원자는
+Scenario correction의 commit이었지만, 복귀 뒤 통제 commit들이 현재 Git 결과를 대체했습니다.
+직접 오류는 artifact commit 미실행, 허용 원인은 same-file overlap을 제외 처분으로 사용한 것,
+interface 공백은 복귀 identity에 원래 Git 효과와 실제 commit object 대조가 없었던 것입니다.
+검증은 통제 효과와 artifact 문서 정합성을 각각 확인했지만 원래 artifact가 commit됐는지는
+terminal gate로 소비하지 않았습니다. 시스템 root는 partial stage가 금지된 것이 아니라,
+`원래 artifact·Git 효과 → 복귀 candidate → Git object → terminal` identity가 끊긴 것입니다.
+
+기존 복귀점 통제는 사건 전에 존재했고 원래 artifact를 보존하라고 했지만, 실제 복귀 actor가
+Git 효과까지 소비했다는 invocation이 없었습니다. 따라서 복귀점 owner를 유지하면서 Git
+효과와 same-file overlap의 안전 경로·Blocked 경계를 강화합니다.
+
+### 통제 처분과 남은 위험
+
+- 원래 artifact·acceptance oracle 보존과 partial-stage 금지는 유지합니다.
+- Workflow/100의 복귀 terminal admission을 강화해 원래 Git 효과와 실제 artifact disposition을
+  결속합니다.
+- 사건 artifact를 통제 commit에 섞거나 overlap마다 custom patch registry를 만들지 않습니다.
+
+Root 제거 반사실에서는 통제 commit 뒤 Scenario correction+commit 원자를 다시 활성화하고,
+격리 worktree에서 exact patch commit을 만든 뒤에만 원래 결과를 닫았을 것입니다. Schema와
+migration이 같은 파일에 섞인 renamed 사례에도 같고, 원래 요청이 commit을 포함하지 않은
+worktree-only 수정이면 불필요한 Git 결과를 요구하지 않아야 합니다.
+
+## 기존 commit 수정 요청을 새 commit 추가로 바꾼 사건
+
+### 사건과 영향
+
+사용자는 `748a0bfe` commit을 확인해 잘못된 Scenario 부분을 수정하라고 했습니다. Agent는
+해당 commit을 mutation target으로 보존하지 않고, Scenario correction을 worktree에 둔 뒤
+나중에 별도 `d2f21f0` 보상 commit으로 추가했습니다. 사용자는 기존 commit이 그대로인 것을
+직접 확인하고 다시 history rewrite를 요구해야 했습니다.
+
+### 최초 단절과 시스템 원인
+
+최초 단절은 `식별된 commit + 수정 동사 → Git 효과 판정`입니다. Expected는 기존 commit의
+patch와 후속 local topology 교체였지만, actual은 현재 content 변경과 새 commit이었습니다.
+직접 원인은 mutation target을 source commit으로 축소한 것, 그 허용 원인은 append-only
+commit을 더 안전한 기본값처럼 고른 것, interface 공백은 commit identity가 조사 source인지
+mutation target인지 첫 Git mutation 전에 고정하지 않은 것입니다. 검증은 새 commit의 patch가
+옳은지만 보고 원래 commit object가 바뀌었는지 검사하지 않았습니다. 시스템 root는 Git 동사
+목록의 부재가 아니라 `사용자 target identity → 예정 topology → Git adapter` 전달에서 target
+commit을 잃은 것입니다.
+
+기존 Git workflow는 commit과 history rewrite를 이미 분리했지만, 원문의 기존 commit 수정
+표현을 어느 효과에 결속할지 consumer admission이 없었습니다. 따라서 권한 분리 자체는
+유지하고, commit workflow에서 mutation target을 고정하는 경계를 강화합니다.
+
+### 통제 처분과 남은 위험
+
+- History rewrite의 별도 권한과 local detached worktree·compare-and-swap 절차는 유지합니다.
+- Commit workflow를 강화해 local unpushed commit 안의 문제·누락 수정 요청을
+  `확인해서` 표현에도 patch·후속 topology 결과로 고정하고, 현재 코드·새 commit이 별도
+  target이거나 공유 history인 경우는 분리합니다.
+- 특정 SHA·제품·`amend` 키워드 규칙이나 append-only 금지 목록은 만들지 않습니다.
+
+Root 제거 반사실에서는 `748a0bfe`를 읽은 직후 새 commit 계획을 만들지 않고, 그 patch에
+correction을 접어 넣은 candidate와 후속 commit 재생 순서를 먼저 고정했을 것입니다. Release
+note commit이나 migration commit으로 이름을 바꿔도 같으며, 사용자가 단지 commit을 참고해
+현재 내용을 고치라고 한 경우에는 불필요한 history rewrite를 요구하지 않아야 합니다.
+
+## 반복 이의에서 원래 질문을 인접한 참인 사실로 바꾼 사건
+
+### 사건과 서로 다른 최초 단절
+
+선행 사건에서는 Agent 추천의 비용·근거를 사용자가 반복해 물었는데도 일반적 장점으로 기존
+추천을 방어했습니다. `bff3a61`은 같은 근거 공백의 반복 이의를 최초 비교 실패로 처리하고,
+일반적 장점이나 downstream 절차로 결론을 방어하지 못하게 했습니다.
+
+이번 사건에서는 재사용 Scenario의 두 archive 전달 항목이 같은 상태 전이를 중복하는 이유를
+사용자가 물었습니다. Agent는 처음 중복 가능성을 인정한 뒤, 사용자가 Scenario의 존재 이유를
+다시 묻자 `Scenario가 live 상태를 소유한다`는 사실로 두 영구 항목을 다시 정당화했습니다.
+최초 단절은 `반복 이의 → 최초 질문과 선택 span 복원`입니다. 원래 질문의 `같은 전이를 왜
+두 번 두는가`를 유지하지 않고 `Scenario가 live 상태를 소유하는가`로 교체했습니다.
+
+### 이전 방어의 생애주기와 2차 시스템 원인
+
+이번 답변 전 explain-tech의 반론 재평가와 문서 topology reference를 실제로 읽었습니다.
+`bff3a61`의 통제는 반복 이의를 이전 비교 실패로 처리하도록 했지만, 복합 artifact에서
+`선택 span의 exact 하위 owner·수명`과 `enclosing artifact 전체 owner`를 분리하는 input
+identity는 명시하지 않았습니다. 그래서 파일 전체에 대한 참인 사실이 선택 문장의 위치와
+중복을 정당화하는 근거처럼 소비됐습니다.
+
+다섯 번의 인과를 닫으면 직접 오류는 중복 단계를 끝까지 옳다고 방어한 것, 허용 원인은
+Scenario의 file-level owner를 item-level owner로 확대한 것, interface 공백은 후속 이의마다
+선택 span·원래 질문 축·하위 owner·정보 수명을 같은 identity로 보존하지 않은 것입니다.
+검증 우회는 읽어야 할 reference와 source를 읽었다는 사실을 원래 질문에 답했다는 증거로
+대체한 것입니다. 2차 root는 반론 처리 trigger의 부재가 아니라 복합 owner에서 claim scope를
+고정하지 않은 consumer interface입니다.
+
+### 통제 처분과 남은 위험
+
+- 기존 반론 재평가, 반복 질문 repair와 문서 topology source-first 통제는 유지합니다.
+- Explain-tech owner를 강화해 선택 span·원래 질문 축·exact section owner·정보 수명·빈
+  환경 재생 효과를 후속 이의마다 결속합니다.
+- 제품별 `Scenario` 규칙, 답변별 원장, 외부 dispatcher나 별도 verifier는 추가하지 않습니다.
+
+Root 제거 반사실에서는 Scenario가 live 상태를 소유한다는 사실을 확인해도, 그 사실이 영구
+recipe의 같은 archive 전달 두 번을 정당화하지 못한다고 첫 문장에서 유지했을 것입니다.
+Release checklist의 현재 hotfix 상태로 명사를 바꿔도 같은 결론이어야 하며, 실제로 서로 다른
+두 전이나 단일 책임 artifact의 단순 질문은 불필요하게 합치거나 확대하지 않아야 합니다.
+독립 행동 검증은 통제 후보의 모델링 효과와 현재 evaluator·runner invocation만 증명하며,
+미래 설명 actor의 실제 호출을 완료로 승격하지 않습니다.

@@ -1,10 +1,11 @@
 # ECR·IAM image 공급 기반
 
-이 문서는 private ECR repository와 GitHub OIDC push identity, EC2 pull identity의 관계,
+이 상세 SOT는 private ECR repository와 GitHub OIDC push identity, EC2 pull identity의 관계,
 현재 선택·권한·대안과 재검토 조건을 소유합니다. AWS resource를 실제로 생성·연결하는
-절차는 [ECR·IAM 최초 구축 runbook](../../operations/130-ecr-iam-provisioning-runbook.md),
-반복 publish·pull 원리는 [Container image delivery](200-container-image-delivery.md)가
-소유합니다.
+절차는 [130 ECR·IAM 최초 구축 runbook](../../operations/130-ecr-iam-provisioning-runbook.md)이
+소유합니다. 반복 workflow의 trigger·step·handoff는
+[200 CI/CD pipeline](200-ci-cd-pipeline.md), image identity·build와 kubelet pull 원리는
+[210 Container image delivery](210-container-image-delivery.md)가 소유합니다.
 
 ## 세 resource가 나뉘는 이유
 
@@ -35,7 +36,7 @@ runtime node에 write가 생기거나 GitHub trust가 node 권한과 섞이므�
 | Encryption | AES-256 AWS managed 기본 | 별도 KMS policy·cross-account 요구 없이 ECR at-rest 기본 암호화를 사용합니다. | Customer managed KMS 요구 |
 | Scanning | Registry basic scan-on-push가 `car-community` 포함 | 새로 게시한 image의 지원 OS package에서 알려진 취약점을 무료로 검사합니다. 결과는 관찰 정보이며 현재 image 게시·배포를 자동 차단하지 않습니다. | 언어 package 검사·지속 재검사·severity 배포 gate가 필요할 때 Enhanced scanning과 비용을 함께 결정 |
 | Lifecycle policy | 없음 | 보존 revision·기간이 미정이며 잘못된 rule이 rollback digest를 지울 수 있습니다. 공급 자체의 필수 조건도 아닙니다. | 배포 rollback window와 보존 기간·개수 확정 |
-| Tag | `project=car-community`, `managed-by=manual` | Project와 현재 Console 관리 방식을 표시합니다. Repository는 환경 공용이라 `environment=stg`를 붙이지 않습니다. | Terraform 전환 시 `managed-by` 갱신 |
+| Tag | `project=car-community`, `managed-by=manual` | Project와 현재 Console 관리 방식을 표시합니다. Repository는 환경 공용이라 `environment=stg`를 붙이지 않습니다. | 구성 소유권 자동화 시 `managed-by` 갱신 |
 
 Repository URI 계약은
 `<ACCOUNT_ID>.dkr.ecr.ap-northeast-2.amazonaws.com/car-community`입니다. Resource가 private이고
@@ -60,7 +61,7 @@ Provider 자체는 `car-community` 권한을 주지 않습니다. Role
 
 ```text
 aud = sts.amazonaws.com
-sub = repo:ckn1070/community:ref:refs/heads/main
+sub = repo:ckn1070/car-community:ref:refs/heads/main
 ```
 
 현재 repository는 2026-06-02에 생성됐고 GitHub OIDC 설정 조회 결과
@@ -128,6 +129,21 @@ EC2 최초 launch 때 IAM profile이 없었고 image 공급 요구 확정 뒤 �
 교체하지 않습니다. 이 role은 node 전체 identity이며 application Pod의 일반 AWS API 권한을
 뜻하지 않습니다.
 
+Staging external ingress를 구축할 때는 기존 ECR-only role/profile을 직접
+변형하지 않고 `stg-car-community-k8s-node-role`과 같은 이름의 profile을 새로
+만듭니다. 새 role에는 다음 customer-managed policy를 따로 연결합니다.
+
+- `car-community` exact repository의 ECR pull policy
+- AWS Load Balancer Controller `3.5.0` official policy를 staging VPC로 제한한 policy
+
+이렇게 하면 ECR read와 controller AWS resource lifecycle의 purpose·diff·rollback을
+분리하면서 EC2에 한 번에 하나만 연결할 수 있는 instance profile 제약을
+지킵니다. 새 credential effective 확인, 기존 private ECR exact digest pull regression,
+controller와 ALB create/delete lifecycle이 모두 통과하기 전에는 기존
+`car-community-k8s-node-ecr-pull-role` role/profile을 삭제하지 않습니다.
+이는 최초 image 공급 계약을 폐기한 것이 아니라 ingress platform capability를
+추가하는 전환 경계입니다.
+
 ## 선택하지 않은 대안과 trade-off
 
 | 대안 | 현재 제외 이유 | 재검토 조건 |
@@ -158,25 +174,37 @@ EC2-only trust·pull permission과 instance profile 연결을 live 확인해야 
 - Kubelet credential provider가 instance role로 token을 얻었습니다.
 - Node가 exact digest를 pull·실행했습니다.
 
-이 세 결과는 [Container image delivery](200-container-image-delivery.md)의 반복 actor 흐름과
-각 live procedure가 소유합니다.
+Workflow actor·step·digest handoff는 [200 CI/CD pipeline](200-ci-cd-pipeline.md), kubelet
+provider·exact digest pull 원리는 [210 Container image delivery](210-container-image-delivery.md),
+실제 live 결과는 각 numbered operations runbook이 소유합니다.
 
 ## 변경 시 동반 확인
 
 - Repository 이름·region 변경은 workflow 환경값, 두 IAM repository ARN, node provider
-  match·smoke target과 Terraform target을 함께 바꿉니다.
+  match·smoke target과 현재 구성 SOT를 함께 바꿉니다.
 - Source repository·publish branch, GitHub Environment와 immutable subject 설정 변경은
   OIDC `sub`, workflow trigger·guard와 branch protection을 함께 바꿉니다.
 - Node architecture 변경은 repository IAM과 무관하지만 publish platform·digest consumer와
   node smoke를 함께 검증합니다.
 - Lifecycle policy를 도입하기 전에 GitOps rollback이 필요로 하는 digest 보존 window를
   정합니다.
+- EC2 profile을 ingress용 composite role로 바꾸면 기존 kubelet credential provider가 같은
+  repository를 계속 pull하는지 exact digest smoke를 다시 실행합니다.
+
+Lifecycle·구성 소유권·workload identity 후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
 
 ## 근거와 관련 문서
 
-- **실제 AWS 최초 구축**: [ECR·IAM 최초 구축 runbook](../../operations/130-ecr-iam-provisioning-runbook.md)
-- **반복 image 흐름**: [Container image delivery](200-container-image-delivery.md)
-- **EC2 node identity**: [EC2 Kubernetes node](110-ec2-kubernetes-node.md)
+- **실제 AWS 최초 구축**: [130 ECR·IAM 최초 구축 runbook](../../operations/130-ecr-iam-provisioning-runbook.md)
+- **반복 workflow 흐름**: [200 CI/CD pipeline](200-ci-cd-pipeline.md)
+- **Image identity·build·pull 원리**: [210 Container image delivery](210-container-image-delivery.md)
+- **EC2 node identity**: [120 EC2 Kubernetes node](120-ec2-kubernetes-node.md)
+- **Ingress를 위한 node role 전환과 LBC policy**:
+  [170 AWS Load Balancer ingress](170-aws-load-balancer-ingress.md)
+- **Profile 교체·ECR regression live 절차**:
+  [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
 - [ECR private repository 생성](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-create.html)
 - [ECR private repository](https://docs.aws.amazon.com/AmazonECR/latest/userguide/Repositories.html)
 - [ECR tag immutability](https://docs.aws.amazon.com/AmazonECR/latest/userguide/image-tag-mutability.html)

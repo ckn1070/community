@@ -4,15 +4,15 @@
 kubelet이 EC2 instance profile의 임시 credential을 사용하도록 **최초 구성**하는 script를
 소유합니다. 실제 private image pull 점검은
 [verify/ecr](../../verify/ecr/README.md)이 소유합니다. ECR·IAM 구성 원리는
-[ECR and IAM foundation](../../../docs/project/infrastructure/120-ecr-iam-foundation.md),
-반복 image delivery 원리는
-[Container image delivery](../../../docs/project/infrastructure/200-container-image-delivery.md)를
+[130 ECR and IAM foundation](../../../docs/project/infrastructure/130-ecr-iam-foundation.md),
+Image identity·build와 kubelet pull 원리는
+[210 Container image delivery](../../../docs/project/infrastructure/210-container-image-delivery.md)를
 확인합니다. 실제 최초 구성은
-[ECR and IAM provisioning](../../../docs/operations/130-ecr-iam-provisioning-runbook.md),
-[GitHub ECR publishing configuration](../../../docs/operations/320-github-ecr-publishing-configuration-runbook.md),
-[Kubelet ECR credential provider installation](../../../docs/operations/330-kubelet-ecr-credential-provider-installation-runbook.md),
+[130 ECR and IAM provisioning](../../../docs/operations/130-ecr-iam-provisioning-runbook.md),
+[320 GitHub ECR publishing configuration](../../../docs/operations/320-github-ecr-publishing-configuration-runbook.md),
+[330 Kubelet ECR credential provider installation](../../../docs/operations/330-kubelet-ecr-credential-provider-installation-runbook.md),
 반복 pull 검증은
-[Private ECR image pull verification](../../../docs/operations/410-private-ecr-image-pull-verification-runbook.md)이
+[410 Private ECR image pull verification](../../../docs/operations/410-private-ecr-image-pull-verification-runbook.md)이
 소유합니다.
 
 ## `100-configure-kubelet-credential-provider.sh` 공개 계약

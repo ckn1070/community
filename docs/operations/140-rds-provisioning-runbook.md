@@ -3,7 +3,7 @@
 AWS Console에서 EC2 Kubernetes node가 사용할 private RDS for PostgreSQL DB instance를
 처음 생성하고 network·credential·관측·backup 설정을 확인하는 절차입니다. Database
 구조, Secrets Manager rotation, 가용성·비용 선택과 대안은
-[RDS PostgreSQL](../project/infrastructure/130-rds-postgresql.md)이 소유합니다.
+[140 RDS PostgreSQL](../project/infrastructure/140-rds-postgresql.md)이 소유합니다.
 
 ## 사용 시점과 actor
 
@@ -11,7 +11,9 @@ AWS Console에서 EC2 Kubernetes node가 사용할 private RDS for PostgreSQL DB
   처음 만들 때 사용합니다.
 - **actor**: RDS, Secrets Manager, security group·subnet group과 monitoring role을
   생성할 권한이 있는 AWS Console 운영자입니다.
-- **실행 위치**: 서울 리전의 `Aurora and RDS` Console입니다.
+- **기본 실행 위치**: 서울 리전의 `Aurora and RDS` Console입니다.
+
+생성 뒤 EC2 연결 checkpoint만 해당 section의 target EC2 선언으로 override합니다.
 
 ## 전제와 입력
 
@@ -27,9 +29,7 @@ AWS Console에서 EC2 Kubernetes node가 사용할 private RDS for PostgreSQL DB
 
 ### 1. DB subnet group 생성
 
-DB subnet group은 새 subnet을 만드는 resource가 아니라 RDS가 network interface를 배치할
-수 있는 **기존 subnet 목록**입니다. `Aurora and RDS → Subnet groups → Create DB subnet
-group`에서 다음 값을 입력합니다.
+`Aurora and RDS → Subnet groups → Create DB subnet group`에서 다음 값을 입력합니다.
 
 | 옵션 | 입력값 |
 | --- | --- |
@@ -38,6 +38,9 @@ group`에서 다음 값을 입력합니다.
 | AZ | `ap-northeast-2a`, `ap-northeast-2b` |
 | subnet 1 | `stg-car-community-subnet-private1-ap-northeast-2a`, `10.0.128.0/20` |
 | subnet 2 | `stg-car-community-subnet-private2-ap-northeast-2b`, `10.0.144.0/20` |
+
+DB subnet group은 새 subnet을 만드는 resource가 아니라 RDS가 network interface를 배치할
+수 있는 **기존 subnet 목록**입니다.
 
 선택 목록에 `ap-northeast-2c`·`2d`가 보여도 해당 VPC에 실제 subnet이 없으면 추가할 수
 없습니다. AZ 이름 선택만으로 subnet이나 CIDR이 만들어지지 않습니다. Public subnet을
@@ -197,7 +200,7 @@ traffic pattern이 확정되지 않아 AWS가 지정하도록 두며 production 
 `데이터베이스 생성`을 누르기 전에 Console이 현재 region·시점·On-Demand 가정으로
 표시하는 월별 estimate와 화면이 안내하는 별도 과금 가능성을 다시 확인합니다. 과거
 화면의 point-in-time estimate와 포함·미포함 범위는
-[RDS PostgreSQL 개념](../project/infrastructure/130-rds-postgresql.md#당시-비용-estimate의-provenance)이
+[140 RDS PostgreSQL 개념](../project/infrastructure/140-rds-postgresql.md#당시-비용-estimate의-provenance)이
 소유하며 현재 수용값으로 사용하지 않습니다.
 
 모든 입력이 일치하면 `데이터베이스 생성`을 선택합니다.
@@ -215,6 +218,8 @@ DB instance가 `사용 가능`이 된 뒤 다음을 확인합니다.
   않습니다.
 - encryption, automated backup, monitoring·log export와 deletion protection이
   입력표와 같습니다.
+
+**실행 위치:** SSH로 접속한 target EC2 terminal
 
 최종 연결 checkpoint는 EC2에서 private DNS, TCP `5432`, 현재 Secrets Manager credential
 인증으로 `carmunity` database에 접속하는 것입니다. 안전한 secret 조회·주입 실행 방식이
@@ -235,6 +240,11 @@ DB instance가 `사용 가능`이 된 뒤 다음을 확인합니다.
   실패하면 application 연결 단계로 진행하지 않습니다.
 
 ## 복구·재개
+
+**실행 위치:** RDS·Secrets Manager·subnet·security group 확인과 수정은 AWS Console,
+private DNS·TCP `5432`·credential 인증 재확인은 target EC2 terminal에서 수행합니다.
+
+**시작 directory:** Target EC2 terminal은 제한 없음
 
 1. `Events`와 DB instance 상태에서 생성 실패 원인을 확인합니다.
 2. Network 오류면 VPC, DB subnet group의 두 private subnet과 자동 security group
@@ -260,5 +270,5 @@ DB instance가 `사용 가능`이 된 뒤 다음을 확인합니다.
 
 ## 공식 기준과 관련 문서
 
-- **선택·영향·대안**: [RDS PostgreSQL](../project/infrastructure/130-rds-postgresql.md)
+- **선택·영향·대안**: [140 RDS PostgreSQL](../project/infrastructure/140-rds-postgresql.md)
 - **상위 절차**: [AWS 최초 구축](100-aws-initial-provisioning-runbook.md)

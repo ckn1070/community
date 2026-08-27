@@ -2,13 +2,15 @@
 
 준비된 runtime과 Kubernetes component로 단일 node control plane을 최초 초기화하는
 절차입니다. Kubeadm config, cluster name, endpoint, CIDR과 kube-proxy 선택 근거는
-[Kubernetes cluster 개념](../project/infrastructure/140-kubernetes-cluster.md)이 소유합니다.
+[150 Kubernetes cluster 개념](../project/infrastructure/150-kubernetes-cluster.md)이 소유합니다.
 
 ## 사용 시점과 actor
 
 - **시점**: [Kubernetes component 설치](230-kubernetes-components-installation-runbook.md)가
   완료되고 Pod·Service CIDR이 연결할 network와 겹치지 않음을 확인한 뒤입니다.
-- **actor·위치**: 운영자가 SSH로 접속한 EC2 terminal에서 `sudo`로 실행합니다.
+- **actor**: Target EC2에서 `sudo`를 사용할 수 있는 운영자
+- **기본 실행 위치**: SSH로 접속한 target EC2 terminal
+- **기본 시작 directory**: 제한 없음
 - **입력**: 인자와 환경변수는 없습니다.
 
 이 단계는 Calico를 설치하거나 일반 사용자 home에 kubeconfig를 복사하지 않습니다.
@@ -16,8 +18,7 @@
 ## 실행
 
 ```bash
-cd /home/ubuntu/car-community-scripts
-sudo ./bootstrap/kubernetes/400-initialize-cluster.sh
+sudo /home/ubuntu/car-community-scripts/bootstrap/kubernetes/400-initialize-cluster.sh
 ```
 
 Script는 현재 cluster marker를 `pristine`, `complete`, `partial`로 구분합니다. `pristine`에서만
@@ -70,5 +71,5 @@ Exit code `0`과 다음 상태를 모두 확인해야 완료입니다.
 - **다음 실행**: [Calico network 설치](250-calico-network-installation-runbook.md)
 - **선택 작업**: 일반 사용자 cluster-admin credential이 필요할 때만
   [Admin kubeconfig 배포](510-kubernetes-admin-kubeconfig-runbook.md)
-- **개념·선택 근거**: [Kubernetes cluster](../project/infrastructure/140-kubernetes-cluster.md)
+- **개념·선택 근거**: [150 Kubernetes cluster](../project/infrastructure/150-kubernetes-cluster.md)
 - **구현 source**: [`400-initialize-cluster.sh`](../../scripts/bootstrap/kubernetes/400-initialize-cluster.sh)

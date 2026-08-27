@@ -1,9 +1,9 @@
 # Argo CD platform
 
-이 문서는 단일 node cluster에 적용한 Argo CD Core의 형태, repository·identity·project·
+이 상세 SOT는 단일 node cluster에 적용한 Argo CD Core의 형태, repository·identity·project·
 application 경계와 선택 이유를 소유합니다. 실제 Core 설치와 private repository 최초 연결은
 [Repository·delivery platform 최초 구축 runbook](../../operations/300-repository-and-delivery-platform-bootstrap-runbook.md)의
-단계별 절차가 소유하고, 평소 배포는 [GitOps application delivery](210-gitops-application-delivery.md)가
+단계별 절차가 소유하고, 평소 배포는 [220 GitOps application delivery](220-gitops-application-delivery.md)가
 소유합니다.
 
 ## Platform mental model
@@ -70,6 +70,9 @@ deploy/
 │   └── kustomization.yaml
 └── overlays/
     └── stg/
+        ├── ingress.yaml
+        ├── pre-sync/
+        ├── service-nodeport-patch.yaml
         └── kustomization.yaml
 ```
 
@@ -127,10 +130,10 @@ server-side apply하고 fresh reconciliation까지 검증합니다. Script는 �
 | --- | --- | --- |
 | Repository Secret | `car-community` project scope, exact Git URL | 다른 project가 credential을 일반 사용하지 않게 합니다. |
 | AppProject | `car-community` | Application의 source·destination·cluster-scoped resource 경계를 분리합니다. |
-| Source | Exact `https://github.com/ckn1070/community.git` | 다른 repository를 읽지 않습니다. Application path는 별도로 제한합니다. |
+| Source | Exact `https://github.com/ckn1070/car-community.git` | 다른 repository를 읽지 않습니다. Application path는 별도로 제한합니다. |
 | Destination | In-cluster exact server·`car-community` namespace | 현재 application target 한 곳만 허용합니다. |
 | Cluster-scoped allow | 없음 | `car-community` Namespace는 actual Secret을 적용하는 application bootstrap만 생성합니다. Argo CD가 owner를 나누지 않습니다. |
-| Namespaced allow-list | Core `ConfigMap`·`Service`, `apps/Deployment`, `batch/Job` | 현재 Git manifest가 직접 적용하는 kind만 허용합니다. Git 밖 Secret은 허용하지 않습니다. |
+| Namespaced allow-list | Core `ConfigMap`·`Service`, `apps/Deployment`, `batch/Job`, `networking.k8s.io/Ingress` | Git manifest가 직접 소유하는 kind만 허용합니다. ALB·Target Group·listener·SG는 LBC가 AWS에 만들므로 Argo에 cluster-scoped wildcard가 필요하지 않고 Git 밖 Secret도 허용하지 않습니다. |
 | Application | `car-community-stg`, `main`, exact `deploy/overlays/stg` | 현재 한 application·environment를 직접 표현합니다. |
 
 Repository 연결 전에 GitOps bootstrap은 application bootstrap 소유 Namespace를 확인합니다.
@@ -167,6 +170,10 @@ reconcile 뒤 condition 없음, `Synced`, `Healthy`를 모두 확인합니다.
 - Core component·CRD 최초 설치는 bootstrap 단계입니다.
 - Repository Secret 구성, Git에 추적된 AppProject·Application의 최초 apply와 첫 sync는 별도 bootstrap 단계입니다.
   Private repository·GitHub App·non-empty overlay·node image pull이 준비돼야 완료할 수 있습니다.
+- 이미 private repository와 Application이 연결된 뒤 AppProject permission만 늘리는
+  change는 tracked YAML을 `car-community-bootstrap` field manager로 one-time
+  server-side apply합니다. Repository Secret과 Application을 다시 소유하는 GitOps
+  `200` 전체를 재실행하지 않습니다.
 - 후속 digest 배포와 rollback은 GitOps PR 반복 lifecycle입니다.
 - GitHub App private key 교체는 최초 resource를 재생성하지 않는 operation lifecycle입니다.
 
@@ -177,14 +184,17 @@ manifest가 참조하는 ECR image와 node pull이 필요합니다. Artifact 전
 ## Repository capability 경계
 
 Repository source에는 runtime·migrator DB role과 Git 밖 prerequisite bootstrap,
-Service·Deployment·단일 Migration PreSync Job과 staging Kustomize overlay가 있습니다.
-다음은 현재 repository source가 완료했다고 주장하지 않습니다.
+Service·Deployment·단일 Migration PreSync Job, staging NodePort patch·Ingress와
+Kustomize overlay가 있습니다. AWS Load Balancer Controller release는 Argo 소유가
+아니라 별도 verified Helm bootstrap 소유입니다.
+현재 repository에는 publish 결과 digest를 변경하는 pull request workflow와 Git write
+identity, Argo full/HA·SSO·UI·API endpoint·multi-cluster가 구현되어 있지 않습니다. 이 미래
+후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
 
-- Publish 결과 digest를 변경하는 pull request workflow와 Git write identity
-- AWS Load Balancer Controller·Ingress·ALB·HTTPS·DNS
-- Argo full/HA·SSO·UI·API endpoint·multi-cluster
-
-Local script·contract test와 외부 환경의 live 증거는 구분합니다. 현재 staging 실행 상태는
+AWS Load Balancer Controller·IAM·ACM·ALB·HTTPS·DNS의 live 완료는 repository capability가
+아니며, local script·contract test와 외부 환경의 live 증거를 구분합니다. 현재 staging 실행 상태는
 [Staging 단일 node 전체 구축 시나리오](../../operations/scenarios/100-staging-single-node-bootstrap.md)가
 소유합니다.
 
@@ -195,7 +205,10 @@ Local script·contract test와 외부 환경의 live 증거는 구분합니다. 
   [Application delivery 최초 bootstrap runbook](../../operations/350-application-delivery-bootstrap-runbook.md)
 - **현재 staging 실행 상태**:
   [Staging 단일 node 전체 구축 시나리오](../../operations/scenarios/100-staging-single-node-bootstrap.md)
-- **반복 배포·rollback 원리**: [GitOps application delivery](210-gitops-application-delivery.md)
+- **Ingress permission·owner·live 구축 경계**:
+  [170 AWS Load Balancer ingress](170-aws-load-balancer-ingress.md),
+  [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
+- **반복 배포·rollback 원리**: [220 GitOps application delivery](220-gitops-application-delivery.md)
 - **Argo CD 상태·reconcile 진단**:
   [180 Argo CD reconciliation 진단](../../operations/diagnostics/180-argocd-reconciliation.md)
 - **Credential 교체 원리**:

@@ -132,6 +132,32 @@ oracle입니다.
 않습니다. 대표 문서가 나머지 sibling의 고유 source를 가리거나, final을 authoring loop로
 사용하는 회귀가 생기면 공통 contract와 per-document 고유 inventory 경계를 함께 재검토합니다.
 
+## 결정 10. Scenario의 재사용 흐름과 live delta를 실행 전이로 구분합니다
+
+### 배경
+
+Staging Scenario는 재사용 가능한 전체 순서와 한 환경의 현재 상태를 함께 소유하지만, 새
+Super Admin script가 기존 EC2에 없다는 live delta를 `확장 EC2 실행 파일 재전달`이라는 두
+번째 영구 실행 항목으로 추가했습니다. 기존 전달 완료 snapshot도 그대로 남아, 빈 환경에서
+Scenario를 재생하면 같은 archive 전달을 두 번 수행하는 recipe가 됐습니다.
+
+### 선택
+
+- 재사용 실행 항목과 복합 항목의 하위 행동을 actor·artifact·effective target state·상태
+  전이·완료 조건으로 대조합니다. 이 값이 같고 revision·시점·임시 경로·`확장`·`재전달`
+  표현만 다르면 기존 항목을 현재 계약으로 갱신합니다.
+- 이미 구축한 환경에 새 inventory를 적용해야 하는 사실은 현재 live 상태·다음 행동·blocker가
+  소유합니다. 실행 뒤에는 새 현재 상태로 교체하고 영구 단계나 과거 완료 snapshot으로
+  남기지 않습니다.
+- 작성자 대조와 specialist final은 후보를 빈 환경에서 순서대로 재생해 같은 상태 전이가 한
+  번만 나타나는지 확인합니다.
+
+### 배제 대안과 재검토 조건
+
+특정 script 이름이나 재전달을 금지하지 않고, 실제로 독립된 상태 전이와 복구 checkpoint는
+별도 항목으로 유지합니다. 서로 다른 작업을 이름이 비슷하다는 이유로 합치거나, 현재 live
+상태를 Scenario 밖의 SOT에 옮겨 중복하면 이 경계를 재검토합니다.
+
 ## 배제한 대안
 
 | 대안 | 배제 이유 |

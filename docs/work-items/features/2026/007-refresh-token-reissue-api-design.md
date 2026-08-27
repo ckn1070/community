@@ -143,6 +143,26 @@ rotation은 하나의 transaction에서 처리합니다.
 
 이 방식은 새 schema 없이 기존 `refresh_token` 구조와 pessimistic write lock으로 구현했습니다.
 
+### Reuse와 만료의 판정 우선순위
+
+폐기·교체 상태는 token의 현재 사용 가능 여부뿐 아니라 이미 발급한 family가 탈취됐을 수
+있다는 보안 신호입니다. 따라서 row lock 뒤에는 만료 시각보다 reuse 상태를 먼저 판정합니다.
+
+| token 상태 | 처분 | 감사 결과 | public 응답 |
+| --- | --- | --- | --- |
+| `revoked_at` 또는 `replaced_by_token_id` 있음 | 활성 family를 `REUSE_DETECTED`로 폐기 | `TOKEN_REFRESH/FAILURE/TOKEN_REUSE_DETECTED` | `401 INVALID_REFRESH_TOKEN` |
+| 폐기·교체 이력 없음, 만료됨 | 상태 변경 없이 거부 | 기록하지 않음 | `401 INVALID_REFRESH_TOKEN` |
+| 폐기·교체 이력 없음, 유효함 | account 상태 확인 뒤 rotation 진행 | 성공 또는 account 상태 거부 정책 적용 | 기존 계약 유지 |
+
+reuse 후보가 동시에 만료됐더라도 첫 번째 행을 적용합니다. 만료는 token의 시간상 유효성만
+끝내지만, 폐기·교체 이력은 이미 사용된 token이 다시 제출됐다는 사실을 나타내므로 활성
+replacement를 남기지 않습니다. 반대로 폐기·교체 이력이 없는 단순 만료에는 family 폐기나
+reuse 감사 이벤트를 만들지 않습니다.
+
+이 우선순위는 `RotateRefreshTokenService`가 소유합니다. 기존
+`RefreshTokenRecord.isReuseCandidate()`와 lifecycle store port로 충분히 표현되므로 별도
+`RefreshTokenRotationPolicy`, port, schema를 추가하지 않습니다.
+
 ### Account 상태 정책
 
 refresh token은 로그인 시점의 account 상태를 영구 보장하지 않습니다.
@@ -195,6 +215,17 @@ refresh token은 로그인 시점의 account 상태를 영구 보장하지 않�
 - 결정: 첫 재발급 구현에 reuse detection을 포함합니다.
 - 이유: 기존 schema가 `family_id`, `replaced_by_token_id`, `REUSE_DETECTED`를 이미 준비했고, rotation만 구현하고 reuse detection을 미루면 탈취 token 재사용을 탐지해도 활성 family를 남길 수 있습니다.
 
+### Reuse Detection 판정 우선순위
+
+- 결정: `revoked_at` 또는 `replaced_by_token_id`가 있는 token은 만료 여부와 관계없이 reuse로
+  판정하며, reuse 후보가 아닐 때만 만료를 검사합니다.
+- 이유: reuse 상태는 활성 replacement family를 폐기해야 하는 보안 신호이고, 단순 만료는
+  상태 변경과 감사 기록이 없는 유효성 실패입니다. 만료를 먼저 적용하면 탈취 신호와 활성
+  family가 남습니다.
+- 배제 대안: 만료를 먼저 검사하는 방식은 동일 401 응답은 유지하지만 family 폐기와 감사
+  계약을 누락하므로 사용하지 않습니다.
+- 재검토 조건: token family 모델이나 reuse event 정책이 영구 SOT에서 변경됩니다.
+
 ### Refresh Token 전달 방식
 
 - 결정: 로그인 API와 동일하게 request/response body를 사용합니다.
@@ -220,7 +251,7 @@ refresh token은 로그인 시점의 account 상태를 영구 보장하지 않�
 ## 관련 문서
 
 - **선행 token·schema 결과**: [DB Schema](001-account-auth-db-schema.md), [회원 로그인](005-member-login-api.md), [인증 토큰 기반](006-auth-token-foundation.md)
-- **업무·데이터 기준**: [Account domain](../../../domain/100-account.md), [Account 데이터 모델](../../../project/220-account-auth-data-model.md)
+- **업무·데이터 기준**: [Account domain](../../../domain/100-account.md), [120 Auth Event 정책](../../../domain/120-auth-event-policy.md), [Account 데이터 모델](../../../project/220-account-auth-data-model.md)
 - **구조·API 기준**: [모듈 지도](../../../project/210-module-map.md), [경계와 매핑](../../../architecture/220-boundary-and-mapping-rules.md), [REST API 설계](../../../architecture/230-rest-api-design.md)
 - **보안·logging 기준**: [Spring Security](../../../tech-stack/220-spring-security.md), [로깅 기준](../../../tech-stack/280-logging.md)
 - **설계 절차**: [설계 워크플로우](../../../workflow/110-design-workflow.md)

@@ -43,6 +43,10 @@ Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 ac
 - Argo CD Core `3.5.0` 설치와 현재 private `car-community` repository의
   `deploy/overlays/stg`를 read-only GitHub App으로 연결하는 script·runbook, 같은 immutable
   image를 사용하는 단일 migration PreSync Job과 Deployment·Service manifest가 구현됐습니다.
+- Staging public API를 위한 AWS Load Balancer Controller `3.5.0` bootstrap과
+  `stg-api.ronams.com`의 NodePort·Ingress desired state가 구현됐습니다. Internet-facing ALB,
+  ACM certificate와 Cloudflare DNS-only CNAME을 포함한 실제 환경의 현재 상태와 검증 결과는
+  이 Reference/SOT에 복제하지 않고 Staging 전체 구축 시나리오에서 확인합니다.
 - 공개 DB URL·RDS CA·notification 설정은 Git/Kustomize가, runtime·migrator·auth·notification
   actual Secret은 local `.env` 기반 bootstrap이 소유합니다. 구축 후 Resend key 교체와 새 Pod
   rollout operation source도 구현했습니다.
@@ -54,7 +58,7 @@ Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 ac
 - **현재 구조**: [프로젝트 아키텍처](200-current-architecture.md), [모듈 지도](210-module-map.md)
 - **제품 범위**: [기능 범위](../product/200-feature-scope.md)
 - **기술 기준**: [현재 기술 스택](../tech-stack/100-current-stack.md)
-- **현재 infrastructure 개념과 선택**: [Infrastructure system](300-infrastructure-system.md),
+- **현재 infrastructure 개념과 선택**: [100 Infrastructure overview](infrastructure/100-infrastructure-overview.md),
   [Infrastructure 개념 목차](infrastructure/000-index.md)
 - **실제 구축·반복 점검·변경·복구 절차**: [운영 문서 목차](../operations/000-index.md)
 - **Staging 전체 구축의 현재 live 상태와 재개 위치**:

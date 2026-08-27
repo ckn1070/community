@@ -267,6 +267,31 @@ test_fstab_inventory_failure_stops_before_mutation() (
   fi
 )
 
+test_install_host_operator_packages_installs_jq() (
+  apt-get() {
+    printf '%s\n' "$*"
+  }
+
+  assert_equals \
+    "install --yes jq" \
+    "$(install_host_operator_packages)" \
+    "Host 준비 단계가 Super Admin 운영 절차에 필요한 jq를 설치해야 합니다."
+)
+
+test_verify_host_operator_commands_rejects_missing_jq() (
+  command() {
+    if [[ "$1" == "-v" && "$2" == "jq" ]]; then
+      return 1
+    fi
+    builtin command "$@"
+  }
+
+  if (verify_host_operator_commands >/dev/null 2>&1); then
+    echo "FAIL: jq가 없는데 host 준비 postcondition을 통과시키면 안 됩니다." >&2
+    exit 1
+  fi
+)
+
 cleanup_test_root() {
   if [[ -n "${TEST_ROOT}" ]]; then
     rm -rf -- "${TEST_ROOT}"
@@ -287,6 +312,8 @@ main() {
   test_systemd_unit_inventory_failure_is_propagated
   test_disable_swap_rejects_inventory_failure
   test_fstab_inventory_failure_stops_before_mutation "${TEST_ROOT}"
+  test_install_host_operator_packages_installs_jq
+  test_verify_host_operator_commands_rejects_missing_jq
 
   echo "PASS: 100-prepare-host.sh contract tests"
 }

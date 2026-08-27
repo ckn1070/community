@@ -26,19 +26,8 @@ import org.springframework.security.web.access.intercept.RequestAuthorizationCon
 public class ApiSecurityConfig {
 
   private static final String API_PATTERN = "/api/**";
-  private static final String MEMBER_SIGN_UP_PATH = "/api/v1/members";
-  private static final String AUTH_SESSIONS_PATH = "/api/v1/auth/sessions";
-  private static final String AUTH_SESSIONS_REFRESH_PATH = "/api/v1/auth/sessions/refresh";
-  private static final String EMAIL_VERIFICATION_REQUEST_PATH = "/api/v1/auth/verifications/email";
-  private static final String EMAIL_VERIFICATION_CONFIRM_PATH =
-      "/api/v1/auth/verifications/email/confirm";
   private static final String ADMIN_INVITATIONS_PATH = "/api/v1/admin/invitations";
-  private static final String ADMIN_INVITATION_ACCEPTANCES_PATH =
-      "/api/v1/admin/invitations/*/acceptances";
   private static final String ADMIN_INVITATION_DETAIL_PATH = "/api/v1/admin/invitations/*";
-  private static final String PASSWORD_RESET_REQUEST_PATH = "/api/v1/auth/password-resets";
-  private static final String PASSWORD_RESET_CONFIRM_PATH = "/api/v1/auth/password-resets/confirm";
-  private static final String AUTH_LOGOUT_PATH = "/api/v1/auth/logout";
   private static final String AUTH_PASSWORD_PATH = "/api/v1/auth/password";
   private static final String ADMIN_API_PATTERN = "/api/v1/admin/**";
   private static final String FULL_SESSION_AUTHORITY = "SESSION_FULL";
@@ -68,38 +57,27 @@ public class ApiSecurityConfig {
                 sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         // 공개 업무 API는 이 허용 목록에서만 열고, 그 외 /api/**는 Bearer JWT 인증을 요구합니다.
         .authorizeHttpRequests(
-            authorize ->
-                authorize
-                    .requestMatchers(HttpMethod.POST, MEMBER_SIGN_UP_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, AUTH_SESSIONS_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, AUTH_SESSIONS_REFRESH_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, EMAIL_VERIFICATION_REQUEST_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, EMAIL_VERIFICATION_CONFIRM_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, ADMIN_INVITATION_ACCEPTANCES_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, PASSWORD_RESET_REQUEST_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, PASSWORD_RESET_CONFIRM_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.POST, AUTH_LOGOUT_PATH)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.PUT, AUTH_PASSWORD_PATH)
-                    .hasAuthority(FULL_SESSION_AUTHORITY)
-                    .requestMatchers(HttpMethod.POST, ADMIN_INVITATIONS_PATH)
-                    .access(ApiSecurityConfig::hasSuperAdminApiAccess)
-                    .requestMatchers(HttpMethod.DELETE, ADMIN_INVITATION_DETAIL_PATH)
-                    .access(ApiSecurityConfig::hasSuperAdminApiAccess)
-                    .requestMatchers(ADMIN_API_PATTERN)
-                    .access(ApiSecurityConfig::hasAdminApiAccess)
-                    .requestMatchers(API_PATTERN)
-                    .access(ApiSecurityConfig::hasDefaultApiAccess)
-                    .anyRequest()
-                    .permitAll())
+            authorize -> {
+              ApiEndpointAccessPolicy.publicOperations()
+                  .forEach(
+                      operation ->
+                          authorize
+                              .requestMatchers(operation.method(), operation.securityPath())
+                              .permitAll());
+              authorize
+                  .requestMatchers(HttpMethod.PUT, AUTH_PASSWORD_PATH)
+                  .hasAuthority(FULL_SESSION_AUTHORITY)
+                  .requestMatchers(HttpMethod.POST, ADMIN_INVITATIONS_PATH)
+                  .access(ApiSecurityConfig::hasSuperAdminApiAccess)
+                  .requestMatchers(HttpMethod.DELETE, ADMIN_INVITATION_DETAIL_PATH)
+                  .access(ApiSecurityConfig::hasSuperAdminApiAccess)
+                  .requestMatchers(ADMIN_API_PATTERN)
+                  .access(ApiSecurityConfig::hasAdminApiAccess)
+                  .requestMatchers(API_PATTERN)
+                  .access(ApiSecurityConfig::hasDefaultApiAccess)
+                  .anyRequest()
+                  .permitAll();
+            })
         // Security 필터 단계의 401/403도 MVC 예외와 같은 Problem Details schema로 응답합니다.
         .exceptionHandling(
             exceptionHandling ->

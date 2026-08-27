@@ -43,6 +43,9 @@ In Progress
   outline과 상세 대표 문서를 만든 뒤 reviewer
   verdict를 실제 소비한 expansion actor만 나머지 sibling을 작성했습니다. 이 증거는 해당
   fixture 전이만 소유하며 미래 문서 writer의 호출 완료를 주장하지 않습니다.
+- Operations Scenario 보강: 실행 항목과 복합 항목의 하위 행동을 원자화해 같은 artifact의
+  같은 target state 전이를 revision·시점·임시 경로 이름만 바꿔 중복하지 않고, 기존 환경에
+  다시 적용할 live delta는 현재 상태·다음 행동에만 두도록 작성·final oracle을 강화했습니다.
 - 도구 판정: 새 executable, schema, catalog, hook 또는 CI gate는 추가하지 않았습니다. 자연어 의미와 구조는 고정 규칙 검증보다 source-first review가 적합합니다.
 - 미완료 작업: 원래 feature operation map에서 잘못된 Application delivery runbook을 실제
   복구한 뒤 specialist final로

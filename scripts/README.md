@@ -18,8 +18,8 @@ GitOps 기능이라도 최초 구축, 구축 뒤 운영 변경, 반복 점검은
 
 ## EC2 전달 archive 구현 의존성
 
-[Kubernetes bootstrap runbook](../docs/operations/200-kubernetes-bootstrap-runbook.md)이
-전달하는 열세 executable과 세 readable source 중
+[150 EC2 실행 artifact 전달 runbook](../docs/operations/150-ec2-execution-artifact-transfer-runbook.md)이
+전달하는 열네 executable과 세 readable source 중
 `operations/gitops/rotate-private-gitops-repository-credential.sh`만 같은 archive의
 `bootstrap/gitops/200-connect-private-gitops-repository.sh`를 source해 구현을 재사용합니다.
 GitOps `200`은 같은 archive의
@@ -29,8 +29,10 @@ GitOps `200`은 같은 archive의
 `bootstrap/application/200-apply-application-prerequisites.sh`와
 `operations/application/reconcile-notification-secret.sh`는 같은 archive의
 `lib/application-secret.sh`를 source해 Notification Secret render·apply·postcondition을
-공유합니다. 나머지 executable은 archive 밖 repository file을 source하거나 읽지 않습니다.
-따라서 runbook이 지정한 생애주기 경로를 유지해 열여섯 file을 모두 전달하면 repository
+공유합니다. `bootstrap/load-balancer/100-install-aws-load-balancer-controller.sh`는 archive
+밖 repository file을 읽지 않고 검증된 Helm·chart artifact를 실행 중 임시 directory로
+다운로드합니다. 나머지 executable도 archive 밖 repository file을 source하거나 읽지 않습니다.
+따라서 runbook이 지정한 생애주기 경로를 유지해 열일곱 file을 모두 전달하면 repository
 전체를 EC2에 clone하지 않아도 됩니다.
 
 이 경계는 repository 내부 구현 file 의존성만 뜻합니다. 각 script가 요구하는 OS command,

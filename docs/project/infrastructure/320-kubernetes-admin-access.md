@@ -40,8 +40,12 @@ ownership·사용 여부와 credential 회수·교체 영향을 확인합니다.
 소유하지 않습니다. 여러 운영자나 장기 access가 필요하면 cluster-admin 복제 대신 역할별
 RBAC·identity·certificate lifecycle을 별도로 설계합니다.
 
+운영자 identity·credential lifecycle 후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
+
 ## 관련 문서
 
 - **실제 선택 배포 절차**: [Admin kubeconfig runbook](../../operations/510-kubernetes-admin-kubeconfig-runbook.md)
-- **Admin credential 생성 state**: [Kubernetes cluster](140-kubernetes-cluster.md)
+- **Admin credential 생성 state**: [150 Kubernetes cluster](150-kubernetes-cluster.md)
 - **변경·회수 원칙**: [Infrastructure 변경과 복구](300-change-and-recovery-principles.md)

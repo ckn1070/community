@@ -8,6 +8,7 @@
 | 004 | In Progress | [문서 정보 구조와 문서화 절차 개편](004-documentation-information-architecture.md) | [설계](004-documentation-information-architecture-design.md), [History](004-documentation-information-architecture-history.md) | Procedure 실행 계약 검증 완료, Application runbook 복구 진행 |
 | 005 | In Progress | [문서 시스템과 실제 문서군 전면 이관](005-documentation-system-and-corpus-migration.md) | [설계](005-documentation-system-and-corpus-migration-design.md) | 현재 source와 문서 owner의 전체 corpus 대조 진행 |
 | 006 | Done | [Notification 설정 properties 경계 정리](006-notification-configuration-properties.md) | - | notification email 설정을 단일 검증된 `@ConfigurationProperties`로 통합 |
+| 007 | Done | [OpenAPI 실제 응답 계약 동기화](007-openapi-response-contract.md) | - | 실제 응답 schema·보안·공통 오류와 생성 OpenAPI 자동 동기화 |
 
 ## 관련 문서
 

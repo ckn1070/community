@@ -157,11 +157,9 @@ refresh token은 원문을 저장하지 않고 해시만 저장합니다.
 
 refresh token은 rotation을 기본 정책으로 둡니다.
 재발급 시 기존 refresh token은 회수하고 새 token을 발급합니다.
-만료되지 않은 revoked·replaced refresh token의 재사용이 감지되면 같은 `family_id`에
-속한 활성 token을 `REUSE_DETECTED`로 폐기합니다. 현재 구현은 만료를 reuse보다 먼저
-검사하므로 만료된 교체 token은 거부하되 활성 replacement family를 폐기하지 않습니다.
-원래 완료 기준과의 차이는 다시 연
-[Refresh Token 재발급](../work-items/features/2026/007-refresh-token-reissue-api.md)이 소유합니다.
+revoked·replaced refresh token의 재사용이 감지되면 만료 여부와 관계없이 같은 `family_id`에
+속한 활성 token을 `REUSE_DETECTED`로 폐기하고 reuse 감사 이벤트를 남깁니다. 폐기·교체
+이력이 없는 단순 만료 token은 거부하되 family와 감사 이벤트를 변경하지 않습니다.
 로그아웃은 요청으로 전달된 refresh token 하나만 `LOGOUT` 사유로 폐기하며, 전체 기기 로그아웃이나 access token blacklist는 현재 정책에 포함하지 않습니다.
 
 refresh token 재발급 시점에는 account 상태와 role을 다시 조회합니다.

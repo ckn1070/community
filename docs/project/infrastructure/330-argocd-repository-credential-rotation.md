@@ -37,11 +37,11 @@ access를 모두 잃습니다. 따라서 새 key live 증거 뒤 revoke합니다
   실패 때 삭제합니다.
 - `sudo -n`으로 password prompt가 stdin key를 소비하지 못하게 합니다.
 - Kubernetes Secret에는 credential이 지속됩니다. Current self-managed etcd at-rest
-  encryption 부재와 RBAC 경계는 [Argo CD platform](150-argocd-platform.md)이 소유합니다.
+  encryption 부재와 RBAC 경계는 [160 Argo CD platform](160-argocd-platform.md)이 소유합니다.
 
 Secret update 뒤 새 controller revision·informer initial sync·hard refresh로 credential
 소비를 증명하는 canonical mechanism과 freshness 조건은
-[Argo CD platform의 automated reconciliation 계약](150-argocd-platform.md#automated-reconciliation-계약)이
+[160 Argo CD platform의 automated reconciliation 계약](160-argocd-platform.md#automated-reconciliation-계약)이
 소유합니다. Rotation은 그 mechanism을 재사용하지만 AppProject·Application spec과 Core
 resource는 다시 apply하지 않습니다.
 
@@ -71,5 +71,5 @@ Controller rollout 동안 reconciliation은 잠시 중단되지만 기존 worklo
 ## 관련 문서
 
 - **실제 rotation 절차**: [Credential 교체 runbook](../../operations/520-argocd-repository-credential-rotation-runbook.md)
-- **최초 identity·Secret·AppProject 경계**: [Argo CD platform](150-argocd-platform.md)
-- **반복 deployment state**: [GitOps application delivery](210-gitops-application-delivery.md)
+- **최초 identity·Secret·AppProject 경계**: [160 Argo CD platform](160-argocd-platform.md)
+- **반복 deployment state**: [220 GitOps application delivery](220-gitops-application-delivery.md)

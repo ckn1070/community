@@ -3,7 +3,7 @@
 GitHub Actions가 application image를 push하고 EC2 Kubernetes node가 pull할 private ECR
 repository와 두 개의 최소 권한 IAM role을 AWS Console에서 처음 만드는 절차입니다.
 Actor·trust·permission 분리와 image lifecycle 선택은
-[ECR·IAM 기반](../project/infrastructure/120-ecr-iam-foundation.md)이 소유합니다.
+[130 ECR·IAM 기반](../project/infrastructure/130-ecr-iam-foundation.md)이 소유합니다.
 
 ## 사용 시점과 actor
 
@@ -12,16 +12,16 @@ Actor·trust·permission 분리와 image lifecycle 선택은
 - **actor**: ECR repository, IAM OIDC provider·role·inline policy와 EC2 instance
   profile을 생성·연결할 권한이 있는 AWS Console 운영자이며, GitHub repository의 Actions
   OIDC 설정을 읽을 수 있어야 합니다.
-- **실행 위치**: `ap-northeast-2`의 ECR·IAM·EC2 Console과 현재 repository를 읽을 수 있게
-  `gh`가 인증된 신뢰할 수 있는 local shell입니다.
+- **사용하는 실행 위치**: `ap-northeast-2`의 ECR·IAM·EC2 Console과 신뢰할 수 있는 local shell
+- **local shell 실행 조건**: 현재 repository를 읽을 수 있도록 `gh` 인증이 완료됨
 
 ## 전제와 입력
 
 - 현재 12자리 AWS account ID를 확인합니다. 아래 JSON의 `<AWS_ACCOUNT_ID>`는 실제 값으로
   바꾸되 문서 자체를 account별 값으로 수정하지 않습니다.
-- `gh auth status`로 현재 GitHub account가 `ckn1070/community`를 읽을 수 있는지
+- `gh auth status`로 현재 GitHub account가 `ckn1070/car-community`를 읽을 수 있는지
   확인하되 token 값을 출력하거나 복사하지 않습니다.
-- GitHub repository와 배포 branch는 `ckn1070/community`의 `main`입니다.
+- GitHub repository와 배포 branch는 `ckn1070/car-community`의 `main`입니다.
 - ECR repository는 environment 공용 application artifact를 저장하므로 이름에 `stg-`를
   붙이지 않습니다.
 - GitHub push role과 EC2 pull role을 재사용하지 않습니다. access key도 생성하지
@@ -32,6 +32,8 @@ Actor·trust·permission 분리와 image lifecycle 선택은
 ## 정상 실행 순서와 단계별 기대 결과
 
 ### 1. Private ECR repository 생성
+
+**실행 위치:** AWS Console의 `ap-northeast-2` ECR 화면
 
 `Elastic Container Registry → Private registry → Repositories → Create repository`에서
 다음 값을 입력합니다.
@@ -73,6 +75,8 @@ AES-256 암호화, 두 resource tag와 scan-on-push 대상 포함입니다.
 
 ### 2. GitHub OIDC provider 확인·생성
 
+**실행 위치:** AWS Console의 IAM 화면
+
 `IAM → Identity providers`에서 다음 provider를 찾습니다.
 
 | 항목 | 값 |
@@ -102,19 +106,29 @@ provider 생성만으로 AWS 권한이 생기지 않았으며 다음 단계의 r
 
 ### 3. GitHub ECR push role 생성
 
+#### 3.1 Local terminal — OIDC subject 확인
+
+**실행 위치:** `gh` 인증이 완료된 local terminal
+
+**시작 directory:** 제한 없음
+
 Role을 만들기 직전에 GitHub repository의 현재 subject 형식을 읽습니다.
 
 ```sh
-gh api repos/ckn1070/community/actions/oidc/customization/sub \
+gh api repos/ckn1070/car-community/actions/oidc/customization/sub \
   --jq '{use_default, use_immutable_subject, include_claim_keys}'
 ```
 
 현재 repository는 `use_default=true`, `use_immutable_subject=false`이고 image publish job에
 GitHub Environment를 지정하지 않으므로 branch 기반 subject
-`repo:ckn1070/community:ref:refs/heads/main`을 사용합니다. 조회값이 다르거나
+`repo:ckn1070/car-community:ref:refs/heads/main`을 사용합니다. 조회값이 다르거나
 `.github/workflows/publish-image.yml`의 publish job에 `environment`가 추가됐다면 아래 trust를
-그대로 만들지 않고 [ECR·IAM 기반](../project/infrastructure/120-ecr-iam-foundation.md)의
+그대로 만들지 않고 [130 ECR·IAM 기반](../project/infrastructure/130-ecr-iam-foundation.md)의
 subject 변경 조건을 먼저 적용합니다.
+
+#### 3.2 AWS Console — push role과 policy 생성
+
+**실행 위치:** AWS Console의 IAM 화면
 
 Provider 생성 성공 안내의 `역할 할당 → 새 역할 생성`을 선택하거나
 `IAM → Roles → Create role`로 이동합니다. 신뢰할 수 있는 엔터티는
@@ -132,7 +146,7 @@ application을 배포하는 role이 아니라 환경 공용 ECR에 동일한 app
 게시하므로 `stg-`를 붙이지 않습니다. 설명은 다음과 같이 지정합니다.
 
 ```text
-Allows GitHub Actions on ckn1070/community main to push images to ECR car-community.
+Allows GitHub Actions on ckn1070/car-community main to push images to ECR car-community.
 ```
 
 생성 전 검토 화면의 trust policy가 다음 exact 계약과 같은지 확인합니다.
@@ -150,7 +164,7 @@ Allows GitHub Actions on ckn1070/community main to push images to ECR car-commun
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:ckn1070/community:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:ckn1070/car-community:ref:refs/heads/main"
         }
       }
     }
@@ -210,6 +224,8 @@ Environment 공용 artifact publisher이므로 `environment=stg` tag는 추가�
 role ARN을 복사하되 access key를 만들지 않습니다.
 
 ### 4. EC2 ECR pull role과 instance profile 연결
+
+**실행 위치:** AWS Console의 IAM·EC2 화면
 
 `IAM → Roles → Create role → AWS service → EC2`에서 role 이름을
 `car-community-k8s-node-ecr-pull-role`로 지정합니다. Console이 만드는 instance
@@ -278,6 +294,8 @@ instance profile을 연결합니다. EC2 최초 launch 때 profile이 없었던 
 
 ### 5. 단계 기대 결과 확인
 
+**실행 위치:** AWS Console의 ECR·IAM·EC2 화면
+
 - Repository URI의 `<ACCOUNT_ID>` 부분이 현재 account ID이고 immutability, encryption과
   scanning 설정이 입력과 같습니다.
 - `car-community-github-ecr-push-role` trust의 audience와 subject가 exact 값이고
@@ -295,6 +313,13 @@ instance profile을 연결합니다. EC2 최초 launch 때 profile이 없었던 
 [private ECR image pull 검증](410-private-ecr-image-pull-verification-runbook.md)에서 실제
 검증합니다.
 
+이 runbook의 ECR-only profile은 최초 image 공급 단계의 결과입니다. 후속으로
+AWS Load Balancer Controller를 도입하면
+[370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md)이
+새 `stg-car-community-k8s-node-role` profile로 안전하게 전환합니다. 새 role은
+ECR pull과 LBC policy를 따로 가지며, 새 credential·ECR pull regression·controller/ALB
+lifecycle을 확인하기 전에 이 단계의 role/profile을 삭제하지 않습니다.
+
 ## 중단·실패 판정
 
 - 같은 OIDC URL의 기존 provider가 다른 audience 계약을 가지고 있으면 중복 생성이나
@@ -306,10 +331,18 @@ instance profile을 연결합니다. EC2 최초 launch 때 profile이 없었던 
 - push policy가 다른 repository나 IAM·ECR 관리 permission을 허용하거나 pull policy에
   write action이 있으면 완료로 처리하지 않습니다.
 - EC2에 기존 instance profile이 연결돼 있으면 내용을 확인하지 않고 교체하지 않습니다.
+- 후속 ingress 전환을 시작했다면 기존 ECR-only profile을 먼저 삭제하거나
+  새 role에 broad ECR permission을 붙여 실패를 우회하지 않습니다.
 - ECR repository·IAM role의 존재만으로 workflow push와 node pull을 성공으로 판정하지
   않습니다.
 
 ## 복구·재개
+
+**실행 위치:** IAM·ECR·instance profile 수정과 확인은 AWS Console, `310`·`320`의 설정은
+각 runbook이 지정한 SonarQube Cloud·GitHub·AWS Console, `400`의 publish 확인은 GitHub
+Actions·AWS Console, `410`의 ECR pull 확인은 EC2 terminal에서 수행합니다.
+
+**시작 directory:** EC2 terminal은 제한 없음
 
 1. IAM policy simulator나 Console JSON summary에서 실패한 trust·permission 문장을 exact
    입력과 대조합니다.
@@ -319,6 +352,8 @@ instance profile을 연결합니다. EC2 최초 launch 때 profile이 없었던 
    결정이 날 때까지 연결을 바꾸지 않습니다.
 4. AWS resource checklist가 정상인 checkpoint에서 310·320의 최초 설정·설치를 수행하고,
    400·410 runbook의 live publish·pull 검증으로 재개합니다.
+5. Ingress용 profile 전환 중 실패했다면 `370`의 rollback 경계를 따라 이
+   ECR-only profile로 복귀한 뒤 exact digest pull을 다시 확인합니다.
 
 ## 완료 확인
 
@@ -335,9 +370,11 @@ instance profile을 연결합니다. EC2 최초 launch 때 profile이 없었던 
 
 ## 공식 기준과 관련 문서
 
-- **선택·actor·permission 경계**: [ECR·IAM 기반](../project/infrastructure/120-ecr-iam-foundation.md)
+- **선택·actor·permission 경계**: [130 ECR·IAM 기반](../project/infrastructure/130-ecr-iam-foundation.md)
 - **상위 절차**: [AWS 최초 구축](100-aws-initial-provisioning-runbook.md)
 - **최초 GitHub 설정**: [GitHub ECR 게시 설정](320-github-ecr-publishing-configuration-runbook.md)
 - **최초 node 설치**: [kubelet ECR credential provider 설치](330-kubelet-ecr-credential-provider-installation-runbook.md)
 - **반복 게시 절차**: [GitHub ECR image 게시](400-github-ecr-image-publishing-runbook.md)
 - **pull 검증 절차**: [private ECR image pull 검증](410-private-ecr-image-pull-verification-runbook.md)
+- **Ingress platform role로의 후속 전환**:
+  [370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md)

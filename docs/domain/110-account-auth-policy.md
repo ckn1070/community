@@ -222,9 +222,8 @@ Refresh token 재발급은 저장된 refresh token을 검증한 뒤 DB에서 acc
 | account가 `ACTIVE` 또는 `PENDING`이고 `password_change_required = false` | 새 access token과 refresh token 발급 |
 | `password_change_required = true` | 재발급 거부 |
 | account가 `SUSPENDED` 또는 `WITHDRAWN` | 재발급 거부, token family 폐기 |
-| 만료되지 않은 revoked·replaced refresh token 재사용 감지 | 재발급 거부, token family 폐기 |
-
-현재 `RotateRefreshTokenService`는 만료를 reuse보다 먼저 검사합니다. 따라서 만료된 교체 token은 동일 401로 거부하지만 활성 replacement family를 폐기하거나 reuse event를 남기지 않습니다. 이는 원래 완료 기준을 충족하지 못한 범위이므로 다시 연 [Refresh Token 재발급](../work-items/features/2026/007-refresh-token-reissue-api.md)이 소유합니다.
+| revoked·replaced refresh token 재사용 감지 | 만료 여부와 관계없이 재발급 거부, token family 폐기와 reuse 감사 이벤트 저장 |
+| 폐기·교체 이력이 없는 만료 refresh token | 재발급 거부, token family와 reuse 감사 이벤트 변경 없음 |
 
 ## 새 API 추가 기준
 

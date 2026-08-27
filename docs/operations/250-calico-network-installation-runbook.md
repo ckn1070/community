@@ -2,14 +2,16 @@
 
 정상 control plane에 Calico를 최초 설치하고 단일 control-plane node를 일반 workload도
 실행할 수 있는 빈 cluster로 완성하는 절차입니다. CNI, operator, dataplane, IPPool과 smoke
-선택 근거는 [Kubernetes cluster 개념](../project/infrastructure/140-kubernetes-cluster.md)이
+선택 근거는 [150 Kubernetes cluster 개념](../project/infrastructure/150-kubernetes-cluster.md)이
 소유합니다.
 
 ## 사용 시점과 actor
 
 - **시점**: [Control plane 초기화](240-kubernetes-control-plane-initialization-runbook.md)가
   완료되고, CNI가 없거나 이전 실행이 만든 동일 exact Calico 상태만 있을 때입니다.
-- **actor·위치**: 운영자가 SSH로 접속한 EC2 terminal에서 `sudo`로 실행합니다.
+- **actor**: Target EC2에서 `sudo`를 사용할 수 있는 운영자
+- **기본 실행 위치**: SSH로 접속한 target EC2 terminal
+- **기본 시작 directory**: 제한 없음
 - **입력**: 인자와 환경변수는 없습니다.
 
 다른 CNI 전환·삭제, eBPF, AWS IAM·Security Group, Load Balancer Controller와 application
@@ -18,8 +20,7 @@ resource는 이 단계가 변경하지 않습니다.
 ## 실행
 
 ```bash
-cd /home/ubuntu/car-community-scripts
-sudo ./bootstrap/kubernetes/500-install-calico.sh
+sudo /home/ubuntu/car-community-scripts/bootstrap/kubernetes/500-install-calico.sh
 ```
 
 Script는 control plane과 host network precondition, 기존 CNI·Calico owner를 확인하고
@@ -133,5 +134,5 @@ wait에는 각각 독립적인 최대 10분 timeout이 적용됩니다. Timeout�
   완성됩니다.
 - **다음 최초 구축**: [Repository·delivery platform bootstrap](300-repository-and-delivery-platform-bootstrap-runbook.md)
 - **선택 작업**: [Admin kubeconfig 배포](510-kubernetes-admin-kubeconfig-runbook.md)
-- **개념·선택 근거**: [Kubernetes cluster](../project/infrastructure/140-kubernetes-cluster.md)
+- **개념·선택 근거**: [150 Kubernetes cluster](../project/infrastructure/150-kubernetes-cluster.md)
 - **구현 source**: [`500-install-calico.sh`](../../scripts/bootstrap/kubernetes/500-install-calico.sh)

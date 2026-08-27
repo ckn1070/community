@@ -5,6 +5,7 @@ import com.ronams.carmunity.account.internal.application.port.in.AcceptAdminInvi
 import com.ronams.carmunity.account.internal.application.port.in.InviteAdminUseCase;
 import com.ronams.carmunity.account.internal.application.port.in.RevokeAdminInvitationUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,6 +38,11 @@ public class AdminInvitationController {
   @ApiResponse(
       responseCode = "201",
       description = "초대 생성 성공",
+      headers =
+          @Header(
+              name = "Location",
+              description = "생성된 invitation resource URI",
+              schema = @Schema(type = "string", format = "uri")),
       content = @Content(schema = @Schema(implementation = InviteAdminResponse.class)))
   @ApiResponse(
       responseCode = "400",
@@ -62,6 +68,11 @@ public class AdminInvitationController {
   @ApiResponse(
       responseCode = "201",
       description = "초대 수락 성공",
+      headers =
+          @Header(
+              name = "Location",
+              description = "생성된 account resource URI",
+              schema = @Schema(type = "string", format = "uri")),
       content = @Content(schema = @Schema(implementation = AcceptedAdminInvitationResponse.class)))
   @ApiResponse(
       responseCode = "400",
@@ -70,6 +81,10 @@ public class AdminInvitationController {
   @ApiResponse(
       responseCode = "409",
       description = "초대 종료 또는 account/display name 중복",
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ApiResponse(
+      responseCode = "404",
+      description = "초대 없음",
       content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @PostMapping("/{invitationId}/acceptances")
   public ResponseEntity<AcceptedAdminInvitationResponse> acceptAdminInvitation(

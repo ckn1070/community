@@ -3,28 +3,74 @@
 Unit의 현재 state, restart 결과와 journal을 연결하고 Kubernetes node의 runtime·kubelet 경계를
 구분합니다. `active` 한 값만으로 정상이라 판단하지 않습니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 상단 수동 확장 조회
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
 
 ```bash
+(
+set +e
+
+probe() {
+  printf '\n------------------------------------------------------------\n'
+  printf 'PROBE: %s\n' "$1"
+  printf '%s\n' "$2"
+  printf '%s\n' '------------------------------------------------------------'
+}
+
+report_status() {
+  printf '[result] %s exit code: %s\n' "$1" "$2"
+}
+
+probe 'systemd manager' 'Boot 완료 여부와 failed unit 존재 여부를 확인합니다.'
 systemctl is-system-running
+report_status 'systemctl is-system-running' "$?"
 systemctl --failed --no-pager
+report_status 'systemctl --failed' "$?"
+
+probe 'Node service property' 'SSH·containerd·kubelet의 현재 state·PID·restart·exit status를 비교합니다.'
 systemctl show ssh.service containerd.service kubelet.service \
   --property=Id,LoadState,ActiveState,SubState,Result,MainPID,NRestarts,ExecMainStatus
+report_status 'systemctl show' "$?"
+
+probe 'Node service status' '각 service의 process tree와 최근 실패 요약을 확인합니다.'
 systemctl status ssh.service containerd.service kubelet.service \
   --no-pager --full --lines=80
+report_status 'systemctl status' "$?"
+
+probe 'Unit definition' '실제 ExecStart와 vendor unit·drop-in override 순서를 확인합니다.'
 systemctl cat containerd.service kubelet.service
+report_status 'systemctl cat' "$?"
+
+probe 'Node service journal' '현재 boot의 containerd·kubelet warning과 restart 원인을 확인합니다.'
 sudo -n journalctl -u containerd.service -u kubelet.service \
   -b --since '-60 min' --no-pager -n 400
+report_status 'journalctl' "$?"
+
+probe 'Containerd plugin' 'CRI와 snapshotter plugin이 정상 state인지 확인합니다.'
 sudo -n ctr plugins ls | sed -n '1,160p'
+pipeline_status=("${PIPESTATUS[@]}")
+printf '[result] ctr exit code: %s; sed exit code: %s\n' \
+  "${pipeline_status[0]}" "${pipeline_status[1]}"
+
+probe 'Local API server log' 'Kubernetes API가 불통일 때 node local static Pod log를 확인합니다.'
 sudo -n tail -n 160 /var/log/containers/kube-apiserver-*.log
+report_status 'tail kube-apiserver log' "$?"
+
+probe 'Local etcd log' 'Kubernetes API가 불통일 때 etcd의 최근 오류를 확인합니다.'
 sudo -n tail -n 160 /var/log/containers/etcd-*.log
+report_status 'tail etcd log' "$?"
+)
 ```
 
 Local log glob이 일치하지 않으면 해당 file이 없다는 증거로 기록합니다. Pipeline upstream
-실패가 의심되면 `ctr plugins ls`를 출력 제한 없이 단독으로 재실행합니다.
+실패 여부는 상단 묶음이 출력한 `ctr exit code`로 판정합니다. Plugin 전체 출력이 추가로
+필요할 때만 `ctr plugins ls`를 출력 제한 없이 단독으로 재실행합니다.
 
 ## 해석 순서
 

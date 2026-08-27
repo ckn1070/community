@@ -34,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSupport {
 
   private static final Instant ISSUED_AT = Instant.parse("2026-06-23T00:00:00Z");
+  private static final Instant EXPIRED_AT = Instant.parse("2026-06-24T00:00:00Z");
   private static final Instant EXPIRES_AT = Instant.parse("2099-06-23T00:00:00Z");
 
   @Autowired private MockMvc mockMvc;
@@ -152,6 +153,74 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
                 Integer.class,
                 accountId))
         .isOne();
+  }
+
+  /** rotation된 원 token이 만료된 뒤 재사용돼도 활성 replacement와 감사 결과를 함께 폐기·기록합니다. */
+  @Test
+  void postRefreshRevokesActiveReplacementWhenReusedTokenIsExpired() throws Exception {
+    UUID memberId = UUID.fromString("5e98905f-7c0a-4d42-9212-70d8ecb8d688");
+    Long accountId = createAccount(memberId, "refresh-api-expired-reuse@example.com", "ACTIVE");
+    grantMemberRole(accountId);
+    UUID familyId = UUID.fromString("055ada58-eea1-4bf3-a14a-c6943aa63922");
+    Long oldTokenId = createRefreshToken(accountId, "expired-reused-refresh-token", familyId);
+
+    postRefresh("expired-reused-refresh-token").andExpect(status().isOk());
+    expireRefreshToken(oldTokenId);
+
+    postRefresh("expired-reused-refresh-token")
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refresh_token where family_id = ? and revoked_at is null",
+                Integer.class,
+                familyId))
+        .isZero();
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from refresh_token
+                where family_id = ? and revoked_reason = 'REUSE_DETECTED'
+                """,
+                Integer.class,
+                familyId))
+        .isOne();
+    assertThat(reuseFailureEventCount(accountId)).isOne();
+  }
+
+  /** 폐기·교체 이력이 없는 단순 만료 token은 family 폐기나 reuse 감사 이벤트를 만들지 않습니다. */
+  @Test
+  void postRefreshDoesNotRecordReuseForSimplyExpiredToken() throws Exception {
+    UUID memberId = UUID.fromString("6f7147dc-c5bb-4f9a-bc32-77a7c5e2e22d");
+    Long accountId = createAccount(memberId, "refresh-api-expired-only@example.com", "ACTIVE");
+    grantMemberRole(accountId);
+    UUID familyId = UUID.fromString("71e53efe-81b2-4c0a-849a-8a8f8c4924a6");
+    Long tokenId = createRefreshToken(accountId, "expired-only-refresh-token", familyId);
+    expireRefreshToken(tokenId);
+
+    postRefresh("expired-only-refresh-token")
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.code").value("INVALID_REFRESH_TOKEN"));
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refresh_token where id = ? and revoked_at is null",
+                Integer.class,
+                tokenId))
+        .isOne();
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from refresh_token
+                where family_id = ? and revoked_reason = 'REUSE_DETECTED'
+                """,
+                Integer.class,
+                familyId))
+        .isZero();
+    assertThat(reuseFailureEventCount(accountId)).isZero();
   }
 
   /** 같은 refresh token이 동시에 제출되어도 중복 rotation을 만들지 않고 재사용 탐지 정책으로 닫습니다. */
@@ -305,5 +374,26 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
         familyId,
         Timestamp.from(ISSUED_AT),
         Timestamp.from(EXPIRES_AT));
+  }
+
+  private void expireRefreshToken(Long tokenId) {
+    jdbcTemplate.update(
+        "update refresh_token set expires_at = ? where id = ?",
+        Timestamp.from(EXPIRED_AT),
+        tokenId);
+  }
+
+  private Integer reuseFailureEventCount(Long accountId) {
+    return jdbcTemplate.queryForObject(
+        """
+        select count(*)
+        from auth_event
+        where account_id = ?
+          and event_type = 'TOKEN_REFRESH'
+          and result = 'FAILURE'
+          and reason_code = 'TOKEN_REUSE_DETECTED'
+        """,
+        Integer.class,
+        accountId);
   }
 }

@@ -9,7 +9,9 @@
 | --- | --- |
 | `100`~`190` | 프로젝트 전체 현황 |
 | `200`~`290` | 현재 적용 아키텍처, module·data 구조 지도 |
-| `300`~`390` | 현재 infrastructure와 delivery system 개념·생애주기 지도 |
+| `infrastructure/100` | Infrastructure 구조와 구성요소별 상세 SOT |
+| `infrastructure/200` | CI/CD 전체 흐름과 image·GitOps 상세 SOT |
+| `infrastructure/300` | Infrastructure 변경·복구 원칙 |
 
 ## 현재 문서
 
@@ -18,8 +20,9 @@
 - [210-module-map.md](210-module-map.md): 실제 Java package 기준 모듈과 책임
 - [220-account-auth-data-model.md](220-account-auth-data-model.md): account/auth 데이터 모델 결정
 - [schema/000-index.md](schema/000-index.md): Flyway migration 기반 물리 schema reference
-- [300-infrastructure-system.md](300-infrastructure-system.md): AWS부터 Kubernetes·image·GitOps까지의 전체 시스템 관계
-- [infrastructure/000-index.md](infrastructure/000-index.md): 최초 구축·반복 delivery·변경과 복구별 infrastructure 개념
+- [infrastructure/000-index.md](infrastructure/000-index.md): Infrastructure·CI/CD·변경과 복구 설명의 질문별 router
+- [infrastructure/100-infrastructure-overview.md](infrastructure/100-infrastructure-overview.md): 전체 topology와 component·trust boundary
+- [infrastructure/200-ci-cd-pipeline.md](infrastructure/200-ci-cd-pipeline.md): Push부터 CI·image publish·GitOps 배포까지의 설명 SOT
 
 ## 읽는 상황
 
@@ -30,10 +33,12 @@
 | 기능을 어느 module에 배치하는가 | `210-module-map.md` |
 | 인증 데이터의 구조적 결정 | `220-account-auth-data-model.md` |
 | 정확한 table, column, constraint, index | `schema/100-account-auth.md` |
-| AWS부터 Kubernetes·delivery까지 전체 흐름과 책임 경계 | `300-infrastructure-system.md` |
-| VPC·EC2·ECR/IAM·RDS·Kubernetes·Argo CD의 현재 선택과 이유 | `infrastructure/000-index.md`의 `최초 구축` |
-| image publish·pull과 GitOps 배포가 평소 어떻게 반복되는가 | `infrastructure/000-index.md`의 `반복 delivery` |
+| AWS부터 Kubernetes까지 전체 구조와 책임 경계 | `infrastructure/100-infrastructure-overview.md` |
+| Push부터 CI·image publish·GitOps 배포까지 전체 흐름 | `infrastructure/200-ci-cd-pipeline.md` |
+| VPC·EC2·ECR/IAM·RDS·Kubernetes·Argo CD·외부 HTTPS ingress의 현재 선택과 이유 | `infrastructure/000-index.md`의 `Infrastructure 구조와 구성요소` |
+| Image publish·pull과 GitOps의 상세 계약 | `infrastructure/000-index.md`의 `CI/CD 설명` |
 | bootstrap 취소·admin access·credential 교체의 원리와 경계 | `infrastructure/000-index.md`의 `변경과 복구` |
+| 아직 착수하지 않은 infrastructure 확장·관측·보안·자동화 후보 | [004 Infrastructure 진화 Backlog](../work-items/backlog/2026/004-infrastructure-evolution.md) |
 
 진행 중 작업과 미래 후보는 이 그룹에 두지 않습니다.
 외부 환경의 현재 live 상태와 재개 위치는

@@ -1,6 +1,6 @@
 # EC2 Kubernetes node
 
-이 문서는 Kubernetes control plane과 worker를 함께 실행하는 staging EC2 한 대의 역할,
+이 상세 SOT는 Kubernetes control plane과 worker를 함께 실행하는 staging EC2 한 대의 역할,
 현재 선택값, 선택 이유·영향·대안과 재검토 조건을 소유합니다. AWS Console의 실제 생성·확인
 절차는 [EC2 node 최초 구축 runbook](../../operations/120-ec2-node-provisioning-runbook.md)이
 소유합니다.
@@ -28,9 +28,9 @@
 | AMI 속성 | HVM, EBS root, ENA 활성 | 읽기 전용 파생값 | 선택 AMI와 T4g의 boot·network 조건이며 별도 입력이 아닙니다. | Custom AMI 변경 |
 | AMI ID·생성일 | Launch 시 서울 region의 최신 조건 일치 image | 변동 파생값 | Release update·region마다 달라 특정 ID를 영구 고정하지 않고 24.04 LTS·ARM64·Canonical 조건을 대조합니다. | AMI pinning 정책 확정 |
 | Architecture | `64비트(Arm)` | T4g 필수 | Graviton T4g 비용 이점을 사용하지만 x86 전용 binary·image는 실행할 수 없습니다. | x86-only dependency 발견 |
-| Instance type | `t4g.small`, 2 vCPU·2 GiB | 현재 최소 구성 | `micro` 1 GiB는 kubeadm 2 GiB 기준보다 작습니다. 2 GiB도 control plane·worker·application 동시 실행 여유는 작습니다. | OOM·memory pressure·지속 CPU 제한 관찰 |
-| Type filter | `모든 세대` 활성 | 검색 표시일 뿐 | `t4g.small`을 직접 찾으며 성능·과금에는 영향을 주지 않습니다. | 탐색 범위를 줄일 때 |
-| Key pair | `example-ec2-key-pair` | 현재 SSH identity | AWS는 public key, 운영자는 private key를 보유합니다. Private key를 repository에 저장하지 않으며 분실하면 같은 pair로 접속할 수 없습니다. | SSM·다른 접속 방식 채택 |
+| Instance type | 최초 `t4g.small` 2 GiB, live memory 4 GiB | 2 GiB는 실측 후 상향 | Argo reconcile·migration이 겹칠 때 2 GiB node에서 심한 memory·I/O pressure가 관찰돼 4 GiB로 늘렸습니다. 변경한 exact instance type은 현재 live source에서 다시 확인하지 않아 추측해 고정하지 않습니다. | OOM·memory pressure·지속 CPU 제한 관찰 또는 exact type inventory |
+| Type filter | `모든 세대` 활성 | 검색 표시일 뿐 | 최초 launch에서 `t4g.small`을 직접 찾으며 성능·과금에는 영향을 주지 않습니다. | 탐색 범위를 줄일 때 |
+| Key pair | `namc-sa-ec2` | 현재 SSH identity | AWS는 public key, 운영자는 private key를 보유합니다. Private key를 repository에 저장하지 않으며 분실하면 같은 pair로 접속할 수 없습니다. | SSM·다른 접속 방식 채택 |
 | 구매 방식 | On-Demand | 단일 control plane에 적합 | Spot 중단으로 cluster 전체가 멈추는 것을 피합니다. 장기 할인은 현재 사용량이 미확정입니다. | 중단 허용 workload 분리·장기 사용량 확정 |
 | CPU credit | `Standard` | 비용 상한 우선 | Baseline 초과 credit을 소진하면 CPU가 제한될 수 있지만 Unlimited 잉여 credit 비용을 허용하지 않습니다. | 지속 부하로 cluster가 느려짐 |
 
@@ -54,11 +54,11 @@ application image의 ARM64 호환이 보장되지는 않습니다. Software 요�
 | x86_64 | x86 package·image 호환성이 넓습니다. | 현재 비용 우선 `t4g`와 함께 쓸 수 없습니다. |
 | `t4g.nano` 0.5 GiB | 더 작은 ARM burstable type입니다. | Kubernetes memory가 부족합니다. |
 | `t4g.micro` 1 GiB | 저비용 ARM type입니다. | Kubeadm 시작 기준 2 GiB보다 작습니다. |
-| `t4g.medium` 4 GiB | 현재보다 memory 여유가 큽니다. | 실측 부족 전에는 비용을 늘리지 않지만 첫 상향 후보입니다. |
+| `t4g.medium` 4 GiB | 최초 2 GiB 실측 부족 때의 첫 상향 후보입니다. | Live memory는 4 GiB로 늘었지만 변경한 exact type은 확인하지 않아 `t4g.medium`을 현재값으로 추측하지 않습니다. |
 | `t4g.large` 8 GiB | 더 큰 memory입니다. | 현재 실측 부하 근거가 없습니다. |
 | `t4g.xlarge` 4 vCPU·16 GiB | CPU·memory를 크게 늘립니다. | 현재 범위보다 큽니다. |
 | `t4g.2xlarge` 8 vCPU·32 GiB | 더 큰 ARM type입니다. | 현재 범위보다 큽니다. |
-| 새 key pair | 새 SSH key material을 만듭니다. | 기존 `example-ec2-key-pair`와 private key가 있습니다. |
+| 새 key pair | 새 SSH key material을 만듭니다. | 기존 `namc-sa-ec2`와 private key가 있습니다. |
 | Key pair 없이 launch | SSH key 없이 시작합니다. | 현재 SSH 성공이 완료 조건이며 SSM-only를 확정하지 않았습니다. |
 
 화면의 시간당 가격·`현재 세대`·vCPU·memory는 type과 시점·region에서 파생된 값이며 영구
@@ -75,8 +75,8 @@ application image의 ARM64 호환이 보장되지는 않습니다. Software 요�
 | 설명 | `stg car-community single-node Kubernetes EC2` | Group 대상·용도를 사람에게 설명합니다. |
 | SSH ingress | TCP `22`, 현재 운영자 public IPv4 `/32` | 전체 internet 대신 한 source만 허용합니다. 운영자 IP 변경 시 rule을 갱신합니다. 실제 IP는 문서에 고정하지 않습니다. |
 | SSH rule 설명 | 현재 확인값 `Sillim-Home` | 현재 접속 위치를 구분할 label이며 network 동작은 바꾸지 않습니다. 운영 위치·회선이 바뀌면 `/32` source와 설명을 함께 실제 값으로 갱신합니다. |
-| HTTP·HTTPS ingress | 없음 | 외부 endpoint·ingress·TLS 종료 위치가 미확정이라 `80`·`443`을 instance에 직접 열지 않습니다. |
-| 다른 ingress | 없음 | API server·NodePort·application port의 공개 source를 결정하기 전 미리 열지 않습니다. |
+| HTTP·HTTPS ingress | Node에 직접 없음 | Public `80`·`443`은 LBC가 만든 ALB frontend SG만 받습니다. Node SG에 동일 port를 public으로 열지 않습니다. |
+| NodePort ingress | LBC-managed backend SG source의 실제 target port만 | `0.0.0.0/0`에 NodePort range를 열지 않고 controller가 frontend→backend 경계를 수렴시킵니다. |
 | Outbound | 새 group 기본 허용 | Ubuntu package·container image download에 사용합니다. Registry·package source가 고정되면 제한 정책을 재검토합니다. |
 
 다른 VPC·subnet이나 새 subnet은 현재 topology를 바꾸므로 선택하지 않습니다. Public IP
@@ -100,7 +100,7 @@ Public IPv4는 영구 설정값이 아니며 접속 실패 시 SSH를 전체 int
 | Termination 시 ENI 삭제 | `예` | 재부착 계획이 없는 orphan ENI·주소를 남기지 않습니다. |
 | Interface type | 기본 | EFA 같은 특수 interface 요구가 없습니다. |
 | Network card index | 비활성 기본 | 현재 type의 multi-card 구성이 아닙니다. |
-| ENA Express·UDP·queue | 지원되지 않는 기본 상태 | `t4g.small`에서 사용할 수 없고 현재 tuning 근거도 없습니다. |
+| ENA Express·UDP·queue | 최초 선택에서 지원되지 않는 기본 상태 | 최초 `t4g.small`에서 사용할 수 없었고 현재 tuning 근거도 없습니다. Exact live type을 확정하면 지원 여부도 다시 읽습니다. |
 | Idle connection tracking timeout | 비활성 | 연결 수 고갈·별도 timeout 요구가 없습니다. |
 | 추가 ENI | 없음 | 별도 VPC·traffic plane·multi-homing 요구가 없습니다. |
 
@@ -130,14 +130,14 @@ volume은 실제 용량·성능·lifecycle 요구가 생기면 선택합니다. 
 나은 이유가 없습니다. S3 mount는 VPC S3 Gateway Endpoint와 다른 기능이고, EFS는 다중
 Linux shared NFS 요구, FSx는 특정 workload filesystem 요구가 없어 제외합니다. Data
 Lifecycle Manager 정보 영역은 현재 backup policy 존재를 증명하지 않습니다. T4g.small에는
-instance store가 추가됐다고 간주하지 않습니다.
+최초 `t4g.small`에 instance store가 추가됐다고 간주하지 않습니다.
 
 ## Advanced instance 선택
 
 | 옵션 | 현재 선택 | 이유와 영향 |
 | --- | --- | --- |
 | Domain join | 없음 | Active Directory identity·policy 요구가 없습니다. |
-| IAM instance profile | 최초 launch에는 없음, 이후 ECR pull 전용 profile 연결 | 최초에는 AWS API 권한을 확정하지 않았고, 이후 target ECR read 요구만 분리했습니다. 두 시점은 모순이 아닙니다. |
+| IAM instance profile | `stg-car-community-k8s-node-role` | Exact ECR pull policy와 LBC policy를 분리해 연결하고, node가 private image pull과 ALB lifecycle에 같은 EC2 role credential을 사용합니다. 기존 ECR-only profile의 정리 여부와 live 검증 상태는 operations scenario가 소유합니다. |
 | Hostname | Private IP 기반 `IP 이름` | AWS 기본 hostname을 사용하며 Kubernetes node 이름은 bootstrap에서 확인합니다. |
 | DNS record | IP 이름 IPv4 `A` 활성, resource IPv4·IPv6 비활성 | IPv4-only 기본 DNS를 유지합니다. |
 | Auto recovery | Console 기본값 | 지원 상태에 따른 simplified recovery를 사용합니다. |
@@ -161,7 +161,7 @@ instance store가 추가됐다고 간주하지 않습니다.
 | Metadata endpoint | 활성 | Instance metadata 사용 가능성을 유지합니다. |
 | Metadata IPv6 | 비활성 | IPv6를 사용하지 않습니다. |
 | Metadata version | IMDSv2 only | Token 없는 IMDSv1을 차단합니다. |
-| Metadata hop limit | `2` | Container network에서 IMDSv2 응답 가능성을 보존하지만 `1`보다 노출 범위가 넓습니다. Pod IMDS가 불필요하면 `1`이 더 제한적입니다. |
+| Metadata hop limit | `2` | LBC Pod가 node role credential을 쓰는 현재 self-managed staging에서 IMDSv2 응답을 유지합니다. 다른 Pod의 node credential 노출 가능성도 넓혀지는 trade-off이므로 multi-tenant·production은 Pod Identity/IRSA를 재검토합니다. |
 | Metadata tag access | 비활성 | Workload에 EC2 tag를 노출하지 않습니다. |
 | User data | 없음, base64 flag 비활성 | 검토하지 않은 bootstrap을 boot 때 실행하지 않고 후속 script 과정을 관찰합니다. |
 
@@ -187,19 +187,28 @@ instance store가 추가됐다고 간주하지 않습니다.
 - ARM64에서 x86으로 바꾸면 AMI·instance type뿐 아니라 image publish architecture와 node pull
   smoke를 함께 변경합니다.
 - Public IP를 제거하면 SSH와 package·registry outbound의 대체 경로를 먼저 마련합니다.
-- EC2 role에는 ECR pull 외 application AWS API 권한을 추가하지 않습니다. Pod identity는
-  별도 permission boundary입니다.
+- EC2 role은 current node platform이 소비하는 exact ECR pull과 LBC policy만 가집니다.
+  Application의 일반 AWS API 권한을 추가하지 않으며 Pod identity는 별도
+  permission boundary입니다.
 - Auto Scaling·다중 node로 바꾸기 전에 cluster stable endpoint, node join·replacement,
   Calico AWS routing과 name/tag 정책을 먼저 결정합니다.
 - Root volume은 축소가 어렵고 termination 시 삭제되므로 persistent application data를 두지
   않습니다.
 
+다중 node·Node autoscaling·workload identity 후보의 상태와 선행 조건은
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
+
 ## 근거와 관련 문서
 
 - **실제 최초 구축 절차**: [EC2 node 최초 구축 runbook](../../operations/120-ec2-node-provisioning-runbook.md)
-- **Network 기반**: [VPC network](100-vpc-network.md)
-- **Node가 될 Kubernetes 상태**: [Kubernetes cluster](140-kubernetes-cluster.md)
-- **ECR pull role**: [ECR·IAM 기반](120-ecr-iam-foundation.md)
+- **Network 기반**: [110 VPC network](110-vpc-network.md)
+- **Node가 될 Kubernetes 상태**: [150 Kubernetes cluster](150-kubernetes-cluster.md)
+- **ECR pull role**: [130 ECR·IAM 기반](130-ecr-iam-foundation.md)
+- **ALB·LBC·node security/IAM 경계**:
+  [170 AWS Load Balancer ingress](170-aws-load-balancer-ingress.md)
+- **Profile 전환·IMDS·NodePort live 절차**:
+  [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
 - **EC2·Linux 진단**:
   [110 AWS EC2·접근 진단](../../operations/diagnostics/110-aws-ec2-and-access.md),
   [120 Linux resource 진단](../../operations/diagnostics/120-linux-cpu-memory-and-process.md),

@@ -23,6 +23,7 @@ Open
 | [009 로그아웃](../../features/2026/009-auth-logout.md) | refresh token 단일 폐기 기반의 멱등 로그아웃을 구현했습니다. |
 | [010 관리자 계정 기반](../../features/2026/010-admin-account-foundation.md) | 최고 관리자 bootstrap과 인증된 비밀번호 변경을 구현했습니다. |
 | [012 비밀번호 재설정](../../features/2026/012-account-password-reset.md) | email reset token 기반 비로그인 복구와 session 폐기를 구현했습니다. |
+| [007 OpenAPI 실제 응답 계약 동기화](../../improvements/2026/007-openapi-response-contract.md) | 실제 응답 schema·보안·공통 오류와 생성 OpenAPI 자동 검증을 구현했습니다. |
 
 ## 진행 중 분리 작업
 
@@ -40,13 +41,6 @@ Open
 - 로그인, 비밀번호 변경·재설정, rotation, logout과 reuse detection의 transaction 경계를 보존하면서 단일 물리 persistence owner와 공개 application 계약을 결정합니다.
 - 다른 module의 table·entity를 직접 공유하지 않고 공개 interface·DTO로 협력한다는 architecture 기준을 만족하게 합니다.
 - 완료 시 두 table의 JPA entity·repository owner가 하나인지, `auth`에 `account` table 직접 조회가 없는지, 모든 lifecycle test가 같은 경계를 통과하는지, Spring Modulith·ArchUnit과 전체 integration test가 통과하는지 검증합니다.
-
-### OpenAPI 보호 API 계약
-
-- Bearer JWT security scheme을 OpenAPI component로 정의하고 인증이 필요한 Controller operation에 security requirement를 연결합니다.
-- 보호 API의 인증 실패 `401`과 권한 부족 `403`을 공통 Problem Details schema와 함께 문서화합니다.
-- 생성된 `/v3/api-docs`에서 대표 public·protected·admin API의 path, response와 security 계약을 확인하는 최소 smoke test를 추가합니다.
-- production profile의 API docs·Swagger UI 비활성화는 유지하고, 개발·테스트 환경의 노출 범위를 Security 설정과 함께 검증합니다.
 
 ### 로그인 Abuse 대응
 
@@ -83,6 +77,8 @@ Open
 - 운영 조회·필터링 API 또는 관리자 화면의 필요성을 결정합니다.
 - IP, User-Agent와 추가 metadata를 저장할 때 개인정보 최소화와 보존 기간을 함께 결정합니다.
 - 보안 알림으로 연결할 event와 threshold를 결정하되 일반 애플리케이션 로그와 감사 event의 책임을 섞지 않습니다.
+- 중앙 log·event 수집, infrastructure alert 전달과 on-call platform은
+  [004 Infrastructure 진화 Backlog](004-infrastructure-evolution.md)가 소유합니다.
 
 ### Email과 Account Identity 변경
 

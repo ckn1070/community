@@ -4,34 +4,76 @@ Workload가 scheduling, image pull, Pod network, process start, readiness, Servi
 단계에서 멈췄는지 찾습니다. 먼저 전체 상태를 좁히고, 문제 object 하나의 event와 bounded
 log를 읽습니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 상단 수동 확장 조회
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
 
 ```bash
+(
+set +e
+
+probe() {
+  printf '\n------------------------------------------------------------\n'
+  printf 'PROBE: %s\n' "$1"
+  printf '%s\n' "$2"
+  printf '%s\n' '------------------------------------------------------------'
+}
+
+report_status() {
+  printf '[result] %s exit code: %s\n' "$1" "$2"
+}
+
+probe 'Cluster Pod' '전체 namespace의 Pod readiness·status·restart·Node·IP를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get pods -A -o wide
+report_status 'kubectl pods' "$?"
+
+probe 'Workload owner' 'Deployment·StatefulSet·DaemonSet·Job의 desired와 완료 상태를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get deployments,statefulsets,daemonsets,jobs -A
+report_status 'kubectl workload owners' "$?"
+
+probe 'Recent event' 'Scheduler·image pull·CNI·mount·probe 실패를 최근 발생 순서로 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get events -A \
   --sort-by=.metadata.creationTimestamp | tail -n 180
+pipeline_status=("${PIPESTATUS[@]}")
+printf '[result] kubectl events exit code: %s; tail exit code: %s\n' \
+  "${pipeline_status[0]}" "${pipeline_status[1]}"
+
+probe 'Calico Pod' 'Pod network를 구성하는 Calico component의 readiness와 Node 분포를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n calico-system get pods -o wide
+report_status 'kubectl Calico pods' "$?"
+
+probe 'CoreDNS Pod' 'Cluster DNS component의 readiness·restart·Node 분포를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n kube-system \
   get pods -l k8s-app=kube-dns -o wide
+report_status 'kubectl CoreDNS pods' "$?"
+
+probe 'Application Pod·Service' 'Application Pod readiness와 Service selector 경계를 함께 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n car-community \
   get pods,services -o wide
+report_status 'kubectl application resources' "$?"
+
+probe 'Application EndpointSlice' 'Service가 ready Pod 주소를 endpoint로 선택했는지 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n car-community \
   get endpointslices.discovery.k8s.io \
   -o 'jsonpath={range .items[*]}{"slice="}{.metadata.name}{" service="}{.metadata.labels.kubernetes\.io/service-name}{"\n"}{range .endpoints[*]}{"  endpoint="}{range .addresses[*]}{.}{","}{end}{" ready="}{.conditions.ready}{" serving="}{.conditions.serving}{" terminating="}{.conditions.terminating}{" target="}{.targetRef.kind}{"/"}{.targetRef.name}{"\n"}{end}{end}'
+report_status 'kubectl EndpointSlice' "$?"
+)
 ```
 
-Event pipeline의 upstream 실패가 의심되면 `| tail -n 180`을 제거해 `kubectl`을 단독으로
+Event 조회 실패 여부는 상단 묶음이 출력한 `kubectl events exit code`로 판정합니다. 180행
+이전 event까지 추가로 필요할 때만 `| tail -n 180`을 제거해 `kubectl`을 단독으로
 재실행합니다.
 
 ## 해석 순서
@@ -165,8 +207,8 @@ Secret·ConfigMap reference name·key를 출력하지 않습니다.
 | `init`·`container` | Ready·restart·waiting·terminated·exit code | 어떤 container가 어느 상태에서 멈췄는가 |
 | 관련 Event | 해당 Pod의 시간순 event | Scheduler→pull→CNI→start 중 어디까지 갔는가 |
 
-Event pipeline의 upstream 실패 여부가 필요하면 `| tail -n 120`을 제거하고 같은 `kubectl`
-명령을 다시 실행합니다.
+이 하단 개별 조회는 상단 묶음과 달리 `PIPESTATUS`를 출력하지 않습니다. `kubectl` 실패
+여부를 별도로 확인해야 하면 `| tail -n 120`을 제거하고 같은 명령을 다시 실행합니다.
 
 ### `logs`: container stdout·stderr 조회
 

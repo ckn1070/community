@@ -7,8 +7,8 @@
 [Exact digest pull 점검](410-private-ecr-image-pull-verification-runbook.md)이 소유합니다.
 
 Provider가 EC2 instance profile의 임시 credential을 사용하는 구조와 선택 이유는
-[ECR·IAM 기반](../project/infrastructure/120-ecr-iam-foundation.md)과
-[Container image delivery](../project/infrastructure/200-container-image-delivery.md)에서
+[130 ECR·IAM 기반](../project/infrastructure/130-ecr-iam-foundation.md)과
+[210 Container image delivery](../project/infrastructure/210-container-image-delivery.md)에서
 확인합니다. Artifact·version·checksum·file mutation의 정적 계약은
 [ECR bootstrap README](../../scripts/bootstrap/ecr/README.md)가 소유합니다.
 
@@ -18,8 +18,9 @@ Provider가 EC2 instance profile의 임시 credential을 사용하는 구조와 
 | --- | --- |
 | 언제 | Kubernetes bootstrap, EC2 pull instance profile 연결과 첫 ECR image 게시가 완료된 뒤, 첫 private image pull 전에 최초 한 번 실행합니다. |
 | 누가 | Target EC2에 SSH 접속하고 `sudo`를 사용할 수 있는 운영자가 실행합니다. |
-| 어디서 | EC2 terminal의 `/home/ubuntu/car-community-scripts`입니다. |
-| 무엇을 | `sudo ./bootstrap/ecr/100-configure-kubelet-credential-provider.sh` |
+| 기본 실행 위치 | EC2 terminal입니다. |
+| 기본 시작 directory | 제한 없음 |
+| 무엇을 | `sudo /home/ubuntu/car-community-scripts/bootstrap/ecr/100-configure-kubelet-credential-provider.sh` |
 | 왜 | Kubelet이 EC2 instance profile의 임시 credential로 private ECR image를 pull하게 하기 위해서입니다. |
 | 완료·재개 | Script exit `0`, 완료 메시지와 active kubelet 인자를 확인합니다. 실패하면 같은 script의 중단 표에 따라 재실행합니다. |
 
@@ -29,7 +30,8 @@ Provider가 EC2 instance profile의 임시 credential을 사용하는 구조와 
   완료됐습니다.
 - EC2 instance에 `car-community-k8s-node-ecr-pull-role` instance profile이 연결돼
   있습니다.
-- EC2의 `/home/ubuntu/car-community-scripts` 아래에 현재 전달 archive의
+- [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md)을 완료해 EC2의
+  `/home/ubuntu/car-community-scripts` 아래에 현재 전달 archive의
   `bootstrap/ecr/100-configure-kubelet-credential-provider.sh`가 있습니다.
 - Kubelet package가 소유한 `/etc/default/kubelet`의 빈 기본값
   `KUBELET_EXTRA_ARGS=`는 provider를 아직 구성하지 않은 정상 시작 상태입니다.
@@ -41,8 +43,7 @@ Provider가 EC2 instance profile의 임시 credential을 사용하는 구조와 
 EC2 terminal에서 실행합니다.
 
 ```bash
-cd /home/ubuntu/car-community-scripts
-sudo ./bootstrap/ecr/100-configure-kubelet-credential-provider.sh
+sudo /home/ubuntu/car-community-scripts/bootstrap/ecr/100-configure-kubelet-credential-provider.sh
 ```
 
 Script가 exit code `0`으로 끝나고 다음 메시지를 출력해야 합니다.
@@ -84,6 +85,6 @@ workflow에서 얻은 exact digest로
 
 ## 관련 문서
 
-- **현재 image 공급 구조**: [Container image delivery](../project/infrastructure/200-container-image-delivery.md)
+- **현재 image identity·node pull 구조**: [210 Container image delivery](../project/infrastructure/210-container-image-delivery.md)
 - **Script 공개 계약**: [ECR bootstrap README](../../scripts/bootstrap/ecr/README.md)
 - **반복 live 점검**: [Private ECR image pull 점검](410-private-ecr-image-pull-verification-runbook.md)

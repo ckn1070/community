@@ -13,7 +13,8 @@ Credential의 권한과 배포 경계는
 | --- | --- |
 | 언제 | Control plane 완료 뒤 명시적으로 선택한 일반 사용자가 cluster-admin `kubectl`을 사용해야 할 때만 실행합니다. |
 | 누가 | 대상 사용자와 cluster-admin 권한 부여 필요성을 결정하고 EC2에서 `sudo`를 사용할 수 있는 운영자가 실행합니다. |
-| 어디서 | SSH로 접속한 target EC2 terminal입니다. |
+| 기본 실행 위치 | SSH로 접속한 target EC2 terminal입니다. |
+| 기본 시작 directory | 제한 없음 |
 | 무엇을 | 아래 `getent`·`id`·`install` 표준 명령으로 `/etc/kubernetes/admin.conf`를 선택한 home에 배포합니다. Repository script는 없습니다. |
 | 왜 | Bootstrap과 일반 사용자 credential 배포를 분리하고 대상 계정·권한을 추측하지 않기 위해서입니다. |
 | 완료·재개 | 대상 config의 owner·group·mode와 원본 보존을 확인합니다. 기존 config가 있으면 중단하고 병합 방식을 별도 결정합니다. |

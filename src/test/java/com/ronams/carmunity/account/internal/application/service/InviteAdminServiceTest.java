@@ -62,7 +62,7 @@ class InviteAdminServiceTest {
             Clock.fixed(NOW, ZoneOffset.UTC));
   }
 
-  /** 초대 생성은 raw token을 저장하지 않고 hash만 저장한 뒤 발송과 성공 감사를 남깁니다. */
+  /** 초대 생성은 raw token을 저장하지 않고 hash만 저장한 뒤 commit 이후 발송을 요청합니다. */
   @Test
   void createsAdminInvitationWithHashedTokenAndSendsNotification() {
     var result = service.execute(command("  ADMIN@Example.COM  ", "ROLE_ADMIN"));
@@ -90,7 +90,6 @@ class InviteAdminServiceTest {
                 INVITATION_PUBLIC_ID,
                 "raw-admin-invitation-token",
                 NOW.plusSeconds(86_400)));
-    assertThat(invitationStorePort.createdEventResults).containsExactly(true);
   }
 
   /** 기존 account email은 token 발급이나 저장 전에 거부합니다. */
@@ -139,16 +138,15 @@ class InviteAdminServiceTest {
     assertThat(invitationStorePort.savedRequests).isEmpty();
   }
 
-  /** 발송 실패는 초대 row를 되돌리지 않고 실패 감사 결과로 기록합니다. */
+  /** 발송 실패는 이미 저장된 초대·생성 감사를 바꾸거나 새 감사 저장을 요청하지 않습니다. */
   @Test
-  void recordsCreatedEventFailureWhenNotificationFails() {
+  void keepsCreatedInvitationWhenNotificationFails() {
     notificationSender.failure = new IllegalStateException("provider failure");
 
     assertThatCode(() -> service.execute(command("admin@example.com", "ROLE_ADMIN")))
         .doesNotThrowAnyException();
 
     assertThat(invitationStorePort.savedRequests).hasSize(1);
-    assertThat(invitationStorePort.createdEventResults).containsExactly(false);
   }
 
   /** 입력 형식 오류는 외부 부수효과 없이 공통 invalid request로 변환합니다. */
@@ -208,11 +206,10 @@ class InviteAdminServiceTest {
     }
   }
 
-  /** 저장 요청과 생성 감사 결과를 기록하는 초대 저장 port 대역입니다. */
+  /** 저장 요청을 기록하는 초대 저장 port 대역입니다. */
   private static class FakeAdminInvitationStorePort implements AdminInvitationStorePort {
 
     private final List<AdminInvitationSaveRequest> savedRequests = new ArrayList<>();
-    private final List<Boolean> createdEventResults = new ArrayList<>();
 
     @Override
     public AdminInvitationRecord save(AdminInvitationSaveRequest request) {
@@ -224,11 +221,6 @@ class InviteAdminServiceTest {
           request.roleCode(),
           1L,
           request.expiresAt());
-    }
-
-    @Override
-    public void recordCreated(AdminInvitationRecord invitation, boolean notificationSuccessful) {
-      createdEventResults.add(notificationSuccessful);
     }
   }
 

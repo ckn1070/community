@@ -7,8 +7,8 @@ GitHub App key를 교체하는 반복 운영 작업은
 [operations/gitops](../../operations/gitops/README.md)가 소유합니다.
 
 최초 platform 선택과 actor 계약은
-[Argo CD platform](../../../docs/project/infrastructure/150-argocd-platform.md), 반복 delivery 원리는
-[GitOps application delivery](../../../docs/project/infrastructure/210-gitops-application-delivery.md)가
+[160 Argo CD platform](../../../docs/project/infrastructure/160-argocd-platform.md), 반복 delivery 원리는
+[220 GitOps application delivery](../../../docs/project/infrastructure/220-gitops-application-delivery.md)가
 소유합니다. 실제 최초 절차는
 [Argo CD Core installation](../../../docs/operations/340-argocd-core-installation-runbook.md)과
 [Application delivery 최초 bootstrap](../../../docs/operations/350-application-delivery-bootstrap-runbook.md),
@@ -54,7 +54,7 @@ request는 `330s`입니다. 다른 namespace owner, full 설치, 다른 image ve
 | caller·시점 | Core와 application bootstrap 완료, private repository·read-only GitHub App·non-empty staging overlay 준비 뒤 최초 한 번 실행합니다. |
 | 공개 입력 | `<GITHUB_APP_ID> <GITHUB_APP_INSTALLATION_ID>` 두 숫자 |
 | 비밀 입력 | GitHub App PEM key를 stdin으로만 전달하며 argument·environment·repository file로 받지 않습니다. |
-| repository | `https://github.com/ckn1070/community.git`, `main`, `deploy/overlays/stg` |
+| repository | `https://github.com/ckn1070/car-community.git`, `main`, `deploy/overlays/stg` |
 | 선언형 source | `manifests/car-community-appproject.yaml`, `manifests/car-community-stg-application.yaml` |
 | 직접 변경 | Repository Secret, application-controller StatefulSet Pod template generation annotation, Git에 추적된 AppProject·Application manifest의 server-side apply |
 | sync | `enabled`, `prune`, `selfHeal`, `allowEmpty: false`, notification rollout annotation ignore + `RespectIgnoreDifferences=true` |
@@ -83,7 +83,10 @@ Application bootstrap 소유 `car-community` Namespace가 없으면 GitOps resou
 않습니다. Secret schema는 repository 연결 script가 중복 검사하지 않고, 누락된 Secret은
 Job·Deployment의 resource reference가 차단합니다. DB URL·RDS CA와 notification 공개 설정
 ConfigMap은 staging overlay가 최초 sync에서 적용합니다. Git에 추적된 AppProject manifest는 cluster-scoped resource를
-허용하지 않고 Git manifest에 필요한 `ConfigMap`·`Service`·`Deployment`·`Job`만 허용합니다.
+허용하지 않고 Git manifest에 필요한 `ConfigMap`·`Service`·`Deployment`·`Job`·
+`networking.k8s.io/Ingress`만 허용합니다. Staging overlay의 `Ingress`는 AWS Load Balancer
+Controller가 public ALB를 만들 desired state이고, controller의 cluster 권한과 설치는
+AppProject 허용 범위가 아닙니다.
 Notification operation이 새 Pod를 만드는 annotation만 `RespectIgnoreDifferences` 경계로
 보존합니다.
 

@@ -43,12 +43,52 @@ assert_file_excludes() {
   fi
 }
 
+assert_file_excludes_pattern() {
+  local path="$1"
+  local unexpected_pattern="$2"
+  local message="$3"
+  local grep_status
+
+  if grep -Eq -- "${unexpected_pattern}" "${path}"; then
+    printf 'FAIL: %s\nunexpected pattern: %s\n' \
+      "${message}" "${unexpected_pattern}" >&2
+    exit 1
+  else
+    grep_status=$?
+    if [[ "${grep_status}" -ne 1 ]]; then
+      printf 'FAIL: %s\ninvalid exclusion pattern: %s\n' \
+        "${message}" "${unexpected_pattern}" >&2
+      exit 1
+    fi
+  fi
+}
+
+assert_file_contains_adjacent_lines() {
+  local path="$1"
+  local first="$2"
+  local second="$3"
+  local message="$4"
+
+  if ! awk -v first="${first}" -v second="${second}" '
+    $0 == first {
+      if ((getline next_line) > 0 && next_line == second) {
+        found = 1
+      }
+    }
+    END { exit(found ? 0 : 1) }
+  ' "${path}"; then
+    printf 'FAIL: %s\nmissing adjacent lines: %s / %s\n' \
+      "${message}" "${first}" "${second}" >&2
+    exit 1
+  fi
+}
+
 test_tracked_manifests_define_restricted_project_and_application() {
   local project_path="${APP_PROJECT_MANIFEST}"
   local application_path="${APPLICATION_MANIFEST}"
 
   assert_file_contains "${project_path}" \
-    '    - https://github.com/ckn1070/community.git' \
+    '    - https://github.com/ckn1070/car-community.git' \
     "AppProject source를 현재 private application repository로 제한해야 합니다."
   assert_file_contains "${project_path}" '  clusterResourceWhitelist: []' \
     "Application bootstrap 소유 Namespace를 Argo CD가 생성하면 안 됩니다."
@@ -60,6 +100,15 @@ test_tracked_manifests_define_restricted_project_and_application() {
     "Runtime Deployment를 허용해야 합니다."
   assert_file_contains "${project_path}" '      kind: Job' \
     "PreSync Job을 허용해야 합니다."
+  assert_file_contains_adjacent_lines "${project_path}" \
+    '    - group: networking.k8s.io' \
+    '      kind: Ingress' \
+    "Staging ALB Ingress만 exact namespaced resource로 허용해야 합니다."
+  assert_file_excludes_pattern "${project_path}" \
+    "^[[:space:]]+(group|kind):[[:space:]]+['\"]?[*]['\"]?[[:space:]]*$" \
+    "AppProject에 namespaced API group·kind wildcard를 허용하면 안 됩니다."
+  assert_file_excludes "${project_path}" '      kind: Secret' \
+    "Git 밖에서 주입하는 Secret을 Argo CD에 허용하면 안 됩니다."
   assert_file_contains "${application_path}" '    targetRevision: main' \
     "승인·merge된 main branch를 목표 상태로 사용해야 합니다."
   assert_file_contains "${application_path}" '    path: deploy/overlays/stg' \
@@ -236,7 +285,7 @@ test_repository_secret_does_not_log_private_key() (
   apply_repository_secret 123 456 "${private_key_path}"
 
   grep -Fq -- '--from-file=githubAppPrivateKey=' "${action_log}"
-  grep -Fq -- '--from-literal=url=https://github.com/ckn1070/community.git' "${action_log}"
+  grep -Fq -- '--from-literal=url=https://github.com/ckn1070/car-community.git' "${action_log}"
   grep -Fq -- '--from-literal=project=car-community' "${action_log}"
   if grep -Fq -- "${private_key_content}" "${action_log}"; then
     echo "FAIL: GitHub App private key가 command argument나 log에 나타나면 안 됩니다." >&2

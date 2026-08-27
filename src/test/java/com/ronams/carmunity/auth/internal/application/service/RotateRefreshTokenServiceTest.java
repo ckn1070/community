@@ -171,6 +171,48 @@ class RotateRefreshTokenServiceTest {
     assertThat(lifecycleStorePort.reusedAt).isEqualTo(NOW);
   }
 
+  /** 교체 이력이 있는 token은 이미 만료됐더라도 탈취 신호를 보존해 token family 폐기를 요청합니다. */
+  @Test
+  void revokesFamilyWhenExpiredReplacedRefreshTokenIsReused() {
+    lifecycleStorePort.storedToken =
+        new RefreshTokenRecord(
+            1L,
+            10L,
+            ACCOUNT_PUBLIC_ID,
+            TOKEN_FAMILY_ID,
+            NOW.minusSeconds(7200),
+            NOW.minusSeconds(1),
+            NOW.minusSeconds(3600),
+            "ROTATED",
+            2L);
+
+    assertInvalidRefreshToken(
+        () -> service.execute(new RotateRefreshTokenCommand("expired-replaced")));
+    assertThat(lifecycleStorePort.reusedFamilyId).isEqualTo(TOKEN_FAMILY_ID);
+    assertThat(lifecycleStorePort.reusedAt).isEqualTo(NOW);
+  }
+
+  /** 폐기 이력이 있는 token은 이미 만료됐더라도 reuse 경로를 선택해 token family 폐기를 요청합니다. */
+  @Test
+  void revokesFamilyWhenExpiredRevokedRefreshTokenIsReused() {
+    lifecycleStorePort.storedToken =
+        new RefreshTokenRecord(
+            1L,
+            10L,
+            ACCOUNT_PUBLIC_ID,
+            TOKEN_FAMILY_ID,
+            NOW.minusSeconds(7200),
+            NOW.minusSeconds(1),
+            NOW.minusSeconds(3600),
+            "LOGOUT",
+            null);
+
+    assertInvalidRefreshToken(
+        () -> service.execute(new RotateRefreshTokenCommand("expired-revoked")));
+    assertThat(lifecycleStorePort.reusedFamilyId).isEqualTo(TOKEN_FAMILY_ID);
+    assertThat(lifecycleStorePort.reusedAt).isEqualTo(NOW);
+  }
+
   /** 정지된 account의 refresh 요청은 새 token을 만들지 않고 기존 family를 폐기합니다. */
   @Test
   void revokesFamilyWhenAccountIsSuspended() {

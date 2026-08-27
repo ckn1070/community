@@ -88,7 +88,7 @@
 | `PASSWORD_CHANGE`             | `FAILURE` | `CURRENT_PASSWORD_MISMATCH` | 비밀번호 변경 요청의 current password가 일치하지 않을 때                                           | 대상 account     | null            | `{}`                                                                      |
 | `PASSWORD_CHANGE_REQUIREMENT` | `SUCCESS` | `INITIAL_ADMIN_BOOTSTRAP`   | 최초 최고 관리자 bootstrap에서 초기 비밀번호 변경 강제 상태를 만들 때                                      | 생성된 account    | null            | `{"actorType":"SYSTEM","action":"REQUIRED"}`                              |
 | `ROLE_CHANGE`                 | `SUCCESS` | `SUPER_ADMIN_BOOTSTRAP`     | 최초 최고 관리자 bootstrap에서 `ROLE_SUPER_ADMIN`을 부여할 때                                   | 생성된 account    | null            | `{"roleCode":"ROLE_SUPER_ADMIN","actorType":"SYSTEM","action":"GRANTED"}` |
-| `ADMIN_INVITATION_CREATED`    | `SUCCESS` | null                        | 최고 관리자가 관리자 초대를 생성하고 기존 같은 email의 open 초대가 있으면 회수 처리까지 성공했을 때                    | 초대 생성 account  | null            | 초대 public id, 대상 email hash, role, 기존 초대 회수 여부, 알림 결과                  |
+| `ADMIN_INVITATION_CREATED`    | `SUCCESS` | null                        | 최고 관리자가 관리자 초대를 생성하고 기존 같은 email의 open 초대가 있으면 회수 처리까지 성공했을 때                    | 초대 생성 account  | null            | 초대 public id, 대상 email hash, role, 기존 초대 회수 여부                          |
 | `ADMIN_INVITATION_ACCEPTED`   | `SUCCESS` | null                        | 초대 token 검증, 관리자 account graph 생성, 초대 수락 상태 저장이 성공했을 때                              | 생성된 account    | null            | 초대 public id, role, 초대 생성 account id                                      |
 | `ADMIN_INVITATION_REVOKED`    | `SUCCESS` | null                        | 최고 관리자가 open 관리자 초대를 명시적으로 회수했을 때                                               | 회수 account      | null            | 초대 public id, 대상 email hash, reason code                                  |
 
@@ -165,14 +165,19 @@ event가 상태 변경과 원자적이라고 일반화하지 않습니다.
 | 비밀번호 재설정 완료 | reset token 소비, password hash 갱신, `password_change_required = false`, active refresh token `PASSWORD_CHANGED` 폐기, `PASSWORD_RESET_COMPLETED/SUCCESS` 이벤트를 함께 저장합니다. | token 검증 실패, credential 저장 실패 시 완료 결과와 이벤트가 함께 남지 않습니다. |
 | 비밀번호 변경 성공 | password hash 갱신, `password_change_required = false`, active refresh token `PASSWORD_CHANGED` 폐기, `PASSWORD_CHANGE/SUCCESS` 이벤트를 함께 저장합니다. | 저장 경계 안의 실패는 함께 rollback됩니다. |
 | 비밀번호 변경 current password 불일치 | `PASSWORD_CHANGE/FAILURE/CURRENT_PASSWORD_MISMATCH` 이벤트를 남긴 뒤 API 오류를 반환합니다. | `ApiException`은 rollback 대상에서 제외해 실패 이벤트가 남습니다. |
-| 관리자 초대 생성 | 같은 email의 기존 open 초대 회수와 새 `admin_invitation`을 한 transaction에 저장합니다. commit 이후 notification을 발송하고 결과를 `ADMIN_INVITATION_CREATED` 이벤트로 별도 `REQUIRES_NEW` transaction에 저장합니다. | invitation 저장이 rollback되면 발송과 이벤트가 실행되지 않습니다. 발송 실패도 event `result=SUCCESS`이며 metadata의 `notificationResult=FAILURE`로 남습니다. event 저장 자체가 실패하면 이미 commit된 invitation은 rollback되지 않습니다. |
+| 관리자 초대 생성 | 같은 email의 기존 open 초대 회수, 새 `admin_invitation`과 `ADMIN_INVITATION_CREATED` 이벤트를 한 transaction에 저장하고 commit 이후 notification을 발송합니다. | 초대 또는 이벤트 저장이 실패하면 전체 저장이 rollback되고 notification을 발송하지 않습니다. commit 이후 provider 실패는 이미 저장된 초대와 이벤트를 바꾸지 않습니다. |
 | 관리자 초대 수락 | 초대 token 검증 뒤 account graph 생성, 초대 accepted 상태 저장, `ADMIN_INVITATION_ACCEPTED` 이벤트 저장을 함께 처리합니다. | 저장 경계 안의 실패는 함께 rollback됩니다. |
 | 관리자 초대 회수 | open 초대 revoked 상태 저장과 `ADMIN_INVITATION_REVOKED` 이벤트 저장을 함께 처리합니다. | 저장 경계 안의 실패는 함께 rollback됩니다. |
 | refresh token rotation 성공 | 새 token 저장, 기존 token `ROTATED` 폐기, `TOKEN_REFRESH/SUCCESS` 이벤트를 함께 저장합니다. | 저장 경계 안의 실패는 함께 rollback됩니다. |
 | refresh token reuse detection | family 활성 token `REUSE_DETECTED` 폐기, `TOKEN_REFRESH/FAILURE/TOKEN_REUSE_DETECTED` 이벤트를 함께 저장합니다. | `ApiException`은 rollback 대상에서 제외해 폐기 결과와 실패 이벤트가 남습니다. |
 | refresh token account 상태 거부 | family 활성 token `ACCOUNT_SUSPENDED` 폐기, `TOKEN_REFRESH/FAILURE/ACCOUNT_SUSPENDED` 또는 `ACCOUNT_WITHDRAWN` 이벤트를 함께 저장합니다. | `ApiException`은 rollback 대상에서 제외해 폐기 결과와 실패 이벤트가 남습니다. |
 
-관리자 초대 생성 event의 현재 after-commit 별도 transaction은 초대와 감사 기록의 원자성을 보장하지 않습니다. 완료 당시 목표를 충족하지 못한 내구성 보완과 실패 복구 계약은 다시 연 [관리자 초대/수락](../work-items/features/2026/011-admin-invitations.md)이 소유합니다. 또한 이메일 인증 요청·비밀번호 재설정 요청·관리자 초대 생성은 provider 호출과 성공 event 저장을 같은 `try`에서 처리해 event 저장 실패를 발송 실패로 오분류할 수 있습니다. 세 흐름의 의미 분리는 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이 소유합니다.
+관리자 초대 생성 이벤트는 초대 생성 사실만 소유하며 commit 이후 notification delivery
+결과를 기록하지 않습니다. Delivery 결과를 장기 보존하려면 생성 이벤트와 다른 taxonomy·
+저장·복구 계약이 필요합니다. 이메일 인증 요청과 비밀번호 재설정 요청은 provider 호출과
+성공 event 저장을 같은 `try`에서 처리해 event 저장 실패를 발송 실패로 오분류할 수 있으며,
+남은 의미 분리는 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이
+소유합니다.
 
 ## Metadata 기준
 
@@ -193,7 +198,6 @@ metadata는 항상 JSON object여야 하며 event별 허용 key만 사용합니�
 | `ADMIN_INVITATION_CREATED` | `targetEmailHash` | 대상 email SHA-256 hash |
 | `ADMIN_INVITATION_CREATED` | `roleCode` | `ROLE_ADMIN` |
 | `ADMIN_INVITATION_CREATED` | `previousInvitationRevoked` | 기존 open 초대 회수 여부 |
-| `ADMIN_INVITATION_CREATED` | `notificationResult` | `SUCCESS` 또는 `FAILURE` |
 | `ADMIN_INVITATION_ACCEPTED` | `invitationPublicId` | 초대 public id |
 | `ADMIN_INVITATION_ACCEPTED` | `roleCode` | `ROLE_ADMIN` |
 | `ADMIN_INVITATION_ACCEPTED` | `invitedByAccountId` | 초대 생성 account 내부 id |
@@ -214,10 +218,8 @@ metadata에 새 key를 추가할 때는 다음 기준을 모두 만족해야 합
 - key와 값 후보가 이 문서에 추가됩니다.
 - 관련 persistence 테스트가 값을 고정합니다.
 
-현재 관리자 초대 event의 metadata는 entity factory에 구현돼 있지만 key·값 전체가
-persistence/integration test로 고정되지 않았습니다. 생성 event 내구성과 함께 다시 연
-[관리자 초대/수락](../work-items/features/2026/011-admin-invitations.md)이 이 미완료 acceptance를
-소유합니다.
+관리자 초대 생성·수락·회수 event의 metadata key와 값은 PostgreSQL 통합 test가 exact
+object로 고정합니다. 생성 metadata에는 notification delivery 결과를 추가하지 않습니다.
 
 ## 새 이벤트 추가 기준
 

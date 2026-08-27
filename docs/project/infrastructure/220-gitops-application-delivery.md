@@ -1,29 +1,15 @@
 # GitOps application delivery
 
-이 문서는 private ECR exact digest가 pull request 승인을 거쳐 Kubernetes live state로
+이 상세 SOT는 private ECR exact digest가 pull request 승인을 거쳐 Kubernetes live state로
 수렴하고 rollback되는 반복 delivery의 actor·artifact·state model을 소유합니다. Argo CD
-최초 설치·identity·permission은 [Argo CD platform](150-argocd-platform.md), 실제 반복 절차는
+최초 설치·identity·permission은 [160 Argo CD platform](160-argocd-platform.md), 실제 반복 절차는
 [GitOps 배포·rollback runbook](../../operations/420-gitops-deployment-and-rollback-runbook.md)이
 소유합니다.
 
-## Delivery 흐름
-
-```text
-car-community source PR
-  -> main CI success
-  -> private ECR immutable ARM64 digest
-  -> car-community의 deploy/overlays/stg digest 변경 PR
-  -> 사람 review·merge
-  -> Argo CD Core pulls main
-  -> Kustomize deploy/overlays/stg render
-  -> PreSync DB URL·RDS CA ConfigMap
-  -> PreSync Migration Job
-       -> Flyway migration
-       -> afterMigrate runtime 권한 동기화
-  -> runtime Deployment·ClusterIP Service
-  -> automated sync·prune·selfHeal
-  -> car-community-stg = Synced·Healthy
-```
+전체 CI/CD 순서와 workflow별 step은
+[200 CI/CD pipeline](200-ci-cd-pipeline.md)이 소유합니다. 이 문서는 그 흐름을 반복하지 않고
+digest 승인 뒤 Git desired state가 live state로 수렴하는 actor·artifact·state model을
+상세화합니다.
 
 Image 게시와 deployment 승인은 같은 사건이 아닙니다. Publish workflow는 runtime artifact만
 만들고, 같은 repository의 별도 `deploy/**` digest 변경 PR이 staging deployment 승인
@@ -42,6 +28,8 @@ credential을 소유하지 않습니다.
 | Git 밖 prerequisite resource | Namespace와 runtime·migrator·auth·notification Secret | Local `.env` 허용값을 전달한 bootstrap operator |
 | Argo bootstrap desired state | AppProject와 `car-community-stg` Application spec | `scripts/bootstrap/gitops/manifests`의 Git-tracked YAML·최초 bootstrap operator |
 | Git-managed application 설정 | DB URL·pinned RDS CA, notification 공개 설정 ConfigMap | GitOps PR reviewer·Argo controller |
+| Git-managed ingress intent | Staging NodePort patch, host·listener·target·TLS policy Ingress | GitOps PR reviewer·Argo controller |
+| AWS ingress platform | LBC release, IAM·subnet·ACM과 controller-managed ALB·SG | Helm bootstrap·AWS·Cloudflare operator·LBC; Argo는 이 platform을 설치하지 않음 |
 
 ECR SHA tag, digest와 GitOps commit을 혼용하지 않습니다. Tag는 source lookup, digest는 content,
 GitOps commit은 승인된 deployment intent입니다.
@@ -124,9 +112,14 @@ Deployment를 sync하지 않습니다.
 Deployment는 runtime DB Secret만 사용하고 `SPRING_FLYWAY_ENABLED=false`를 고정합니다.
 DB·auth는 explicit key reference로 제한하고, runtime에서 함께 진화하는 notification
 ConfigMap과 Secret만 `envFrom`으로 소비합니다. Migration Job에는 notification credential을
-주입하지 않습니다. 따라서 replica가 늘거나 재시작돼도 migration을 실행하지 않습니다. Service는 ClusterIP로 여러
-replica를 같은 endpoint 뒤에 둘 수 있지만 HPA·Cluster Autoscaler 자체는 현재 manifest에
-포함하지 않습니다.
+주입하지 않습니다. 따라서 replica가 늘거나 재시작돼도 migration을 실행하지 않습니다.
+
+Base Service는 환경 공통 port contract을 소유하고 staging overlay가 `NodePort`로 patch합니다.
+고정 `nodePort`는 주지 않고 Kubernetes가 할당하게 하며, self-managed kubeadm·Calico
+overlay에서 LBC `instance` target이 node를 거쳐 Pod로 전달하는 경계입니다.
+Ingress는 `stg-api.ronams.com`, HTTP→HTTPS, certificate host discovery와 TLS policy를
+소유하지만 controller release·IAM·certificate·DNS를 소유하지 않습니다. HPA·Cluster
+Autoscaler 자체는 현재 manifest에 포함하지 않습니다.
 
 현재 manifest는 Kubernetes 기본 1 replica를 사용하고 resource·rollout·restart probe 수치를
 추측해 고정하지 않습니다. Migration Job은 작업의 무한 대기를 막기 위한 deadline `300s`와
@@ -134,16 +127,14 @@ retry `0`만 명시합니다. 최초 live 배포 뒤 `kubectl top`, startup 시�
 `max_connections` 대비 `최대 replica × Hikari pool`을 측정한 별도 변경에서 resource와 HPA
 정책을 결정합니다.
 
-## 정상 반복 delivery
+Pod·Node autoscaling과 그에 결합되는 metric·log 후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
 
-1. 성공한 `main` image publish에서 exact ECR digest를 얻습니다.
-2. `deploy/overlays/stg`의 image reference를 mutable tag가 아닌 그 digest로 바꾸는 별도 PR을 만듭니다.
-3. Manifest render·diff와 목표 digest를 review하고 merge합니다.
-4. Argo CD가 merge된 `main`을 pull·render하고 단일 Migration PreSync Job을 실행합니다.
-5. Migration과 runtime 권한 callback이 성공한 뒤 runtime Deployment·Service를 sync합니다.
-6. Application condition 없음, `Synced`·`Healthy`와 workload rollout을 확인합니다.
+반복 delivery의 순서와 각 단계 출력은 [200 CI/CD pipeline](200-ci-cd-pipeline.md)이
+소유합니다. Selective sync는 PreSync hook을 건너뛸 수 있으므로 이 delivery 경로에서
+사용하지 않습니다.
 
-Selective sync는 PreSync hook을 건너뛸 수 있으므로 이 delivery 경로에서 사용하지 않습니다.
 Full sync가 Job을 다시 만들 수 있지만 Flyway history는 적용된 version을 다시 실행하지 않고,
 `afterMigrate` callback은 migration 0건인 재실행에서도 같은 최소 권한으로 다시 수렴합니다.
 
@@ -178,6 +169,8 @@ ECR lifecycle policy를 만들 때 rollback window가 필요로 하는 digest가
 | Sync condition | Permission·render·apply failure | AppProject·event·Argo log·resource owner를 진단해 Git 또는 platform을 forward fix |
 | `OutOfSync`·unhealthy | Target과 live 또는 workload health 불일치 | Live patch 대신 Git target·runtime 원인을 수정 |
 | 잘못된 정상 merge | 승인된 desired state 자체가 잘못됨 | 이전 digest·manifest commit revert PR |
+| Ingress model build 실패 | Certificate·subnet·IAM·annotation 계약 불일치 | ALB를 Console에서 직접 만들지 않고 Ingress event·LBC log·platform prerequisite를 forward fix |
+| ALB target unhealthy | NodePort·endpoint·Pod readiness·managed SG 경계 문제 | NodePort를 public으로 열지 않고 Service→Pod→SG 순서로 진단 |
 
 Argo timeout은 Application·workload 자동 삭제나 automated sync 비활성의 신호가 아닙니다.
 Controller·repository·image·manifest 원인을 확인하고 Git 목표 또는 credential을 고칩니다.
@@ -203,21 +196,19 @@ GitHub App rotation 원리는
 
 ## Repository capability 경계
 
-현재 `car-community` repository에는 image publish workflow, application prerequisite,
-notification credential operation, Service·Deployment·단일 Migration PreSync Job manifest, Argo bootstrap·rotation script와 contract test가
-있습니다. 다음은 아직 후속 범위입니다.
+현재 repository capability에는 image publish workflow, application prerequisite,
+notification credential operation, Service·Deployment·단일 Migration PreSync Job,
+staging NodePort·Ingress manifest, Argo·LBC bootstrap·rotation script와 contract test가
+포함됩니다. Digest 변경 PR workflow와 그 Git write credential은 구현하지 않았습니다.
 
-- Digest 변경 PR workflow와 Git write credential
-- AWS Load Balancer Controller·Ingress·ALB·HTTPS·DNS
-
-문서·script 존재를 외부 결과의 완료 증거로 사용하지 않습니다. 현재 staging 실행 상태는
+Repository capability와 live 실행 완료는 서로 다른 사실입니다. 현재 staging 실행 상태는
 [Staging 단일 node 전체 구축 시나리오](../../operations/scenarios/100-staging-single-node-bootstrap.md)가
 소유합니다.
 
 ## 관련 문서와 공식 근거
 
-- **Image artifact 반복 흐름**: [Container image delivery](200-container-image-delivery.md)
-- **Argo platform·permission**: [Argo CD platform](150-argocd-platform.md)
+- **Image identity·build·kubelet pull**: [210 Container image delivery](210-container-image-delivery.md)
+- **Argo platform·permission**: [160 Argo CD platform](160-argocd-platform.md)
 - **Workload network·Argo reconcile 진단**:
   [170 Kubernetes workload 진단](../../operations/diagnostics/170-kubernetes-workload-network-events-and-logs.md),
   [180 Argo CD reconciliation 진단](../../operations/diagnostics/180-argocd-reconciliation.md)
@@ -227,6 +218,10 @@ notification credential operation, Service·Deployment·단일 Migration PreSync
   [Staging 단일 node 전체 구축 시나리오](../../operations/scenarios/100-staging-single-node-bootstrap.md)
 - **Application prerequisite와 private repository 최초 연결**:
   [Application delivery 최초 bootstrap runbook](../../operations/350-application-delivery-bootstrap-runbook.md)
+- **Ingress desired state와 AWS lifecycle 경계**:
+  [170 AWS Load Balancer ingress](170-aws-load-balancer-ingress.md)
+- **Staging external HTTPS 최초 절차**:
+  [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
 - **Notification provider credential 변경**:
   [Application notification credential 변경](../../operations/540-application-notification-credential-runbook.md)
 - [Argo CD automated sync](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)

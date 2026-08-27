@@ -7,7 +7,7 @@ AWS resource 생성이나 EC2 접속 방법은 소유하지 않습니다. 전체
 각 단계의 실제 동작·선택 이유·live checkpoint와 복구는 연결된 단계별 runbook이
 소유합니다.
 EC2로 전달할 file, SSH 명령과 local·server 실행 directory는
-[EC2 실행 파일 전달](../../../docs/operations/200-kubernetes-bootstrap-runbook.md#ec2-실행-파일-전달)이
+[150 EC2 실행 artifact 전달](../../../docs/operations/150-ec2-execution-artifact-transfer-runbook.md)이
 소유합니다.
 
 현재 구현된 단계는 `100-prepare-host.sh`, `200-install-containerd.sh`,
@@ -65,10 +65,10 @@ EC2로 전달할 file, SSH 명령과 local·server 실행 directory는
 | 지원 범위 | Ubuntu `24.04`, systemd, Bash입니다. CPU architecture에는 의존하지 않습니다. |
 | 선행 command | `apt-get`, `awk`, `cat`, `chmod`, `cp`, `mktemp`, `mv`, `rm`, `swapoff`, `swapon`, `sysctl`, `systemctl`, `timedatectl`이 필요합니다. `ufw`는 설치된 경우에만 상태를 확인합니다. |
 | secret | 읽거나 생성하거나 출력하지 않습니다. |
-| 직접 변경 | `apt-get update`, `apt-get upgrade --yes`, 현재 swap 비활성화, `/etc/fstab`의 활성 swap entry 주석 처리, `net.ipv4.ip_forward=1` 영구·현재 적용입니다. |
+| 직접 변경 | `apt-get update`, `apt-get upgrade --yes`, Super Admin 운영 절차가 사용하는 `jq` 설치, 현재 swap 비활성화, `/etc/fstab`의 활성 swap entry 주석 처리, `net.ipv4.ip_forward=1` 영구·현재 적용입니다. |
 | 변경하지 않음 | 시간 동기화 provider, UFW rule·상태, systemd swap unit, kernel module, container runtime, kubeadm, CNI를 설치하거나 변경하지 않습니다. |
 | systemd swap 판정 | 전체 unit file inventory 조회가 성공한 뒤 이름이 `.swap`으로 끝나는 `enabled`·`enabled-runtime` unit만 찾습니다. Swap unit이 하나도 없는 빈 필터 결과는 정상이며, 전체 inventory 조회 실패는 오류입니다. |
-| 성공 postcondition | 활성 swap과 재부팅 시 활성화될 fstab·systemd swap 설정이 없고, project 소유 sysctl file과 현재 kernel의 IPv4 forwarding 값이 `1`이며, system clock이 동기화되어 있고 UFW가 없거나 비활성입니다. |
+| 성공 postcondition | `jq` command가 있고, 활성 swap과 재부팅 시 활성화될 fstab·systemd swap 설정이 없으며, project 소유 sysctl file과 현재 kernel의 IPv4 forwarding 값이 `1`이고, system clock이 동기화되어 있고 UFW가 없거나 비활성입니다. |
 | 재부팅 checkpoint | `/var/run/reboot-required`가 있으면 재부팅 필요를 보고합니다. 재부팅·재접속 뒤 같은 `100`을 다시 실행해 marker 부재와 postcondition을 재검증해야 다음 단계로 갈 수 있습니다. |
 | exit | `0`은 위 postcondition 검증 통과와 재부팅 필요 여부 보고까지 끝났음을 뜻합니다. 현재 swap, `/etc/fstab` 또는 전체 systemd unit file inventory 조회가 실패하면 빈 상태로 간주하지 않고 nonzero로 중단합니다. 그 밖의 값은 완료로 취급하지 않습니다. `--help`·`-h`는 사용법만 출력하고 `0`으로 끝납니다. |
 

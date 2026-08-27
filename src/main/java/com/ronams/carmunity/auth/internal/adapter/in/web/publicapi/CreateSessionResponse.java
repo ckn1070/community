@@ -13,14 +13,25 @@ import java.util.UUID;
  */
 @Schema(description = "비밀번호 로그인 성공 응답")
 public record CreateSessionResponse(
-    @Schema(description = "Bearer access token") String accessToken,
-    @Schema(description = "HTTP Authorization scheme", example = "Bearer") String tokenType,
-    @Schema(description = "access token 만료 시각") Instant accessTokenExpiresAt,
-    @Schema(description = "refresh token 원문") String refreshToken,
-    @Schema(description = "refresh token 만료 시각") Instant refreshTokenExpiresAt,
-    @Schema(description = "회원 public id") UUID memberId,
-    @Schema(description = "role code 목록") List<String> roles,
-    @Schema(description = "session 접근 범위") String sessionAccess) {
+    @Schema(description = "Bearer access token", requiredMode = Schema.RequiredMode.REQUIRED)
+        String accessToken,
+    @Schema(
+            description = "HTTP Authorization scheme",
+            example = "Bearer",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        String tokenType,
+    @Schema(description = "access token 만료 시각", requiredMode = Schema.RequiredMode.REQUIRED)
+        Instant accessTokenExpiresAt,
+    @Schema(description = "refresh token 원문", requiredMode = Schema.RequiredMode.REQUIRED)
+        String refreshToken,
+    @Schema(description = "refresh token 만료 시각", requiredMode = Schema.RequiredMode.REQUIRED)
+        Instant refreshTokenExpiresAt,
+    @Schema(description = "회원 public id", requiredMode = Schema.RequiredMode.REQUIRED)
+        UUID memberId,
+    @Schema(description = "role code 목록", requiredMode = Schema.RequiredMode.REQUIRED)
+        List<String> roles,
+    @Schema(description = "session 접근 범위", requiredMode = Schema.RequiredMode.REQUIRED)
+        String sessionAccess) {
 
   /** application 결과를 외부 응답으로 변환합니다. */
   static CreateSessionResponse from(CreatedSessionResult result) {

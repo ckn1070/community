@@ -52,7 +52,7 @@ command가 실행됐다는 사실을 정상 복구 완료로 해석하지 않습
 - Single-node에서 다중 node·HA·Auto Scaling 전환
 - Different CNI·raw manifest·Argo full/HA·다른 field manager로 owner 전환
 - IAM trust principal·repository·branch·permission 확대
-- Terraform import·replacement와 state ownership 전환
+- IaC import·replacement와 state ownership 전환
 - Credential 전달·보존·rotation 방식 변경
 
 이 변경은 현재 bootstrap에 분기를 덧붙여 자동 흡수하지 않습니다. Consumer, data·permission

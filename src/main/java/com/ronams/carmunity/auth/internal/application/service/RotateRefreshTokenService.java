@@ -51,11 +51,11 @@ public class RotateRefreshTokenService implements RotateRefreshTokenUseCase {
             .orElseThrow(this::invalidRefreshToken);
     Instant now = clock.instant();
 
-    if (currentToken.isExpiredAt(now)) {
-      throw invalidRefreshToken();
-    }
     if (currentToken.isReuseCandidate()) {
       refreshTokenLifecycleStorePort.revokeFamilyForReuse(currentToken, now);
+      throw invalidRefreshToken();
+    }
+    if (currentToken.isExpiredAt(now)) {
       throw invalidRefreshToken();
     }
 

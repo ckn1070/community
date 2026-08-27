@@ -2,6 +2,7 @@ package com.ronams.carmunity.account.internal.adapter.in.web.publicapi;
 
 import com.ronams.carmunity.account.internal.application.port.in.RegisterMemberAccountUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -35,6 +36,11 @@ public class RegisterMemberController {
   @ApiResponse(
       responseCode = "201",
       description = "회원 가입 성공",
+      headers =
+          @Header(
+              name = "Location",
+              description = "생성된 member resource URI",
+              schema = @Schema(type = "string", format = "uri")),
       content = @Content(schema = @Schema(implementation = RegisterMemberResponse.class)))
   @ApiResponse(
       responseCode = "400",

@@ -23,4 +23,4 @@
 
 - **시나리오 작성 기준**: [100 문서 정보 구조 가이드](../../100-documentation-guide.md#operations-scenario)
 - **세부 운영 절차**: [000 운영 문서 목차](../000-index.md)
-- **영구 시스템 구조**: [300 Infrastructure system](../../project/300-infrastructure-system.md)
+- **영구 시스템 구조**: [100 Infrastructure overview](../../project/infrastructure/100-infrastructure-overview.md)

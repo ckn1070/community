@@ -227,3 +227,37 @@ source와 대조해 수정하되, 첫 문서 closure를 두 번째 mutation의 a
 `PASS`했습니다. 이 verdict는 현재 authoring contract의 모델링 효과와 해당 fixture 전이만 증명합니다. 실제 진단 문서
 작성의 과거 순서를 소급해 바꾸거나 미래 문서 writer·다른 branch에서의 invocation을 완료로
 승격하지 않으며, work item은 기존 Application runbook 복귀점 때문에 `In Progress`를 유지합니다.
+
+## Scenario의 live delta를 재사용 단계로 누적한 사건
+
+### 두 사건과 공통 불변식
+
+`748a0bfe`는 기존 EC2 archive 전달 완료 항목을 유지한 채, 새 Super Admin script가 아직
+전달되지 않았다는 상태를 `확장 EC2 실행 파일 재전달`이라는 두 번째 실행 항목으로
+추가했습니다. 후속 ingress 작업도 같은 항목에 Ingress script를 더해 이 구조를 다시
+확장했습니다. 두 사건의 공통 불변식은 재사용 가능한 Scenario를 빈 환경에서 실행할 때 같은
+actor·대상·상태 전이·완료 조건을 한 번만 수행하고, 기존 환경의 revision delta는 현재 live
+상태에서만 추적하는 것입니다.
+
+### 이전 방어 생애주기의 실패
+
+Scenario 유형은 사건 전에 이미 재사용 흐름과 live 상태를 명확히 나누고 과거 snapshot을
+누적하지 말라고 규정했습니다. `748a0bfe` 후보는 문서 전문 final까지 통과했지만, writer와
+reviewer는 `기존 전달`과 `확장 재전달`이라는 서로 다른 제목을 독립 작업처럼 소비했습니다.
+각 항목의 actor·대상·상태 전이·완료 조건을 정규화하거나 빈 환경에서 전체 순서를 재생하지
+않아, 내부 문장과 link가 모두 맞는 후보를 재사용 recipe로도 맞다고 판정했습니다.
+
+다섯 번의 인과를 닫으면 직접 오류는 같은 전달을 두 checklist 항목으로 만든 것, 허용 원인은
+현재 미전달 상태를 새 영구 행동으로 분류한 것, interface 공백은 statement를 재사용 흐름과
+live 상태 중 하나로 배치하는 전이 대조 부재, oracle 실패는 제목·시점 차이를 독립 작업으로
+인정한 것입니다. 2차 root는 Scenario의 두 책임을 선언했지만 같은 상태 전이를 식별하는
+writer·final 입력과 replay oracle로 연결하지 않은 통제 생애주기 단절입니다.
+
+### 통제 처분과 남은 위험
+
+Scenario가 재사용 흐름과 live 상태를 함께 소유하는 구조는 유지합니다. 문서 정보 구조와
+문서화 final을 강화해 실행 항목과 복합 항목의 하위 행동을 actor·artifact·effective target
+state·상태 전이·완료 조건으로 대조하고, 빈 환경 replay에서 중복 전이를 거부합니다. 제품별
+재전달 금지나 새 verifier는 추가하지 않습니다. 명사를
+certificate rotation이나 configuration bundle로 바꿔도 같은 revision delta는 현재 상태에만
+남고, 실제로 다른 target state를 만드는 독립 전이는 별도 단계로 유지해야 합니다.

@@ -1,6 +1,6 @@
 # Kubernetes cluster
 
-이 문서는 Ubuntu EC2가 Kubernetes control plane·worker를 함께 실행하는 빈 cluster가 되기까지
+이 상세 SOT는 Ubuntu EC2가 Kubernetes control plane·worker를 함께 실행하는 빈 cluster가 되기까지
 구성요소, 고정 계약, 단계별 상태 전이, 선택 이유와 재검토 조건을 소유합니다. 사람이 script를
 전달하고 실행·재개하는 절차는
 [Kubernetes bootstrap runbook](../../operations/200-kubernetes-bootstrap-runbook.md)과 단계별
@@ -51,25 +51,12 @@ VPN과 조직 network에 겹치지 않아야 하며 `kubeadm init` 전까지만 
 
 ## 실행 artifact 전달 경계
 
-현재 첫 EC2 구축과 곧 이어질 검증·운영에 필요한 script 열두 개를 생애주기 경로를 유지한
-하나의 `tar.gz`와 SHA-256 file로 SSH `scp` 한 번에 전달합니다.
-
-- Kubernetes bootstrap 다섯 개
-- ECR credential provider bootstrap 한 개와 pull verify 한 개
-- Argo CD Core·repository 연결 bootstrap 두 개
-- Application database·Kubernetes prerequisite bootstrap 두 개
-- Argo repository credential rotation operation 한 개
-
-Repository 전체 clone, application source·Dockerfile·문서·local test와 credential은 EC2에
-보내지 않습니다. 한 node에 필요한 실행 file이 작아 별도 S3 bucket·SSM 전달 체계를 만들지
-않고 기존 SSH 인증·암호화 경로를 사용합니다. Checksum은 local archive와 EC2 수신 byte의
-동일성만 증명하며 code signature나 배포자 identity 증명은 아닙니다. 다중 node 배포·중앙
-감사 요구가 생기면 S3·Systems Manager 기반 전달을 재검토합니다.
-
-한 번 전달한다고 실행 dependency가 합쳐지는 것은 아닙니다. Kubernetes `100`~`500`을 먼저
-완료하고, ECR IAM·image 준비 뒤 provider·pull, DB role과 Git 밖 application prerequisite,
-실제 digest overlay·GitHub App 준비 뒤 Argo 연결을 실행합니다.
-Credential rotation은 최초 연결 뒤에만 사용합니다.
+Kubernetes script도 여러 lifecycle이 공유하는 공통 EC2 artifact의 일부입니다. 전달 actor,
+archive·checksum 경계와 다른 consumer 관계는
+[100 Infrastructure overview의 실행 artifact 전달 경계](100-infrastructure-overview.md#실행-artifact-전달-경계)가
+소유하고, 사람이 수행할 exact 전달 절차는
+[150 EC2 실행 artifact 전달](../../operations/150-ec2-execution-artifact-transfer-runbook.md)을
+따릅니다. Kubernetes 상태 전이는 전달 완료 뒤 `100` Host 준비부터 시작합니다.
 
 ## `100` Host 준비의 원리와 선택
 
@@ -178,6 +165,10 @@ byte의 경계입니다. Actual operator image는 `quay.io/tigera/operator:v1.42
 encapsulate하지 않으므로 EC2 source/destination check와 native routing 영향을 검토하거나
 전체 VXLAN으로 바꿔야 합니다. Server-side apply 충돌을 force하지 않고 timeout 때도 정상
 control plane과 적용 resource를 삭제하지 않은 채 원인 해결 후 `500`만 재실행합니다.
+
+다중 node·교체·복구 후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
 
 ## 완료 상태와 아직 아닌 것
 

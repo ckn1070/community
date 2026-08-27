@@ -38,9 +38,11 @@ application runbook으로 이동합니다.
 ## 상세 문서 공통 구조
 
 모든 상세 문서는 다음 순서를 사용합니다. 같은 레벨의 command·option은 같은 heading과 표
-형식으로 설명하고, 서로 다른 정보 레벨일 때만 표현 형식을 바꿉니다.
+형식으로 설명하고, 서로 다른 정보 레벨일 때만 표현 형식을 바꿉니다. `110`은 AWS Console
+항목별 확인 목적·첫 이상 신호를 표로 제시하고, `120`~`180`은 아래 Bash probe 계약을
+적용합니다.
 
-1. **상단 수동 확장 조회**: 이 영역을 더 깊게 조사하는 read-only command를 한 번에 실행하는 묶음
+1. **상단 수동 확장 조회**: `110`은 Console 확인표, `120`~`180`은 각 probe가 확인하는 목적을 출력하고 exit code를 보존하면서 이 영역의 read-only command를 한 번에 실행하는 묶음
 2. **해석 순서**: 출력을 어떤 순서와 관계로 볼지 요약
 3. **명령어 family**: `command: 한 줄 핵심` 제목 아래 option·subcommand를 같은 표로 설명
 4. **출력 필드와 신호**: 각 column·state의 뜻과 정상·이상 관계
@@ -67,18 +69,24 @@ directory는 무관하고 상단 수동 확장 조회에는 별도 입력·Secre
 `describe`·`logs` 같은 상세 조회의 `namespace`·`pod_name`은 앞선 목록 출력에서 고릅니다.
 `110`은 SSH 전 AWS Console 조회이므로 이 host·shell 계약의 예외입니다.
 
-각 상세 문서의 상단 code block은 해당 영역의 확장 probe를 한 번에 실행하는 Bash
-묶음입니다. Block에는 `set -e`와 `&&`를 사용하지 않으므로 한 명령이 실패해도 다음 독립
-조회가 계속되고, 운영자는 나타난 stdout·stderr를 함께 기록합니다. 실패를 정상으로
+`120`~`180` 상세 문서의 상단 code block은 해당 영역의 확장 probe를 한 번에 실행하는 Bash
+묶음입니다. 각 probe는 실행 전에 구분자·이름·확인 목적을 출력하고, 실행 뒤에는 command
+또는 pipeline producer의 exit code를 출력합니다. Block에는 `set -e`와 `&&`를 사용하지
+않으므로 한 명령이 실패해도 다음 독립 조회가 계속되고, 운영자는 나타난 stdout·stderr를
+함께 기록합니다. 실패를 정상으로
 바꾸거나 곧바로 mutation하지 않고 남은 조회로 fault domain을 좁힙니다. 완료는 필요한
 probe를 실행해 첫 이상 영역과 다음 owner를 고른 상태이며 platform 정상이나 복구 완료를
 뜻하지 않습니다. 원인을 해결한 뒤에는 전체 block 또는 실패했던 단일 명령부터
 재실행합니다.
 
+상단의 probe 설명은 빠른 실행·첫 판독만 소유합니다. Command 문법, option·출력 field,
+정상·이상 신호와 다른 증거를 결합하는 방법은 같은 상세 문서의 하단 command family
+section에서 이어서 확인합니다.
+
 `sed -n '1,Np'`와 `tail -n N`은 producer 결과의 출력 행 수를 제한하는 filter입니다.
-Pipeline에서는 filter의 exit code만으로 producer 성공을 판단하지 않습니다. Producer
-실패 여부가 필요하면 filter를 제거해 같은 producer를 단독 실행하거나 Bash의
-`PIPESTATUS`로 각 command 결과를 따로 기록합니다.
+Pipeline에서는 filter의 exit code만으로 producer 성공을 판단하지 않습니다. 상단 묶음이
+출력하는 Bash `PIPESTATUS`의 producer exit code로 실패 여부를 판정합니다. 잘리지 않은
+producer 출력이 추가로 필요할 때만 filter를 제거해 같은 producer를 단독 실행합니다.
 
 ## Node 수와 실행 범위
 

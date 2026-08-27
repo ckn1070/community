@@ -18,6 +18,13 @@ mutation 전에 이 Bootstrap으로 다시 진입합니다. 먼저 현재 메시
 이전 요청과 주제가 같거나 작업이 미완료였다는 사실, Agent가 기존 작업을
 완료하려는 의도는 과거 실행 권한을 현재 원자에 전파하지 않습니다.
 
+상태 변경 경로의 positive source는 현재 generation에서 그 효과를 독립적으로 요청한
+원문의 exact span입니다. 직접 선행 문맥은 이 span이 있을 때 대상·입력·제약을 보완할 수
+있지만, 이전 generation의 실행 동사로 현재 질문·비교·이의의 권한을 채우지 않습니다.
+목록 제목, `request` 같은 구획 label과 skill trigger도 하위 문장의 문장 기능을 실행으로
+바꾸지 않습니다. 현재 generation에 positive source가 없으면 mutation admission은 닫힌
+상태로 유지합니다.
+
 현재 메시지가 작업 주체·범위·권한·안전성·사실을 이의 제기하거나 그 판단의 이유를
 묻는다면 그 원자를 먼저 고정합니다. 같은 메시지에 상태 질문이 섞여 있어도 이의 대상의
 과거 실행 권한을 유지하는 근거로 사용하지 않으며, 해당 원자의 답변·검토를 닫기 전에
@@ -110,6 +117,46 @@ discovery 뒤로 미루지 않습니다. 첫 projection에서 상위 결과를 �
 질문을 실행 요청으로 확대하거나 실행 요청을 질문으로 축소하지 않습니다. 여러 원자의
 처리 방식과 순서가 사용자 기대를 바꿀 수 있을 때는 실행 전에 짧게 되돌려 보여줍니다.
 
+질문 원자는 답변을 작성하기 전에 원문의 `대상·술어·명시된 범위·빈도·시점 수식어`를
+첫 직접 답변 명제에 그대로 투영합니다. 직접 선행 문맥의 상태·증거·추천은 답의 근거와
+후속 설명을 보완할 수 있지만, 원문에 없는 수식어를 더하거나 원문 수식어를 제거해 다른
+질문으로 바꾸지 않습니다. 첫 명제만 읽어도 원래 질문의 판정값이 닫혀야 하며, 조건·예외·
+반복 여부 같은 보충 설명은 이 직접 답을 대체하거나 범위를 바꾸지 않는 별도 문장으로만
+뒤에 둡니다.
+
+답변을 내보내기 전에는 첫 명제를 원문으로 역대조합니다. 첫 명제의 대상·술어·수식어가
+각각 현재 원문의 exact span이나 답에 필요한 authoritative fact로 돌아가지 않거나,
+원래 질문의 판정 없이 문맥에서 파생한 더 좁거나 넓은 질문만 닫으면 답변 후보를 폐기합니다.
+
+사용자가 한 메시지나 직접 선행 문맥에서 여러 항목을 하나의 실행 batch로 제시하면, 첫
+실행 약속·mutation primary 경로 선택·계획·worker 위임·review·mutation 전에 다음 권한
+coverage를 모든 항목에 대해 완성합니다. 새 사용자 메시지마다 이전 coverage를 폐기하고
+현재 generation의 원문에서 다시 만듭니다.
+
+```text
+raw 항목 identity → 현재 generation의 exact span → 문장 기능 → 요청 효과
+→ 같은 generation에 있는 상태 변경 권한의 positive source 또는 미확정·읽기 전용 사유
+→ batch admission 상태
+```
+
+같은 batch에 질문·비교·우려·미확정 선택처럼 상태 변경 권한이 없는 항목이 하나라도 있으면
+승인된 다른 항목만 먼저 실행하지 않습니다. Batch 전체를 영향 전에 멈추고, 권한이 없는
+이유와 아직 닫히지 않은 차원을 설명한 뒤 사용자와 그 논의를 끝냅니다. 사용자가 해당
+항목을 명시적으로 선택·제외·취소해 모든 항목의 처분이 닫힌 새 generation에서만 batch를
+실행합니다. 인접한 `그렇게 해`, 같은 번호 목록, 공통 주제와 상위 구현 목적은 질문을
+선택이나 실행 승인으로 바꾸지 않습니다.
+
+현재 generation의 모든 항목이 질문·설명·비교이면 해당 owner에서 답변·근거·구체적
+제안까지 읽기 전용으로 완결하고, mutation specialist를 선택하거나 `고치겠습니다`처럼
+실행 scope를 확정하지 않습니다. 반대로 같은 generation이 exact mutation을 명시하면 그
+span을 positive source로 연결해 승인된 범위를 실행하며, 이 gate를 이유로 재승인을
+요구하지 않습니다.
+
+서로 다른 메시지나 상위 결과에 속하고 dependency·write set·완료 oracle이 독립된 실행은
+한 batch의 미확정 항목 때문에 전역 차단하지 않습니다. 모든 항목이 이미 명시적으로
+승인됐거나 미확정 항목을 사용자가 batch에서 제외했다면, 항목 수만으로 추가 승인·외부
+dispatcher·별도 실행 문법을 요구하지 않습니다.
+
 ### 상태·실행 결과 입력의 operation map 재구성
 
 사용자가 상태나 실행 결과를 전달하면 답변의 source를 고르기 전에 Bootstrap으로
@@ -146,6 +193,33 @@ discovery 뒤로 미루지 않습니다. 첫 projection에서 상위 결과를 �
 대조해 상태를 닫고, 그래도 actual 환경에만 증거가 남아 있으면 필요한 read-only 확인을
 하나의 묶음으로 요청합니다. 이미 확인된 완료 작업을 다시 실행하는 명령은 제시하지
 않습니다.
+
+Read-only 확인·inventory·preflight를 활성 operation이나 다음 단계의 필수 gate로 넣기
+전에는 각 항목을 `관찰값·상태 → 그 값을 실제로 소비하는 후속 입력·분기·안전조건·rollback·
+postcondition`에 연결합니다. 이미 완료된 상태를 다시 보여 주기만 하고 이 연결이 없는
+확인은 선택 진단이며, 미실행을 중단·미완료·blocker로 판정하지 않습니다. 같은 invariant를
+canonical script가 상태 변경 전에 직접 조회해 fail-close하면 사람의 중복 선행 확인도
+선택 진단입니다. 다만 script 밖에서 상태 변경 대상을 고르거나 rollback 값을 확보하는
+확인은 그 값을 소비하는 변경 직전의 필수 gate로 유지합니다. 필수와 선택 진단은 runbook·
+scenario·실행 안내의 같은 checklist나 완료 gate에 섞지 않습니다.
+
+이 분류를 답변·operation map·runbook 실행 단위에 투영하기 전에 다음 소비 원장을 현재
+generation의 source에서 먼저 닫습니다.
+
+```text
+확인 항목·관찰값
+→ 최초 소비자와 값에 따른 행동 차이
+→ 증거의 resource·환경·유효 기간
+→ 현재 접근 가능한 기존 증거와 재사용 가능 여부
+→ 필수 1회 / 조건부 필수 / 선택 진단
+```
+
+필수로 분류한 항목은 최초 소비자·실패 시 중단 지점과 기존 증거가 언제 충족하는지를 함께
+표시합니다. 같은 resource·환경의 유효한 결과가 이미 있으면 재실행을 요구하지 않습니다.
+소비자가 없거나 값을 보아도 다음 행동이 달라지지 않는 항목, 다른 필수 gate가 같은 결과를
+직접 증명한 항목은 선택 진단으로 내려 별도 section에 둡니다. 이 원장을 닫지 못했거나 필수·
+선택 항목을 같은 순차 실행 block에 둔 후보는 사용자 실행 안내나 canonical runbook
+writer로 넘기지 않습니다.
 
 과거 답변·판단·행동이 왜 발생했는지 설명할 때에는 현재 상태 source를 과거 actor의 입력으로
 소급하지 않습니다. 첫 원인 주장 전에 다음 시간 방향과 실제 소비 증거를 복원합니다.
@@ -240,6 +314,17 @@ operation map을 실제로 복원했다는 invocation evidence가 아닙니다. 
 가리키지 않은 일반 진행 요청과 Agent의 추천·선언은 그 source가 아닙니다. Authoritative
 source가 구현 상세를 유일하게 고정하면 질문 없이 소비할 수 있지만, 이때 권위는 해당
 source와 Agent 판단이며 사용자 결정으로 바꿔 쓰지 않습니다.
+
+질문·비교·형식 협의로 시작해 상태 변경 권한이 없는 논의에서는 후속 generation이 선호,
+제약, 대안이나 추가 사양만 갱신해도 그 의미는 결정 후보의 갱신이며 mutation 요청이
+아닙니다. 결정 후보가 하나로 좁혀지거나 사용자가 그 값을 선택한 사실도 artifact를 지금
+변경하라는 권한을 만들지 않습니다.
+
+이 논의에서 상태 변경으로 전환하려면 현재 generation의 원문이 직접 선행 문맥으로 대상을
+보완할 수 있을 뿐 아니라, 변경할 효과와 그것을 지금 실행하라는 문장 기능을 함께 완결해야
+합니다. 실행 의도를 완결하지 않은 추가 사양·연결 표현이면 답변·후보만 갱신하고 writer·
+mutation specialist·상태 변경 tool을 호출하지 않습니다. 반대로 완결된 실행 요청이면
+논의 중이었다는 이유로 재승인을 요구하지 않고 exact 범위만 실행합니다.
 
 ### 활성 결정 기준선
 
@@ -405,6 +490,11 @@ unrelated dirty가 남아도 task-owned residual이 없고 경계가 보존되�
 가능 여부, sandbox·tool approval, Agent가 만든 계획·handshake·요약은 권한을 생성·확대·
 부활시키지 않습니다. 새 artifact나 의미 효과가 생기면 같은 gate를 다시 통과합니다.
 
+복합 batch의 개별 행동에 권한 source가 있어도 위 권한 coverage에 미확정 항목이 남아 있으면
+그 batch의 상태 변경 행동은 입장되지 않습니다. 이 차단은 개별 행동의 기술적 안전성이나
+가역성으로 우회하지 않으며, discussion을 끝내기 전 writer·reviewer를 일부라도 시작하지
+않습니다.
+
 sandbox·tool approval의 허용·거절은 이미 판정한 의미 권한을 생성·취소·대체하는 사용자
 결정이 아니라 현재 실행 경로의 가능 여부를 보여 주는 증거입니다. 유효한 권한이 있는
 행동이 도구에서 거절되면 권한을 다시 묻지 않고, 허용 범위 안의 더 안전한 실행 경로를
@@ -489,6 +579,27 @@ dependency metadata이며, 현재 실행할 다음 원자가 아닙니다. 현�
 대조합니다. `원래 작업으로 복귀`, 일반적인 `계속 진행`이나 새 candidate의 내부 일관성은
 그 인계를 대신하지 않습니다. 원래 artifact가 아직 acceptance oracle을 충족하지 않으면
 통제 회고가 여러 번 닫혔거나 관련 work item이 `Done`이어도 원래 결과를 완료로 보고하지
+않습니다.
+
+원래 요청에 artifact의 stage·commit·history rewrite 같은 Git 효과가 포함됐으면 복귀
+consumer는 artifact 내용뿐 아니라 그 Git 효과를 같은 원자에 다시 결속합니다. 삽입 원자의
+통제 commit, 같은 파일의 다른 작업 dirty와 partial stage 금지는 원래 Git 효과의 완료나
+취소가 아닙니다. 같은 파일 overlap이 있으면 원래 결과를 조용히 worktree에 남기지 않고,
+검증된 exact patch를 격리 worktree에서 재구성하거나 source에서 안전하게 분리하는 현재
+허용 경로를 끝까지 찾습니다. 안전한 경로가 실제로 없을 때만 원래 원자를 `Blocked`로
+전환하고 exact 충돌·남은 Git 효과·재개 조건을 보고합니다.
+
+복귀 consumer의 terminal admission은 다음 identity를 직접 대조합니다.
+
+```text
+원래 사용자 결과·artifact·Git 효과
+→ 삽입 원자 뒤 실제 candidate·index·commit 또는 rewrite 결과
+→ 제외 dirty와 acceptance oracle
+→ 원래 원자의 Closed·Blocked·Active 판정
+```
+
+원래 artifact가 worktree에만 남았거나 요청한 commit object에 없으면 `Active`입니다. 통제
+commit 존재, 해당 artifact의 내용 수정 완료와 삽입 원자의 `Closed`로 이 상태를 높이지
 않습니다.
 
 사용자 결과가 구현인 요청을 임의의 계획 완료로 바꾸지 않습니다. 반대로 계획 자체가
@@ -590,7 +701,9 @@ patch·review를 반복하지 않고 후보와 원인 phase를 `Invalidated`로 
 | 상태·완료·차단 projection | `$report-task` |
 
 Primary 경로는 specialist가 조사 중 발견한 공백이나 더 좋은 구현이 아니라 현재 사용자
-원문에서 확정한 결과가 선택합니다. Specialist가 다른 owner의 결과가 필요하다고 반환해도
+원문에서 확정한 문장 기능과 결과가 선택합니다. Artifact가 어떻게 바뀌어야 하는지를 묻는
+질문은 설명·비교 결과이며, 그 artifact의 mutation 경로를 선택하는 근거가 아닙니다.
+Specialist가 다른 owner의 결과가 필요하다고 반환해도
 그 반환은 새 operation 원자나 실행 권한이 아닙니다. 현재 원문이 그 결과를 독립적으로
 포함할 때만 별도 원자로 mapping하고 해당 owner를 호출합니다. 포함하지 않은 결과가 현재
 결과를 실제로 막으면 미충족 dependency와 선택지·영향을 보고해 사용자 결정 경계로
@@ -634,10 +747,26 @@ workflow의 포함·제외·부정 조건, exact diff·test·문서와 그 조�
 검토에서 사용한 조건을 원래 source가 아니라 같은 작업에서 만든 test·문서로만 복원했다면
 후보는 `Locally verified`가 아니므로 Git phase를 시작하지 않습니다.
 
+현재 generation이 existing candidate의 stage·commit·push만 요청하고 candidate content
+수정을 독립적으로 요청하지 않았다면 Git handoff가 그 content를 read-only로 동결합니다.
+이후 discovery·검증에서 결함이나 미완료 보완을 발견해도 과거 plan·compaction summary·
+pending operation·review finding을 근거로 writer phase를 호출하거나 patch를 만들지 않습니다.
+원래 결과를 깨는 finding이면 후보를 `Invalidated`로 돌려 exact blocker를 보고하고, 그 밖의
+finding은 해당 owner의 보고 계약과 사용자가 지정한 시점을 함께 따릅니다. 같은
+generation의 exact span이
+content 수정과 Git 효과를 각각 명시했거나, 후속 generation이 content 수정을 새로 요청한
+경우에만 해당 결과 원자를 writer phase로 보내며 Git 요청 자체로 수정 권한을 채우지
+않습니다.
+
 후보가 새 artifact 종류나 실행 효과를 도입했는데 초기 routing만 재사용하거나, 행동
 검증·generic review가 누락된 domain specialist 판정을 대신했다면 같은 이유로 Git phase에
 인계하지 않습니다. 특히 skill resource 안에 있다는 이유로 executable·verifier를 문서나
 skill content로만 분류하지 않습니다.
+
+실행 회고의 Git 인계는 4절의 closure identity를 추가로 소비합니다. 선택한 통제 처분의
+canonical owner 효과가 final staged patch에 없거나, 필요한 행동 verdict가 전체 회고 상태와
+맞지 않으면 History·상태 companion만 stage하지 않고 회고를 해당 phase의 `Active` 또는
+`Invalidated`로 돌립니다.
 
 ### 실제 차단 판정
 
@@ -750,6 +879,27 @@ write set이나 correction batch로 전달하지 않습니다. Active writer에�
 통제 처분까지 닫은 뒤 시작합니다. 현재 Agent는 사용자 원문·Git·통제 source를 직접
 대조하며, 회고 대상인 자신의 잘못된 결론을 근거로 사용하지 않습니다. 변경 결과가
 중대한 계획·개발·문서 후보에 해당하면 관련 domain workflow의 독립 검증을 추가합니다.
+
+사용자가 둘 이상의 사건을 별도 항목·block으로 회고하라고 명령했으면 회고 owner가 만든
+다음 사건별 coverage를 통제 변경의 admission 입력으로 사용합니다.
+
+```text
+raw 사건 identity와 순서
+→ raw 상위 사건과 내부 child 영향 경로의 parent-child 관계
+→ 요구 결과·실제 결과·사용자 영향
+→ 수평 경로와 최초 단절
+→ 최소 5회의 인과·시스템 root
+→ 기존 통제 timeline·실제 invocation·oracle
+→ root 제거 반사실·형제 경로
+→ 사건별 처분 입력·행동 검증 oracle·복귀점
+```
+
+모든 raw 사건에 이 coverage가 있고 각 행의 인과가 닫히기 전에는 해결책 선택, 통제
+mutation, 행동 검증, Git과 terminal 보고에 진입하지 않습니다. 같은 문장·root·owner가
+반복돼도 별도 명령된 행을 병합하거나 공통 분석·통제 후보로 대체하지 않습니다. 누락된
+행이 발견되면 후보를 보완하는 대신 회고를 원인 분석 phase의 `Active`로 돌립니다. 하나의
+raw 상위 사건이 내부의 여러 영향 경로·child 사건을 가리키면 parent와 child를 모두 보존하며,
+child coverage의 합으로 parent의 요구·영향·최초 단절과 개별 verdict를 대체하지 않습니다.
 
 사건에 등장한 제품명, option, 파일명, 숫자와 잘못된 마지막 문장은 첫 단절이나
 불변식이 아닙니다. 명사를 바꾸어도 같은 전달 경로에서 실패하면 공통 전이를
@@ -888,6 +1038,32 @@ invocation 미검증`으로 남기고 사건 artifact나 return-consumer closure
 반대로 하나의 실제 actor와 직접 source만으로 끝나는 읽기 전용 판정·단일 phase 작업에는
 존재하지 않는 writer→reviewer→Git 전이를 요구하지 않습니다. Verdict와 완료 보고는 실제로
 주장한 결과가 필요로 하는 전이 중 가장 낮은 증거 등급보다 넓을 수 없습니다.
+
+행동 verdict를 받은 뒤 실행 회고를 Git·보고 phase로 넘기기 전에는 다음 closure identity를
+현재 operation map에 결속합니다.
+
+```text
+사건별 coverage와 개별 인과 closure verdict·실행 mode·routing
+→ 통제별 처분과 canonical owner
+→ owner에서 실제 관찰되는 적용 효과 또는 이미 적용된 exact control identity
+→ 모델링된 통제 효과와 필요한 실제 invocation의 개별 verdict
+→ Git 자격과 전체 회고 상태
+```
+
+- 사건이 현재 통제보다 앞선 2번 routing이고 현재 통제가 이미 canonical owner에 적용돼
+  있으면, 그 exact control identity와 회귀 행동 검증을 처분 결과로 사용합니다. 새 변경이나
+  commit을 만들기 위해 History·상태 문서를 통제처럼 수정하지 않습니다.
+- 통제를 강화·교체·병합·제거했다면 Git 후보는 선택한 처분이 canonical owner에서 만드는
+  실제 효과를 포함해야 합니다. History·design·상태 문서는 사건·결정·현재 상태의 companion
+  evidence일 뿐, canonical owner 효과가 없는 후보를 실행 회고 commit으로 입장시키지 않습니다.
+- 필요한 실제 invocation 하나가 `실패` 또는 `검증 불가`이면 전체 회고 상태도 그보다
+  높일 수 없습니다. 다른 증거 등급의 `통과`, companion 문서 변경과 commit 성공으로 빈
+  전이를 채우지 않습니다.
+
+Git phase는 이 closure identity와 final staged effect를 대조한 뒤에만 실행 회고 후보를
+받습니다. 현재 처분에 새 canonical control 변경이 필요하지 않고 worktree 변경도 없으면 빈
+commit이나 evidence-only commit을 만들지 않으며, 검증된 처분 상태와 남은 invocation 경계를
+그대로 보고 phase에 전달합니다.
 
 evaluator를 작성자·runner와 분리할 수 없거나, 사전 기준을 동결하지 못했거나, 판정이
 갈리거나, 후보가 판정 뒤 바뀌면 결과는 `검증 불가`입니다. `quick_validate`, link·syntax·

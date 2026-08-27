@@ -2,7 +2,7 @@
 
 AWS Console에서 Kubernetes control plane과 worker를 함께 실행할 단일 ARM64 EC2를 직접
 생성하고 SSH 접속까지 확인하는 절차입니다. 이 구성의 비용·가용성·architecture 선택과
-재검토 조건은 [EC2 Kubernetes node](../project/infrastructure/110-ec2-kubernetes-node.md)가
+재검토 조건은 [120 EC2 Kubernetes node](../project/infrastructure/120-ec2-kubernetes-node.md)가
 소유합니다.
 
 ## 사용 시점과 actor
@@ -11,13 +11,15 @@ AWS Console에서 Kubernetes control plane과 worker를 함께 실행할 단일 
   Kubernetes node를 한 대 처음 만들 때 사용합니다.
 - **actor**: EC2, EBS, security group과 key pair를 조회·생성할 수 있는 AWS Console
   운영자입니다.
-- **실행 위치**: AWS Console `EC2 → 인스턴스 → 인스턴스 시작`입니다.
+- **기본 실행 위치**: AWS Console `EC2 → 인스턴스 → 인스턴스 시작`입니다.
+
+`6.2`의 SSH 접속 확인만 해당 section의 local terminal 선언으로 override합니다.
 
 ## 전제와 입력
 
 - region은 `ap-northeast-2`입니다.
 - VPC `stg-car-community-vpc`와 2a public subnet이 존재합니다.
-- key pair `example-ec2-key-pair`와 대응 private key를 운영자가 안전하게 보관하고 있습니다.
+- key pair `namc-sa-ec2`와 대응 private key를 운영자가 안전하게 보관하고 있습니다.
   private key는 repository에 저장하지 않습니다.
 - node에 배포할 image는 `linux/arm64`를 지원해야 합니다. 이 launch 절차는 application
   image 호환성을 증명하지 않습니다.
@@ -42,7 +44,7 @@ AWS Console에서 Kubernetes control plane과 worker를 함께 실행할 단일 
 | AMI 읽기 전용 속성 | HVM, EBS root device, ENA 활성 |
 | instance type filter | `모든 세대` 활성화 |
 | instance type | `t4g.small`, 2 vCPU, 2 GiB RAM |
-| key pair | `example-ec2-key-pair` |
+| key pair | `namc-sa-ec2` |
 | 구매 방식 | 별도 구매 옵션 `없음`인 On-Demand |
 
 Ubuntu Pro나 Marketplace 유료 image를 선택하지 않습니다. `t4g.micro`의 1 GiB 대신
@@ -165,6 +167,10 @@ reservation이 있으면 AWS 기본 동작에 따라 사용될 수 있습니다.
 
 ### 6. 요약, 생성과 단계 기대 결과
 
+#### 6.1 AWS Console — 생성 결과 확인
+
+**실행 위치:** AWS Console `EC2 → 인스턴스`
+
 1. 요약에서 instance 수 `1`, Ubuntu Server 24.04 LTS ARM64, `t4g.small`, public subnet,
    public IPv4와 `20 GiB gp3`를 확인합니다.
 2. current Console에서 instance·EBS·public IPv4 예상 요금을 다시 확인합니다.
@@ -172,7 +178,14 @@ reservation이 있으면 AWS 기본 동작에 따라 사용될 수 있습니다.
 4. `EC2 → 인스턴스`에서 instance가 `실행 중`이고 상태 검사를 통과할 때까지 기다립니다.
 5. AMI·architecture·type, VPC·subnet·AZ, public·private IPv4, security group, root
    volume과 metadata 설정을 위 표에 대조합니다.
-6. 보관한 private key로 `ubuntu` 사용자 SSH 접속을 확인합니다.
+
+#### 6.2 Local terminal — SSH 접속 확인
+
+**실행 위치:** EC2에 연결할 수 있고 private key를 보관한 local terminal
+
+**시작 directory:** 제한 없음
+
+보관한 private key로 `ubuntu` 사용자 SSH 접속을 확인합니다.
 
 public IPv4는 stop 후 start하면 바뀔 수 있으므로 영구 설정값으로 기록하지 않습니다.
 
@@ -190,6 +203,11 @@ public IPv4는 stop 후 start하면 바뀔 수 있으므로 영구 설정값으�
 
 ## 복구·재개
 
+**실행 위치:** Instance·network·security group·public IPv4 확인과 수정은 AWS Console, SSH
+접속 재확인은 local terminal에서 수행합니다.
+
+**시작 directory:** Local terminal은 제한 없음
+
 1. SSH 실패 시 `0.0.0.0/0`을 추가하지 말고 현재 운영자 public IPv4 `/32`, instance의
    현재 public IPv4, subnet public route, Internet Gateway와 security group을 차례로
    확인합니다.
@@ -200,7 +218,9 @@ public IPv4는 stop 후 start하면 바뀔 수 있으므로 영구 설정값으�
    root data와 연결 resource를 확인하지 않고 삭제하지 않습니다.
 4. 상태 검사와 SSH가 모두 정상인 checkpoint에서
    [ECR·IAM 최초 구축](130-ecr-iam-provisioning-runbook.md) 또는
-   [Kubernetes bootstrap](200-kubernetes-bootstrap-runbook.md)으로 이동합니다.
+   [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md)로 이동합니다.
+   Artifact 배치 뒤 Kubernetes 구축은
+   [200 Kubernetes bootstrap](200-kubernetes-bootstrap-runbook.md)에서 시작합니다.
 
 ## 완료 확인
 
@@ -215,6 +235,7 @@ public IPv4는 stop 후 start하면 바뀔 수 있으므로 영구 설정값으�
 
 ## 공식 기준과 관련 문서
 
-- **선택·영향·대안**: [EC2 Kubernetes node](../project/infrastructure/110-ec2-kubernetes-node.md)
+- **선택·영향·대안**: [120 EC2 Kubernetes node](../project/infrastructure/120-ec2-kubernetes-node.md)
 - **상위 절차**: [AWS 최초 구축](100-aws-initial-provisioning-runbook.md)
-- **후속 실행 절차**: [Kubernetes bootstrap](200-kubernetes-bootstrap-runbook.md)
+- **후속 실행 절차**: [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md),
+  [200 Kubernetes bootstrap](200-kubernetes-bootstrap-runbook.md)

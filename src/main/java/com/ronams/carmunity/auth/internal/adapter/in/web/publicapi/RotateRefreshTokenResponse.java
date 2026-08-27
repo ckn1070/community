@@ -21,13 +21,22 @@ import java.util.UUID;
  */
 @Schema(description = "refresh token 재발급 성공 응답")
 public record RotateRefreshTokenResponse(
-    @Schema(description = "새 access token 원문") String accessToken,
-    @Schema(description = "Authorization scheme") String tokenType,
-    @Schema(description = "새 access token 만료 시각") Instant accessTokenExpiresAt,
-    @Schema(description = "새 refresh token 원문") String refreshToken,
-    @Schema(description = "새 refresh token 만료 시각") Instant refreshTokenExpiresAt,
-    @Schema(description = "회원 public id") UUID memberId,
-    @Schema(description = "access token에 포함된 role code 목록") List<String> roles) {
+    @Schema(description = "새 access token 원문", requiredMode = Schema.RequiredMode.REQUIRED)
+        String accessToken,
+    @Schema(description = "Authorization scheme", requiredMode = Schema.RequiredMode.REQUIRED)
+        String tokenType,
+    @Schema(description = "새 access token 만료 시각", requiredMode = Schema.RequiredMode.REQUIRED)
+        Instant accessTokenExpiresAt,
+    @Schema(description = "새 refresh token 원문", requiredMode = Schema.RequiredMode.REQUIRED)
+        String refreshToken,
+    @Schema(description = "새 refresh token 만료 시각", requiredMode = Schema.RequiredMode.REQUIRED)
+        Instant refreshTokenExpiresAt,
+    @Schema(description = "회원 public id", requiredMode = Schema.RequiredMode.REQUIRED)
+        UUID memberId,
+    @Schema(
+            description = "access token에 포함된 role code 목록",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        List<String> roles) {
 
   /**
    * application 결과를 외부 응답으로 변환합니다.

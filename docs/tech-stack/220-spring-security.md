@@ -21,6 +21,8 @@
 
 - business API는 기본 보호 상태로 둡니다.
 - public business API는 `SecurityFilterChain`의 allow-list에 명시적으로 추가합니다.
+- public business API allow-list는 Security matcher와 OpenAPI operation 분류가 함께 소비하는
+  단일 source로 유지합니다.
 - 현재 public business API는 다음과 같습니다.
   - `POST /api/v1/members`
   - `POST /api/v1/auth/sessions`

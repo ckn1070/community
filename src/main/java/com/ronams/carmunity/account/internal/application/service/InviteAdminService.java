@@ -79,11 +79,7 @@ public class InviteAdminService implements InviteAdminUseCase {
     this.clock = clock;
   }
 
-  /**
-   * 관리자 초대 row를 저장한 뒤 transaction commit 이후 초대 이메일 발송과 감사 이벤트를 기록합니다.
-   *
-   * <p>provider 실패는 초대 row를 되돌리지 않고 실패 감사 이벤트로 남깁니다.
-   */
+  /** 관리자 초대와 생성 감사를 저장한 뒤 transaction commit 이후 초대 이메일을 발송합니다. */
   @Override
   @Transactional
   public AdminInvitationResult execute(InviteAdminCommand command) {
@@ -111,7 +107,7 @@ public class InviteAdminService implements InviteAdminUseCase {
                 issuedAt,
                 expiresAt));
 
-    runAfterCommit(() -> sendInvitationAndRecordEvent(invitation, rawToken));
+    runAfterCommit(() -> sendInvitation(invitation, rawToken));
 
     return new AdminInvitationResult(
         invitation.publicId(), invitation.email(), invitation.roleCode(), invitation.expiresAt());
@@ -146,15 +142,13 @@ public class InviteAdminService implements InviteAdminUseCase {
         });
   }
 
-  private void sendInvitationAndRecordEvent(AdminInvitationRecord invitation, String rawToken) {
+  private void sendInvitation(AdminInvitationRecord invitation, String rawToken) {
     try {
       notificationSender.send(
           new AdminInvitationNotificationRequest(
               invitation.email(), invitation.publicId(), rawToken, invitation.expiresAt()));
-      invitationStorePort.recordCreated(invitation, true);
     } catch (RuntimeException exception) {
       log.warn("관리자 초대 발송에 실패했습니다. invitationId={}", invitation.invitationId(), exception);
-      invitationStorePort.recordCreated(invitation, false);
     }
   }
 

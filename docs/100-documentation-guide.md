@@ -93,6 +93,11 @@ Reference/SOT의 설명 책임을 Procedure로 대신하지 않습니다. Proced
 
 Workflow는 반복 가능한 작업 방법, development는 로컬 개발 절차, operations runbook은 실제 환경 명령을 소유합니다. 서로 다른 운영 작업은 한 거대 runbook에 누적하지 않습니다.
 
+Runbook 단계의 실행 우선 배치, 독립 명령 목록의 주석·terminal-visible 구분자와 compound
+recipe 보존 기준은
+[150 문서화 워크플로우의 Procedure 실행 계약](workflow/150-documentation-workflow.md#4-구조-gate)을
+적용합니다. 이 가이드는 표현 형식을 중복 정의하지 않고 해당 실행 gate로 연결합니다.
+
 Operations router와 runbook은 기술 구성요소보다 운영자가 처한 상황과 생애주기를 먼저
 구분합니다. 최소한 최초 구축, 평소 반복 작업, 구성·credential 변경, 장애 진단·복구 중
 현재 corpus에 존재하는 상황을 서로 다른 진입점으로 제공하고, 한 runbook은 하나의
@@ -133,6 +138,16 @@ handoff만 소유합니다.
 누적하지 않고 현재 checklist·근거·다음 행동·blocker를 교체합니다. 외부 환경의 live 상태는
 project SOT나 개별 runbook에 중복하지 않으며 과거 값은 Git 이력으로 복원합니다.
 
+재사용 흐름은 빈 환경에서 처음 실행하는 독자가 같은 상태 전이를 한 번만 수행하도록
+작성합니다. Artifact revision이나 전달 inventory가 바뀌었다는 이유로 기존 단계를 완료
+snapshot과 재실행 단계로 나누지 않고, 기존 단계의 현재 입력·완료 조건을 갱신합니다. 이미
+구축한 환경에 그 변경을 다시 적용해야 하는 사실은 현재 live 상태·다음 행동·blocker에만
+두며, 적용 뒤에는 새 현재 상태로 교체합니다. 두 실행 항목뿐 아니라 복합 항목 안의 하위
+행동도 actor·artifact·effective target state·상태 전이·완료 조건으로 원자화합니다. 이 값이
+같고 시점·revision·임시 경로·`확장`·`재전달` 같은 표현만 다르면 하나의 재사용 단계입니다.
+제목이나 최종 완료 조건이 다른 항목 안에 있다는 이유로 동일한 하위 전달 전이를 다시 두지
+않습니다.
+
 Scenario의 각 실행 항목은 그 항목만 읽어도 다음 내용을 복원할 수 있어야 합니다.
 
 - **행동**: 실제로 확인하거나 상태를 바꾸는 작업
@@ -142,8 +157,12 @@ Scenario의 각 실행 항목은 그 항목만 읽어도 다음 내용을 복원
 
 Repository script가 진입점이면 exact executable path를 표시합니다. Script가 없는
 수동 단계는 실제 Console 화면, workflow, 표준 명령이나 수동 조작을 표시하고 repository
-script가 없다는 사실을 명시합니다. 전체 인자·명령, 실패 진단과 복구는 연결한 runbook이
-소유하며 scenario에 복제하지 않습니다. 설명을 읽은 뒤에도 독자가 `누가, 어디에서,
+script가 없다는 사실을 명시합니다. 표준 명령 하나가 사람의 전체 목표와 postcondition을
+원자적으로 닫을 때만 Scenario가 exact 진입점과 완료 조건을 직접 소유할 수 있습니다.
+Credential 획득, 둘 이상의 명령·API 상태 전이 또는 독립 실패·재개가 있으면 실행 빈도와
+무관하게 canonical runbook이 전체 인자·명령과 실패 진단을 소유합니다. 이때 별도 work item이나
+repository executable까지 만들지는 않습니다.
+설명을 읽은 뒤에도 독자가 `누가, 어디에서,
 무엇을 실행하고, 무엇을 확인해야 하는가`를 추측해야 하면 실행 항목은 미완료입니다.
 Authoritative source에 안전한 진입점이 아직 없으면 명령을 지어내지 않고 해당 행동을
 실행 불가·미완료로 표시하며, 결정 owner와 그 전까지의 중단 지점을 명시합니다.

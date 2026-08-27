@@ -235,6 +235,38 @@ raw token은 저장하지 않으므로 기존 초대를 그대로 재발송할 �
 | `role_code VARCHAR(50)`만 저장 | 존재하지 않는 role code를 막는 DB 참조 무결성이 없습니다. |
 | `role_id`와 `role_code_snapshot`을 함께 저장 | role code가 안정 값이라면 snapshot 중복이 먼저 필요하지 않습니다. |
 
+### D13. 생성 감사와 notification 결과의 transaction 경계
+
+- 선택: `ADMIN_INVITATION_CREATED`는 초대 생성 사실만 표현하고 `admin_invitation`과 같은
+  transaction에 저장합니다. notification은 commit 이후 발송하며 그 delivery 결과는 생성
+  event metadata에 넣지 않습니다.
+- 결정 범위: 초대 생성 transaction, 생성 event metadata와 notification 결과의 후속 owner입니다.
+
+외부 provider 결과는 DB commit 이후에야 확정됩니다. 따라서 생성 event를 초대와 원자적으로
+저장하면서 같은 event에 최종 `notificationResult`까지 기록하는 두 요구는 하나의 transaction에서
+동시에 성립할 수 없습니다. 011의 보안상 핵심은 관리자 account 생성 권한을 가진 초대와 그
+생성 감사 사실이 갈라지지 않는 것입니다. 생성 event를 먼저 같은 transaction에 저장하고,
+provider 결과는 [Notification 결과와 감사 저장 실패 혼합](../../bugs/2026/005-notification-audit-result-separation.md)이
+별도 delivery 의미·저장·복구 계약으로 소유합니다.
+
+선택한 경계의 결과는 다음과 같습니다.
+
+- event 저장 실패는 기존 open 초대 회수와 새 초대 저장을 모두 rollback합니다.
+- commit 이후 provider 실패는 초대와 생성 event를 rollback하지 않고 warn log로 남깁니다.
+- 생성 event metadata는 `invitationPublicId`, `targetEmailHash`, `roleCode`,
+  `previousInvitationRevoked`만 가집니다.
+- 기존 event row의 `notificationResult`는 과거 snapshot으로 유지하며 backfill하거나 삭제하지
+  않습니다.
+
+선택하지 않는 대안:
+
+| 대안 | 제외 이유와 재검토 조건 |
+| --- | --- |
+| 현재 after-commit `REQUIRES_NEW` event 유지 | provider 또는 event 저장 실패 뒤 초대만 commit될 수 있어 원래 감사 원자성을 충족하지 못합니다. |
+| 생성 event에 `PENDING`을 쓰고 나중에 metadata 갱신 | 감사 row를 가변 상태로 만들고 process crash 뒤 실제 발송 결과가 불명확한 창을 남깁니다. 별도 delivery 상태가 필요하면 Bug 005에서 설계합니다. |
+| transactional outbox로 notification까지 durable retry | raw invitation token의 durable 저장·암호화, key 수명주기, provider idempotency와 worker 운영이 새 범위입니다. notification delivery 자체의 내구성이 제품 요구가 될 때 별도 설계합니다. |
+| provider 호출 뒤 초대와 event commit | 메일은 발송됐지만 DB transaction이 rollback되는 orphan invitation link를 만들 수 있습니다. |
+
 ## 확정된 설계
 
 ### S1. DB schema 상세 설계
@@ -288,7 +320,7 @@ expired row도 `accepted_at IS NULL AND revoked_at IS NULL`이면 open row로 �
 
 | event_type | result | account_id | metadata |
 | --- | --- | --- | --- |
-| `ADMIN_INVITATION_CREATED` | `SUCCESS` | 초대 생성 관리자 account | `invitationPublicId`, `targetEmailHash`, `roleCode`, `previousInvitationRevoked`, `notificationResult` |
+| `ADMIN_INVITATION_CREATED` | `SUCCESS` | 초대 생성 관리자 account | `invitationPublicId`, `targetEmailHash`, `roleCode`, `previousInvitationRevoked` |
 | `ADMIN_INVITATION_ACCEPTED` | `SUCCESS` | 생성된 관리자 account | `invitationPublicId`, `roleCode`, `invitedByAccountId` |
 | `ADMIN_INVITATION_REVOKED` | `SUCCESS` | 회수 관리자 account | `invitationPublicId`, `targetEmailHash`, `reasonCode` |
 
@@ -409,7 +441,7 @@ account/application 계층은 provider SDK, template, HTML, provider 응답을 �
 | link 조립 | notification adapter가 base URL과 `invitationId`, raw token으로 화면 진입 URL을 조립 |
 | template | 관리자 초대 전용 subject/html/text template |
 | 발송 시점 | DB transaction commit 이후 직접 발송 |
-| provider 실패 | 초대 row는 rollback하지 않고 warn log와 `ADMIN_INVITATION_CREATED`의 `notificationResult` metadata에 실패를 남김 |
+| provider 실패 | 초대 row와 생성 event는 rollback하지 않고 warn log를 남김. 별도 delivery 결과는 Bug 005가 소유 |
 | durable retry/outbox | 이번 범위 제외 |
 
 ### S6. Authorization and security
@@ -424,7 +456,7 @@ account/application 계층은 provider SDK, template, HTML, provider 응답을 �
 
 | 흐름 | transaction 기준 |
 | --- | --- |
-| 초대 생성 | 완료 당시 목표 계약은 기존 open 초대 폐기, 새 초대 저장과 생성 이벤트를 하나의 DB transaction으로 처리하고 발송은 commit 이후 수행하는 것이었습니다. 실제 구현 편차는 Result와 현재 SOT가 소유합니다. |
+| 초대 생성 | 기존 open 초대 폐기, 새 초대 저장과 `ADMIN_INVITATION_CREATED`를 하나의 DB transaction으로 처리합니다. notification은 commit 이후 발송하며 provider 결과는 생성 event와 분리합니다. |
 | 초대 수락 | token 검증, 기존 account 재확인, account/profile/password credential/role assignment 생성, 초대 accepted 처리, 수락 이벤트 기록을 하나의 DB transaction으로 처리합니다. |
 | 초대 회수 | open 상태 재확인, revoked 처리, 회수 이벤트 기록을 하나의 DB transaction으로 처리합니다. |
 | 동시 수락 | `admin_invitation` row lock 또는 조건부 update로 한 요청만 `accepted_at`을 채우게 하고 나머지는 `ADMIN_INVITATION_ALREADY_CLOSED`로 처리합니다. |

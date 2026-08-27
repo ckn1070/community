@@ -4,6 +4,10 @@
 하는지** 빠르게 찾는 read-only 진단입니다. 각 section에는 대표 probe 1~3개만 두며,
 원인 분석은 연결된 상세 문서의 상단 확장 묶음과 하단 해석을 사용합니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 실행 전 확인
 
 - 조사할 EC2에 SSH로 접속한 **Bash**에서 실행합니다.

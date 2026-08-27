@@ -5,19 +5,23 @@ namespace: car-community
 
 resources:
   - ../../base
+  - ingress.yaml
   - pre-sync
+
+patches:
+  - path: service-nodeport-patch.yaml
 
 configMapGenerator:
   - name: car-community-notification-config
     literals:
       # 승인된 staging sender와 공개 URL을 application notification 설정으로 제공합니다.
-      - NOTIFICATION_EMAIL_FROM=noreply@example.com
-      - EMAIL_VERIFICATION_BASE_URL=https://example.com/verify-email
-      - ADMIN_INVITATION_BASE_URL=https://example.com/admin/invitations
-      - PASSWORD_RESET_BASE_URL=https://example.com/reset-password
+      - NOTIFICATION_EMAIL_FROM=no-reply@ronams.com
+      - EMAIL_VERIFICATION_BASE_URL=https://ronams.com
+      - ADMIN_INVITATION_BASE_URL=https://ronams.com
+      - PASSWORD_RESET_BASE_URL=https://ronams.com
 
 images:
   - name: registry.invalid/car-community
-    newName: 123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/car-community
-    # 현재 node에서 pull·ARM64 실행·imageID 일치를 확인한 runtime manifest입니다.
-    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+    newName: 355653384583.dkr.ecr.ap-northeast-2.amazonaws.com/car-community
+    # main ac10c42에서 게시됐으며 runtime DB 권한 callback을 포함한 ARM64 runtime manifest입니다.
+    digest: sha256:32351d30bdc40a547dc6acf42b18c99759298c3074168d0bbf3863d755aa96b3

@@ -3,12 +3,14 @@
 Containerd가 준비된 host에 Kubernetes official repository와 exact
 `kubelet`·`kubeadm`·`kubectl` package를 최초 설치하는 절차입니다. Component 역할,
 version과 repository 선택 근거는
-[Kubernetes cluster 개념](../project/infrastructure/140-kubernetes-cluster.md)이 소유합니다.
+[150 Kubernetes cluster 개념](../project/infrastructure/150-kubernetes-cluster.md)이 소유합니다.
 
 ## 사용 시점과 actor
 
 - **시점**: [Containerd 설치](220-containerd-installation-runbook.md)가 완료된 직후입니다.
-- **actor·위치**: 운영자가 SSH로 접속한 EC2 terminal에서 `sudo`로 실행합니다.
+- **actor**: Target EC2에서 `sudo`를 사용할 수 있는 운영자
+- **기본 실행 위치**: SSH로 접속한 target EC2 terminal
+- **기본 시작 directory**: 제한 없음
 - **입력**: 인자와 환경변수는 없습니다.
 
 이 단계는 package와 repository만 준비하며 `kubeadm init`, cluster state와 CNI를 만들지
@@ -17,8 +19,7 @@ version과 repository 선택 근거는
 ## 실행
 
 ```bash
-cd /home/ubuntu/car-community-scripts
-sudo ./bootstrap/kubernetes/300-install-kubernetes-components.sh
+sudo /home/ubuntu/car-community-scripts/bootstrap/kubernetes/300-install-kubernetes-components.sh
 ```
 
 Script는 기존 package·repository owner를 확인하고 official signing key와 Kubernetes
@@ -54,5 +55,5 @@ Package와 repository를 의도적으로 제거하는 완전한 절차는 현재
 ## 다음 단계와 관련 문서
 
 - **다음 실행**: [Control plane 초기화](240-kubernetes-control-plane-initialization-runbook.md)
-- **개념·선택 근거**: [Kubernetes cluster](../project/infrastructure/140-kubernetes-cluster.md)
+- **개념·선택 근거**: [150 Kubernetes cluster](../project/infrastructure/150-kubernetes-cluster.md)
 - **구현 source**: [`300-install-kubernetes-components.sh`](../../scripts/bootstrap/kubernetes/300-install-kubernetes-components.sh)

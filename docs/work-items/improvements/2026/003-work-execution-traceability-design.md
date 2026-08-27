@@ -1123,6 +1123,176 @@ reviewer가 공통 구조 결함을 한 항목씩 발견하는 동안 전체 con
 추가하는 방식도 배제합니다. 같은 공유 계약이 대표 proof 없이 다시 fan-out되거나, 독립
 consumer가 불필요하게 막히면 inventory·대표 oracle과 false-block 경계를 함께 재검토합니다.
 
+## 결정 28. 복합 실행 batch는 모든 항목의 권한 coverage가 닫힌 뒤에만 입장합니다
+
+### 배경
+
+원자별 문장 기능·권한 분리와 인접 권한 전파 금지는 이미 공통 workflow에 있었습니다. 그러나
+여러 항목을 한 실행 결과로 다루는 개발 handoff에는 raw 항목 전체의 권한 coverage가 명시적
+입력으로 없었습니다. 그 결과 두 항목의 `그렇게 해`와 한 항목의 비교 질문을 전체 승인처럼
+압축했고, 질문에 답하기도 전에 같은 batch의 writer를 시작했습니다.
+
+### 선택
+
+- 현재 Agent는 복합 batch의 각 raw 항목에 `문장 기능·요청 효과·positive 권한 source 또는
+  미확정 사유`를 연결하고, 첫 계획·위임·review·mutation 전에 coverage를 완성합니다.
+- 질문·비교·우려·미확정 선택이 하나라도 남으면 승인된 항목만 부분 실행하지 않습니다.
+  Batch를 멈추고 미확정 이유와 선택 차원을 설명한 뒤, 사용자가 선택·제외·취소해 논의를
+  닫은 새 generation에서만 실행합니다.
+- Develop adapter는 이 coverage와 batch admission을 라운드 계약으로 소비합니다. Writer는
+  일부 승인 원자나 인접 문장으로 빈 권한을 보정하지 않습니다.
+- 모든 항목이 명시 승인됐거나 미확정 항목이 batch에서 제외됐으면 추가 승인이나 별도 실행
+  문법 없이 진행합니다. Dependency·write set·완료 oracle이 다른 독립 결과까지 전역
+  차단하지 않습니다.
+
+### 근거와 배제 대안
+
+기존 원자화 규칙의 owner는 맞으므로 유지하고, 실제 영향 전 consumer interface만 강화합니다.
+DNS·Cloudflare 같은 제품별 예외, 항목 수 제한, 외부 dispatcher와 새 권한 verifier는 만들지
+않습니다. 명사를 private endpoint로 바꾼 질문도 같은 경계에서 멈추고, 세 항목이 모두 명시
+실행이면 바로 진행해야 합니다. 논의를 닫은 뒤에도 과거 미확정을 이유로 계속 막거나, 서로
+독립된 다른 결과까지 함께 멈추면 batch 경계와 false-block 조건을 재검토합니다.
+
+## 결정 29. 실행 회고의 통제 효과와 terminal evidence를 결속합니다
+
+### 배경
+
+회고 행동 검증은 모델링된 통제 효과와 실제 전이 invocation을 분리하도록 강화됐습니다.
+그런데 독립 evaluator가 actual invocation을 `검증 불가`로 정확히 판정한 뒤에도, 같은 Agent가
+History·상태 문서 commit을 통제 적용처럼 소비하고 회고를 완료로 보고했습니다. Evidence
+classifier는 올바르게 작동했지만 그 결과를 closure·Git·report consumer가 같은 identity로
+받지 않아 downstream에서 상태를 다시 높일 수 있었습니다.
+
+### 선택
+
+- 행동 검증 뒤 `사건·mode·routing → 통제 처분·canonical owner → 실제 적용 효과 또는
+  이미 적용된 control identity → 증거 등급별 verdict → Git 자격·전체 상태`를 하나의
+  closure identity로 Git과 reporting owner에 넘깁니다.
+- 사건이 현재 통제보다 앞서고 현재 통제가 이미 적용된 경우에는 그 exact control과 회귀
+  검증을 사용합니다. 새 commit을 만들기 위해 evidence 문서를 통제 변경으로 바꾸지 않습니다.
+- 새 통제 변경이 필요한 실행 회고 commit은 선택한 처분의 canonical owner 효과를 반드시
+  포함합니다. History·design·상태는 companion이며 단독으로 Git terminal을 만들지 않습니다.
+- 전체 회고 상태와 보고는 필요한 전이 중 가장 낮은 verdict를 넘지 않습니다. Commit 성공은
+  통제 적용·행동 검증·actual invocation 중 비어 있는 상태를 채우지 않습니다.
+
+### 근거와 배제 대안
+
+이 선택은 독립 evaluator나 사례를 더 만들지 않고 이미 올바르게 나온 verdict를 실제 lifecycle
+consumer에 결속합니다. 회고별 registry·영구 closure 장부·custom verifier는 추가하지 않으며,
+History 자체를 금지하지도 않습니다. History는 고유 사건을 보존할 수 있지만 canonical control
+effect와 completion evidence를 대신하지 않습니다.
+
+읽기 전용 회고와 통제 변경이 필요 없는 현재 통제 이전 사건에는 writer·Git을 강제하지
+않습니다. 반대로 필요한 canonical owner 변경 없이 evidence-only commit이 다시 회고 완료로
+쓰이거나, 실제로 닫힌 단일 phase 회고가 존재하지 않는 다중 actor 증거 때문에 막히면 closure
+identity의 Git admission과 transition 산정 경계를 함께 재검토합니다.
+
+## 결정 30. 반복 이의에서도 선택 span과 원래 질문 축을 유지합니다
+
+### 배경
+
+재사용 Scenario의 `EC2 실행 파일 전달`과 `확장 EC2 실행 파일 재전달`이 같은 전이를
+중복한다는 질문에 Agent는 처음에는 중복 문제를 일부 인정했습니다. 사용자가 Scenario의 존재
+이유를 다시 묻자, Agent는 원래 질문을 유지하지 않고 `Scenario가 live 상태를 함께 소유한다`는
+인접한 참인 사실로 바꿔 두 항목의 영구 배치를 다시 정당화했습니다. 사용자가 recipe에서 같은
+소금을 두 번 넣는 것과 같다고 세 번째로 지적한 뒤에야 원래 질문으로 복귀했습니다.
+
+### 선택
+
+- 선택한 문장·항목과 최초 질문 축을 후속 이의가 끝날 때까지 같은 identity로 유지합니다.
+- 복합 artifact에서는 선택 span의 exact section owner, 정보 수명과 빈 환경에서의 재생 효과를
+  파일 전체의 owner와 분리합니다.
+- Enclosing artifact의 참인 책임은 선택 span의 위치·중복·필요성을 자동으로 정당화하지
+  않습니다. 직전 결론을 유지하려면 원래 질문을 이 exact 하위 계약으로 직접 통과시킵니다.
+- 사용자가 같은 결론을 반복해서 묻는다면 최신 문장만 별도 질문으로 만들지 않고 최초 질문과
+  선택 span부터 다시 대조합니다.
+
+### 배제 대안과 재검토 조건
+
+특정 Scenario나 `재전달`이라는 명사를 금지하지 않습니다. 실제로 서로 다른 actor·대상·상태
+전이·완료 조건이면 별도 단계일 수 있고, 단일 책임 artifact의 단순 사실 질문까지 복합 owner
+분석으로 확대하지 않습니다. 선택 span이 없는 일반 추천 반론은 기존 comparison 통제를 그대로
+사용합니다.
+
+## 결정 31. 식별된 기존 commit 수정은 그 patch와 topology를 대상으로 합니다
+
+### 배경
+
+사용자가 특정 commit을 확인해 잘못된 부분을 수정하라고 했는데, Agent는 commit을 조사
+source로만 소비하고 현재 HEAD에 새 보상 commit을 추가했습니다. Git workflow는 commit과
+history rewrite를 구분했지만, 자연어에서 식별된 commit이 mutation target인지 source인지
+고정하는 admission이 없어 Agent가 더 익숙한 append-only 경로를 선택할 수 있었습니다.
+
+### 선택
+
+- Local unpushed 기존 commit을 식별하고 그 안의 문제·누락을 수정하라는 표현은
+  `확인해서`가 포함돼도 해당 patch와 후속 local topology의 history rewrite로 보존합니다.
+- 사용자가 현재 코드·새 commit을 별도 target으로 명시하거나 읽기 전용 설명을 요구하면
+  그 결과를 따릅니다. 공유·pushed history는 자동 rewrite하지 않고 안전 경계로 반환합니다.
+- Commit이 조사 source인지 mutation target인지 원문에서 닫히지 않을 때만 첫 Git mutation
+  전에 그 차이를 질문합니다.
+- Mutation target이 닫혔으면 변경 뒤 patch, 유지할 후속 commit, 제거할 임시·보상 commit,
+  최종 branch tree와 제외 dirty를 하나의 예정 결과로 검증합니다.
+- 새 commit 추가는 기존 commit 수정의 안전한 대체나 중간 완료가 아닙니다.
+
+### 배제 대안과 재검토 조건
+
+특정 SHA나 `amend` 단어를 요구하는 규칙은 만들지 않습니다. 사용자가 내용만 고치거나 새
+보상 commit을 명시한 경우에는 기존 commit을 자동 재작성하지 않습니다. 이미 공유된 remote
+history는 기존 안전 경계에 따라 자동 rewrite하지 않으며, local unpushed topology에서만
+확정된 mutation target을 직접 복구합니다.
+
+## 결정 32. 삽입 원자 뒤 원래 artifact의 Git 효과까지 복원합니다
+
+### 배경
+
+Scenario correction과 commit이 원래 결과였지만, 실행 회고의 통제 변경·검증·commit이 끝난
+뒤 원래 artifact는 worktree에만 남았습니다. 기존 복귀점 계약은 원래 artifact와 acceptance
+oracle을 보존했지만, 복귀 consumer가 원래 Git 효과를 candidate·index·commit object에서
+직접 닫는 terminal admission은 없었습니다. 같은 파일 overlap을 발견한 상태가 원래 결과를
+미완료로 유지하는 대신 제외 근거처럼 소비됐습니다.
+
+### 선택
+
+- 원래 요청에 Git 효과가 있으면 삽입 원자 뒤 artifact 내용과 해당 Git 효과를 같은 활성
+  원자로 복원합니다.
+- 통제 commit과 partial-stage 금지는 원래 artifact commit을 대신하지 않습니다.
+- Same-file overlap은 격리 candidate나 source-backed 분리 경로를 먼저 사용하며, 실제로
+  안전한 경로가 없을 때만 exact blocker로 전환합니다.
+- Terminal admission은 원래 결과·artifact·Git 효과를 실제 candidate·index·commit 또는
+  rewrite 결과와 대조하며, worktree-only artifact는 `Active`로 유지합니다.
+
+### 배제 대안과 재검토 조건
+
+모든 overlap에 partial stage를 허용하거나 control commit에 사건 artifact를 섞지 않습니다.
+항상 새 worktree를 만들라는 제품별 절차도 추가하지 않고, 현재 안전한 최소 경로를 사용합니다.
+원래 요청이 worktree 수정뿐이거나 사용자가 artifact commit을 명시적으로 취소하면 존재하지
+않는 Git 효과를 강제하지 않습니다.
+
+## 결정 33. 원래 artifact의 Git 미완료를 첫 화면에서 우선합니다
+
+### 배경
+
+Scenario correction은 worktree에만 있고 요청한 commit에는 없었지만, Agent는 통제 commit 두
+개와 수정 내용을 먼저 완료로 보고했습니다. 미커밋 사실은 같은 파일 overlap 설명 뒤에
+묻혀 사용자가 원래 결과가 어느 commit에 있는지 다시 확인해야 했습니다. Reporting workflow는
+가장 중요한 미완료를 첫 문장에 두도록 이미 요구했지만, 삽입 결과와 원래 결과 사이의 우선
+순위를 명시하지 않아 통제 commit이 전면을 차지할 수 있었습니다.
+
+### 선택
+
+- 삽입 회고·검증·통제 뒤에는 원래 사용자 결과의 상태를 먼저 투영합니다.
+- 요청된 Git 효과가 없으면 첫 문장을 `원래 artifact Git 결과 미완료`로 시작합니다.
+- Worktree-only artifact는 `수정됨·미커밋`으로 직접 표시하고, 통제 commit과 구분합니다.
+- Overlap과 보존은 사유·상태일 뿐 전체 완료가 아니며, 다음 책임과 재개 조건을 같은 첫
+  화면에 둡니다.
+
+### 배제 대안과 재검토 조건
+
+모든 보고를 장문 checklist로 만들거나 모든 dirty 파일을 첫 문장에 나열하지 않습니다.
+원래 결과가 실제로 닫혔으면 삽입 결과보다 먼저 미완료를 발명하지 않습니다. 사용자가 현재
+보고 범위에서 원래 결과를 명시적으로 제외한 경우에는 그 projection에서만 생략합니다.
+
 ## 서로 다른 first-break family의 owner
 
 모든 과거 사건을 하나의 막연한 원인으로 합치지 않습니다.

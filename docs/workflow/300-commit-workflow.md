@@ -16,6 +16,22 @@ discovery·closure는 [작업 실행 워크플로우](100-work-execution-workflo
 - local 검증을 마친 후보와 push 뒤 적용할 terminal gate
 - 제외할 기존·다른 작업의 staged·unstaged·untracked 상태
 
+첫 ref mutation 전에 현재 사용자 결정 source와 다음 Git topology를 한 record로 대조하고,
+사용자 commentary에 그대로 투영합니다.
+
+```text
+push source commit/ref → remote target ref
++ 새 local·remote branch 생성 여부
++ PR 생성 여부
++ 각 효과의 현재 사용자 결정 source 또는 권한 없음
+```
+
+활성 결정이 direct push이면 새 branch·PR을 안전한 기본값이나 repository 관행으로
+대체하지 않습니다. 새 branch가 승인됐다면 생성 전에 이름을
+[Git Worktree 워크플로우](310-git-worktree-workflow.md#naming과-배치)의 허용 type과
+형식에 대조합니다. 이 projection이 누락됐거나 활성 결정과 다르면 ref mutation을 시작하지
+않고 작업 실행 워크플로우의 결정 기준선으로 돌아갑니다.
+
 이 문서는 그 입력을 넓히거나 새 권한을 만들지 않습니다. 특히 skill 호출, 작업 완료,
 diff 확인과 tool approval은 Git 권한이 아닙니다. 각 Git 효과는 다음처럼 서로 다릅니다.
 
@@ -29,6 +45,27 @@ diff 확인과 tool approval은 Git 권한이 아닙니다. 각 Git 효과는 �
 commit 권한은 push나 history rewrite 권한을 포함하지 않고, push 권한은 새 commit이나
 history rewrite 권한을 포함하지 않습니다. 권한·결과·공통 상태에 새 발견이 생기면 이
 문서에서 차단이나 재시도 횟수를 정하지 않고 작업 실행 워크플로우로 돌려보냅니다.
+
+사용자가 local unpushed 기존 commit을 식별하고 `확인해서 문제 부분 수정`, `고쳐`,
+`그 변경 묶음에 넣어`처럼 그 commit 안의 문제나 누락을 바로잡으라고 요청하면 대상은
+현재 worktree 내용이나 새 보상 commit이 아니라 해당 commit의 patch와 그 뒤 local
+topology입니다. `확인해서`를 조사 source로만 축소하거나 이 표현을 일반 `commit` 권한과
+새 commit 추가로 바꾸지 않습니다. 사용자가 `현재 코드`, `새 commit`처럼 별도 mutation
+target을 명시하면 그 값을 따르고, 읽기 전용 설명이면 Git mutation을 만들지 않습니다.
+대상 commit이 이미 공유됐거나 pushed됐으면 자동 rewrite하지 않고 현재 문제 수정과 Git
+효과를 분리해 안전 경계로 반환합니다. 그 밖에 commit이 조사 source인지 mutation target인지
+원문에서 하나로 닫히지 않을 때에만 첫 Git mutation 전에 그 차이를 질문합니다. Mutation
+target이 닫혔으면 5절의 history 복구 절차로 인계하고, 예정 결과를 다음처럼 고정합니다.
+
+```text
+식별된 기존 commit의 변경 뒤 patch
++ 유지할 후속 commit 순서
++ 제거할 임시·보상 commit
++ 최종 branch tree와 제외 dirty
+```
+
+이 결과가 검증되기 전에는 편의상 새 commit을 먼저 만들거나 이를 안전한 중간 결과로
+보고하지 않습니다.
 
 사용자가 검증된 concrete 결과를 `commit`하라고 명시하면, 그 결과의 exact path·hunk를
 index에 올리는 stage는 commit을 만들기 위한 불가피한 선행 효과로 operation map에 함께
@@ -246,20 +283,22 @@ remote topology와 영향을 작업 실행 워크플로우에 반환합니다.
 
 push 입력이 있을 때 다음 순서로 remote mutation을 수행합니다.
 
-1. upstream, local ahead·behind, unpushed commit과 `git ls-remote --refs`의 live remote
+1. 1절의 Git topology projection과 현재 활성 결정 source가 계속 일치하는지 확인합니다.
+   새 branch·PR이 `권한 없음`이면 그 효과를 만들지 않습니다.
+2. upstream, local ahead·behind, unpushed commit과 `git ls-remote --refs`의 live remote
    SHA를 확인합니다.
-2. push할 source commit/ref와 remote branch를 exact하게 고정합니다. Branch tip 전체가
+3. push할 source commit/ref와 remote branch를 exact하게 고정합니다. Branch tip 전체가
    대상이면 local branch ref를, 이미 확정한 commit만 대상이면 그 commit object를 source로
    사용합니다. Remote branch 생성도 입력에 포함된 경우에만 수행합니다.
-3. remote tip object를 local에서 확인할 수 있으면 `git merge-base --is-ancestor`로
+4. remote tip object를 local에서 확인할 수 있으면 `git merge-base --is-ancestor`로
    고정한 source commit까지 fast-forward인지 검증합니다. 확인할 수 없는 상태를 성공으로
    추정하지 않습니다.
-4. remote에 포함될 모든 unpushed commit의 message와 full patch를 읽고, 명시적으로
+5. remote에 포함될 모든 unpushed commit의 message와 full patch를 읽고, 명시적으로
    제외된 결과나 보안·무결성 위반이 없는지 확인합니다. push는 이번 turn의 commit만이
    아니라 고정한 source가 도달 가능하게 만드는 commit 전체를 remote ref에 반영합니다.
-5. Push 직전에 source ref와 live remote ref를 다시 읽습니다. 고정 뒤 어느 ref든 바뀌면
+6. Push 직전에 source ref와 live remote ref를 다시 읽습니다. 고정 뒤 어느 ref든 바뀌면
    이전 검증을 승계하지 않고 2절의 실제 충돌 경계로 돌아갑니다.
-6. exact source와 target을 명시한 refspec으로 한 번 push합니다.
+7. exact source와 target을 명시한 refspec으로 한 번 push합니다.
 
 ```sh
 git push <remote> <source-commit-or-ref>:refs/heads/<branch>

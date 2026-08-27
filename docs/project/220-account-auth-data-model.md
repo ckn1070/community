@@ -61,15 +61,17 @@ admin_invitation ── auth_role
 | refresh rotation·reuse | token family와 감사 이벤트 | [Account 도메인](../domain/100-account.md) |
 | 이메일 인증 요청 | verification token을 먼저 commit하고, after-commit provider 호출 뒤 요청 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction | [Auth Event 정책](../domain/120-auth-event-policy.md) |
 | 이메일 인증 확인 | account 활성화, verification token 소비와 확인 감사 이벤트를 같은 transaction에서 변경 | [Account 도메인](../domain/100-account.md) |
-| 관리자 초대 생성 | 기존 open invitation 회수와 새 invitation을 commit하고, after-commit notification 뒤 생성 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction으로 처리하는 현재 구현 | [Auth Event 정책](../domain/120-auth-event-policy.md) |
+| 관리자 초대 생성 | 기존 open invitation 회수, 새 invitation과 생성 감사 이벤트를 같은 transaction에서 변경하고 notification은 commit 이후 호출 | [Auth Event 정책](../domain/120-auth-event-policy.md) |
 | 관리자 초대 수락 | invitation 수락 terminal state, 신규 account graph, admin role과 수락 감사 이벤트를 같은 transaction에서 변경 | [Account 도메인](../domain/100-account.md) |
 | 관리자 초대 회수 | invitation 회수 terminal state와 회수 감사 이벤트를 같은 transaction에서 변경 | [Account 도메인](../domain/100-account.md) |
 | 비밀번호 재설정 요청 | verification token을 먼저 commit하고, after-commit provider 호출 뒤 요청 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction | [Auth Event 정책](../domain/120-auth-event-policy.md) |
 | 비밀번호 재설정 완료 | verification token 소비, credential, active refresh token과 완료 감사 이벤트를 같은 transaction에서 변경 | [인증/인가 정책](../domain/110-account-auth-policy.md) |
 
 위 표는 서로 다른 operation을 한 행에 합치지 않고 실제 변경 경계만 요약합니다. 정상·거부·
-재시도 세부와 API 접근 조건은 반복하지 않으며, after-commit 별도 transaction의 원자성
-미충족은 관련 In Progress work item이 소유합니다.
+재시도 세부와 API 접근 조건은 반복하지 않습니다. 이메일 인증 요청과 비밀번호 재설정 요청의
+provider 결과·감사 저장 실패 의미 분리는 Proposed
+[Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이
+소유합니다.
 
 `refresh_token`과 `auth_event`의 이중 writer는 의도된 최종 모듈 계약이 아니라 현재 구현 예외입니다. 로그인·비밀번호 흐름은 `account` adapter가, rotation·logout·reuse 흐름은 `auth` adapter가 같은 table을 서로 다른 JPA type으로 갱신합니다. 또한 `auth` refresh token repository가 native SQL로 `account` table을 직접 읽어 internal id를 public id로 변환합니다. 목표 owner와 transaction·조회 공개 계약을 정해 하나의 물리 persistence 경계로 이관하기 전까지 새 writer나 직접 table read를 추가하지 않습니다. 후속 완료 조건은 [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가 소유합니다.
 

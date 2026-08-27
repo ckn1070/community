@@ -164,6 +164,16 @@ verify_no_enabled_systemd_swap_units() {
   fi
 }
 
+install_host_operator_packages() {
+  apt-get install --yes jq
+}
+
+verify_host_operator_commands() {
+  if ! command -v jq >/dev/null 2>&1; then
+    fail "설치 후 필수 command를 찾을 수 없습니다: jq"
+  fi
+}
+
 run_preflight_checks() {
   echo "[사전 확인] 실행 환경과 변경 전 조건을 확인합니다."
   require_root
@@ -344,6 +354,7 @@ verify_host_postconditions() {
 
   verify_time_synchronization
   verify_ufw_state
+  verify_host_operator_commands
   echo "host 준비 결과 검증을 통과했습니다."
 }
 
@@ -368,6 +379,9 @@ main() {
 
   echo "[변경] 설치된 package의 보안 및 bug fix version을 적용합니다."
   apt-get upgrade --yes
+
+  echo "[변경] EC2 운영 절차에 필요한 jq를 설치합니다."
+  install_host_operator_packages
 
   echo "[변경] swap을 비활성화합니다."
   disable_swap

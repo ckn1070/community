@@ -8,6 +8,8 @@
 - [002-autosquare-mvp-candidate.md](002-autosquare-mvp-candidate.md): Carmunity와의 관계부터 미확정인 AutoSquare 제품 후보와 그 내부 MVP 결정의 단일 owner입니다.
 - [003-account-auth-follow-up.md](003-account-auth-follow-up.md): account 인증/인가 DB
   schema 이후 회원가입, 로그인, 관리자, 인증 관련 후속 기능 아이디어입니다.
+- [004-infrastructure-evolution.md](004-infrastructure-evolution.md): 현재 staging 범위를 넘어서는
+  infrastructure 확장·관측·보안·자동화 후보와 도입 관계의 단일 owner입니다.
 
 ## 관련 문서
 

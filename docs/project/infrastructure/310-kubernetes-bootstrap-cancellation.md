@@ -59,5 +59,5 @@ Calico 이후에도 CNI resource·field ownership과 workload network가 있으�
 ## 관련 문서
 
 - **실제 취소 절차**: [Kubernetes bootstrap 취소 runbook](../../operations/500-kubernetes-bootstrap-cancellation-runbook.md)
-- **정상 cluster state model**: [Kubernetes cluster](140-kubernetes-cluster.md)
+- **정상 cluster state model**: [150 Kubernetes cluster](150-kubernetes-cluster.md)
 - **공통 재실행·변경 판정**: [변경과 복구 원칙](300-change-and-recovery-principles.md)

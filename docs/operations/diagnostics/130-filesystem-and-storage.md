@@ -3,27 +3,71 @@
 “Disk 문제”를 block 용량, inode, read-only mount, 큰 directory, 열린 삭제 file과 EBS I/O
 계층으로 나눕니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 상단 수동 확장 조회
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
 
 ```bash
+(
+set +e
+
+probe() {
+  printf '\n------------------------------------------------------------\n'
+  printf 'PROBE: %s\n' "$1"
+  printf '%s\n' "$2"
+  printf '%s\n' '------------------------------------------------------------'
+}
+
+report_status() {
+  printf '[result] %s exit code: %s\n' "$1" "$2"
+}
+
+probe 'Block device' 'Device·filesystem·mount 계층과 실제 filesystem 여유를 확인합니다.'
 lsblk -o NAME,TYPE,SIZE,FSTYPE,FSAVAIL,FSUSE%,MOUNTPOINTS
+report_status 'lsblk' "$?"
+
+probe 'Root mount' 'Root filesystem의 source·type과 read-write mount option을 확인합니다.'
 findmnt -o TARGET,SOURCE,FSTYPE,OPTIONS /
+report_status 'findmnt' "$?"
+
+probe 'Filesystem block' 'Mounted filesystem별 block 용량과 사용률을 확인합니다.'
 df -hT
+report_status 'df block' "$?"
+
+probe 'Filesystem inode' 'Block 여유와 별개로 inode가 고갈됐는지 확인합니다.'
 df -ih
+report_status 'df inode' "$?"
+
+probe 'Large directory' '/var 바로 아래에서 공간을 많이 사용하는 directory를 확인합니다.'
 sudo -n du -x -h --max-depth=1 /var \
   | sort -h \
   | tail -n 30
+pipeline_status=("${PIPESTATUS[@]}")
+printf '[result] du exit code: %s; sort exit code: %s; tail exit code: %s\n' \
+  "${pipeline_status[0]}" "${pipeline_status[1]}" "${pipeline_status[2]}"
+
+probe 'Kernel I/O 기록' '현재 boot의 filesystem·block I/O·read-only 오류를 확인합니다.'
 sudo -n journalctl -k -b \
   --grep='I/O error|EXT4-fs error|read-only|Buffer I/O|blk_update_request' \
   --no-pager -n 200
+report_status 'journalctl' "$?"
+
+probe 'Deleted-open file' '삭제됐지만 process가 열고 있어 공간이 반환되지 않은 file을 확인합니다.'
 sudo -n lsof +L1 | sed -n '1,120p'
+pipeline_status=("${PIPESTATUS[@]}")
+printf '[result] lsof exit code: %s; sed exit code: %s\n' \
+  "${pipeline_status[0]}" "${pipeline_status[1]}"
+)
 ```
 
-`lsof`가 없으면 그 사실을 기록하고 나머지 조회를 계속합니다. Pipeline upstream 실패가
-의심되면 출력 제한 command를 제거하고 producer를 단독으로 재실행합니다.
+`lsof`가 없으면 그 사실을 기록하고 나머지 조회를 계속합니다. Pipeline producer의 실패
+여부는 상단 묶음이 출력한 producer exit code로 판정합니다. 잘리지 않은 출력이 추가로
+필요할 때만 출력 제한 command를 제거하고 producer를 단독으로 재실행합니다.
 
 ## 해석 순서
 

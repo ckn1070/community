@@ -2,13 +2,15 @@
 
 준비된 Ubuntu host에 Kubernetes가 사용할 containerd CRI runtime을 최초 설치·구성하는
 절차입니다. Runtime, package, cgroup과 kernel module 선택 근거는
-[Kubernetes cluster 개념](../project/infrastructure/140-kubernetes-cluster.md)이 소유합니다.
+[150 Kubernetes cluster 개념](../project/infrastructure/150-kubernetes-cluster.md)이 소유합니다.
 
 ## 사용 시점과 actor
 
 - **시점**: [Host 준비](210-kubernetes-host-preparation-runbook.md)가 재부팅 필요 없이
   완료된 직후입니다.
-- **actor·위치**: 운영자가 SSH로 접속한 EC2 terminal에서 `sudo`로 실행합니다.
+- **actor**: Target EC2에서 `sudo`를 사용할 수 있는 운영자
+- **기본 실행 위치**: SSH로 접속한 target EC2 terminal
+- **기본 시작 directory**: 제한 없음
 - **입력**: 인자와 환경변수는 없습니다.
 
 이 단계는 Kubernetes package, cluster state, CNI, UFW와 AWS Security Group을 변경하지
@@ -17,8 +19,7 @@
 ## 실행
 
 ```bash
-cd /home/ubuntu/car-community-scripts
-sudo ./bootstrap/kubernetes/200-install-containerd.sh
+sudo /home/ubuntu/car-community-scripts/bootstrap/kubernetes/200-install-containerd.sh
 ```
 
 Script는 충돌 runtime과 기존 config owner를 먼저 확인한 뒤 exact Ubuntu package,
@@ -55,5 +56,5 @@ APT index 갱신, 이미 충족된 package 요청과 service restart는 재실�
 ## 다음 단계와 관련 문서
 
 - **다음 실행**: [Kubernetes component 설치](230-kubernetes-components-installation-runbook.md)
-- **개념·선택 근거**: [Kubernetes cluster](../project/infrastructure/140-kubernetes-cluster.md)
+- **개념·선택 근거**: [150 Kubernetes cluster](../project/infrastructure/150-kubernetes-cluster.md)
 - **구현 source**: [`200-install-containerd.sh`](../../scripts/bootstrap/kubernetes/200-install-containerd.sh)

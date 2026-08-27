@@ -47,6 +47,24 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
   두 번째 mutation 전 admission 결과로 만듭니다. Proposal·outline·파일 생성과 final
   finding은 대표 결과를 대신하지 않으며, 공통 결함은 contract와 후보를 무효화해 대표
   단위부터 다시 닫습니다.
+- 복합 실행 batch는 raw 항목별 문장 기능·효과·positive 권한 source 또는 미확정 사유를
+  첫 writer 전에 완전히 대조합니다. 하나라도 질문·비교·미확정 항목이면 승인된 다른 항목도
+  부분 실행하지 않고 논의를 닫은 새 generation에서만 batch를 재개합니다.
+- 실행 회고의 행동 verdict는 통제 처분·canonical owner 효과·증거 등급·Git 자격과 전체
+  상태를 하나의 closure identity로 Git과 보고 phase에 전달합니다. History·상태 문서와
+  commit은 canonical 통제 적용이나 actual invocation 공백을 대신하지 않습니다.
+- 반복 이의 뒤 기술 설명은 선택 span과 원래 질문 축을 exact section owner·정보 수명·
+  빈 환경 재생 효과에 결속합니다. 복합 artifact 전체의 참인 책임이나 인접한 사실로 선택
+  문장의 위치·중복·필요성 질문을 바꾸어 방어하지 않습니다.
+- Local unpushed 기존 commit 안의 문제·누락 수정 요청은 `확인해서`가 포함돼도 해당 patch와
+  후속 topology를 대상으로 보존합니다. 현재 코드·새 commit을 별도 target으로 명시하거나
+  읽기 전용인 경우와 공유 history의 안전 경계는 분리합니다.
+- 삽입 회고 뒤에는 원래 artifact의 내용과 요청된 Git 효과를 같은 활성 원자로 복원합니다.
+  통제 commit이나 same-file overlap은 원래 commit 완료가 아니며, worktree-only artifact는
+  실제 commit 또는 명시된 blocker가 생길 때까지 `Active`로 유지합니다.
+- 완료 보고는 삽입 결과보다 원래 artifact의 상태를 먼저 투영합니다. 요청된 Git object에
+  artifact가 없으면 첫 화면에서 `수정됨·미커밋`과 전체 미완료를 직접 밝히고, 통제 commit을
+  그 결과의 대체 완료로 나열하지 않습니다.
 
 상세한 선택·대안·재검토 조건은
 [003 작업 실행 추적성 설계](003-work-execution-traceability-design.md), Git만으로 복원하기
@@ -79,6 +97,33 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
   검증했습니다. 이 판정은 해당 통제 효과와 인계만 증명하며, 실제 Application·DB
   산출물과 관찰하지 않은 다른 phase의 완료로 확대하지 않습니다. Exact control local
   commit은 Git phase의 남은 책임입니다.
+- 이번 staging HTTPS ingress 사건은 인접 승인을 DNS 선택 질문에 전파하고, batch coverage가
+  닫히기 전에 개발 writer를 시작한 실제 invocation 실패를 확인했습니다. 현재 후보는 그
+  writer 입구를 강화하지만, 미래 복합 요청에서 같은 coverage identity가 실제로 전달되는지는
+  후속 live invocation 증거가 필요합니다.
+- 한 번짜리 Super Admin Application command에 별도 문서와 600줄대 shell 체계를 추가한
+  사건에서는 기존 tool-adoption admission의 live invocation이 끊겼습니다. 불필요한 artifact를
+  제거하는 과정에서 password lifecycle의 Procedure owner까지 소거하고 후보에 맞춰 one-shot
+  예외를 추가한 후속 실패가 발생했습니다. 해당 완료 효력을 무효화하고 짧은 Procedure와
+  end-to-end 운영자 walkthrough 경계로 교체했습니다.
+- 이 실행 회고에서는 actual invocation `검증 불가`를 받은 뒤 History·상태 문서만
+  commit하고 회고를 완료로 보고했습니다. 증거 분리 oracle은 작동했지만 closure·Git·report
+  consumer가 verdict를 보존하지 못한 재발이므로, 해당 topology의 이전 완료 범위는
+  무효화하고 공통 closure identity를 강화했습니다.
+- 재사용 Scenario의 중복 전달 항목에 대한 반복 이의에서는 explain-tech의 반론 재평가
+  통제를 실제로 읽고도 원래 질문 축을 `같은 상태 전이를 왜 두 번 두는가`에서 `Scenario가
+  live 상태를 소유하는가`로 바꿨습니다. 현재 후보는 선택 span·원래 질문·하위 owner·수명
+  identity를 강화하지만, 미래 설명 actor의 실제 호출은 후속 live 증거로만 판정합니다.
+- `748a0bfe` commit 수정 요청을 현재 content correction과 새 commit 추가로 바꾼 사건에서는
+  사용자 target identity가 Git 효과 판정 전에 소실됐습니다. 현재 후보는 기존 commit을
+  mutation target으로 고정하는 admission을 강화하지만, 공유 remote history에는 기존 안전
+  경계 없이 rewrite를 확대하지 않습니다.
+- Scenario correction과 commit을 요구한 원래 작업은 통제 commit 두 개 뒤에도 artifact가
+  worktree에만 남았습니다. 기존 복귀점 통제가 있었지만 복귀 consumer가 원래 Git 효과와
+  실제 commit object를 대조하지 않아, same-file overlap이 제외 처분처럼 소비됐습니다.
+- 같은 상태를 보고할 때에는 통제 commit 완료를 첫 판정으로 두고 Scenario 미커밋을 뒤의
+  caveat에 묻었습니다. 기존 first-screen 통제가 있었지만 projection root가 삽입 결과로
+  바뀌어 원래 사용자 결과의 material incomplete가 우회됐습니다.
 
 ## 남은 책임과 재개 조건
 

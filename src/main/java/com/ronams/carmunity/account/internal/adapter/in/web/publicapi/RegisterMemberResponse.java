@@ -16,10 +16,23 @@ import java.util.UUID;
  */
 @Schema(description = "일반 회원 자체 가입 성공 응답")
 public record RegisterMemberResponse(
-    @Schema(description = "회원 public id") UUID memberId,
-    @Schema(description = "정규화된 email", example = "user@example.com") String email,
-    @Schema(description = "표시 이름", example = "Road Runner") String displayName,
-    @Schema(description = "가입 직후 account 상태", example = "PENDING") String status) {
+    @Schema(description = "회원 public id", requiredMode = Schema.RequiredMode.REQUIRED)
+        UUID memberId,
+    @Schema(
+            description = "정규화된 email",
+            example = "user@example.com",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        String email,
+    @Schema(
+            description = "표시 이름",
+            example = "Road Runner",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        String displayName,
+    @Schema(
+            description = "가입 직후 account 상태",
+            example = "PENDING",
+            requiredMode = Schema.RequiredMode.REQUIRED)
+        String status) {
 
   /**
    * application 결과를 외부 응답으로 변환합니다.

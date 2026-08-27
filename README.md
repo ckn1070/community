@@ -1,21 +1,14 @@
 # Carmunity API
 
 Carmunity는 자동차 정보 탐색과 자동차 정보에 연결된 커뮤니티를 목표로 개발 중인
-Spring Boot 백엔드입니다. 현재는 전체 제품 기능을 확장하기 전에 account/auth 기반과
-함께 **모듈 경계, 인증 보안, 품질 검증, immutable image 공급과 GitOps 배포 구조**를
-구축하고 있습니다.
+Spring Boot 백엔드입니다. 현재는 account/auth 기반과 함께 **모듈 경계, 인증 보안,
+품질 검증, immutable image 공급과 GitOps 배포 구조**를 갖춘 상태에서 제품 기능을
+확장하고 있습니다.
 
 이 README는 기능 목록보다 프로젝트에 적용한 설계 선택, 구성요소의 책임과 delivery
 경계를 먼저 설명합니다. 제품 목표와 현재 구현 범위는
 [100 제품 개요](docs/product/100-product-overview.md)와
 [100 프로젝트 개요](docs/project/100-project-overview.md)에서 확인할 수 있습니다.
-
-## 공개 범위
-
-이 저장소는 원본 저장소의 현재 구현과 문서를 공개 용도로 옮긴 사본입니다. 실제 운영 환경의
-credential, endpoint, account·application 식별자와 자동 image 게시 권한은 예시값 또는
-비활성 설정으로 대체했습니다. 코드, 테스트, 문서, 작업 기록과 AI 작업 규칙은 가능한 범위에서
-동일하게 유지합니다.
 
 ## Engineering goals
 
@@ -89,121 +82,42 @@ Module은 다른 module의 `internal` 구현 대신 공개 API 또는 named inte
 
 ## CI and quality gates
 
-모든 pull request와 `main` push는 같은 application 기본 품질 경계를 통과합니다.
-
-```mermaid
-flowchart LR
-    Change["Pull request / main push"] --> CI["CI<br/>contents: read"]
-    CI --> Docker["Docker daemon check"]
-    Docker --> Gradle["Gradle check<br/>unit · integration · architecture · coverage · format"]
-    Gradle --> Scope{"Trusted revision?"}
-    Scope -->|"enabled same repository / main"| Sonar["SonarQube Cloud<br/>Quality Gate"]
-    Scope -->|"fork / Dependabot PR"| PRDone["Basic CI complete"]
-    Sonar --> Verified["Application quality verified"]
-    Verified -->|"main push only"| Decision["before..after range classifier"]
-    Verified -->|"pull request"| PRDone
-    Decision --> Artifact["SHA · run-attempt bound<br/>publish decision artifact"]
-    Artifact --> Publish["Publish image workflow"]
-```
-
-- CI는 repository source만 읽으며 AWS나 cluster credential을 갖지 않습니다.
-- PostgreSQL integration test가 조용히 생략되지 않도록 먼저 Docker daemon을 확인합니다.
-- `./gradlew check --rerun-tasks`로 이전 task 결과를 재사용하지 않고 전체 검증을 실행합니다.
-- Fork와 Dependabot pull request는 secret을 받지 않으므로 기본 검증은 유지하고 Sonar만
-  사유를 기록한 뒤 건너뜁니다.
-- `SONAR_ENABLED=true`로 활성화한 same-repository pull request와 `main`에서는 Sonar 설정이나
-  token이 없으면 실패하며, 분석 revision의 Quality Gate 결과를 기다립니다.
-- `main` push의 마지막 commit이 아니라 `before..after` 전체 변경을 분류해 image publish
-  여부를 exact CI run의 artifact로 전달합니다.
-
-구현 source는 [CI workflow](.github/workflows/ci.yml), 품질 도구의 현재 기준은
-[310 코드 품질 도구](docs/tech-stack/310-code-quality-tools.md)에서 확인할 수 있습니다.
+Pull request와 `main` push는 application 기본 품질 경계를 통과하고, 신뢰할 수 있는 `main`
+revision만 image publish 후보가 됩니다. Trigger, branch 조건, CI·publish의 모든 step과
+GitOps 인계는 [200 CI/CD pipeline](docs/project/infrastructure/200-ci-cd-pipeline.md)이
+설명 SOT로 소유합니다. 구현 source는 [CI workflow](.github/workflows/ci.yml), 품질 도구의
+세부 기준은 [310 코드 품질 도구](docs/tech-stack/310-code-quality-tools.md)에서 확인합니다.
 
 ## Container supply chain
 
-`AWS_ECR_PUBLISH_ENABLED=true`로 활성화한 경우, 성공한 `main` revision만 private ECR의
-ARM64 image가 될 수 있습니다.
-
-| Control | 적용 방식 |
-| --- | --- |
-| Build input 고정 | Dockerfile frontend와 builder·runtime base image를 digest로 고정 |
-| Runtime 최소화 | Multi-stage build로 JRE와 application JAR만 runtime image에 포함 |
-| Non-root process | 고정 UID/GID `10001`로 application 실행 |
-| Source identity | 40자리 Git SHA를 immutable ECR tag와 OCI revision으로 사용 |
-| Content identity | 배포와 pull에는 mutable tag가 아닌 `sha256` digest 사용 |
-| AWS authentication | 장기 access key 대신 GitHub OIDC의 단기 push role 사용 |
-| Privilege admission | 성공한 exact CI run의 검증된 분류 artifact가 있을 때만 AWS 권한 발급 |
-| Re-run safety | 같은 SHA image가 있으면 다시 push하지 않고 기존 digest 재사용 |
-
-Target과 같은 native ARM64 runner에서 image를 만들며 QEMU 변환을 사용하지 않습니다.
-GitHub Actions와 image build source는 commit SHA로 고정합니다. 실제 계약은
-[Publish image workflow](.github/workflows/publish-image.yml), [Dockerfile](Dockerfile)과
-[200 Container image delivery](docs/project/infrastructure/200-container-image-delivery.md)가
-소유합니다.
+성공한 `main` revision만 private ECR의 immutable ARM64 image가 될 수 있습니다. Workflow
+admission·step·재실행은 [200 CI/CD pipeline](docs/project/infrastructure/200-ci-cd-pipeline.md),
+OIDC trust와 IAM resource 관계는
+[130 ECR·IAM image 공급 기반](docs/project/infrastructure/130-ecr-iam-foundation.md), image
+identity·ARM64 build·kubelet pull은
+[210 Container image delivery](docs/project/infrastructure/210-container-image-delivery.md)가
+소유합니다. 구현 source는 [Publish image workflow](.github/workflows/publish-image.yml)와
+[Dockerfile](Dockerfile)입니다.
 
 ## GitOps delivery
 
-Image 게시와 staging 배포는 의도적으로 분리합니다. Publish workflow는 runtime artifact만
-만들고, 사람이 검토한 별도의 digest 변경 pull request가 deployment intent를 만듭니다.
-
-```mermaid
-flowchart LR
-    Source["Source PR"] --> Main["main"]
-    Main --> CI["CI success"]
-    CI --> ECR["Private ECR<br/>immutable ARM64 digest"]
-    ECR --> DeployPR["deploy/overlays/stg<br/>digest change PR"]
-    DeployPR -->|"review · merge"| Git["Git desired state"]
-    Git --> Argo["Argo CD Core<br/>read-only pull"]
-    Argo --> Migration["PreSync migration Job<br/>migrator credential"]
-    Migration --> Runtime["Deployment · Service<br/>runtime credential"]
-    Runtime --> Health["No condition<br/>Synced · Healthy"]
-```
-
-- Argo CD는 `deploy/overlays/stg`를 pull하며 GitHub Actions가 cluster credential을 소유하지
-  않습니다.
-- Automated sync, `prune`과 `selfHeal`은 활성화하지만 `allowEmpty`는 비활성화해 잘못 빈
-  render가 전체 삭제로 이어지는 것을 막습니다.
-- Migration Job은 runtime과 같은 immutable image를 사용하지만 migrator credential만
-  받습니다. Migration과 권한 callback이 성공해야 runtime Deployment가 sync됩니다.
-- Runtime Pod에는 Flyway를 비활성화하고 runtime database credential만 제공합니다.
-- Rollback은 live Deployment patch가 아니라 이전 정상 digest를 되돌리는 새 pull request로
-  수행합니다. 이미 적용된 database migration은 되돌리지 않으므로 이전 image의 schema
-  backward compatibility가 필요합니다.
-
-전체 state model과 실패 경계는
-[210 GitOps application delivery](docs/project/infrastructure/210-gitops-application-delivery.md),
+Image 게시와 staging 배포는 분리하며, review된 digest 변경 pull request가 deployment
+intent를 만듭니다. 승인·reconciliation·migration·rollback state model은
+[220 GitOps application delivery](docs/project/infrastructure/220-gitops-application-delivery.md),
+전체 CI/CD 인계 순서는 [200 CI/CD pipeline](docs/project/infrastructure/200-ci-cd-pipeline.md),
 실제 배포·복구 명령은
 [420 GitOps 배포·rollback runbook](docs/operations/420-gitops-deployment-and-rollback-runbook.md)이
-소유합니다.
+소유합니다. Manifest directory의 변경 경계와 빠른 탐색은
+[Kubernetes application desired state](deploy/README.md)에서 시작합니다.
 
 ## Infrastructure and trust boundaries
 
-현재 repository가 표현하는 staging infrastructure 모델은 public subnet의 단일 Kubernetes
-node, private ECR, private subnet의 RDS 배치 후보와 Argo CD Core를 연결합니다.
-
-```text
-AWS VPC
-├── public subnet: EC2 single Kubernetes control-plane + worker
-├── private subnets: RDS placement candidate
-└── private ECR: immutable ARM64 application image
-
-GitHub CI ──publish decision──> GitHub OIDC push role ──> ECR
-EC2 kubelet ──instance profile pull role────────────────> ECR
-Argo CD ──read-only GitHub App──> deploy/overlays/stg
-Application Pod ──runtime DB role───────────────────────> RDS
-Migration Job ──migrator DB role────────────────────────> RDS
-```
-
-Source SHA, ECR digest, GitOps commit과 Kubernetes live resource는 서로 다른 identity와
-책임을 갖습니다. AWS Console 운영자, local bootstrap 운영자, GitHub Actions, kubelet,
-Argo CD, Migration Job과 Application Pod도 credential을 공유하지 않습니다.
-
-Repository의 구조·자동화 source가 존재한다는 사실은 실제 AWS나 cluster 배포 완료를
-뜻하지 않습니다. 전체 actor·artifact·permission 관계는
-[300 Infrastructure system](docs/project/300-infrastructure-system.md), staging의 현재 live
-상태와 재개 위치는
+현재 staging infrastructure의 topology와 component·trust boundary는
+[100 Infrastructure overview](docs/project/infrastructure/100-infrastructure-overview.md)가
+소유합니다. Repository의 구조·자동화 source가 존재한다는 사실은 실제 AWS나 cluster 배포
+완료를 뜻하지 않으며, 현재 live 상태와 재개 위치는
 [100 Staging 단일 node 전체 구축 시나리오](docs/operations/scenarios/100-staging-single-node-bootstrap.md)가
-각각 소유합니다.
+소유합니다.
 
 ## Trade-offs and current limitations
 
@@ -230,10 +144,13 @@ GitOps repository 경계를 재검토합니다.
 | --- | --- | --- |
 | Architecture 선택과 재검토 조건 | [200 현재 프로젝트 아키텍처](docs/project/200-current-architecture.md) | `src/main`, architecture test |
 | Module 책임과 알려진 예외 | [210 모듈 지도](docs/project/210-module-map.md) | `src/main/java/com/ronams/carmunity` |
-| CI와 Quality Gate | [310 코드 품질 도구](docs/tech-stack/310-code-quality-tools.md) | [CI workflow](.github/workflows/ci.yml), `build.gradle` |
-| ARM64 image publish와 ECR pull | [200 Container image delivery](docs/project/infrastructure/200-container-image-delivery.md) | [Publish image workflow](.github/workflows/publish-image.yml), [Dockerfile](Dockerfile) |
-| GitOps state와 rollback | [210 GitOps application delivery](docs/project/infrastructure/210-gitops-application-delivery.md) | `deploy`, `scripts/bootstrap/gitops` |
-| 전체 infrastructure 관계 | [300 Infrastructure system](docs/project/300-infrastructure-system.md) | `.github/workflows`, `deploy`, `scripts/bootstrap` |
+| CI/CD 전체 흐름과 step | [200 CI/CD pipeline](docs/project/infrastructure/200-ci-cd-pipeline.md) | [CI workflow](.github/workflows/ci.yml), [Publish image workflow](.github/workflows/publish-image.yml) |
+| Quality Gate 세부 기준 | [310 코드 품질 도구](docs/tech-stack/310-code-quality-tools.md) | `build.gradle`, `sonar-project.properties` |
+| ARM64 image identity·build와 ECR pull | [210 Container image delivery](docs/project/infrastructure/210-container-image-delivery.md) | [Dockerfile](Dockerfile), `scripts/bootstrap/ecr` |
+| 단일 node cluster와 workload network | [150 Kubernetes cluster](docs/project/infrastructure/150-kubernetes-cluster.md) | `scripts/bootstrap/kubernetes` |
+| GitOps state와 rollback | [220 GitOps application delivery](docs/project/infrastructure/220-gitops-application-delivery.md) | `deploy`, `scripts/bootstrap/gitops` |
+| Public HTTPS ingress와 AWS resource ownership | [170 AWS Load Balancer ingress](docs/project/infrastructure/170-aws-load-balancer-ingress.md) | `deploy/overlays/stg`, `scripts/bootstrap/load-balancer` |
+| 전체 infrastructure 관계 | [100 Infrastructure overview](docs/project/infrastructure/100-infrastructure-overview.md) | `.github/workflows`, `deploy`, `scripts/bootstrap` |
 
 ## Run and verify locally
 

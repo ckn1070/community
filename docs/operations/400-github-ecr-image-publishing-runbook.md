@@ -3,13 +3,15 @@
 Application source 변경을 PR로 `main`에 merge한 뒤, 성공한 `CI` revision의 private ECR
 ARM64 image 게시를 관찰하고 exact deployment digest를 확보하는 반복 절차입니다. 최초
 repository variable 설정은
-[GitHub ECR 게시 최초 설정](320-github-ecr-publishing-configuration-runbook.md)이
+[320 GitHub ECR 게시 최초 설정](320-github-ecr-publishing-configuration-runbook.md)이
 소유합니다.
 
-Workflow의 actor·OIDC 경계·immutable tag와 digest 전달 방식은
-[Container image delivery](../project/infrastructure/200-container-image-delivery.md), 실제
-workflow step과 condition은 [Publish image source](../../.github/workflows/publish-image.yml)에서
-확인합니다.
+Workflow actor·step·digest handoff는
+[200 CI/CD pipeline](../project/infrastructure/200-ci-cd-pipeline.md), OIDC trust와 IAM resource
+관계는 [130 ECR·IAM image 공급 기반](../project/infrastructure/130-ecr-iam-foundation.md), image
+identity·ARM64 build 선택은
+[210 Container image delivery](../project/infrastructure/210-container-image-delivery.md)가
+소유합니다. Exact 실행 정의는 [Publish image source](../../.github/workflows/publish-image.yml)입니다.
 
 ## 실행 계약
 
@@ -17,7 +19,7 @@ workflow step과 condition은 [Publish image source](../../.github/workflows/pub
 | --- | --- |
 | 언제 | Application source PR을 `main`에 merge한 뒤 exact deployment digest가 필요할 때 반복합니다. `deploy/**` 전용 변경에는 실행 결과만 관찰하고 새 digest를 기대하지 않습니다. |
 | 누가 | Pull request를 merge하고 GitHub Actions와 target ECR repository를 읽을 수 있는 운영자가 확인합니다. |
-| 어디서 | GitHub `ckn1070/community → Actions`와 AWS Console `ECR → car-community`입니다. |
+| 어디서 | GitHub `ckn1070/car-community → Actions`와 AWS Console `ECR → car-community`입니다. |
 | 무엇을 | GitHub의 `CI` 성공으로 자동 시작된 `Publish image` workflow를 관찰합니다. 수동 shell script를 실행하지 않습니다. |
 | 왜 | 성공한 exact source revision, immutable ECR tag와 배포할 digest를 하나의 증거로 결속하기 위해서입니다. |
 | 완료·재개 | Workflow summary와 ECR이 같은 digest를 가리키면 완료입니다. 실패하면 같은 revision의 해당 workflow 경계에서 재실행하거나 새 source PR로 복구합니다. |
@@ -35,6 +37,9 @@ workflow step과 condition은 [Publish image source](../../.github/workflows/pub
   Application source와 `deploy/**`를 같은 PR에 섞지 않습니다.
 
 ## 게시 trigger와 결과 확인
+
+**실행 위치:** `1`~`4`는 GitHub Web UI·Actions, `5`는 AWS Console
+`ECR → car-community`
 
 1. Application source 변경 pull request를 review하고 `main`에 merge합니다.
 2. GitHub Actions에서 해당 exact revision의 `CI`가 성공했고 main push의 `before..after` 전체
@@ -76,6 +81,9 @@ Node pull 경로를 확인하려면
 
 ## 중단·실패와 복구
 
+**실행 위치:** Workflow·runner·repository variable·OIDC 실행 확인과 재실행은 GitHub Web
+UI·Actions, ECR repository·digest·role 확인은 AWS Console에서 수행합니다.
+
 | 상태 | 확인과 복구 |
 | --- | --- |
 | `CI` 실패 | Publish를 수동 우회하지 않습니다. Source 문제를 새 commit으로 수정하고 다시 PR·CI를 통과시킵니다. |
@@ -92,8 +100,10 @@ Node pull 경로를 확인하려면
 
 ## 관련 문서
 
-- **현재 image 전달 개념**: [Container image delivery](../project/infrastructure/200-container-image-delivery.md)
-- **최초 GitHub 설정**: [GitHub ECR 게시 최초 설정](320-github-ecr-publishing-configuration-runbook.md)
+- **Workflow trigger·step·handoff**: [200 CI/CD pipeline](../project/infrastructure/200-ci-cd-pipeline.md)
+- **OIDC·IAM resource 관계**: [130 ECR·IAM image 공급 기반](../project/infrastructure/130-ecr-iam-foundation.md)
+- **Image identity·build·pull**: [210 Container image delivery](../project/infrastructure/210-container-image-delivery.md)
+- **최초 GitHub 설정**: [320 GitHub ECR 게시 최초 설정](320-github-ecr-publishing-configuration-runbook.md)
 - **Workflow 구현 source**: [Publish image](../../.github/workflows/publish-image.yml)
-- **Exact digest node 점검**: [Private ECR image pull 점검](410-private-ecr-image-pull-verification-runbook.md)
-- **Digest 배포 승인**: [GitOps 배포와 rollback](420-gitops-deployment-and-rollback-runbook.md)
+- **Exact digest node 점검**: [410 Private ECR image pull 점검](410-private-ecr-image-pull-verification-runbook.md)
+- **Digest 배포 승인**: [420 GitOps 배포와 rollback](420-gitops-deployment-and-rollback-runbook.md)

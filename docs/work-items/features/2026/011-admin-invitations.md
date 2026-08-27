@@ -6,39 +6,48 @@ In Progress
 
 ## 결과
 
-- 완료된 기능: 최고 관리자의 관리자 초대 생성·회수, public 수락 API, token hash·24시간 만료, 같은 email 재초대, `ACTIVE` 관리자 account 생성과 `ROLE_ADMIN` 부여를 구현했습니다.
-- 완료된 검증: schema, service, controller와 integration test가 당시 통과했습니다.
-- 현재 판정: 완료 당시 목표였던 “기존 open 초대 회수, 새 초대 저장과 `ADMIN_INVITATION_CREATED` event를 같은 transaction에 저장”을 실제 구현이 충족하지 않았고, 동시 수락·수락-vs-회수에서 단일 terminal state와 중복 account·role 0을 증명하는 동시성 검증도 누락돼 이 작업을 다시 열었습니다.
-- 실제 구현: invitation transaction을 먼저 commit한 뒤 notification을 발송하고 생성 event를 별도 `REQUIRES_NEW` transaction에 저장합니다. event 저장 실패는 이미 commit된 invitation을 rollback하지 않습니다.
-- 영향: 유효한 초대가 존재하지만 생성 감사 event가 누락될 수 있고, notification 성공 여부도 추적하지 못할 수 있습니다.
-- 미완료: 상태와 감사 기록에 요구할 내구성 수준, notification 결과 기록 시점, event 저장 실패의 retry·복구 계약을 확정하고 구현해야 합니다. 생성·수락·회수 metadata의 exact key·값·actor/target 결속과 민감정보 비포함을 persistence/integration test로 고정하고, 동시 수락과 수락-vs-회수 경쟁의 terminal-state·account·role 불변식을 실제 동시 실행으로 검증해야 합니다.
-- 다음 실행자: 개발 작업 권한을 받은 Codex가 [상세 설계](011-admin-invitations-design.md)의 초대 생성 transaction 결정을 재검토한 뒤 구현·test·SOT를 함께 갱신합니다.
-- 완료 조건: invitation commit 직후·provider 실패·감사 저장 실패를 각각 재현하고, API 성공으로 생성된 invitation의 생성 감사 사실이 누락되지 않거나 durable하게 재시도·탐지됩니다. 생성 성공·발송 실패·재초대·수락·회수에서 canonical metadata의 exact key와 값, deterministic SHA-256 email hash, actor/target 결속과 raw email·token 비포함을 직접 검증합니다. 동시 수락과 수락-vs-회수에서 terminal state는 하나만 성립하고 account graph·role assignment가 중복 생성되지 않음을 검증한 뒤 전체 Gradle 검증을 통과합니다.
+- 같은 email의 기존 open 초대 회수, 새 `admin_invitation`과
+  `ADMIN_INVITATION_CREATED`를 하나의 DB transaction에 저장합니다. 생성 이벤트 저장이
+  실패하면 초대 변경 전체가 rollback되고 notification은 호출되지 않습니다.
+- notification은 commit 이후에만 발송합니다. Provider 실패는 API의 `201 Created`, 이미
+  저장된 초대와 생성 이벤트를 바꾸지 않으며 생성 metadata를 다시 쓰지 않습니다.
+- 생성 이벤트 metadata는 `invitationPublicId`, `targetEmailHash`, `roleCode`,
+  `previousInvitationRevoked`만 소유합니다. 수락·회수 metadata도 기존 exact key와 actor/
+  target 결속을 유지하며 raw email·token·token hash·password·provider 응답을 저장하지
+  않습니다.
+- 실제 동시 수락과 수락-vs-회수는 pessimistic row lock 뒤 terminal state를 재확인해
+  승자 하나와 그 결과에 해당하는 account graph·role·event만 남깁니다.
+- public API, Security allow-list, token TTL, `admin_invitation` schema와 기존 event row는
+  변경하지 않았습니다.
 
-## 확정 범위
+Local source·PostgreSQL 통합 test·전체 품질 검증과 영구 SOT 동기화는 완료했습니다. Push된
+final exact SHA의 required CI와 Sonar revision·Quality Gate·Open issues를 확인하지 않았으므로
+상태는 `In Progress`를 유지합니다.
 
-- 관리자 초대 생성, 수락, 회수
-- invitation token lifecycle과 동시 상태 전이
-- 관리자 account graph와 role assignment
-- public·super-admin API 인가
-- notification과 auth event
+## 남은 책임
 
-초대 목록·상세·재발송 전용 API와 기존 회원의 관리자 승격은 제외합니다.
+- Push 권한을 가진 실행자가 final exact SHA를 remote branch에 반영합니다.
+- 같은 SHA의 required CI 성공과 Sonar revision 일치, Quality Gate `OK`, overall open issues
+  0건을 확인한 뒤에만 이 문서와 feature router를 `Done`으로 전환합니다.
 
-## 확정 결정과 재검토
+## 확정 결정
 
-[상세 설계](011-admin-invitations-design.md)는 초대 권한, 허용 role, 기존 account·재초대 처리, account 상태, token과 terminal state, API와 auth event의 완료 당시 결정을 보존합니다.
+[상세 설계](011-admin-invitations-design.md)는 기존 초대 계약과 다음 결과 경계를 보존합니다.
 
-초대 생성 event의 transaction 결정은 현재 구현·실패 경계와 맞지 않으므로 이 작업에서 다시 확정합니다. 새 notification tool을 먼저 도입하지 않고 같은 transaction, outbox, durable retry와 명시적 누락 탐지의 보장·비용·중복 처리 경계를 비교합니다.
+- 초대·생성 event의 transaction 원자성
+- 생성 사실 event와 notification delivery 결과의 분리
+- 생성·수락·회수 metadata allow-list와 민감정보 경계
+- pessimistic row lock 기반 수락·회수 terminal-state 경쟁 계약
+- outbox·delivery retry와 public API·schema 비변경 경계
 
-## 영구 SOT 상태
+## 영구 SOT
 
-- [Account 도메인](../../../domain/100-account.md)
-- [Account 인증/인가 정책](../../../domain/110-account-auth-policy.md)
-- [Auth Event 정책](../../../domain/120-auth-event-policy.md)은 현재 after-commit·`REQUIRES_NEW` 사실과 미완료 내구성 경계를 명시합니다.
-- [Account 인증/인가 데이터 모델](../../../project/220-account-auth-data-model.md)
-- [Account/Auth Schema Reference](../../../project/schema/100-account-auth.md)
-- [로컬 개발 환경](../../../development/100-local-development.md)
+- [Auth Event 정책](../../../domain/120-auth-event-policy.md): 생성 event transaction과 metadata
+  allow-list
+- [Account 인증 데이터 모델](../../../project/220-account-auth-data-model.md): 관리자 초대 생성의
+  invitation·event·notification transaction 경계
+- [Notification 결과와 감사 저장 실패 혼합](../../bugs/2026/005-notification-audit-result-separation.md):
+  생성 사실과 분리된 delivery 결과 책임
 
 ## 별도 후속 범위
 

@@ -222,6 +222,10 @@ AI 추천만으로 Sonar review 상태를 변경하지 않습니다.
 
 ## CI 기술 기준
 
+Workflow trigger, step 순서와 image·GitOps handoff의 전체 설명은
+[200 CI/CD pipeline](../project/infrastructure/200-ci-cd-pipeline.md)이 소유합니다. 이 절은
+품질 도구의 CI 적용 기준만 소유합니다.
+
 - `push`와 `pull_request`에서 재사용 없는 `./gradlew check`를 실행합니다.
 - `Application quality`의 같은 runner에서 조건 없는 `docker info` 뒤 재사용 없는 Gradle check를 실행하고 어느 단계도 실패를 허용하지 않습니다.
 - checkout, Java와 Gradle 준비 Action은 신뢰 가능한 소유자의 full commit SHA로 고정합니다.
@@ -237,6 +241,7 @@ AI 추천만으로 Sonar review 상태를 변경하지 않습니다.
 - **구조 판정 기준**: [Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
 - **test 기준**: [테스트 스택](300-testing-stack.md)
 - **CI 구현 source**: [GitHub Actions CI](../../.github/workflows/ci.yml)
+- **CI/CD 전체 흐름과 step**: [200 CI/CD pipeline](../project/infrastructure/200-ci-cd-pipeline.md)
 - **GitHub·Sonar 최초 설정**: [GitHub CI 품질 게이트 최초 설정](../operations/310-github-ci-quality-configuration-runbook.md)
 - **Sonar token 변경·복구**: [Sonar token 교체](../operations/530-sonar-token-rotation-runbook.md)
 

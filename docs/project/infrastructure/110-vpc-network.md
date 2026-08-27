@@ -1,6 +1,6 @@
 # VPC network
 
-이 문서는 staging VPC의 network 구성요소, 현재 선택값, 선택 이유·영향·미선택 대안과
+이 상세 SOT는 staging VPC의 network 구성요소, 현재 선택값, 선택 이유·영향·미선택 대안과
 재검토 조건을 소유합니다. AWS Console에서 실제로 생성·확인하는 방법은
 [VPC 최초 구축 runbook](../../operations/110-vpc-provisioning-runbook.md)이 소유합니다.
 
@@ -35,8 +35,9 @@ ECR API·registry와 다른 AWS service의 private 연결을 대신하지 않습
   production network Best Practice로 확대하지 않습니다.
 - 두 AZ의 address 공간은 한 AZ에만 의존하지 않는 topology를 만들지만, 현재 EC2와 RDS
   Single-AZ 자체를 고가용성으로 만들지는 않습니다.
-- IPv6·dual-stack, ALB, Auto Scaling, EKS와 장기 address plan은 현재 선택으로 선결하지
-  않습니다.
+- IPv6·dual-stack, Auto Scaling, EKS와 장기 address plan은 현재 선택으로 선결하지
+  않습니다. Staging external ingress는 이미 만든 두 public subnet을 ALB
+  placement에 재사용하며 address 범위나 route를 새로 만들지 않습니다.
 
 ## 현재 선택과 이유
 
@@ -48,7 +49,7 @@ ECR API·registry와 다른 AWS service의 private 연결을 대신하지 않습
 | IPv6 CIDR | 없음 | 현재 운영 범위에 대한 조건부 선택 | IPv6 route·security·DNS·장애 대응을 함께 운영하지 않아 복잡도를 제한합니다. IPv6가 일반적으로 불필요하다는 뜻은 아닙니다. | IPv6 cluster·dual-stack 요구 확정 |
 | Tenancy | VPC 기본값 | 일반 구성에 적합 | Dedicated hardware 비용·instance type 제약을 VPC 전체에 강제하지 않습니다. | 규제·계약·license가 전용 hardware를 요구 |
 | AZ | `ap-northeast-2a`, `ap-northeast-2b` 두 개 | Staging의 두 failure domain 선택 | 두 AZ에 public·private address 공간을 둡니다. 현재 resource가 모두 다중 AZ라는 뜻은 아닙니다. | 3-AZ 가용성 또는 단일 AZ 비용 절감 요구 |
-| Public subnet | AZ별 하나, 총 2개 | 현재 2-AZ 구조와 일치 | 두 AZ에 public resource 후보를 둡니다. ALB 사용을 이미 확정했다는 뜻은 아닙니다. | Public resource 제거 또는 AZ 수 변경 |
+| Public subnet | AZ별 하나, 총 2개 | 현재 2-AZ ingress 구조와 일치 | `2a`·`2b`에 internet-facing ALB placement를 둡니다. LBC discovery를 위해 public role tag를 사용하지만 subnet ID는 Git에 고정하지 않습니다. | Public ingress 제거 또는 AZ 수 변경 |
 | Private subnet | AZ별 하나, 총 2개 | 현재 격리 구조와 일치 | 외부에 직접 노출하지 않을 RDS 등 resource 후보를 둡니다. Compute·database 계층을 각각 별도 subnet으로 분리하지는 않았습니다. | 계층별 route·NACL·address plan 또는 AZ 수 변경 |
 | NAT Gateway | 없음 | 사용자 비용 제약에 따른 조건부 선택 | NAT Gateway의 시간당·처리량 비용을 사용하지 않으며 private subnet의 일반 IPv4 outbound를 포기합니다. | Private resource가 일반 인터넷으로 나가야 함 |
 | Internet Gateway | Public subnet과 함께 생성 | NAT와 다른 필수 public 연결 | Public IPv4 resource가 internet route를 사용하게 합니다. NAT를 만들지 않는다고 Internet Gateway까지 없어지는 것은 아닙니다. | Public subnet 제거 |
@@ -61,8 +62,8 @@ ECR API·registry와 다른 AWS service의 private 연결을 대신하지 않습
 
 | AZ | 역할 | CIDR | 현재 의미 |
 | --- | --- | --- | --- |
-| `ap-northeast-2a` | Public | `10.0.0.0/20` | 현재 단일 EC2 node가 배치되는 subnet |
-| `ap-northeast-2b` | Public | `10.0.16.0/20` | 두 번째 AZ의 public resource 후보 |
+| `ap-northeast-2a` | Public | `10.0.0.0/20` | 현재 단일 EC2 node와 internet-facing ALB placement 대상 subnet |
+| `ap-northeast-2b` | Public | `10.0.16.0/20` | Internet-facing ALB의 두 번째 AZ placement 대상 subnet |
 | `ap-northeast-2a` | Private | `10.0.128.0/20` | RDS DB subnet group 후보 |
 | `ap-northeast-2b` | Private | `10.0.144.0/20` | RDS DB subnet group 후보 |
 
@@ -74,6 +75,12 @@ ECR API·registry와 다른 AWS service의 private 연결을 대신하지 않습
 tag는 검색·비용 분류, 마지막 tag는 현재 수동 관리 방식을 식별할 뿐 resource 동작이나
 변경 권한을 강제하지 않습니다. `Name`은 자동 생성이 소유하므로 중복 tag로 추가하지
 않습니다.
+
+Internet-facing ALB를 발견하도록 public `2a`·`2b` subnet에만
+`kubernetes.io/role/elb=1`을 추가합니다. 이 tag는 비용 분류가 아니라 AWS Load
+Balancer Controller가 public load balancer placement 후보를 찾는 기능 계약입니다.
+적용 전에 각 subnet의 `0.0.0.0/0 -> igw-*` route와 available IPv4 8개 이상을
+live 확인하며 private subnet에는 이 tag를 두지 않습니다.
 
 ## 검토했지만 선택하지 않은 대안
 
@@ -113,11 +120,19 @@ truth가 아닙니다. Resource map에 표시되는 ID·남은 IP·association�
   route를 설계·생성해야 합니다.
 - VPC resource 삭제 순서와 복구 절차는 현재 확정되지 않았습니다.
 
+이 경계에서 아직 착수하지 않은 network·복구 후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
+
 ## 근거와 관련 문서
 
 - **실제 최초 구축 절차**: [VPC 최초 구축 runbook](../../operations/110-vpc-provisioning-runbook.md)
-- **EC2 배치와 node 선택**: [EC2 Kubernetes node](110-ec2-kubernetes-node.md)
-- **RDS private placement**: [RDS PostgreSQL](130-rds-postgresql.md)
+- **EC2 배치와 node 선택**: [120 EC2 Kubernetes node](120-ec2-kubernetes-node.md)
+- **RDS private placement**: [140 RDS PostgreSQL](140-rds-postgresql.md)
+- **Public subnet을 소비하는 ingress 구조**:
+  [170 AWS Load Balancer ingress](170-aws-load-balancer-ingress.md)
+- **Subnet tag·route·free IP live 절차**:
+  [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
 - [AWS VPC와 부속 resource 생성](https://docs.aws.amazon.com/vpc/latest/userguide/create-vpc.html)
 - [VPC 생성 option](https://docs.aws.amazon.com/vpc/latest/userguide/create-vpc-options.html)
 - [Regional NAT Gateway](https://docs.aws.amazon.com/vpc/latest/userguide/nat-gateways-regional.html)

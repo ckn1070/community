@@ -6,7 +6,7 @@ Kubernetes `1.36.2` 단일 ARM64 node cluster에 headless Argo CD Core `3.5.0`�
 소유합니다.
 
 Core·non-HA·UI 미설치와 고정 version을 선택한 이유는
-[Argo CD platform](../project/infrastructure/150-argocd-platform.md)에서 확인합니다.
+[160 Argo CD platform](../project/infrastructure/160-argocd-platform.md)에서 확인합니다.
 Artifact checksum, 고정 image digest, owner guard와 apply의 공개 계약은
 [GitOps bootstrap README](../../scripts/bootstrap/gitops/README.md)가 소유합니다.
 
@@ -16,8 +16,9 @@ Artifact checksum, 고정 image digest, owner guard와 apply의 공개 계약은
 | --- | --- |
 | 언제 | Kubernetes bootstrap 완료 뒤, private repository를 연결하기 전에 최초 한 번 실행합니다. |
 | 누가 | Target EC2에 SSH 접속하고 cluster-admin kubeconfig와 `sudo`를 사용할 수 있는 운영자가 실행합니다. |
-| 어디서 | EC2 terminal의 `/home/ubuntu/car-community-scripts`입니다. |
-| 무엇을 | `sudo ./bootstrap/gitops/100-install-argocd-core.sh` |
+| 기본 실행 위치 | EC2 terminal입니다. |
+| 기본 시작 directory | 제한 없음 |
+| 무엇을 | `sudo /home/ubuntu/car-community-scripts/bootstrap/gitops/100-install-argocd-core.sh` |
 | 왜 | UI·API server 없이 GitOps reconciliation에 필요한 Core component와 CRD만 준비하기 위해서입니다. |
 | 완료·재개 | Script exit `0`, 완료 메시지와 Core rollout을 확인합니다. Partial apply는 같은 script로 재개하고 owner·version 충돌은 결정 전 중단합니다. |
 
@@ -25,6 +26,8 @@ Artifact checksum, 고정 image digest, owner guard와 apply의 공개 계약은
 
 - [Kubernetes bootstrap](200-kubernetes-bootstrap-runbook.md)의 다섯 live 단계가
   완료됐습니다.
+- [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md)을 완료해
+  Argo CD bootstrap script가 고정 절대 경로에 있습니다.
 - `sudo`를 사용할 수 있고 `/etc/kubernetes/admin.conf`로 API server readyz를 확인할 수
   있습니다.
 - EC2에서 `raw.githubusercontent.com`, `quay.io`, `public.ecr.aws`에 outbound 접근할 수
@@ -36,11 +39,10 @@ Artifact checksum, 고정 image digest, owner guard와 apply의 공개 계약은
 
 ## 실행
 
-EC2 terminal의 전달 root에서 실행합니다.
+EC2 terminal의 어느 directory에서나 실행합니다.
 
 ```bash
-cd /home/ubuntu/car-community-scripts
-sudo ./bootstrap/gitops/100-install-argocd-core.sh
+sudo /home/ubuntu/car-community-scripts/bootstrap/gitops/100-install-argocd-core.sh
 ```
 
 Script가 exit code `0`으로 끝나고 다음 메시지를 출력해야 합니다.
@@ -52,17 +54,22 @@ Script가 exit code `0`으로 끝나고 다음 메시지를 출력해야 합니�
 추가 read-only 확인이 필요하면 EC2에서 실행합니다.
 
 ```bash
+# 1. Argo CD Core workload 상태 조회
+# 확인: applicationset-controller·redis·repo-server·application-controller가 Ready
+printf '\n\n========== [1/2] Argo CD Core workload ==========\n\n'
 sudo KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl get deployment,statefulset -n argocd
 
+# 2. UI·API server 부재 조회
+# 확인: 빈 출력, 즉 deployment/argocd-server 없음
+printf '\n\n========== [2/2] argocd-server 부재 ==========\n\n'
 sudo KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl get deployment/argocd-server -n argocd --ignore-not-found
 ```
 
-첫 명령에서 `argocd-applicationset-controller`, `argocd-redis`, `argocd-repo-server`,
-`argocd-application-controller`가 Ready여야 합니다. 두 번째 명령은 아무 resource도
-출력하지 않아야 합니다. Core는 UI·API server를 포함하지 않으므로 port-forward·ALB를
-추가하지 않습니다.
+1. 첫 조회는 Core의 네 workload가 실제로 Ready인지 확인합니다.
+2. 두 번째 조회는 Core 설치에 포함하지 않은 UI·API server가 생기지 않았는지 확인합니다.
+   출력이 없어야 하며, 상태 확인을 위해 port-forward·ALB를 추가하지 않습니다.
 
 ## 중단과 복구
 
@@ -93,7 +100,7 @@ RDS·application prerequisite 입력, GitHub App과 non-empty staging overlay가
 
 ## 관련 문서
 
-- **현재 Argo CD 구조와 선택**: [Argo CD platform](../project/infrastructure/150-argocd-platform.md)
+- **현재 Argo CD 구조와 선택**: [160 Argo CD platform](../project/infrastructure/160-argocd-platform.md)
 - **Script 공개 계약**: [GitOps bootstrap README](../../scripts/bootstrap/gitops/README.md)
 - **다음 구축 절차**: [Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md)
 - **Argo 진단**: [180 Argo CD reconciliation 진단](diagnostics/180-argocd-reconciliation.md)

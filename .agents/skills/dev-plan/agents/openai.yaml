@@ -1,5 +1,5 @@
 # dev-plan 스킬의 UI 표시와 기본 호출 문구를 정의합니다.
 interface:
   display_name: "개발 계획"
-  short_description: "설계 표면과 결정 카드를 구현 가능한 계획 문서로 정리"
-  default_prompt: "Use $dev-plan to create an implementation-ready plan artifact with evidence-backed design surfaces, decision ownership, and clear decision cards."
+  short_description: "설계 표면과 선택 카드를 근거 있는 계획 문서로 정리"
+  default_prompt: "Use $dev-plan to create an evidence-backed decision-support plan, keep Agent recommendations unapproved until the user selects them, and produce an implementation-ready plan only from user decisions and authoritative constraints."

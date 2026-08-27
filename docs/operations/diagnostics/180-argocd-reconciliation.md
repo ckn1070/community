@@ -4,33 +4,69 @@ Kubernetes API가 동작하는 상태에서 Argo CD Core, private Git repository
 sync, workload health 중 첫 실패 경계를 찾습니다. Git을 목표 상태의 source로 유지하고 live
 Application·Deployment를 직접 수정하지 않습니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 상단 수동 확장 조회
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
 
 ```bash
+(
+set +e
+
+probe() {
+  printf '\n------------------------------------------------------------\n'
+  printf 'PROBE: %s\n' "$1"
+  printf '%s\n' "$2"
+  printf '%s\n' '------------------------------------------------------------'
+}
+
+report_status() {
+  printf '[result] %s exit code: %s\n' "$1" "$2"
+}
+
+probe 'Argo CD Core' 'Controller·repo-server·Redis component의 readiness와 restart를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n argocd \
   get pods,deployments,statefulsets -o wide
+report_status 'kubectl Argo CD Core' "$?"
+
+probe 'AppProject scope' '허용된 Git source와 cluster·namespace destination 범위를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n argocd \
   get appproject.argoproj.io/car-community \
   -o 'jsonpath={range .spec.sourceRepos[*]}{"sourceRepo="}{.}{"\n"}{end}{range .spec.destinations[*]}{"destinationServer="}{.server}{" destinationNamespace="}{.namespace}{"\n"}{end}'
+report_status 'kubectl AppProject' "$?"
+
+probe 'Application contract·status' 'Git source·destination과 sync·health·reconcile condition을 한 번에 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n argocd \
   get application.argoproj.io/car-community-stg \
   -o 'jsonpath={"repoURL="}{.spec.source.repoURL}{"\ntargetRevision="}{.spec.source.targetRevision}{"\npath="}{.spec.source.path}{"\ndestinationServer="}{.spec.destination.server}{"\ndestinationNamespace="}{.spec.destination.namespace}{"\nsync="}{.status.sync.status}{"\nhealth="}{.status.health.status}{"\nrevision="}{.status.sync.revision}{"\nreconciledAt="}{.status.reconciledAt}{"\noperationPhase="}{.status.operationState.phase}{"\n"}{range .status.conditions[*]}{.lastTransitionTime}{"\t"}{.type}{"\t"}{.message}{"\n"}{end}'
+report_status 'kubectl Application' "$?"
+
+probe 'Repository credential metadata' 'Secret 값을 노출하지 않고 type·owner·resourceVersion을 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n argocd \
   get secret car-community-gitops-repository \
   -o 'custom-columns=NAME:.metadata.name,TYPE:.metadata.labels.argocd\.argoproj\.io/secret-type,OWNER:.metadata.labels.app\.kubernetes\.io/managed-by,RESOURCE_VERSION:.metadata.resourceVersion'
+report_status 'kubectl repository Secret metadata' "$?"
+
+probe 'Application controller log' 'Reconcile·diff·sync·health 상태 갱신 실패를 최근 60분에서 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n argocd \
   logs statefulset/argocd-application-controller --since=60m --tail=240
+report_status 'kubectl application-controller logs' "$?"
+
+probe 'Repo server log' 'Git fetch·credential·revision·manifest render 실패를 최근 60분에서 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n argocd \
   logs deployment/argocd-repo-server --since=60m --tail=240
+report_status 'kubectl repo-server logs' "$?"
+)
 ```
 
 Repository Secret은 metadata만 조회하고 `.data`를 출력하지 않습니다.
@@ -222,8 +258,8 @@ Application·AppProject·Secret patch/delete, hard refresh annotation, controlle
 변경을 하지 않습니다.
 
 - **전체 outline**: [100 Kubernetes platform 핵심 진단 outline](100-kubernetes-platform-diagnostic-outline.md)
-- **Argo CD 구조**: [150 Argo CD platform](../../project/infrastructure/150-argocd-platform.md)
-- **GitOps delivery**: [210 GitOps application delivery](../../project/infrastructure/210-gitops-application-delivery.md)
+- **Argo CD 구조**: [160 Argo CD platform](../../project/infrastructure/160-argocd-platform.md)
+- **GitOps delivery**: [220 GitOps application delivery](../../project/infrastructure/220-gitops-application-delivery.md)
 - **배포·rollback**: [420 GitOps 배포와 rollback](../420-gitops-deployment-and-rollback-runbook.md)
 
 ## 공식 참고

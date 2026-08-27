@@ -4,25 +4,61 @@ Kubernetes API가 요청을 받을 수 있는지, kubeadm control plane과 etcd�
 workload를 받을 수 있는지를 위에서 아래로 구분합니다. `NotReady`와 timeout은 원인이 아니라
 결과이므로 health endpoint, component, Node condition을 연결해서 봅니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 상단 수동 확장 조회
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
 
 ```bash
+(
+set +e
+
+probe() {
+  printf '\n------------------------------------------------------------\n'
+  printf 'PROBE: %s\n' "$1"
+  printf '%s\n' "$2"
+  printf '%s\n' '------------------------------------------------------------'
+}
+
+report_status() {
+  printf '[result] %s exit code: %s\n' "$1" "$2"
+}
+
+probe 'API liveness' 'API process가 진행 가능한지 named health check별로 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get --raw='/livez?verbose'
+report_status 'kubectl livez' "$?"
+
+probe 'API readiness' 'API가 request를 받을 준비가 됐는지 dependency별로 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get --raw='/readyz?verbose'
+report_status 'kubectl readyz' "$?"
+
+probe 'Control-plane Pod' 'API server·controller·scheduler·etcd의 readiness와 restart를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s -n kube-system \
   get pods -l tier=control-plane -o wide
+report_status 'kubectl control-plane pods' "$?"
+
+probe 'Static Pod manifest' 'Kubeadm control-plane component의 local manifest inventory를 확인합니다.'
 sudo -n ls -l /etc/kubernetes/manifests
+report_status 'ls manifests' "$?"
+
+probe 'Node summary' 'Cluster 전체 Node의 Ready·version·주소와 특정 Node 집중 여부를 확인합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get nodes -o wide
+report_status 'kubectl nodes wide' "$?"
+
+probe 'Node condition' 'Ready와 memory·disk·PID·network pressure condition을 Node별로 비교합니다.'
 sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl --request-timeout=10s get nodes \
   -o 'custom-columns=NAME:.metadata.name,READY:.status.conditions[?(@.type=="Ready")].status,MEMORY:.status.conditions[?(@.type=="MemoryPressure")].status,DISK:.status.conditions[?(@.type=="DiskPressure")].status,PID:.status.conditions[?(@.type=="PIDPressure")].status,NETWORK:.status.conditions[?(@.type=="NetworkUnavailable")].status'
+report_status 'kubectl node conditions' "$?"
+)
 ```
 
 API가 완전히 불통이면 `kubectl` 실패 자체가 증거입니다. 그때 cluster를 reset하지 않고

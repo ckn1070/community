@@ -15,7 +15,8 @@ branch governance 선택 이유는 [코드 품질 도구](../tech-stack/310-code
 | --- | --- |
 | 언제 | Repository에 Sonar 기반 `Application quality` 검증이 아직 없을 때 최초 한 번 실행합니다. 완료 뒤 token 교체에는 `530`을 사용합니다. |
 | 누가 | GitHub repository 설정과 SonarQube Cloud organization·project·token을 관리할 권한이 있는 운영자가 실행합니다. |
-| 어디서 | SonarQube Cloud Console과 GitHub `ckn1070/community`의 Settings·Actions 화면입니다. Optional hardening을 선택할 때만 Rulesets 화면을 사용합니다. |
+| 어디서 | SonarQube Cloud Console과 GitHub `ckn1070/car-community`의 Settings·Actions 화면입니다. |
+| 선택 hardening 위치 | GitHub `ckn1070/car-community`의 Rulesets 화면입니다. |
 | 무엇을 | Sonar project·scoped token·GitHub secret/variable과 `main` baseline을 아래 순서로 수동 설정합니다. Repository script는 없습니다. |
 | 왜 | 실제 게시·배포 입력인 `main` exact revision의 품질 결과를 신뢰할 수 있어야 하기 때문입니다. |
 | 완료·재개 | `main`의 `Application quality`, exact Sonar revision·Quality Gate를 확인합니다. 실패한 필수 번호 단계부터 재개합니다. |
@@ -56,6 +57,8 @@ ruleset 강제가 실제로 필요해지는 시점에 plan 변경 또는 별도 
 
 ## 1. SonarQube Cloud project 구성
 
+**실행 위치:** SonarQube Cloud Console
+
 1. SonarQube Cloud에서 현재 GitHub owner와 연결된 organization을 선택합니다.
 2. **Analyze new project**에서 현재 `car-community` repository를 import합니다. 이미 같은
    repository에 연결된 project가 있으면 새 project를 만들지 않고 organization key와
@@ -71,6 +74,8 @@ Organization binding, project key, New Code Definition, Quality Gate 가운데 �
 확정하지 못하면 GitHub 값을 먼저 넣지 않습니다.
 
 ## 2. 분석 token 발급
+
+**실행 위치:** SonarQube Cloud Console
 
 SonarQube Cloud plan이 Team·Enterprise인지 실제 화면에서 확인한 뒤 organization
 **Administration → Scoped Organization Tokens → Create token**에서 다음 값을 사용합니다.
@@ -89,6 +94,8 @@ CI scanner에는 `Execute Analysis`만 필요합니다. Private project Web API 
 
 ## 3. GitHub secret과 variable 저장
 
+**실행 위치:** GitHub Web UI의 `ckn1070/car-community` repository
+
 GitHub repository **Settings → Secrets and variables → Actions**에서 다음을 저장합니다.
 
 | 종류 | 이름 | 값의 source |
@@ -101,6 +108,8 @@ Token을 variable로 저장하지 않습니다. Variable은 민감하지 않은 
 저장 뒤 GitHub 화면에서 이름의 존재만 확인하고 값을 출력하거나 복사해 검증하지 않습니다.
 
 ## 4. CI 기반 `main` baseline 생성
+
+**실행 위치:** GitHub Actions와 SonarQube Cloud Console
 
 PR analysis를 나중에 사용하더라도 최신 target branch 분석이 필요하므로 먼저 `main`
 baseline을 만듭니다.
@@ -129,6 +138,8 @@ push하지 않습니다. 실제로 검증된 bootstrap 변경을 `main`에 반�
 
 ## 5. Optional: same-repository PR check 확인
 
+**실행 위치:** GitHub Web UI·Actions와 SonarQube Cloud Console
+
 반복 변경을 PR로 운영하기 전에 same-repository PR의 품질 결과도 확인하려면 이 절을
 실행합니다. 현재 최초 bootstrap의 필수 완료 조건은 아니며, GitHub required check를
 나중에 고르려면 해당 repository에서 최근 성공한 check와 source가 먼저 필요합니다.
@@ -147,6 +158,8 @@ target baseline이 없으면 4단계를, project·revision·Quality Gate가 다�
 확인합니다.
 
 ## 6. Optional: `main` ruleset hardening
+
+**실행 위치:** GitHub Web UI의 `ckn1070/car-community → Settings → Rules → Rulesets`
 
 독립 reviewer·GitHub 강제나 지원 plan이 실제로 필요해져 별도 결정한 경우에만 GitHub
 repository **Settings → Rules → Rulesets → New branch ruleset**에서 다음 계약을
@@ -177,6 +190,8 @@ merge queue rule을 이 절차에서 임의로 켜지 않습니다.
 
 ## 7. Optional: 보호된 merge와 `main` 검증
 
+**실행 위치:** GitHub Web UI·Actions와 SonarQube Cloud Console
+
 1. Optional verification PR에서 ruleset의 required check가 충족됐는지 확인하고 정상
    merge합니다.
 2. `main` push로 시작한 `CI` workflow의 `Application quality`가 성공했는지 확인합니다.
@@ -185,6 +200,9 @@ merge queue rule을 이 절차에서 임의로 켜지 않습니다.
 4. Ruleset을 활성화한 뒤에는 direct push나 force push로 이 gate를 우회하지 않습니다.
 
 ## 실패·재개
+
+**실행 위치:** Token·project·Quality Gate 확인과 수정은 SonarQube Cloud Console,
+repository secret·ruleset·workflow·run 재실행은 GitHub Web UI·Actions에서 수행합니다.
 
 | 실패 | 재개 지점 |
 | --- | --- |

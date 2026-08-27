@@ -1,6 +1,6 @@
 # RDS PostgreSQL
 
-이 문서는 staging application이 사용할 RDS for PostgreSQL의 배치·credential·storage·network·
+이 상세 SOT는 staging application이 사용할 RDS for PostgreSQL의 배치·credential·storage·network·
 monitoring·backup mental model과 현재 선택·대안·재검토 조건을 소유합니다. DB subnet group과
 DB instance를 실제로 만드는 절차는
 [RDS 최초 구축 runbook](../../operations/140-rds-provisioning-runbook.md)이 소유합니다.
@@ -222,7 +222,7 @@ storage `2.62 USD`, 합계 `20.87 USD`였습니다. 이는 당시 화면의 On-D
 별도 청구될 수 있습니다. 현재 비용 판단에는 AWS Pricing Calculator와 실제 billing을 다시
 확인해야 합니다.
 
-## 미결정·변경 경계
+## 현재 경계와 재검토 trigger
 
 - Runtime·migrator role과 Kubernetes Secret을 분리하고 master credential은 최초 role 생성과
   승인된 복구에만 사용합니다. Application password rotation은 최초 live 적용 뒤 별도 운영
@@ -237,11 +237,15 @@ storage `2.62 USD`, 합계 `20.87 USD`였습니다. 이는 당시 화면의 On-D
 - DB deletion, backup restore와 disaster recovery의 실행 procedure는 별도 운영 설계가
   필요합니다.
 
+Capacity·가용성·복구 후보의 상태와 도입 순서는
+[004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
+소유합니다.
+
 ## 근거와 관련 문서
 
 - **실제 최초 구축 절차**: [RDS 최초 구축 runbook](../../operations/140-rds-provisioning-runbook.md)
-- **Network 기반**: [VPC network](100-vpc-network.md)
-- **Application host**: [EC2 Kubernetes node](110-ec2-kubernetes-node.md)
+- **Network 기반**: [110 VPC network](110-vpc-network.md)
+- **Application host**: [120 EC2 Kubernetes node](120-ec2-kubernetes-node.md)
 - **Application 환경변수 계약**: [Local development](../../development/100-local-development.md),
   [`application.yaml`](../../../src/main/resources/application.yaml)
 - [RDS DB instance 생성](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateDBInstance.html)

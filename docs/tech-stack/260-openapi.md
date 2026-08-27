@@ -18,9 +18,26 @@
 
 ## 현재 구현 경계
 
-현재 애플리케이션은 `springdoc-openapi-starter-webmvc-ui`와 Controller·DTO annotation을 사용하고, production profile에서는 API docs와 Swagger UI를 비활성화합니다. 다만 보호 API용 전역 security scheme, endpoint별 security requirement와 `401`·`403` 응답 계약, 생성된 `/v3/api-docs`를 읽는 smoke test는 아직 구현되지 않았습니다.
+현재 애플리케이션은 `springdoc-openapi-starter-webmvc-ui`와 Controller·DTO annotation을
+사용하고, production profile에서는 API docs와 Swagger UI를 비활성화합니다.
 
-따라서 아래 보안·테스트 항목은 새 보호 API와 기존 API 문서 보완이 따라야 할 목표 기준이지, 현재 모든 API가 이미 충족했다는 설명이 아닙니다. 남은 구현 범위는 [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#openapi-보호-api-계약)가 소유합니다.
+생성 명세에는 다음 공통 계약을 중앙에서 적용합니다.
+
+- 실제 Security public allow-list와 같은 source로 각 operation을 public 또는 protected로
+  분류합니다.
+- 보호 operation에는 Bearer JWT security requirement와 `401`·`403` Problem Details를
+  추가합니다.
+- request body가 있는 operation에는 실제 MVC 공통 응답인 `400`과 `415`를 추가하고, 모든
+  operation에는 `500`을 추가합니다.
+- 모든 오류 response는 실제 JSON의 `type`, `title`, `status`, `detail`, `instance`, `code`와
+  validation 실패 시의 `errors`를 표현하는 공통 schema를 사용합니다.
+- Controller annotation은 operation 고유 성공·업무 오류와 `Location` 같은 고유 header를
+  소유하고, 중앙 구성은 공통 오류·보안 계약을 소유합니다.
+
+생성된 `/v3/api-docs` 계약 테스트는 전체 operation 수와 path, 실제 response code 집합,
+public·protected 분류, 성공 response 필수 field, `Location` header와 공통 오류 schema를
+검증합니다. 새 API나 응답 변경이 이 집합을 바꾸면 표준 Gradle `test`와 `check`가 실패하므로
+실제 Controller·Security·오류 처리와 함께 명세 기대값을 검토해야 합니다.
 
 ## springdoc 기준
 
@@ -62,13 +79,13 @@ Spring Boot 4 지원은 springdoc v3 라인을 기준으로 확인합니다.
 
 - Swagger UI와 `/v3/api-docs` 접근 정책을 Spring Security 설정과 함께 관리합니다.
 - 운영 환경에서 공개하면 민감한 schema나 내부 endpoint가 노출되지 않는지 확인합니다.
-- 인증이 필요한 API는 security scheme과 401/403 응답을 명시합니다.
+- 인증이 필요한 API는 중앙 구성에서 security scheme과 401/403 응답을 적용합니다.
 
 ## 테스트 기준
 
 - 주요 API는 문서화된 request/response와 실제 Controller 테스트가 일치해야 합니다.
 - validation 실패 응답도 API 계약으로 관리합니다.
-- 생성된 OpenAPI spec의 필수 path·schema·security 계약이 깨지는지 확인하는 최소 smoke test를 둡니다.
+- 생성된 OpenAPI spec의 전체 path·response·schema·security 계약을 읽는 회귀 테스트를 둡니다.
 
 ## 피해야 할 패턴
 
@@ -88,4 +105,4 @@ Spring Boot 4 지원은 springdoc v3 라인을 기준으로 확인합니다.
 - **web 구현 기반**: [Spring Boot](210-spring-boot.md)
 - **security scheme 기준**: [Spring Security](220-spring-security.md)
 - **DTO·domain 경계**: [경계와 매핑 규칙](../architecture/220-boundary-and-mapping-rules.md)
-- **미구현 계약 owner**: [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#openapi-보호-api-계약)
+- **구현 결과**: [OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)

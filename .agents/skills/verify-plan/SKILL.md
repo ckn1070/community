@@ -12,7 +12,7 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 
 ## 1. 입력과 snapshot
 
-`AGENTS.md`, 관련 workflow·router, 최초 요청과 확정 변경, work item·design, 관련 source를 읽는다. 계획이 문서·SOT·router를 만들거나 바꾸면 `docs/100-documentation-guide.md`와 `docs/workflow/150-documentation-workflow.md`도 읽는다. 최초 목적을 복원할 authoritative input이 없으면 계획 문구로 추측하지 않고 판정 불가로 끝낸다.
+`AGENTS.md`, 관련 workflow·router, 최초 요청과 확정 변경, work item·design, 관련 source를 읽는다. 계획이 문서·SOT·router를 만들거나 바꾸면 `docs/100-documentation-guide.md`와 `docs/workflow/150-documentation-workflow.md`도 읽는다. 최초 목적과 사용자 선택을 복원할 authoritative input이 없으면 계획 문구로 추측하지 않고 판정 불가로 끝낸다. 후보 계획, 후보가 갱신한 SOT·router와 이전 verifier 결론은 사용자 선택 source가 아니다.
 
 `git status --short --branch`, 계획 문서와 핵심 source 상태를 확인한다. 검증 중 계획이나 판단 근거가 바뀌면 기존 결론을 재사용하지 않는다.
 
@@ -20,16 +20,28 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 
 계획 상세를 평가하기 전에 다음을 세션의 coverage map으로 만든다.
 
-| 목적·제약 | 수용 기준 | 설계 결정 | 구현 작업 | 검증 | 문서·SOT | 상태 |
+| 목적·제약 | 수용 기준 | 설계 결정·값 | 권위 source와 상태 | 구현 작업 | 검증 | 문서·SOT |
 | --- | --- | --- | --- | --- | --- | --- |
 
 정방향으로 모든 목적이 결정·작업·검증·문서에 연결되는지, 역방향으로 모든 추가 작업과 도구가 목적에 정당화되는지 확인한다.
+
+결과를 바꾸는 각 결정은 후보를 읽기 전에 원문과 독립 source에서 다음 중 하나로 분류한다.
+
+- 사용자가 exact 차원과 값을 긍정적으로 선택함
+- 외부 공식 계약·현재 저장소 source·사용자 상위 결정이 허용 값을 하나로 제한함
+- Agent 추천이며 아직 선택되지 않음
+- source가 없어 미확정
+
+계획 작성, 상세화, 검증, commit·push 요청은 값 선택으로 해석하지 않는다. 부분 문자열이나
+인접 승인도 다른 결정에 전파하지 않는다. 사용자가 exact 추천 묶음을 승인한 경우에는 그
+묶음만 선택됨으로 기록한다.
 
 ## 3. dependency closure와 검토 축
 
 계획의 파일 목록에 한정하지 않고 caller, 외부 계약, data, build, deployment, operations, test와 책임 문서를 추적한다. 다음 축을 `충족`, `미충족`, `미검증`, `해당 없음`으로 닫는다.
 
 - 최초 목적·범위와 양방향 추적성
+- 결정별 값·권위 source·사용자 선택 상태와 관련 문서 전체의 일치
 - 정상·실패·경계 동작과 기존 회귀
 - 구조·모듈·외부 계약
 - data·transaction·동시성
@@ -43,6 +55,23 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 - 문서·SOT·router·용어
 
 문서 결과가 포함되면 독자 질문·actual source→owner의 누락과 owner→독자 필요·source의 과잉을 양방향으로 대조한다. 실행 순서·분기·호출·값 전달·책임 같은 관계를 계획 문서만으로 하나의 의미로 복원할 수 있는지도 판정한다. 현재 사실은 current source와 일치해야 하고, 아직 구현되지 않은 목표 관계는 확정 요구·결정과 계획된 구현·검증에 연결돼야 한다. 목표 관계의 구현 후 source 일치는 `verify-dev`와 최종 문서 감사가 판정한다. 별도 `$verify-documentation final`을 중복 호출하지 않는다. 다문서 topology 자체가 아직 제안 단계이면 그 산출물만 `$verify-documentation proposal`에 인계한다.
+
+사용자가 검토하고 선택하는 계획이면 첫 화면, heading과 결정 카드만 읽고도 무엇을 만들거나
+선택하는지, 대안의 실제 차이와 영향을 일상어로 설명할 수 있는지 확인한다. 직접 선행 문맥에서
+이해가 확인되지 않은 새 명사는 `최초 사용 문장 안의 일상어 설명 / 쉬운 표현으로 교체 / 기술
+상세로 이동` 중 하나여야 한다. 뒤쪽 용어집이나 다른 미정의 영어·역할명은 통과 근거가 아니다.
+이 공백 때문에 사용자가 결정 질문을 이해할 수 없으면 문서·용어 축의 필수 결함이다.
+
+API path, HTTP method, field, enum과 표준 식별자처럼 exact 구현·검증 계약인 literal은 쉬운
+문장 요구를 이유로 번역·삭제하지 않는다. 필요한 역할만 같은 단위에서 설명한다. 직접 선행
+문맥에서 사용자가 뜻을 이해했음이 확인된 용어도 반복 설명을 강제하지 않으며, 한 용어의
+이해를 인접한 다른 기술 명사로 전파하지 않는다.
+
+후보가 사용자 선택 없이 추천을 `확정 결정`, `남은 결정 없음`, `Planned`, `계획 확정` 또는
+동등 의미로 기록하면 기술적으로 완전해도 필수 결함이다. Work item만이 아니라 design,
+router, product·project projection까지 같은 권위 상태인지 확인한다. 반대로 사용자가 exact
+값을 선택한 항목은 일반적인 확인 금지 문구를 이유로 다시 열지 않는다. 구현 요청에서
+위임된 기술 세부는 source와 위임 범위로 감사하되 사용자 선택으로 잘못 귀속하지 않는다.
 
 제품 표면과 무관한 축은 제외 이유를 남긴다. Best Practice는 이름난 패턴이 아니라 예방하는 실패, trade-off와 현재 source에 연결한다.
 
@@ -60,6 +89,11 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 - **판정 불가**: authoritative input, 근거, 환경이나 사용자 결정이 없어 필수 항목을 닫을 수 없습니다.
 
 선택적 개선은 통과를 막지 않는다. coverage JSON과 이를 검사하는 custom verifier는 만들지 않는다. 검증의 독립성은 최초 목적에서 다시 시작하고 source·공식 근거를 직접 읽는 방식으로 확보한다.
+
+`통과`는 현재 artifact가 자신의 상태 계약을 충족한다는 뜻이다. 열린 사용자 결정이 정확히
+표시된 `Proposed` 계획도 통과할 수 있지만 `Planned` 자격은 없다. `Planned` 자격은 모든
+결과 변경 값의 사용자 선택 또는 독립 source 제약과 계획 품질 통과가 함께 있을 때만 별도로
+반환하며, verifier verdict 자체는 사용자 선택이나 상태 승격 권한이 아니다.
 
 ## 5. 판정 결과
 

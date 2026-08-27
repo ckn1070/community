@@ -542,6 +542,12 @@ account 소유권 확인 token hash와 생명주기를 저장하는 table입니�
 한 table에 여러 migration이 쌓여도 이 문서에는 최종 schema 상태를 씁니다.
 변경 이력 자체는 Flyway migration이 소유합니다.
 
+[430 Application 기능 qualification](../../operations/430-application-functional-qualification-runbook.md)의
+staging cleanup SQL은 현재 account/auth FK와 허용 taxonomy를 직접 소비합니다. 위 table·FK,
+role assignment, verification token, auth event 또는 admin invitation 관계가 바뀌면 같은
+schema 작업에서 `430`의 대상 guard와 child-first 삭제 순서를 함께 대조·갱신합니다. SQL
+전문은 이 Schema Reference에 복제하지 않습니다.
+
 ## 문서 구조 기준
 
 현재 schema reference 문서 그룹은 다음 파일만 둡니다.

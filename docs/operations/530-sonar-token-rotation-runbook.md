@@ -12,7 +12,7 @@ project·secret·ruleset 구성은
 | --- | --- |
 | 언제 | Sonar SOT의 만료 예정·정기 교체·노출·무효화에 대응할 때 사용합니다. 최초 project 설정에는 사용하지 않습니다. |
 | 누가 | Sonar scoped token과 GitHub Actions secret을 관리하고 CI를 재실행할 권한이 있는 운영자가 실행합니다. |
-| 어디서 | SonarQube Cloud organization Console과 GitHub `ckn1070/community → Settings/Actions`입니다. |
+| 어디서 | SonarQube Cloud organization Console과 GitHub `ckn1070/car-community → Settings/Actions`입니다. |
 | 무엇을 | 새 scoped token 발급, `SONAR_TOKEN` 교체, latest `main` CI 재실행, 이전 token revoke를 수동 수행합니다. Repository script는 없습니다. |
 | 왜 | 새 token이 exact revision 분석에 실제 사용됐다는 증거를 확보한 뒤 이전 credential을 폐기하기 위해서입니다. |
 | 완료·재개 | `Application quality`와 같은 revision의 `Sonar way` 통과 뒤 이전 token 상태를 확인합니다. 실패하면 계획 교체 또는 사고 복구의 해당 번호부터 재개합니다. |
@@ -29,6 +29,9 @@ Organization·project binding, New Code Definition, Quality Gate 또는 ruleset�
 작업은 token rotation이 아니므로 여기서 중단하고 별도 변경 범위를 결정합니다.
 
 ## 계획 교체
+
+**실행 위치:** `2`·`7`은 SonarQube Cloud Console, `3`은 조직이 승인한 credential
+inventory, `4`·`5`는 GitHub Web UI·Actions, `6`은 GitHub Actions와 SonarQube Cloud Console
 
 만료 예정·정기 교체처럼 기존 token이 노출되지 않은 경우에 사용합니다.
 
@@ -56,6 +59,8 @@ token을 revoke하지 않습니다.
 
 ## 노출 사고·이미 무효인 token 복구
 
+**실행 위치:** SonarQube Cloud Console과 GitHub Web UI·Actions
+
 노출된 token은 검증을 기다리지 않고 즉시 revoke합니다. 이미 만료·60일 비활성 제거·
 revoke된 token도 존재하지 않는 이전 token의 유지를 전제로 하지 않습니다.
 
@@ -69,6 +74,9 @@ revoke된 token도 존재하지 않는 이전 token의 유지를 전제로 하�
 둡니다. 노출 token을 다시 활성화하거나 다음 실제 PR까지 유효하게 남겨두지 않습니다.
 
 ## 실패·복구
+
+**실행 위치:** Token 발급·상태·revoke와 Quality Gate 확인은 SonarQube Cloud Console,
+repository secret 교체와 workflow 재실행은 GitHub Web UI·Actions에서 수행합니다.
 
 | 실패 | 처리 |
 | --- | --- |

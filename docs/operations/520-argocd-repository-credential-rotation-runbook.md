@@ -13,13 +13,16 @@ key로 교체하는 반복 운영 절차입니다. Secret·AppProject·Applicati
 | --- | --- |
 | 언제 | 최초 repository 연결 완료 뒤 GitHub App private key를 계획 교체하거나 노출·무효 상태에서 복구할 때 실행합니다. |
 | 누가 | GitHub App key 발급·revoke 권한과 target EC2 SSH·`sudo` 권한을 가진 운영자가 실행합니다. |
-| 어디서 | 새 PEM 전달은 local terminal, script와 revoke 뒤 live 확인은 target EC2 terminal·GitHub App Console에서 수행합니다. |
+| 어디서 | Local terminal, target EC2 terminal과 GitHub App Console입니다. |
+| 위치별 역할 | Local에서 새 PEM을 전달하고, EC2에서 script·live 상태를 확인하며, GitHub App Console에서 이전 key를 revoke합니다. |
 | 무엇을 | `operations/gitops/rotate-private-gitops-repository-credential.sh`와 GitHub App의 이전 key revoke를 순서대로 실행합니다. |
 | 왜 | 기존 Application spec을 바꾸지 않고 새 credential consumer의 fresh reconcile을 증명한 뒤 이전 key를 폐기하기 위해서입니다. |
 | 완료·재개 | Script 성공→이전 key revoke→hard refresh의 `Synced`·`Healthy` 확인까지 완료합니다. 실패 지점의 동일 script 또는 확인 단계에서 재개합니다. |
 
 ## 사용 시점과 전제
 
+- [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md)을 완료해
+  credential rotation script를 고정 절대 경로에 준비했습니다.
 - `car-community-gitops-repository` Secret, `car-community` AppProject,
   `car-community-stg` Application이 bootstrap owner label로 존재합니다.
 - Application이 현재 `Synced`·`Healthy`입니다.
@@ -32,7 +35,12 @@ Resource가 하나라도 없으면 rotation script는 새로 만들지 않고 �
 
 ## 새 key 적용과 fresh reconciliation
 
-Placeholder를 실제 값으로 바꾸고 local terminal에서 실행합니다.
+**실행 위치:** Local terminal
+
+**시작 directory:** 제한 없음
+
+`<KEY_PATH>`와 `<LOCAL_NEW_GITHUB_APP_PRIVATE_KEY_PATH>`는 각각 local file의 절대 경로로
+바꾸고 local terminal의 어느 directory에서나 실행합니다.
 
 ```bash
 ssh -i "<KEY_PATH>" "ubuntu@<EC2_SSH_HOST>" \
@@ -58,27 +66,57 @@ application workload는 유지됩니다. AppProject와 Application spec은 다�
 
 ## 이전 key revoke와 최종 확인
 
+### GitHub Console — 이전 key revoke
+
+**실행 위치:** GitHub App Console
+
 Script 성공 뒤 GitHub App 설정에서 **이전 private key만** revoke합니다. 새 key는 유지합니다.
-그 다음 EC2에서 Application hard refresh를 요청하고 다시 `Synced`·`Healthy`인지 확인합니다.
+
+### EC2 — 새 key 최종 reconciliation 확인
+
+**실행 위치:** target EC2 terminal
+
+**시작 directory:** 제한 없음
+
+Application hard refresh를 요청하고 다시 `Synced`·`Healthy`인지 확인합니다.
 
 ```bash
+# 1. Application hard refresh 요청
+# 확인: application/car-community-stg annotated 출력
+printf '\n\n========== [1/3] Application hard refresh ==========\n\n'
 sudo KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl annotate application/car-community-stg -n argocd \
   argocd.argoproj.io/refresh=hard --overwrite
 
+# 2. Sync 완료 대기
+# 확인: application/car-community-stg condition met와 Synced
+printf '\n\n========== [2/3] Application Synced ==========\n\n'
 sudo KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl wait --for=jsonpath='{.status.sync.status}'=Synced \
   application/car-community-stg -n argocd --timeout=300s
 
+# 3. Health 완료 대기
+# 확인: application/car-community-stg condition met와 Healthy
+printf '\n\n========== [3/3] Application Healthy ==========\n\n'
 sudo KUBECONFIG=/etc/kubernetes/admin.conf \
   kubectl wait --for=jsonpath='{.status.health.status}'=Healthy \
   application/car-community-stg -n argocd --timeout=300s
 ```
 
-이 최종 확인은 old key revoke 뒤에도 현재 Secret의 새 key로 인증한다는 live 증거입니다.
-Private key 원문이나 Secret data를 출력·보관하지 않습니다.
+1. Hard refresh는 old key revoke 뒤 새 repository 인증을 실제로 다시 소비하게 합니다.
+2. `Synced` 대기는 새 key로 target revision을 읽고 sync할 수 있는지 확인합니다.
+3. `Healthy` 대기는 같은 reconciliation 뒤 application health까지 정상인지 확인합니다.
+
+세 결과는 old key revoke 뒤에도 현재 Secret의 새 key로 인증한다는 live 증거입니다. Private
+key 원문이나 Secret data를 출력·보관하지 않습니다.
 
 ## 중단과 복구
+
+**실행 위치:** Rotation script 재실행은 Local terminal, GitHub App installation·permission·
+private key 확인과 재발급은 GitHub App Console, controller·Application 진단은 target EC2
+terminal에서 수행합니다.
+
+**시작 directory:** Local terminal과 target EC2 terminal은 제한 없음
 
 | 중단 상태 | 자동으로 하지 않는 일 | 복구 |
 | --- | --- | --- |

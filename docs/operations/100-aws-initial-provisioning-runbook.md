@@ -5,7 +5,7 @@ AWS Console 운영자가 서울 리전에 staging 기반 resource를 처음 구�
 복구 checkpoint는 목적별 runbook이 소유합니다.
 
 시스템의 구성요소·작동 원리·선택 이유는
-[인프라 시스템](../project/300-infrastructure-system.md), 현재 실제 구축 상태와 재개 위치는
+[100 Infrastructure overview](../project/infrastructure/100-infrastructure-overview.md), 현재 실제 구축 상태와 재개 위치는
 [Staging 단일 node 전체 구축 시나리오](scenarios/100-staging-single-node-bootstrap.md)에서
 확인합니다. 이 runbook의 checklist나 repository 검증은 AWS 계정의 live 완료 증거가
 아닙니다.
@@ -17,7 +17,9 @@ AWS Console 운영자가 서울 리전에 staging 기반 resource를 처음 구�
   사용합니다.
 - **actor**: 대상 AWS 계정에서 VPC·EC2·ECR·IAM·RDS를 생성할 권한이 있는 AWS Console
   운영자입니다.
-- **대상 리전**: 서울 `ap-northeast-2`입니다. 다른 리전에서 실행하지 않습니다.
+- **실행 위치**: 이 umbrella는 직접 실행하지 않습니다. 각 번호 단계는 연결된 목적별
+  runbook이 선언한 AWS Console·local terminal·EC2 terminal에서 실행합니다.
+- **대상 리전**: 서울 `ap-northeast-2`
 
 ## 공통 전제와 입력
 
@@ -37,10 +39,10 @@ resource를 만들며, 이 문서의 완료 확인은 그 결과를 한 번에 �
 
 선택값의 의미와 재검토 조건은 각 resource 개념 문서가 소유합니다.
 
-- **VPC 기준**: [VPC network](../project/infrastructure/100-vpc-network.md)
-- **EC2 기준**: [EC2 Kubernetes node](../project/infrastructure/110-ec2-kubernetes-node.md)
-- **ECR·IAM 기준**: [ECR·IAM 기반](../project/infrastructure/120-ecr-iam-foundation.md)
-- **RDS 기준**: [RDS PostgreSQL](../project/infrastructure/130-rds-postgresql.md)
+- **VPC 기준**: [110 VPC network](../project/infrastructure/110-vpc-network.md)
+- **EC2 기준**: [120 EC2 Kubernetes node](../project/infrastructure/120-ec2-kubernetes-node.md)
+- **ECR·IAM 기준**: [130 ECR·IAM 기반](../project/infrastructure/130-ecr-iam-foundation.md)
+- **RDS 기준**: [140 RDS PostgreSQL](../project/infrastructure/140-rds-postgresql.md)
 
 ## 정상 실행 순서와 handoff
 
@@ -57,7 +59,9 @@ resource를 만들며, 이 문서의 완료 확인은 그 결과를 한 번에 �
 4. [RDS PostgreSQL 최초 구축](140-rds-provisioning-runbook.md)을 완료합니다.
    - 기대 결과: private subnet의 PostgreSQL DB가 `사용 가능`이고 EC2에서 private
      DNS·TCP `5432`·credential 인증이 성공합니다.
-5. EC2에 접속한 뒤 host와 Kubernetes를 변경하는 작업은
+5. EC2에 접속한 뒤 [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md)로
+   공통 script를 검증·배치합니다.
+6. Artifact 배치가 끝나면
    [Kubernetes bootstrap runbook](200-kubernetes-bootstrap-runbook.md)으로 인계합니다.
 
 VPC는 EC2와 RDS의 선행 조건이고, EC2는 ECR pull profile 연결과 RDS 자동 연결의 선행
@@ -99,8 +103,9 @@ VPC는 EC2와 RDS의 선행 조건이고, EC2는 ECR pull profile 연결과 RDS 
 
 ## 관련 문서
 
-- **시스템 설명**: [인프라 시스템](../project/300-infrastructure-system.md)
+- **시스템 설명**: [100 Infrastructure overview](../project/infrastructure/100-infrastructure-overview.md)
 - **현재 live 상태·재개 위치**:
   [Staging 단일 node 전체 구축 시나리오](scenarios/100-staging-single-node-bootstrap.md)
-- **후속 실행 절차**: [Kubernetes bootstrap runbook](200-kubernetes-bootstrap-runbook.md)
-- **향후 자동화 변경 경계**: [Terraform 전환 경계](../project/infrastructure/340-terraform-transition.md)
+- **후속 실행 절차**: [150 EC2 실행 artifact 전달](150-ec2-execution-artifact-transfer-runbook.md),
+  [200 Kubernetes bootstrap](200-kubernetes-bootstrap-runbook.md)
+- **향후 구성 자동화 후보**: [004 Infrastructure 진화 Backlog](../work-items/backlog/2026/004-infrastructure-evolution.md)

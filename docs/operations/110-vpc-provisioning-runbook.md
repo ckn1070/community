@@ -2,13 +2,13 @@
 
 AWS Console에서 staging VPC와 최초 network resource를 한 번에 생성하는 절차입니다.
 VPC의 주소 구조, public·private 의미, NAT·IPv6·S3 endpoint 선택 이유와 미선택 대안은
-[VPC network](../project/infrastructure/100-vpc-network.md)가 소유합니다.
+[110 VPC network](../project/infrastructure/110-vpc-network.md)가 소유합니다.
 
 ## 사용 시점과 actor
 
 - **사용 시점**: `stg-car-community` AWS 기반을 처음 만들 때 가장 먼저 실행합니다.
 - **actor**: 서울 리전에서 VPC resource를 생성할 권한이 있는 AWS Console 운영자입니다.
-- **실행 위치**: AWS Console `VPC → VPC 생성`입니다.
+- **기본 실행 위치**: AWS Console `VPC → VPC 생성`입니다.
 
 ## 전제와 입력
 
@@ -123,6 +123,6 @@ launch에서 instance의 public IPv4를 명시적으로 활성화합니다.
 
 ## 공식 기준과 관련 문서
 
-- **선택·영향·대안**: [VPC network](../project/infrastructure/100-vpc-network.md)
+- **선택·영향·대안**: [110 VPC network](../project/infrastructure/110-vpc-network.md)
 - **상위 절차**: [AWS 최초 구축](100-aws-initial-provisioning-runbook.md)
 - [VPC 리소스 맵 확인](https://docs.aws.amazon.com/vpc/latest/userguide/view-vpc-resource-map.html)

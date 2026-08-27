@@ -30,12 +30,16 @@ architecture·privacy·운영 결정만 소유합니다.
 - 마이크로서비스 분리 조건을 결정합니다.
 - 중고차 매물 모듈의 상세 구조를 결정합니다.
 
-### 운영 관측과 로그
+### 횡단 운영 정책 경계
 
-- 중앙 로그 수집 방식, 보존 기간, 접근 권한과 삭제 책임자를 결정합니다.
-- 인증 실패·외부 연동 실패·데이터 무결성 위험의 alert threshold와 자동 차단 여부를 결정합니다.
-- 인증 event의 영구 감사 책임과 application log의 운영 진단 책임을 분리한 상태로 alert source를 선택합니다.
-- 실제 배포 platform, 예상 traffic, 개인정보 보존 요구와 on-call 운영 주체가 확정될 때 이 항목을 별도 운영 작업으로 전환합니다.
+- 외부 연동 실패와 데이터 무결성 위험의 event 의미, alert threshold와 자동 대응 정책을
+  결정합니다.
+- 예상 traffic·운영 비용과 개인정보 보존 요구는 infrastructure 관측·로그 후보가 구체화될
+  때 입력 조건으로 제공합니다.
+- 중앙 수집·보존·검색, infrastructure alert 전달과 on-call 체계는
+  [004 Infrastructure 진화 Backlog](004-infrastructure-evolution.md)가 소유합니다.
+- Auth event의 보존·alert 의미와 로그인 abuse 자동 대응은
+  [003 Account 인증 후속 후보](003-account-auth-follow-up.md)가 소유합니다.
 
 ## 전환 기준
 
@@ -57,3 +61,4 @@ architecture·privacy·운영 결정만 소유합니다.
 - **현재 구현 상태**: [프로젝트 개요](../../../project/100-project-overview.md), [현재 아키텍처](../../../project/200-current-architecture.md), [모듈 지도](../../../project/210-module-map.md)
 - **제품 목표·범위**: [제품 개요](../../../product/100-product-overview.md), [기능 범위](../../../product/200-feature-scope.md)
 - **업무 정책 router**: [도메인 문서](../../../domain/000-index.md)
+- **Infrastructure 관측·운영 후보**: [004 Infrastructure 진화 Backlog](004-infrastructure-evolution.md)

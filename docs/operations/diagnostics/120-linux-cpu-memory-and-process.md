@@ -3,28 +3,75 @@
 Host 전체 pressure와 특정 process 문제를 구분합니다. Load, memory, swap, process state를
 같은 시각에 수집하고 단일 숫자 대신 관계로 판단합니다.
 
+**기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
+
+**기본 시작 directory:** 제한 없음
+
 ## 상단 수동 확장 조회
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
 
 ```bash
+(
+set +e
+
+probe() {
+  printf '\n------------------------------------------------------------\n'
+  printf 'PROBE: %s\n' "$1"
+  printf '%s\n' "$2"
+  printf '%s\n' '------------------------------------------------------------'
+}
+
+report_status() {
+  printf '[result] %s exit code: %s\n' "$1" "$2"
+}
+
+probe 'Online CPU' 'Load와 run queue를 비교할 논리 CPU 기준을 확인합니다.'
 getconf _NPROCESSORS_ONLN
+report_status 'getconf' "$?"
+
+probe 'Load' '현재 uptime과 1·5·15분 load 추세를 확인합니다.'
 uptime
+report_status 'uptime' "$?"
+
+probe 'Memory' 'Used가 아니라 새 workload에 제공할 available memory를 확인합니다.'
 free -h
+report_status 'free' "$?"
+
+probe 'Swap' '활성 swap의 크기·사용량·우선순위를 확인합니다.'
 swapon --show --output=NAME,TYPE,SIZE,USED,PRIO
+report_status 'swapon' "$?"
+
+probe 'System activity' 'Run queue, CPU wait와 swap in·out의 짧은 변화 추세를 확인합니다.'
 vmstat 1 5
+report_status 'vmstat' "$?"
+
+probe 'RSS 상위 process' 'Memory를 많이 점유하는 PID·state·시작 시각을 확인합니다.'
 ps -eo pid,ppid,lstart,etimes,stat,comm,%cpu,%mem,rss --sort=-rss \
   | sed -n '1,31p'
+pipeline_status=("${PIPESTATUS[@]}")
+printf '[result] ps exit code: %s; sed exit code: %s\n' \
+  "${pipeline_status[0]}" "${pipeline_status[1]}"
+
+probe 'CPU 상위 process' 'CPU를 많이 사용하는 PID와 실행 시간을 확인합니다.'
 ps -eo pid,ppid,lstart,etimes,stat,comm,%cpu,%mem,rss --sort=-%cpu \
   | sed -n '1,31p'
+pipeline_status=("${PIPESTATUS[@]}")
+printf '[result] ps exit code: %s; sed exit code: %s\n' \
+  "${pipeline_status[0]}" "${pipeline_status[1]}"
+
+probe 'Kernel OOM 기록' '현재 boot에서 OOM kill·memory pressure가 발생했는지 확인합니다.'
 sudo -n journalctl -k -b \
   --grep='Out of memory|Killed process|oom-kill|memory pressure' \
   --no-pager -n 200
+report_status 'journalctl' "$?"
+)
 ```
 
 `vmstat`가 없으면 그 사실을 기록하고 나머지 조회를 계속합니다. `ps | sed`의 upstream
-실패 여부가 필요하면 같은 `ps` 명령에서 `| sed ...`를 제거해 다시 실행합니다.
+실패 여부는 상단 묶음이 출력한 `ps exit code`로 판정합니다. 잘리지 않은 process 목록이
+추가로 필요할 때만 같은 `ps` 명령에서 `| sed ...`를 제거해 다시 실행합니다.
 
 ## 해석 순서
 
@@ -204,7 +251,7 @@ memory pressure와 OOM 단서만 제한된 행 수로 읽습니다.
 
 - **전체 outline**: [100 Kubernetes platform 핵심 진단 outline](100-kubernetes-platform-diagnostic-outline.md)
 - **Filesystem·I/O**: [130 Filesystem·storage 진단](130-filesystem-and-storage.md)
-- **현재 EC2 size**: [110 EC2 Kubernetes node](../../project/infrastructure/110-ec2-kubernetes-node.md)
+- **현재 EC2 size**: [120 EC2 Kubernetes node](../../project/infrastructure/120-ec2-kubernetes-node.md)
 
 ## 공식 참고
 
