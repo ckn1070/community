@@ -44,12 +44,10 @@ class AdminInvitationCreationTransactionIntegrationTest extends PostgreSqlIntegr
     doThrow(new DataIntegrityViolationException("created event write failure"))
         .when(authEventRepository)
         .saveAndFlush(any(AuthEventJpaEntity.class));
+    InviteAdminCommand command =
+        new InviteAdminCommand(inviterPublicId, "atomic-admin@example.com", "ROLE_ADMIN");
 
-    assertThatThrownBy(
-            () ->
-                inviteAdminUseCase.execute(
-                    new InviteAdminCommand(
-                        inviterPublicId, "atomic-admin@example.com", "ROLE_ADMIN")))
+    assertThatThrownBy(() -> inviteAdminUseCase.execute(command))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     assertThat(
