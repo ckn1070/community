@@ -8,7 +8,7 @@ Application·Deployment를 직접 수정하지 않습니다.
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -118,7 +118,14 @@ Live Application을 patch해 임시 branch·path로 돌리지 않습니다.
 
 ### `get pods,deployments,statefulsets`: Core component 상태 조회
 
-#### Resource·option
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n argocd get pods,deployments,statefulsets
+```
+
+#### 선택 resource·option
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -141,6 +148,13 @@ Core component가 Ready가 아니면 Application 상태보다 component event·b
 
 ### `get AppProject`: 허용 source·destination scope 조회
 
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n argocd get appproject.argoproj.io/car-community
+```
+
 #### Output projection
 
 `jsonpath`는 AppProject `.spec.sourceRepos`와 `.spec.destinations`만 읽습니다.
@@ -154,6 +168,17 @@ Core component가 Ready가 아니면 Application 상태보다 component event·b
 | `destinationNamespace` | Project가 허용한 namespace | `car-community` 배포가 허용되는가 |
 
 ### `get Secret`: Repository credential metadata 조회
+
+#### 기본 명령
+
+Secret 전체 기본 출력에도 `.data` 값은 표시되지 않지만, 이 문서에서는 필요한 metadata만
+고르는 안전한 projection을 기본 조회로 사용합니다.
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n argocd get secret car-community-gitops-repository \
+  -o 'custom-columns=NAME:.metadata.name,TYPE:.metadata.labels.argocd\.argoproj\.io/secret-type,OWNER:.metadata.labels.app\.kubernetes\.io/managed-by,RESOURCE_VERSION:.metadata.resourceVersion'
+```
 
 #### Output projection
 
@@ -172,6 +197,13 @@ Secret metadata 존재는 private key 유효성이나 실제 fetch 성공을 증
 `.data`는 조회하지 않고 Application condition·repo-server log와 결합합니다.
 
 ### `get application`: status field 조회
+
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n argocd get application.argoproj.io/car-community-stg
+```
 
 #### Output projection
 
@@ -205,7 +237,23 @@ Secret metadata 존재는 private key 유효성이나 실제 fetch 성공을 증
 
 ### `logs`: controller·repo-server log 조회
 
-#### Target·option
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n argocd logs statefulset/argocd-application-controller
+
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n argocd logs deployment/argocd-repo-server
+```
+
+기본형에는 시간·행 제한이 없습니다. `--since=60m --tail=240`은 상단의 빠른 preset이며,
+절대 사건 시각은 `--since-time=RFC3339`, 실시간은 `--follow`, producer timestamp가 없는
+plain text는 `--timestamps=true`를 필요에 따라 붙입니다. 전체 option과 current·previous·
+rotated log 경계는 [170 Kubernetes workload 진단의 `logs`](170-kubernetes-workload-network-events-and-logs.md#logs-container-stdoutstderr-조회)를
+따릅니다.
+
+#### 선택 target·option
 
 | Option·target | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -213,6 +261,9 @@ Secret metadata 존재는 private key 유효성이나 실제 fetch 성공을 증
 | `deployment/argocd-repo-server` | Git fetch·render log | Credential·revision·path·render 중 어디인가 |
 | `--since=60m` | 최근 시간 범위 | Incident 시각을 포함하는가 |
 | `--tail=240` | 마지막 행 수 제한 | 출력 상한을 지켰는가 |
+| `--since-time=RFC3339` | 절대 사건 시각 이후 | `--since`와 함께 사용하지 않음 |
+| `--follow` | 새 log를 계속 stream | Snapshot request timeout을 제거했는가 |
+| `--timestamps=true` | Kubelet timestamp를 각 행에 추가 | Producer timestamp가 없는가 |
 
 #### 출력·민감정보 경계
 

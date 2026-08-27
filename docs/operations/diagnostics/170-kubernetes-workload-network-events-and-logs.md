@@ -8,7 +8,7 @@ log를 읽습니다.
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -105,7 +105,17 @@ Deployment·Job desired state
 
 ### `get`: object 목록·요약 상태 조회
 
-#### Option·resource
+#### 기본 명령
+
+먼저 resource와 범위만 정한 기본형으로 전체 출력을 확인합니다. `-A`, `-o wide`와 selector는
+필요한 범위·표현에 따라 뒤에 붙입니다.
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl get pods
+```
+
+#### 선택 option·resource
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -170,7 +180,23 @@ Event는 영구 audit log가 아니며 retention 뒤 사라질 수 있습니다.
 
 ### `get pod`·`get events`: 대상 Pod 상태와 관련 event 조회
 
-#### Resource·option
+#### 기본 명령
+
+`namespace`와 `pod_name`은 앞선 `kubectl get pods -A` 출력에서 고릅니다. Pod 원문 전체가
+필요하면 먼저 아래 기본형을 실행하고, 필요한 field만 좁힐 때 `-o jsonpath=...`를 붙입니다.
+
+```bash
+namespace='<Namespace>'
+pod_name='<Pod 이름>'
+
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" get pod "${pod_name}"
+
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" get events
+```
+
+#### 선택 resource·option
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -179,6 +205,8 @@ Event는 영구 audit log가 아니며 retention 뒤 사라질 수 있습니다.
 | `get events` | Event resource 조회 | 대상 Pod 관련 실패 reason이 남아 있는가 |
 | `--field-selector` | Pod kind·name으로 event 제한 | 다른 object event와 섞이지 않았는가 |
 | `--sort-by=.metadata.creationTimestamp` | 생성 시각순 정렬 | 실패 순서를 복원할 수 있는가 |
+
+#### 상태·event 조합 예시 (bounded preset)
 
 ```bash
 namespace='<Namespace>'
@@ -212,32 +240,210 @@ Secret·ConfigMap reference name·key를 출력하지 않습니다.
 
 ### `logs`: container stdout·stderr 조회
 
-#### Option
+#### 기본 명령
 
-| Option | 뜻 | 진단 질문 |
+아래 명령은 선택한 container의 **현재 instance에서 kubelet이 제공할 수 있는 현재 log
+file 전체**를 요청합니다. 시간·행 제한은 기본값이 아니며 필요할 때 선택 옵션으로
+붙입니다. Pod에 container가 하나뿐이면 `-c`를 생략할 수 있지만, 운영 진단에서는 대상을
+명확히 하기 위해 넣는 편이 안전합니다.
+
+```bash
+namespace='<Namespace>'
+pod_name='<Pod 이름>'
+container_name='<Container 이름>'
+
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" \
+  logs "${pod_name}" \
+  -c "${container_name}"
+```
+
+`--request-timeout=10s`는 bounded snapshot에는 유용하지만 `--follow`에 붙이면 stream도 해당
+timeout 뒤 종료될 수 있으므로 기본 명령에는 넣지 않습니다.
+
+#### 대상·stream 선택 옵션
+
+| Option | 뜻 | 조합 기준 |
 | --- | --- | --- |
-| `--all-containers` | Pod의 모든 container | Sidecar까지 확인해야 하는가 |
-| `--since=60m` | 최근 시간 범위 | Incident 시각을 포함하는가 |
-| `--tail=240` | 마지막 행 수 제한 | 출력 상한을 지켰는가 |
-| `--prefix` | Pod·container source 표시 | 여러 log source를 구분하는가 |
-| `--previous` | Restart 직전 container | Crash 직전 원인이 남았는가 |
+| `-c NAME`, `--container=NAME` | 특정 container 선택 | Multi-container Pod 또는 JSON application log는 명시 권장 |
+| `--all-containers=true` | 선택된 Pod의 모든 container log | 서로 다른 format을 섞을 수 있으므로 JSON `jq` 처리와 함께 쓰지 않음 |
+| `-l SELECTOR`, `--selector=SELECTOR` | Label이 일치하는 여러 Pod 선택 | Pod 이름 대신 사용하며 source 구분을 위해 `--prefix` 결합 |
+| `--all-pods=true` | 지정한 workload resource의 모든 Pod 선택 | `deployment/NAME` 같은 resource target과 사용 |
+| `-p`, `--previous` | 같은 Pod 안에서 직전에 종료된 container instance 조회 | 회전 파일이 아니라 restart 전 instance이며 존재하지 않을 수 있음 |
+| `-f`, `--follow` | 새 log를 계속 stream | 종료하려면 `Ctrl-C`; 장시간 수집에는 별도 중앙 log backend가 필요 |
+| `--ignore-errors=true` | Follow 중 개별 Pod 오류를 non-fatal로 처리 | 여러 Pod follow에서 일부 stream 단절 뒤 나머지를 계속 볼 때 사용 |
+
+#### 범위·표시·동시성 옵션
+
+| Option | 뜻 | 조합 기준 |
+| --- | --- | --- |
+| `--since=DURATION` | 현재 시각 기준 상대 범위, 예: `60m` | `--since-time`과 함께 사용할 수 없음 |
+| `--since-time=RFC3339` | 지정 절대 시각 이후, 예: `2026-08-27T01:00:00Z` | 사건 시각이 확정됐을 때 사용; `--since`와 배타적 |
+| `--tail=N` | 현재 log file의 마지막 N행 | Selector가 없으면 기본 `-1`(제한 없음), selector가 있으면 기본 10행 |
+| `--limit-bytes=N` | 반환할 최대 byte 수 | 행 중간이 잘릴 수 있으므로 JSON parse·stack trace 조사에는 주의 |
+| `--timestamps=true` | 각 행 앞에 kubelet의 RFC3339 timestamp 추가 | Producer timestamp가 없는 plain text에 유용; JSON `jq` 처리 전에는 사용 금지 |
+| `--prefix=true` | 각 행 앞에 Pod·container source 추가 | 여러 source를 합칠 때 유용; JSON `jq` 처리 전에는 사용 금지 |
+| `--max-log-requests=N` | Selector follow의 동시 요청 수 | 기본 5; Node/API 부하를 고려해 필요한 만큼만 높임 |
+| `--pod-running-timeout=DURATION` | 하나 이상의 Pod가 Running이 되기를 기다리는 시간 | 기본 20초; 시작 중인 workload 조회에 사용 |
+
+`--insecure-skip-tls-verify-backend`는 kubelet serving certificate 검증을 건너뛰므로 일반 진단
+옵션으로 사용하지 않습니다. 인증 문제의 원인과 위험을 별도로 확정한 경우에만 검토합니다.
+
+#### 조합 예시 (bounded preset)
+
+현재 container의 최근 60분·240행을 여러 container source prefix와 함께 보는 예시입니다.
+숫자는 고정 규칙이 아니라 첫 화면을 제한하기 위한 preset입니다.
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl --request-timeout=10s -n "${namespace}" \
+  logs "${pod_name}" --all-containers=true \
+  --since=60m --tail=240 --prefix=true
+```
+
+CrashLoop 원인은 container를 하나 지정해 이전 instance를 조회합니다.
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl --request-timeout=10s -n "${namespace}" \
+  logs "${pod_name}" -c "${container_name}" \
+  --previous --tail=160
+```
+
+실시간으로 볼 때에는 snapshot용 request timeout을 제거합니다.
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" \
+  logs "${pod_name}" -c "${container_name}" \
+  --follow
+```
+
+#### Production ECS JSON을 `jq`로 읽기
+
+Production profile은
+[`application-production.yaml`](../../../src/main/resources/application-production.yaml)의
+`logging.structured.format.console: ecs`에 따라 application container가 한 행에 JSON object
+하나를 기록합니다. 이때 `jq` 앞의 `kubectl logs`에는 JSON을 깨뜨리는 `--prefix`와
+`--timestamps`를 붙이지 않고, 다른 format의 sidecar가 섞이지 않도록 `-c application`을
+명시합니다.
+
+먼저 JSON 형식 자체를 엄격하게 검사합니다. Nonzero이면 모든 행이 JSON object라는 전제가
+깨진 것이므로 아래 human-readable 변환에서 fragment를 별도로 표시해야 합니다.
+
+```bash
+(
+set -o pipefail
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" logs "${pod_name}" -c application \
+  | jq -e 'if type == "object" then true else error("expected JSON object") end' \
+    >/dev/null
+)
+```
+
+사람이 읽는 형태로 바꿀 때에는 원문 행을 먼저 보존하고 parse 실패를 버리지 않습니다.
+`fromjson?`는 실패한 행을 조용히 제거하므로 stack trace fragment나 잘린 JSON을 놓칠 수 있어
+사용하지 않습니다. `@timestamp`의 UTC 값을 KST로 바꾸고 ECS의 `error.stack_trace`가 있으면
+message 뒤에 이어 붙입니다.
+
+```bash
+(
+set -o pipefail
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" logs "${pod_name}" -c application \
+  | TZ=Asia/Seoul jq -Rr '
+      def kst:
+        . as $timestamp
+        | try (
+            $timestamp
+            | sub("\\.[0-9]+Z$"; "Z")
+            | fromdateiso8601
+            | strflocaltime("%Y-%m-%d %H:%M:%S KST")
+          ) catch $timestamp;
+
+      . as $raw
+      | (try fromjson catch null) as $log
+      | if ($log | type) != "object" then
+          "[UNPARSED/FRAGMENT] \($raw)"
+        else
+          "\(($log["@timestamp"] // "timestamp-missing") | kst) "
+          + "[\($log.log.level // "-")] \($log.log.logger // "-")\n"
+          + "\($log.message // "")"
+          + (if ($log.error.stack_trace // "") != ""
+             then "\n" + $log.error.stack_trace
+             else ""
+             end)
+          + "\n"
+        end
+    '
+)
+```
+
+실시간 JSON log에는 같은 filter에 `kubectl logs --follow`와 `jq --unbuffered -Rr`를
+사용합니다. `jq` parse error가 첫 행부터 발생하면 `--prefix`, `--timestamps`, shell에 복사된
+HTML entity, 또는 JSON이 아닌 container가 섞였는지 먼저 확인합니다.
+
+#### Log 시간과 보존 경계
+
+- ECS JSON의 `@timestamp`는 application producer 시각입니다. `--timestamps=true`는 kubelet이
+  각 CRI log record 앞에 붙이는 시각이며 둘은 출처가 다릅니다.
+- `kubectl logs`는 kubelet이 관리하는 **가장 최신 log file만** 반환합니다. `--tail=-1`이나
+  시간 제한 제거도 이미 회전된 파일까지 합치지는 않습니다.
+- `--previous`는 같은 Pod의 직전 container instance를 읽는 옵션이지 회전 파일을 읽는 옵션이
+  아닙니다. 기본적으로 kubelet은 종료된 container instance 하나의 log를 보존합니다.
+- Node에서 kubelet은 기본적으로 container log를
+  `/var/log/pods/<namespace>_<pod>_<uid>/<container>/` 아래에 두고 `/var/log/containers`에는
+  접근용 symlink를 둡니다. Directory는 file이 아니므로 `cat` 대신 먼저 `find`·`ls`로
+  내부 file을 고릅니다.
+
+Kubelet 설정 파일에 rotation key가 없으면 “회전하지 않음”이 아니라 kubelet 기본값을
+사용한다는 뜻입니다. 현재 config file과 key 존재 여부를 먼저 확인합니다.
+
+```bash
+sudo -n systemctl cat kubelet.service
+sudo -n grep -E \
+  '^(containerLogMaxSize|containerLogMaxFiles|containerLogMaxWorkers|containerLogMonitorInterval):' \
+  /var/lib/kubelet/config.yaml
+```
+
+공식 기본값은 `containerLogMaxSize: 10Mi`, `containerLogMaxFiles: 5`입니다. 실제 file inventory는
+Pod UID로 정확한 directory를 고른 뒤 확인합니다.
+
+```bash
+pod_uid="$(sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n "${namespace}" get pod "${pod_name}" \
+  -o jsonpath='{.metadata.uid}')"
+pod_log_dir="/var/log/pods/${namespace}_${pod_name}_${pod_uid}/${container_name}"
+
+sudo -n find "${pod_log_dir}" -maxdepth 1 -type f \
+  -printf '%TY-%Tm-%Td %TH:%TM:%TS %s %p\n' \
+  | sort
+```
+
+현재·회전 file을 읽을 때에는 위 inventory에서 정확한 path를 `log_file`에 복사합니다.
+압축 여부에 따라 reader를 구분하며, 원인을 모르는 상태에서 file을 삭제·truncate하지 않습니다.
+
+```bash
+log_file='<위 find 출력에서 고른 정확한 file path>'
+sudo -n less "${log_file}"
+# .gz file이면: sudo -n zless "${log_file}"
+```
+
+이 Node raw file은 JSON payload 앞에 CRI timestamp·`stdout|stderr`·`F|P` tag가 붙습니다.
+따라서 file 전체를 그대로 `jq`에 넣지 않고 CRI prefix와 partial record 여부를 먼저 해석합니다.
+
+Node·Pod 삭제 뒤에도 장기 조회가 필요하다면 node local file에 의존하지 않고 별도의
+cluster-level logging backend가 필요합니다. Kubernetes 자체는 장기 log storage를 제공하지
+않습니다.
 
 #### 출력·민감정보 경계
 
 | 출력 | 뜻 | 진단 질문 |
 | --- | --- | --- |
-| Prefix | Pod·container source | 여러 container 중 어디서 발생했는가 |
-| Timestamp 없는 자유 형식 message | Application stdout·stderr | Incident 시각은 producer 자체 log format으로 알 수 있는가 |
+| Producer `@timestamp`·message | Application이 만든 사건 시각과 내용 | Incident 시각·request 흐름과 맞는가 |
+| Kubelet timestamp·source prefix | CRI record 시각과 Pod·container 출처 | Plain text 또는 여러 source를 구분해야 하는가 |
+| `[UNPARSED/FRAGMENT]` | JSON parse가 불가능한 원문 행 | 회전·byte 제한·prefix 때문에 잘렸는가, producer가 비JSON을 썼는가 |
 | Token·email·URL·query 가능성 | Producer가 기록한 민감 조각 | Local mode `0600` 보존·공유 전 redaction을 지켰는가 |
-
-```bash
-sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
-  kubectl --request-timeout=10s -n "${namespace}" \
-  logs "${pod_name}" --all-containers --since=60m --tail=240 --prefix
-sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
-  kubectl --request-timeout=10s -n "${namespace}" \
-  logs "${pod_name}" --all-containers --previous --tail=160 --prefix
-```
 
 이 명령은 Secret `.data`나 container environment를 직접 조회하지 않지만, application이
 stdout·stderr에 token 조각·email·URL·query를 기록했다면 그대로 나타날 수 있습니다.
@@ -303,4 +509,5 @@ Test Pod 생성, CNI file 삭제, manifest 재적용, live workload edit을 하�
 
 - [Debug Pods](https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/)
 - [kubectl logs](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_logs/)
+- [Kubernetes logging architecture](https://kubernetes.io/docs/concepts/cluster-administration/logging/)
 - [Service and EndpointSlice](https://kubernetes.io/docs/concepts/services-networking/service/)

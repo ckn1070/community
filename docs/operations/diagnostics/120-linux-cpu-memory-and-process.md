@@ -7,7 +7,7 @@ Host 전체 pressure와 특정 process 문제를 구분합니다. Load, memory, 
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -85,6 +85,12 @@ report_status 'journalctl' "$?"
 `getconf`는 현재 system configuration 값을 조회합니다. `_NPROCESSORS_ONLN`은 OS가 현재
 online으로 인식하는 논리 CPU 개수입니다.
 
+### 기본 명령
+
+```bash
+getconf _NPROCESSORS_ONLN
+```
+
 ### 인자·출력 field
 
 | 인자·출력 | 뜻 | 진단 질문 |
@@ -95,6 +101,12 @@ online으로 인식하는 논리 CPU 개수입니다.
 확인합니다.
 
 ## `uptime`: load 추세 조회
+
+### 기본 명령
+
+```bash
+uptime
+```
 
 ### 출력 field
 
@@ -110,7 +122,13 @@ Load는 CPU 사용률이 아니라 실행 가능 또는 uninterruptible sleep ta
 
 ## `free`: memory 관계 조회
 
-### Option
+### 기본 명령
+
+```bash
+free
+```
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -131,7 +149,13 @@ Load는 CPU 사용률이 아니라 실행 가능 또는 uninterruptible sleep ta
 `swapon`은 활성 swap device·file을 조회하거나 변경하는 명령입니다. 이 문서에서는 조회만
 하며 swap을 활성화하지 않습니다.
 
-### Option
+### 기본 명령
+
+```bash
+swapon --show
+```
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -152,6 +176,15 @@ Load는 CPU 사용률이 아니라 실행 가능 또는 uninterruptible sleep ta
 [200 Kubernetes bootstrap runbook](../200-kubernetes-bootstrap-runbook.md)과 대조합니다.
 
 ## `vmstat`: system 변화 조회
+
+### 기본 명령
+
+```bash
+vmstat
+```
+
+인자 없이 실행하면 boot 이후 누적 snapshot 한 번을 보여줍니다. 변화 추세가 필요할 때 sample
+간격과 횟수를 붙입니다.
 
 ### 인자
 
@@ -176,7 +209,15 @@ Load는 CPU 사용률이 아니라 실행 가능 또는 uninterruptible sleep ta
 
 ## `ps`: process snapshot 조회
 
-### Option·subcommand
+### 기본 명령
+
+```bash
+ps -e
+```
+
+진단에서는 argument·environment 노출을 피하면서 비교할 field와 정렬 기준을 선택합니다.
+
+### 선택 option·subcommand
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -214,7 +255,16 @@ Load는 CPU 사용률이 아니라 실행 가능 또는 uninterruptible sleep ta
 `journalctl`은 systemd journal을 조회합니다. 여기서는 현재 boot의 kernel message 중
 memory pressure와 OOM 단서만 제한된 행 수로 읽습니다.
 
-### Option
+### 기본 명령
+
+```bash
+sudo -n journalctl -k
+```
+
+이 기본형은 접근 가능한 전체 kernel journal을 읽습니다. Boot·시간·pattern·행 제한은 사건
+범위에 맞게 선택합니다.
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -223,6 +273,12 @@ memory pressure와 OOM 단서만 제한된 행 수로 읽습니다.
 | `--grep=PATTERN` | OOM·kill·pressure pattern만 선택 | Memory 강제 회수 증거가 있는가 |
 | `--no-pager` | Pager 없이 출력 | 자동 대기 없이 bounded 결과를 얻는가 |
 | `-n 200` | 최근 최대 200행 | 출력 상한을 지켰는가 |
+| `--since TIME`·`--until TIME` | 상대 또는 절대 시작·종료 시각 | 사건 구간만 정확히 자르는가 |
+| `-f`, `--follow` | 새 journal entry를 계속 출력 | 실시간 재현을 관찰하는가 |
+| `-o short-iso-precise` | ISO 시각과 microsecond 정밀도 | 다른 log source와 시각을 맞출 수 있는가 |
+
+`-b`, `--grep`, `-n 200`은 상단 bounded preset의 조합입니다. 이전 boot 또는 더 오래된 사건이
+필요하면 해당 제한을 제거하거나 `-b -1`, `--since/--until`로 범위를 다시 정합니다.
 
 ### 출력 field
 

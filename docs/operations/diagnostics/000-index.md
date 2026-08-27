@@ -27,9 +27,9 @@ application runbook으로 이동합니다.
 문서는 세 깊이로 읽습니다.
 
 1. `100`은 각 영역의 핵심 probe 1~3개만 실행해 Kubernetes 운영 stack에서 첫 이상 경계를 찾습니다.
-2. `110`~`180`의 상단 수동 확장 조회는 한 영역의 관련 probe를 더 넓게 확인합니다.
-3. 같은 상세 문서의 하단은 명령 문법, option·출력 필드, 정상·이상 신호, 증거 조합,
-   추가 조회와 한계를 설명합니다.
+2. `110`~`180`의 상단 빠른 확장 조회는 bounded preset으로 한 영역의 관련 probe를 더 넓게 확인합니다.
+3. 같은 상세 문서의 하단은 제한을 강제하지 않은 기본 조회부터 시작해 선택 option,
+   목적별 조합 예시, 출력 필드, 정상·이상 신호와 보존 한계를 설명합니다.
 
 따라서 outline은 상세 문서의 명령을 전부 복제하지 않고, 상세 문서도 상단 묶음과 하단
 설명을 단순 반복하지 않습니다. 실제 상태 변경·재실행·복구는 연결된 기존 runbook이
@@ -42,12 +42,20 @@ application runbook으로 이동합니다.
 항목별 확인 목적·첫 이상 신호를 표로 제시하고, `120`~`180`은 아래 Bash probe 계약을
 적용합니다.
 
-1. **상단 수동 확장 조회**: `110`은 Console 확인표, `120`~`180`은 각 probe가 확인하는 목적을 출력하고 exit code를 보존하면서 이 영역의 read-only command를 한 번에 실행하는 묶음
+1. **상단 빠른 확장 조회 (bounded preset)**: `110`은 Console 확인표, `120`~`180`은 각 probe가 확인하는 목적을 출력하고 exit code를 보존하면서 이 영역의 read-only command를 한 번에 실행하는 묶음
 2. **해석 순서**: 출력을 어떤 순서와 관계로 볼지 요약
-3. **명령어 family**: `command: 한 줄 핵심` 제목 아래 option·subcommand를 같은 표로 설명
-4. **출력 필드와 신호**: 각 column·state의 뜻과 정상·이상 관계
-5. **증거 조합과 다음 분기**: 단일 값이 아니라 함께 나타난 증거로 다음 owner 선택
-6. **금지 경계·관련 문서**: 진단과 mutation을 분리하고 복구 절차로 연결
+3. **명령어 family**: `command: 한 줄 핵심` 제목 아래 최소 기본 명령을 먼저 제시
+4. **선택 option과 조합 예시**: 범위·시간·출력·follow·상한 option을 필요에 따라 붙이며,
+   상단과 같은 제한된 조합은 `bounded preset`으로 명시
+5. **출력 필드와 신호**: 각 column·state의 뜻과 정상·이상 관계
+6. **증거 조합과 다음 분기**: 단일 값이 아니라 함께 나타난 증거로 다음 owner 선택
+7. **금지 경계·관련 문서**: 진단과 mutation을 분리하고 복구 절차로 연결
+
+기본 명령은 도구의 모든 option을 나열하는 synopsis가 아니라, 이 환경에서 대상을 정확히
+고르는 데 필수인 인자만 포함한 실행 가능한 출발점입니다. `--since`, `--tail`, `-n N`,
+`sed`·`tail` filter와 `--request-timeout`처럼 조회 범위를 제한하는 값은 안전한 첫 화면에는
+사용하되 기본 명령의 고정값으로 만들지 않습니다. Option 표에는 진단에서 실제로 조합할
+값, 기본값·배타 관계와 출력 손실 경계를 함께 적습니다.
 
 ## 공통 안전 경계
 
@@ -64,13 +72,13 @@ application runbook으로 이동합니다.
 ## 공통 실행 계약
 
 `120`~`180`의 명령은 target EC2에 SSH로 접속한 운영자가 **Bash**에서 실행합니다. 현재
-directory는 무관하고 상단 수동 확장 조회에는 별도 입력·Secret이 없습니다. Kubernetes
+directory는 무관하고 상단 빠른 확장 조회에는 별도 입력·Secret이 없습니다. Kubernetes
 조회는 문서에 적힌 `KUBECONFIG=/etc/kubernetes/admin.conf`를 그대로 사용합니다. Pod
 `describe`·`logs` 같은 상세 조회의 `namespace`·`pod_name`은 앞선 목록 출력에서 고릅니다.
 `110`은 SSH 전 AWS Console 조회이므로 이 host·shell 계약의 예외입니다.
 
-`120`~`180` 상세 문서의 상단 code block은 해당 영역의 확장 probe를 한 번에 실행하는 Bash
-묶음입니다. 각 probe는 실행 전에 구분자·이름·확인 목적을 출력하고, 실행 뒤에는 command
+`120`~`180` 상세 문서의 상단 code block은 해당 영역의 빠른 확장 probe를 한 번에 실행하는
+bounded preset입니다. 각 probe는 실행 전에 구분자·이름·확인 목적을 출력하고, 실행 뒤에는 command
 또는 pipeline producer의 exit code를 출력합니다. Block에는 `set -e`와 `&&`를 사용하지
 않으므로 한 명령이 실패해도 다음 독립 조회가 계속되고, 운영자는 나타난 stdout·stderr를
 함께 기록합니다. 실패를 정상으로
@@ -79,9 +87,10 @@ probe를 실행해 첫 이상 영역과 다음 owner를 고른 상태이며 plat
 뜻하지 않습니다. 원인을 해결한 뒤에는 전체 block 또는 실패했던 단일 명령부터
 재실행합니다.
 
-상단의 probe 설명은 빠른 실행·첫 판독만 소유합니다. Command 문법, option·출력 field,
-정상·이상 신호와 다른 증거를 결합하는 방법은 같은 상세 문서의 하단 command family
-section에서 이어서 확인합니다.
+상단의 probe 설명은 빠른 실행·첫 판독만 소유하며 시간·행 제한 값은 권장 영구값이
+아닙니다. Command 문법은 하단의 제한 없는 기본 명령에서 시작하고, option·조합 예시·출력
+field·정상·이상 신호와 다른 증거를 결합하는 방법을 같은 command family section에서
+이어 확인합니다.
 
 `sed -n '1,Np'`와 `tail -n N`은 producer 결과의 출력 행 수를 제한하는 filter입니다.
 Pipeline에서는 filter의 exit code만으로 producer 성공을 판단하지 않습니다. 상단 묶음이

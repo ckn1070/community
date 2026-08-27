@@ -7,7 +7,7 @@ AWS Security Group·route table과 Linux guest 상태를 섞지 않습니다.
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -90,7 +90,16 @@ Pipeline producer의 실패 여부는 상단 묶음이 출력한 producer exit c
 
 진단에서는 `ip`의 조회 subcommand만 사용합니다.
 
-### Option·subcommand
+### 기본 명령
+
+```bash
+ip address show
+```
+
+Interface 통계·route·policy는 아래 조회 subcommand로 바꿉니다. `add`, `delete`, `replace`,
+`set`은 진단 범위가 아닙니다.
+
+### 선택 option·subcommand
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -141,7 +150,16 @@ route와 함께 봅니다.
 
 ## `ss`: socket·listener 조회 command
 
-### Option
+### 기본 명령
+
+```bash
+ss
+```
+
+기본형은 연결된 non-listening socket을 보여줍니다. Listener·protocol·owner가 필요할 때 선택
+option을 붙입니다.
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -150,6 +168,10 @@ route와 함께 봅니다.
 | `-n` | Address·port를 숫자로 표시 | DNS/service name 변환 없이 exact port 확인 |
 | `-t` | TCP socket | SSH·Kubernetes API TCP 확인 |
 | `-p` | Socket owner process | 어떤 service가 listen하는가 |
+| `-a` | Listen·non-listen socket 모두 | 전체 state를 함께 볼 필요가 있는가 |
+| `-u` | UDP socket | DNS·CNI 등 UDP 경계를 확인하는가 |
+| `-e` | 확장 socket 정보 | UID·inode 등 추가 식별이 필요한가 |
+| `state STATE`·filter expression | 상태·port·address 제한 | 대량 출력에서 정확한 socket만 고르는가 |
 
 `127.0.0.1:6443`은 local host만, `0.0.0.0:22`는 모든 IPv4 local address에서 listen합니다.
 Security Group이 허용해도 listener가 없으면 접속할 수 없습니다.
@@ -177,7 +199,14 @@ Security Group이 허용해도 listener가 없으면 접속할 수 없습니다.
 
 ## `resolvectl`·`getent`: DNS 경로 조회 command
 
-### Subcommand·option
+### 기본 명령
+
+```bash
+resolvectl status
+getent ahostsv4 github.com
+```
+
+### 선택 subcommand·option
 
 | Command | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -194,9 +223,18 @@ DNS 성공은 TCP route·remote service 성공을 보장하지 않습니다.
 | `resolvectl` DNS Domain | Search·route domain | 의도하지 않은 domain routing |
 | `getent` address | NSS가 반환한 IPv4 | 결과 없음·예상 밖 address |
 
-## `curl`: bounded HTTPS egress probe
+## `curl`: HTTPS egress probe
 
-### Option
+### 기본 명령
+
+```bash
+curl https://github.com/
+```
+
+기본형은 response body를 출력하고 timeout 제한이 없습니다. 진단에서는 아래 option으로 대기와
+출력을 제한하되, 제한값 때문에 느린 성공을 실패로 분류할 수 있음을 함께 기록합니다.
+
+### 선택 option
 
 | Option | 뜻 | 안전·판정 경계 |
 | --- | --- | --- |
@@ -204,6 +242,12 @@ DNS 성공은 TCP route·remote service 성공을 보장하지 않습니다.
 | `--max-time 10` | 전체 요청 제한 | DNS·TLS·HTTP 전체 상한 |
 | `--output /dev/null` | Body 폐기 | 불필요한 content 미수집 |
 | `--write-out` | HTTP code·remote IP 출력 | 어느 endpoint까지 갔는지 확인 |
+| `--silent --show-error` | Progress는 숨기고 오류는 유지 | 자동 수집에서 stderr를 보존하는가 |
+| `--head` | Header만 요청 | Body 없이 HTTP 응답 경계를 보는가 |
+| `--verbose` | DNS·connect·TLS·header 상세 | Credential header가 없는 공개 endpoint에서 단계별 실패를 보는가 |
+
+`--connect-timeout 5 --max-time 10`은 상단 bounded preset입니다. 실제 service SLO나 평소
+latency를 근거로 값을 조정하며, timeout을 제거한 명령을 무기한 unattended 실행하지 않습니다.
 
 ### 출력 field
 

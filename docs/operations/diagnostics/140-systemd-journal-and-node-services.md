@@ -7,7 +7,7 @@ Unit의 현재 state, restart 결과와 journal을 연결하고 Kubernetes node�
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -82,7 +82,16 @@ Local log glob이 일치하지 않으면 해당 file이 없다는 증거로 기�
 
 ## `systemctl`: systemd unit 상태·정의 조회
 
-### Subcommand·option
+### 기본 명령
+
+```bash
+systemctl status kubelet.service
+```
+
+대상 unit과 조회 목적에 따라 `show`, `cat`, `--failed`를 바꿔 붙입니다. `status`의 최근 log
+행은 요약일 뿐 전체 journal이 아닙니다.
+
+### 선택 subcommand·option
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -142,7 +151,16 @@ Local log glob이 일치하지 않으면 해당 file이 없다는 증거로 기�
 
 ## `journalctl`: 시간·unit·priority 기준 log 조회
 
-### Option
+### 기본 명령
+
+```bash
+sudo -n journalctl -u kubelet.service
+```
+
+기본형은 접근 가능한 전체 보존 범위에서 해당 unit을 읽습니다. Boot·시간·priority·행 제한은
+사건에 맞춰 선택합니다.
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -153,6 +171,13 @@ Local log glob이 일치하지 않으면 해당 file이 없다는 증거로 기�
 | `-k` | Kernel message 선택 | OOM·I/O·driver 문제인가 |
 | `-n N` | 마지막 N행 | 출력 상한을 지켰는가 |
 | `--no-pager` | Pager 비활성 | 복사 실행이 멈추지 않는가 |
+| `--until TIME` | 종료 시각 제한 | 사건 뒤 후속 restart까지 포함하는가 |
+| `-f`, `--follow` | 새 entry를 계속 출력 | 재현 중 service 동작을 관찰하는가 |
+| `-r`, `--reverse` | 최신 entry부터 역순 출력 | 최근 원인을 먼저 훑는가 |
+| `-o short-iso-precise` | 정밀 ISO timestamp 출력 | Kubernetes·application log와 시각을 맞추는가 |
+
+`--since '-60 min'`, `-n 400`은 상단 bounded preset입니다. 전체 current boot가 필요하면 시간·행
+제한을 제거하고, 이전 boot는 `-b -1`처럼 boot selector를 바꿉니다.
 
 Error 한 줄만 보지 말고 앞의 configuration·dependency 실패와 뒤의 restart를 함께 읽습니다.
 
@@ -165,6 +190,12 @@ Error 한 줄만 보지 말고 앞의 configuration·dependency 실패와 뒤의
 | Message | Configuration·dependency·restart 내용 | 원인과 후속 restart를 함께 볼 수 있는가 |
 
 ## `ctr`: containerd plugin 조회
+
+### 기본 명령
+
+```bash
+sudo -n ctr plugins ls
+```
 
 ### Subcommand
 
@@ -201,7 +232,17 @@ kubelet service
 
 ## `tail`: Local static Pod log를 API 없이 조회
 
-### Option·대상
+### 기본 조회
+
+`/var/log/containers`는 실제 file이 아니라 `/var/log/pods` 아래 CRI log를 가리키는 symlink
+목록입니다. 먼저 일치하는 target을 확인한 뒤 file을 읽습니다.
+
+```bash
+sudo -n ls -l /var/log/containers/kube-apiserver-*.log
+sudo -n ls -l /var/log/containers/etcd-*.log
+```
+
+### 선택 option·대상
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -217,10 +258,15 @@ kubelet service
 | Component message | API server·etcd의 자유 형식 log | 첫 실패와 반복 후속 오류는 무엇인가 |
 | `tail` nonzero | Glob 불일치·read 실패 | Local log가 없는가, 읽기 실패인가 |
 
-API가 완전히 불통이면 `kubectl logs`도 실패합니다. 상단 수동 조회는
+API가 완전히 불통이면 `kubectl logs`도 실패합니다. 상단 빠른 조회는
 `/var/log/containers/kube-apiserver-*.log`와 `etcd-*.log`에 일치하는 각 file의 마지막
 160행을 읽습니다. Glob이 일치하지 않아 `tail`이 nonzero이면 local log가 없다는 증거로
 기록합니다.
+
+`tail -n 160`은 빠른 preset입니다. 현재 file 전체가 필요하면 `sudo -n less <정확한 path>`,
+계속 들어오는 행은 `sudo -n tail -f <정확한 path>`를 사용합니다. 회전 file까지 필요하면
+[170 Kubernetes workload 진단의 log 시간과 보존 경계](170-kubernetes-workload-network-events-and-logs.md#log-시간과-보존-경계)를
+따라 `/var/log/pods` 내부 file inventory를 먼저 확인합니다.
 
 Log가 없으면 다음 관계를 확인합니다.
 

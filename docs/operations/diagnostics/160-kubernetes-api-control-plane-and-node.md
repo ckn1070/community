@@ -8,7 +8,7 @@ workload를 받을 수 있는지를 위에서 아래로 구분합니다. `NotRea
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -80,7 +80,18 @@ local API server·etcd log로 내려갑니다.
 
 ### `get --raw`: API health endpoint 조회
 
-#### Endpoint·option
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl get --raw='/readyz'
+```
+
+`?verbose`는 named check를 펼치는 선택 query이고 `--request-timeout=10s`는 빠른 snapshot의
+client 제한입니다. 전체 응답 시간이 10초를 넘을 가능성을 조사할 때에는 timeout 값을
+조정하고, 제한 때문에 실패했는지 stderr와 함께 기록합니다.
+
+#### 선택 endpoint·option
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -101,7 +112,14 @@ API 부하, certificate·handshake, etcd를 다른 증거로 분리합니다.
 
 ### `get pods`: control-plane component 조회
 
-#### Resource·option
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl -n kube-system get pods
+```
+
+#### 선택 resource·option
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -120,7 +138,14 @@ API 부하, certificate·handshake, etcd를 다른 증거로 분리합니다.
 
 ### `get nodes`: Node 요약·condition 조회
 
-#### Resource·option
+#### 기본 명령
+
+```bash
+sudo -n env KUBECONFIG=/etc/kubernetes/admin.conf \
+  kubectl get nodes
+```
+
+#### 선택 resource·option
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -153,7 +178,13 @@ API 부하, certificate·handshake, etcd를 다른 증거로 분리합니다.
 
 ## `ls`: Static Pod manifest inventory 조회
 
-### Option·대상
+### 기본 명령
+
+```bash
+sudo -n ls /etc/kubernetes/manifests
+```
+
+### 선택 option·대상
 
 | 요소 | 뜻 | 진단 질문 |
 | --- | --- | --- |

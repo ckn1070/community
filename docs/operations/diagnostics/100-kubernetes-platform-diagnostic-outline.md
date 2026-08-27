@@ -2,7 +2,7 @@
 
 이 문서는 AWS EC2 위 Linux node, Kubernetes와 Argo CD에서 **어느 영역을 더 깊게 봐야
 하는지** 빠르게 찾는 read-only 진단입니다. 각 section에는 대표 probe 1~3개만 두며,
-원인 분석은 연결된 상세 문서의 상단 확장 묶음과 하단 해석을 사용합니다.
+원인 분석은 연결된 상세 문서의 상단 bounded preset과 하단 기본 명령·선택 option을 사용합니다.
 
 **기본 실행 위치:** SSH로 접속한 target EC2의 Bash terminal
 
@@ -34,12 +34,16 @@ SSH 자체가 불가능하면 먼저 [110 AWS EC2·접근 진단](110-aws-ec2-an
 | `09` Workload | Pod가 schedule·pull·start·ready 중 어디서 막혔는가 | Pending, pull error, crash, event warning |
 | `10` Argo CD | Core와 Application reconcile이 진행되는가 | component not ready, sync·health·condition 이상 |
 
-## 핵심 진단 명령
+## 핵심 진단 명령 (bounded preset)
 
 다음 묶음은 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 target EC2의 Bash에서
 실행합니다. 큰 `====` 구분자는 진단 영역과 핵심 질문을, 작은 `----` 구분자는 바로 뒤
 명령의 목적을 출력합니다. 각 probe 뒤의 exit code는 성공·실패를 숨기지 않고 다음 probe를
 계속 실행하기 위한 증거입니다.
+
+여기 적힌 `60분`, 마지막 `N`행과 request timeout은 첫 화면을 안전하게 제한하는 preset이지
+항상 적용할 조회 기준이 아닙니다. 전체·특정 시각·follow 조회는 이상 영역의 상세 문서에서
+기본 명령에 필요한 option을 붙여 실행합니다.
 
 `section`과 `probe`는 출력 제목을 만드는 함수이고, `set +e`는 한 조회의 실패 때문에 뒤의
 read-only 조회가 중단되지 않게 합니다. `PIPESTATUS`는 pipeline에서 앞 명령과 출력 제한

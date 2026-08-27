@@ -5,7 +5,7 @@ Instance health, resource metric과 packet이 EC2까지 도달하는 경로를 �
 
 **기본 실행 위치:** 장애 대상 AWS account·region의 AWS Console
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 다음 항목을 **같은 장애 시각** 기준으로 AWS Console에서 기록합니다. 설정은 바꾸지 않습니다.
 
@@ -30,6 +30,23 @@ Instance lifecycle·AWS host health
 ```
 
 AWS 경계가 정상이면 [150 Linux network 진단](150-linux-network.md)으로 내려갑니다.
+
+## 기본 조회 경로와 선택 조건
+
+AWS Console은 shell command 대신 `EC2 → Instances → <대상 instance>`를 기본 조회 경로로
+사용합니다. Instance ID·region·장애 시각을 먼저 고정하고, 아래 조건은 질문에 따라
+추가합니다.
+
+| 선택 조건 | 붙이는 위치 | 조합 기준 |
+| --- | --- | --- |
+| 장애 전·중·후 time range | Monitoring graph | 한 시점이 아니라 같은 metric의 추세 비교 |
+| 가능한 가장 작은 period | CloudWatch metric | Detailed monitoring 여부를 확인하고 짧은 장애가 큰 period 평균에 묻히지 않게 함 |
+| `Average` | CPU·network·latency | 구간 평균 추세 확인 |
+| `Maximum` | Status check·짧은 spike | 평균이 숨기는 순간 실패 확인 |
+| Volume ID·ENI ID | EBS·Network interface 상세 | Instance summary에서 고른 실제 attachment만 조회 |
+
+상단 표의 metric 묶음은 빠른 preset입니다. 기간·period·statistic을 고정값으로 보지 말고
+사건 시각과 평소 baseline에 맞게 바꿉니다.
 
 ## EC2 status check: AWS host와 guest 응답 구분
 

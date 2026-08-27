@@ -7,7 +7,7 @@
 
 **기본 시작 directory:** 제한 없음
 
-## 상단 수동 확장 조회
+## 상단 빠른 확장 조회 (bounded preset)
 
 [000 Platform 진단 공통 실행 계약](000-index.md#공통-실행-계약)에 따라 아래 Bash block
 전체를 한 번에 실행합니다.
@@ -78,7 +78,13 @@ printf '[result] lsof exit code: %s; sed exit code: %s\n' \
 
 ## `lsblk`: block device 계층 조회
 
-### Option
+### 기본 명령
+
+```bash
+lsblk
+```
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -96,7 +102,13 @@ printf '[result] lsof exit code: %s; sed exit code: %s\n' \
 
 ## `df`: mounted filesystem 용량 조회
 
-### Option
+### 기본 명령
+
+```bash
+df
+```
+
+### 선택 option
 
 | Option | 뜻 | 출력 단위 |
 | --- | --- | --- |
@@ -125,7 +137,13 @@ Byte 여유가 있어도 `IUse%`가 한계에 가까우면 작은 file 다량 �
 
 ## `findmnt`: mount source·option 조회
 
-### Option
+### 기본 명령
+
+```bash
+findmnt
+```
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -146,10 +164,20 @@ Kernel은 filesystem 오류 뒤 보호를 위해 read-only로 remount할 수 있
 
 ## `du`: directory 사용량 조회
 
-### Option
+### 기본 명령
+
+```bash
+sudo -n du -s /var
+```
+
+이 기본형은 `/var` 합계 하나를 계산합니다. 하위 directory별로 좁힐 때 아래 depth·filesystem·표시
+option을 붙이며 큰 tree에서는 I/O 부하를 고려합니다.
+
+### 선택 option
 
 | Option | 뜻 | 안전 경계 |
 | --- | --- | --- |
+| `-s` | 지정 target마다 합계만 출력 | 기본 전체 tree 출력을 피하고 첫 크기만 확인 |
 | `-x` | 다른 filesystem으로 넘어가지 않음 | 중복·원격 mount 탐색 방지 |
 | `-h` | Human-readable size | `sort -h`와 결합 |
 | `--max-depth=1` | 한 단계만 합계 | 무제한 tree scan 방지 |
@@ -166,7 +194,10 @@ Kernel은 filesystem 오류 뒤 보호를 위해 read-only로 remount할 수 있
 
 ## `sort`·`tail`: Directory 결과 정렬·상한
 
-### Option·출력
+`sort`와 `tail`은 원본 조회가 아니라 `du` 결과를 읽기 쉽게 만드는 선택 filter입니다.
+제한 없는 producer 원문이 필요하면 pipeline에서 제거합니다.
+
+### 선택 filter·출력
 
 | Command·option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -178,7 +209,13 @@ producer·filter 분리 원칙으로 판정합니다.
 
 ## `journalctl`: Kernel filesystem·I/O 오류 조회
 
-### Option
+### 기본 명령
+
+```bash
+sudo -n journalctl -k
+```
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
@@ -186,6 +223,8 @@ producer·filter 분리 원칙으로 판정합니다.
 | `-b` | 현재 boot만 선택 | 이전 boot 사건과 섞이지 않았는가 |
 | `--grep=PATTERN` | I/O·filesystem·read-only pattern 선택 | 용량 외 오류 단서가 있는가 |
 | `--no-pager`·`-n 200` | Pager 없이 최근 최대 200행 | 출력 상한을 지켰는가 |
+| `--since TIME`·`--until TIME` | 사건 시작·종료 시각 | 장애 구간과 EBS metric 구간을 맞췄는가 |
+| `-f`, `--follow` | 새 kernel entry를 계속 출력 | 재현 중 I/O 오류가 새로 생기는가 |
 
 ### 출력 field
 
@@ -197,7 +236,13 @@ producer·filter 분리 원칙으로 판정합니다.
 
 ## `lsof +L1`: 삭제됐지만 열린 file 조회
 
-### Option
+### 기본 명령
+
+```bash
+sudo -n lsof +L1
+```
+
+### 선택 option
 
 | Option | 뜻 | 진단 질문 |
 | --- | --- | --- |
