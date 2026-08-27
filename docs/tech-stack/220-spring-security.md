@@ -44,6 +44,13 @@
 - 인증 실패는 `401 UNAUTHORIZED`, 권한 부족은 `403 FORBIDDEN`으로 구분합니다.
 - Security 오류 응답은 REST API 공통 `ProblemDetail` schema를 따릅니다.
 - HTTP Basic과 form login은 business API에서 사용하지 않습니다.
+- Staging Swagger UI·OpenAPI JSON은 `/api/**`보다 우선하는 별도 filter chain에서만 Form
+  Login과 `HttpSession`을 사용합니다. 기존 account의 `ROLE_ADMIN` 또는
+  `ROLE_SUPER_ADMIN`, `SESSION_FULL`, `PASSWORD_CHANGE_NOT_REQUIRED`를 모두 요구하고 CSRF
+  보호를 유지합니다.
+- Swagger Form Login은 기존 비밀번호 검증·실패 감사 정책을 재사용하지만 JWT와 refresh
+  token을 발급하지 않습니다. 해당 session은 무상태 `/api/**` Bearer JWT 인증으로
+  재사용하지 않습니다.
 - CORS 운영 정책과 rate limit은 관련 기능 요구가 시작될 때 별도 작업에서 설계합니다.
 
 ## Bearer JWT 기준
@@ -107,7 +114,8 @@ Spring Security 공식 문서는 `authorizeHttpRequests`로 요청 수준 author
 
 ## 아키텍처 경계 적용
 
-- Security configuration은 `config` 또는 `adapter.out.security`에 둡니다.
+- Security configuration은 `config`, `adapter.in.web`의 경계별 filter chain 또는
+  `adapter.out.security`에 둡니다.
 - 인증된 사용자 정보는 application이 이해하는 모델로 변환합니다.
 - Domain은 `SecurityContextHolder`를 참조하지 않습니다.
 - UseCase는 필요한 권한 정보를 명시적 parameter나 policy port로 받습니다.

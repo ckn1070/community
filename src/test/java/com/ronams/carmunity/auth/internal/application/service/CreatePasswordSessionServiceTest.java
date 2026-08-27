@@ -62,15 +62,16 @@ class CreatePasswordSessionServiceTest {
     refreshTokenIssuer = new FakeRefreshTokenIssuerPort();
     identifierHasher = new FakeIdentifierHasherPort();
     resultRecorder = new FakePasswordLoginResultRecorder();
-    service =
-        new CreatePasswordSessionService(
+    AuthenticatePasswordService passwordAuthentication =
+        new AuthenticatePasswordService(
             accountLookup,
             passwordVerifier,
-            accessTokenIssuer,
-            refreshTokenIssuer,
             identifierHasher,
             resultRecorder,
             Clock.fixed(NOW, ZoneOffset.UTC));
+    service =
+        new CreatePasswordSessionService(
+            passwordAuthentication, accessTokenIssuer, refreshTokenIssuer, resultRecorder);
   }
 
   /** ACTIVE 계정은 full session으로 access/refresh token을 받고 실패 횟수 초기화 저장 흐름까지 진행합니다. */
@@ -276,6 +277,9 @@ class CreatePasswordSessionServiceTest {
     public void recordSuccess(PasswordLoginSuccess success) {
       this.success = success;
     }
+
+    @Override
+    public void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt) {}
 
     @Override
     public void recordKnownFailure(

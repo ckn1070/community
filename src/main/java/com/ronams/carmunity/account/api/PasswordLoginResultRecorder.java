@@ -19,6 +19,14 @@ public interface PasswordLoginResultRecorder {
   void recordSuccess(PasswordLoginSuccess success);
 
   /**
+   * refresh token을 만들지 않는 browser session 로그인 성공을 기록합니다.
+   *
+   * @param accountPublicId 인증된 account public id입니다.
+   * @param occurredAt 로그인 성공 시각입니다.
+   */
+  void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt);
+
+  /**
    * account를 특정한 로그인 실패를 기록합니다.
    *
    * @param accountPublicId 실패한 account public id입니다.

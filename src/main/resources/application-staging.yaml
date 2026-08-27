@@ -1,0 +1,13 @@
+# staging profile은 production 운영 설정을 유지하면서 관리자용 API 문서만 다시 활성화합니다.
+spring:
+  web:
+    resources:
+      # springdoc Swagger UI의 webjar resource handler를 staging에서만 제공합니다.
+      add-mappings: true
+
+springdoc:
+  # staging 문서는 별도 Form Login 보안 체인이 보호합니다.
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

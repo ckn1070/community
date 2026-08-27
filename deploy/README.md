@@ -12,7 +12,7 @@ application desired state를 소유합니다. 구성요소의 작동 원리와 �
 | 경로 | 소유하는 내용 | 소비자·변경 주체 |
 | --- | --- | --- |
 | `base/` | Deployment, Service와 PreSync Migration Job의 환경 공통 구조 | Staging overlay가 조합하고 GitOps pull request가 변경 |
-| `overlays/stg/` | Namespace, exact ECR digest, 공개 application 설정, NodePort patch와 public Ingress | `car-community-stg` Argo CD Application이 `main`에서 render·sync |
+| `overlays/stg/` | Namespace, exact ECR digest, 공개 application 설정, `production,staging` application profile, NodePort patch와 public Ingress | `car-community-stg` Argo CD Application이 `main`에서 render·sync |
 | `overlays/stg/pre-sync/` | Git으로 관리하는 DB URL과 pinned RDS CA ConfigMap | Migration Job과 runtime Deployment가 mount·참조 |
 
 AppProject와 Application 자체, repository credential은
@@ -29,6 +29,9 @@ runtime·migrator·auth·notification Secret은 Git 밖 bootstrap 입력이며 �
 - Argo CD 최초 연결 뒤 manifest 변경과 rollback은 review된 Git 변경으로 수행합니다.
   Live resource를 직접 수정해 Git desired state와 다른 장기 상태를 만들지 않습니다.
 - Secret actual value, local `.env`, kubeconfig와 cloud credential은 commit하지 않습니다.
+- Application Deployment만 `production,staging` profile을 사용해 관리자용 Swagger를
+  활성화합니다. PreSync Migration Job은 web endpoint가 필요 없으므로 `production`을
+  유지합니다.
   공개 설정과 Git 밖 Secret의 owner를 바꿀 때에는 application bootstrap·rotation 절차와
   consumer를 함께 확인합니다.
 - Ingress는 application routing intent만 소유합니다. Controller release·IAM·subnet tag·ACM

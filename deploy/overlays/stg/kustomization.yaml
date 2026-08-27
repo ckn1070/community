@@ -10,6 +10,7 @@ resources:
 
 patches:
   - path: service-nodeport-patch.yaml
+  - path: deployment-profile-patch.yaml
 
 configMapGenerator:
   - name: car-community-notification-config

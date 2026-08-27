@@ -3,6 +3,7 @@ package com.ronams.carmunity.config;
 import java.util.function.Supplier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -45,6 +46,7 @@ public class ApiSecurityConfig {
    * 맞춘 방어이므로, 쿠키 인증을 쓰지 않는 현재 API 경계에서는 제외합니다.
    */
   @Bean
+  @Order(2)
   SecurityFilterChain apiSecurityFilterChain(
       HttpSecurity http,
       ApiSecurityProblemHandler securityProblemHandler,

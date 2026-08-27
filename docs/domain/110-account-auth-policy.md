@@ -215,6 +215,12 @@ Spring Security의 기본 `SCOPE_` prefix 변환은 사용하지 않습니다.
 | `SUSPENDED` | 거부 |
 | `WITHDRAWN` | 거부 |
 
+Staging Swagger Form Login은 같은 email·password 검증과 account 상태 판정을 재사용하지만
+업무 API session을 생성하지 않습니다. `ACTIVE`, `password_change_required = false`이면서
+`ROLE_ADMIN` 또는 `ROLE_SUPER_ADMIN`인 경우에만 Swagger 경로용 browser session을 만들고,
+refresh token은 발급·저장하지 않습니다. 성공 시 실패 횟수, `last_login_at`과
+`PASSWORD_LOGIN` 성공 감사 이벤트만 갱신합니다.
+
 Refresh token 재발급은 저장된 refresh token을 검증한 뒤 DB에서 account 상태, role, `password_change_required`를 다시 조회합니다.
 
 | 조건 | 재발급 결과 |

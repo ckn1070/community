@@ -19,7 +19,26 @@
 ## 현재 구현 경계
 
 현재 애플리케이션은 `springdoc-openapi-starter-webmvc-ui`와 Controller·DTO annotation을
-사용하고, production profile에서는 API docs와 Swagger UI를 비활성화합니다.
+사용합니다. production profile에서는 API docs와 Swagger UI를 비활성화하고, staging
+application은 `production,staging` profile 합성으로 문서를 다시 활성화합니다.
+
+확인 경로와 접근 조건은 다음과 같습니다.
+
+| 환경 | Swagger UI | OpenAPI JSON | 접근 조건 |
+| --- | --- | --- | --- |
+| local 기본 실행 | `http://localhost:9097/swagger-ui.html` | `http://localhost:9097/v3/api-docs` | local 개발 경계에서 별도 문서 로그인 없음 |
+| staging | `https://stg-api.example.com/swagger-ui.html` | `https://stg-api.example.com/v3/api-docs` | 기존 `ROLE_ADMIN` 또는 `ROLE_SUPER_ADMIN` account의 Form Login |
+| production | 비활성 | 비활성 | endpoint를 생성하지 않음 |
+
+YAML 명세는 각 환경의 OpenAPI JSON 경로 대신 `/v3/api-docs.yaml`에서 확인할 수 있으며
+staging에서는 같은 Form Login session으로 보호합니다.
+
+Staging 로그인은 `ACTIVE`, full session, password-change-not-required 조건도 함께 요구합니다.
+Spring Security 기본 로그인 화면을 사용하며 성공한 browser session은 Swagger 경로에서만
+소비합니다. `/api/**`는 계속 무상태 Bearer JWT 경계이므로 Swagger의 Try it out으로 보호
+API를 호출하려면 문서 로그인과 별도로 유효한 access token을 `Authorize`에 입력해야 합니다.
+현재 staging replica는 1개이므로 in-memory `HttpSession`을 사용하며 replica를 늘릴 때 sticky
+session 또는 공유 Spring Session 저장소를 재검토합니다.
 
 생성 명세에는 다음 공통 계약을 중앙에서 적용합니다.
 
@@ -106,3 +125,4 @@ Spring Boot 4 지원은 springdoc v3 라인을 기준으로 확인합니다.
 - **security scheme 기준**: [Spring Security](220-spring-security.md)
 - **DTO·domain 경계**: [경계와 매핑 규칙](../architecture/220-boundary-and-mapping-rules.md)
 - **구현 결과**: [OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)
+- **staging 접근 보호**: [008 Staging Swagger 관리자 접근 보호](../work-items/improvements/2026/008-staging-swagger-admin-access.md)

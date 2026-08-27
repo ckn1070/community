@@ -264,6 +264,16 @@ class AccountPersistenceAdapter
         AuthEventJpaEntity.loginSuccess(account.id(), success.refreshToken().issuedAt()));
   }
 
+  /** refresh token 없이 browser session 로그인 상태와 성공 감사 이벤트를 원자적으로 반영합니다. */
+  @Override
+  @Transactional
+  public void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt) {
+    AccountJpaEntity account = findAccountByPublicId(accountPublicId);
+    accountRepository.updateLastLoginAt(account.id(), occurredAt);
+    passwordCredentialRepository.resetLoginFailureState(account.id(), occurredAt);
+    authEventRepository.save(AuthEventJpaEntity.loginSuccess(account.id(), occurredAt));
+  }
+
   /**
    * account를 특정한 로그인 실패를 credential 상태와 감사 이벤트로 기록합니다.
    *

@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: car-community
+spec:
+  template:
+    spec:
+      containers:
+        - name: application
+          env:
+            # production 운영 기준 위에 staging 전용 Swagger 설정과 보안 체인을 적용합니다.
+            - name: SPRING_PROFILES_ACTIVE
+              value: production,staging

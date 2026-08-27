@@ -171,6 +171,9 @@ docker info
 기본 HTTP port는 `9097`이며 local profile의 Swagger UI는
 `http://localhost:9097/swagger-ui.html`에서 확인할 수 있습니다. 환경변수 전체와 secret
 기준은 [100 로컬 개발 환경](docs/development/100-local-development.md)을 따릅니다.
+Staging은 `https://stg-api.example.com/swagger-ui.html`에서 기존 관리자 또는 최고 관리자
+계정으로 로그인해 확인합니다. 환경별 노출·인증 조건과 OpenAPI JSON 경로는
+[260 OpenAPI 문서화 가이드](docs/tech-stack/260-openapi.md)를 따릅니다.
 
 전체 문서 탐색은 [000 문서 목차](docs/000-index.md), 실제 환경 구축·점검·복구는
 [000 운영 문서 목차](docs/operations/000-index.md)에서 시작합니다.

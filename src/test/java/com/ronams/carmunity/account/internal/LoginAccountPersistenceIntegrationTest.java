@@ -104,6 +104,48 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
         .isOne();
   }
 
+  /** browser session 로그인 성공은 refresh token 없이 실패 상태, last login과 감사 이벤트만 갱신합니다. */
+  @Test
+  void recordsInteractiveLoginSuccessWithoutRefreshToken() {
+    UUID accountId = registerMember("interactive-login@example.com", "Interactive Login");
+    alignStoredTimestampsBefore(accountId, NOW.minusSeconds(120));
+    Long internalAccountId = internalId(accountId);
+    resultRecorder.recordKnownFailure(
+        accountId,
+        "3".repeat(64),
+        PasswordLoginFailureReason.PASSWORD_MISMATCH,
+        NOW.minusSeconds(60));
+
+    resultRecorder.recordInteractiveSuccess(accountId, NOW);
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "select count(*) from refresh_token where account_id = ?",
+                Integer.class,
+                internalAccountId))
+        .isZero();
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "select failed_login_count from account_password_credential where account_id = ?",
+                Integer.class,
+                internalAccountId))
+        .isZero();
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "select last_login_at from account where id = ?", Instant.class, internalAccountId))
+        .isEqualTo(NOW);
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                select count(*)
+                from auth_event
+                where account_id = ? and event_type = 'PASSWORD_LOGIN' and result = 'SUCCESS'
+                """,
+                Integer.class,
+                internalAccountId))
+        .isOne();
+  }
+
   /** account를 특정한 실패는 credential 실패 횟수와 PASSWORD_LOGIN 실패 reason을 account에 연결합니다. */
   @Test
   void recordsKnownPasswordLoginFailure() {

@@ -113,6 +113,9 @@ Deployment는 runtime DB Secret만 사용하고 `SPRING_FLYWAY_ENABLED=false`를
 DB·auth는 explicit key reference로 제한하고, runtime에서 함께 진화하는 notification
 ConfigMap과 Secret만 `envFrom`으로 소비합니다. Migration Job에는 notification credential을
 주입하지 않습니다. 따라서 replica가 늘거나 재시작돼도 migration을 실행하지 않습니다.
+Staging overlay는 Deployment의 profile만 `production,staging`으로 바꿔 production 운영
+기준 위에 관리자용 Swagger 설정과 보안 체인을 추가합니다. HTTP endpoint가 없는 Migration
+Job은 `production` profile만 유지합니다.
 
 Base Service는 환경 공통 port contract을 소유하고 staging overlay가 `NodePort`로 patch합니다.
 고정 `nodePort`는 주지 않고 Kubernetes가 할당하게 하며, self-managed kubeadm·Calico
