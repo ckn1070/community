@@ -14,6 +14,7 @@ Done
 - 이후 이메일 인증·관리자 초대 기능에서 provider exception을 직접 기록하는 회귀가 추가됐으며, 원래 004 결과를 무효화하지 않고 [Notification provider exception logging 회귀](../../bugs/2026/001-notification-provider-exception-logging.md)가 수정 책임을 소유합니다.
 - 현재 `ApiException`이 5xx를 나타내는 경로는 공통 ERROR logging을 우회합니다. 이 별도 경계 결함은 [5xx ApiException 공통 logging 누락](../../bugs/2026/004-api-exception-5xx-logging.md)이 소유합니다.
 - 남은 책임: 이 작업에는 없습니다. 현재 기준 위반은 위 Bug들로 분리했습니다.
+- 정상·거부·실패 API의 공통 완료 이벤트와 고객 상관관계 확장은 후속 [015 API 운영 추적성](015-api-operational-traceability.md)이 소유합니다.
 
 ## 범위
 

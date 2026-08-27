@@ -44,6 +44,7 @@ public class ApiErrorResponseFactory {
       ErrorCode errorCode, WebRequest request, List<FieldErrorDetail> fieldErrors) {
     ProblemDetail problemDetail = createBase(errorCode);
     setInstance(problemDetail, request);
+    bindErrorCode(errorCode, request);
     setFieldErrors(problemDetail, fieldErrors);
     return problemDetail;
   }
@@ -58,6 +59,7 @@ public class ApiErrorResponseFactory {
   public ProblemDetail create(ErrorCode errorCode, HttpServletRequest request) {
     ProblemDetail problemDetail = createBase(errorCode);
     problemDetail.setInstance(URI.create(request.getRequestURI()));
+    ApiRequestLogContext.bindErrorCode(request, errorCode.code());
     return problemDetail;
   }
 
@@ -73,6 +75,12 @@ public class ApiErrorResponseFactory {
   private void setInstance(ProblemDetail problemDetail, WebRequest request) {
     if (request instanceof ServletWebRequest servletWebRequest) {
       problemDetail.setInstance(URI.create(servletWebRequest.getRequest().getRequestURI()));
+    }
+  }
+
+  private void bindErrorCode(ErrorCode errorCode, WebRequest request) {
+    if (request instanceof ServletWebRequest servletWebRequest) {
+      ApiRequestLogContext.bindErrorCode(servletWebRequest.getRequest(), errorCode.code());
     }
   }
 

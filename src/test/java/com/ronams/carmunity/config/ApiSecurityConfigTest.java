@@ -19,7 +19,10 @@ import com.ronams.carmunity.auth.internal.adapter.out.security.JwtTokenConfigura
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -43,7 +46,9 @@ import org.springframework.web.bind.annotation.RestController;
  * 있습니다.
  */
 @WebMvcTest(controllers = ApiSecurityConfigTest.SecurityTestController.class)
+@ExtendWith(OutputCaptureExtension.class)
 @Import({
+  ApiRequestActorContextInterceptor.class,
   ApiErrorResponseFactory.class,
   ApiExceptionHandler.class,
   ApiRequestContextFilter.class,
@@ -170,6 +175,67 @@ class ApiSecurityConfigTest {
         .andExpect(status().isOk())
         .andExpect(header().exists(ApiRequestIdContext.REQUEST_ID_HEADER))
         .andExpect(header().string(ApiRequestIdContext.REQUEST_ID_HEADER, not(blankString())));
+  }
+
+  /** 인증된 새 API도 별도 Controller 로그 없이 route와 account public id가 공통 완료 로그에 남아야 합니다. */
+  @Test
+  void logsAuthenticatedApiCompletionWithActorAndRoute(CapturedOutput output) throws Exception {
+    mockMvc
+        .perform(
+            get("/api/protected")
+                .header(ApiRequestIdContext.REQUEST_ID_HEADER, "request-observable")
+                .with(fullSessionJwt()))
+        .andExpect(status().isOk());
+
+    assertThat(output.getOut())
+        .contains("event=api.request.completed")
+        .contains("requestId=request-observable")
+        .contains("path=/api/protected")
+        .contains("route=/api/protected")
+        .contains("operation=GET /api/protected")
+        .contains("status=200")
+        .contains("result=success")
+        .contains("actorId=0f3445fd-5f22-4f74-9a9d-1ff0c68a924a")
+        .contains("durationMs=");
+  }
+
+  /** Security가 차단한 API도 공통 완료 로그에서 거부 결과와 공개 error code를 확인할 수 있어야 합니다. */
+  @Test
+  void logsSecurityRejectionWithErrorCode(CapturedOutput output) throws Exception {
+    mockMvc
+        .perform(
+            get("/api/protected")
+                .header(ApiRequestIdContext.REQUEST_ID_HEADER, "request-unauthorized"))
+        .andExpect(status().isUnauthorized());
+
+    assertThat(output.getOut())
+        .contains("event=api.request.completed")
+        .contains("requestId=request-unauthorized")
+        .contains("path=/api/protected")
+        .contains("route=unmatched")
+        .contains("status=401")
+        .contains("result=rejected")
+        .contains("errorCode=UNAUTHORIZED");
+  }
+
+  /** MVC 진입 전에 권한이 거부돼도 인증된 account public id를 완료 로그에 남겨야 합니다. */
+  @Test
+  void logsAuthenticatedSecurityRejectionWithActor(CapturedOutput output) throws Exception {
+    mockMvc
+        .perform(
+            get("/api/v1/admin/dashboard")
+                .header(ApiRequestIdContext.REQUEST_ID_HEADER, "request-forbidden")
+                .with(fullSessionJwt("ROLE_MEMBER", false)))
+        .andExpect(status().isForbidden());
+
+    assertThat(output.getOut())
+        .contains("event=api.request.completed")
+        .contains("requestId=request-forbidden")
+        .contains("path=/api/v1/admin/dashboard")
+        .contains("status=403")
+        .contains("result=rejected")
+        .contains("actorId=0f3445fd-5f22-4f74-9a9d-1ff0c68a924a")
+        .contains("errorCode=FORBIDDEN");
   }
 
   /** 비밀번호 변경 필요 계정은 full session이어도 일반 보호 API를 호출할 수 없습니다. */

@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
@@ -47,6 +48,10 @@ public class ApiSecurityProblemHandler implements AuthenticationEntryPoint, Acce
       HttpServletResponse response,
       AccessDeniedException accessDeniedException)
       throws IOException {
+    var authentication = SecurityContextHolder.getContext().getAuthentication();
+    if (authentication != null && authentication.isAuthenticated()) {
+      ApiRequestLogContext.bindActor(request, authentication.getName());
+    }
     write(request, response, CommonErrorCode.FORBIDDEN);
   }
 
