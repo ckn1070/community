@@ -23,6 +23,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -32,6 +33,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** staging Swagger 전용 browser session 체인과 무상태 API 체인의 분리를 검증합니다. */
 @ActiveProfiles("staging")
+@TestPropertySource(
+    properties = {
+      "carmunity.auth.jwt.issuer=carmunity-api-test",
+      "carmunity.auth.jwt.access-token-ttl=15m",
+      "carmunity.auth.jwt.hmac-secret=test-hmac-secret-must-be-at-least-32-bytes",
+      "carmunity.auth.login.identifier-hash.hmac-secret=test-identifier-secret-must-be-at-least-32-bytes"
+    })
 @WebMvcTest(controllers = StagingSwaggerSecurityConfigTest.SecurityTestController.class)
 @Import({
   ApiRequestActorContextInterceptor.class,
