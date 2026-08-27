@@ -110,6 +110,14 @@ payload를 두지 않습니다.
 - 구현·검증 phase는 Git index·ref를 직접 변경하지 않습니다. 같은 요청에 commit이
   포함돼 있어도 후보를 동결한 뒤 별도 Git phase로 전환해
   [Git 마무리](.agents/skills/git-finalize/SKILL.md)를 호출합니다.
+- 첫 local·remote ref mutation 또는 pull request API 호출 전에는 현재 사용자 원문의
+  positive source를 [커밋 워크플로우의 Git topology projection](docs/workflow/300-commit-workflow.md#1-입력과-git-효과)에
+  결속해 `push source → remote target`, 새 branch와 PR의 생성 여부·권한을 사용자
+  commentary에 먼저 투영합니다. `commit`·`push`, runbook의 운영 정책, 도구의 기본 prefix는
+  새 branch나 PR 권한을 만들지 않으며, 이 projection이 없으면 관련 도구를 호출하지 않습니다.
+  승인된 새 branch는 raw SHA의 remote ref 생성도 포함해
+  [Git Worktree 워크플로우의 Naming과 배치](docs/workflow/310-git-worktree-workflow.md#naming과-배치)에
+  이름을 대조한 뒤에만 생성합니다.
 - 첫 `git add`·`git commit` 전에 Git 마무리가 요구하는 source-backed 예정 commit
   순서를 사용자 commentary에 투영합니다. 이 phase 인계와 투영이 없으면 상위 작업명이나
   전체 diff를 하나의 commit 경계로 간주하지 않고 Git mutation을 호출하지 않습니다.
