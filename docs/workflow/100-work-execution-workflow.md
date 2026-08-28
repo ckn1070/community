@@ -51,6 +51,12 @@ owner를 실제로 읽습니다. 읽은 content identity `R`, 현재 원자 `G`,
 Catalog description, skill 이름, 이전 turn의 기억과 `읽었다`는 자기 선언은 실제 load와
 결속 증거가 아닙니다.
 
+한 tool 호출에서 여러 source를 함께 요청했거나 출력이 잘림·pagination·token 제한으로
+끝까지 반환되지 않았으면 해당 source는 실제로 읽은 `R`이 아닙니다. 그 결과를 받은
+consumer는 같은 discovery phase에 남아 source별로 끝까지 다시 읽고 content identity를
+동결하기 전에는 specialist 결과 `P`를 만들거나 판단·writer·review·Git으로 인계하지
+않습니다.
+
 Skill 명시는 절차를 선택할 뿐 권한을 만들지 않습니다. 질문·언급이면 읽기 전용으로,
 실행 동사면 그 원자의 실행 범위로 판정하고, 사용자가 더 좁은 권한이나 금지 효과를
 명시하면 이를 보존합니다. Exact source를 먼저 읽겠다는 최소 안내는 읽을 source와
@@ -651,6 +657,11 @@ format·protocol·actor 같은 선행 선택의 권위 source가 아닙니다. �
    결속합니다. Path·확장자·상위 skill 이름으로 분류하지 않으며, 새 executable·hook·자동
    verifier와 hard gate는 도구 workflow의 도입·존치 판정을 통과하지 않으면 후보에서
    제거합니다.
+
+   Reviewer finding이나 correction이 기존 후보의 actor·배치·영향 범위 또는 외부 효과를
+   바꾸면 finding consumer가 그 새 효과를 현재 positive source와 decision authority에
+   다시 mapping하고 위 입장 gate를 직접 호출합니다. Reviewer의 중요도·기계적 차단 추천과
+   앞 후보의 검증 성공은 이 재입장이나 specialist 결과 `P`를 대신하지 않습니다.
 3. 입장 gate를 통과한 관찰 효과, 원래 결과·제약·oracle과 각각의 독립 source를 reviewer
    입력으로 고정하고 후보 식별자를 동결한 뒤 read-only discovery review를 한 번 수행합니다.
    후보가 만든 test·문서는 구현과 설명 evidence로 검토하되 요구 source로 승격하지 않습니다.
