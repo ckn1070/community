@@ -681,6 +681,43 @@ Finding이 도착할 때마다 active writer에게 patch를 지시하거나 revi
 patch·review를 반복하지 않고 후보와 원인 phase를 `Invalidated`로 돌려 새 라운드를
 구성합니다.
 
+이 순서는 설명용 목록이 아니라 actor 호출 전 admission state입니다. Review를 사용하는
+라운드는 세션 원장에 다음 상태 중 하나만 가지며, 현재 Agent는 각 tool 호출 직전에 허용된
+전이인지 대조합니다.
+
+```text
+Writing
+→ Frozen(candidate identity·digest, active writer=0)
+→ DiscoveryRunning(active review set)
+→ FindingsCollected(active review=0, 전체 finding·처분 동결)
+├─ correction=0 → ClosureRunning(same candidate, active review set)
+└─ correction>0 → Correcting
+   → Frozen(new candidate identity·digest, active writer=0)
+   → ClosureRunning(new candidate, active review set)
+ClosureRunning → Closed 또는 Invalidated
+```
+
+- 첫 discovery·closure reviewer 호출 전에 `Frozen`의 candidate identity·digest와
+  `active writer=0`을 실제 상태에서 확인합니다. 하나라도 없으면 reviewer를 호출하지
+  않습니다.
+- `DiscoveryRunning`·`ClosureRunning`에서는 read-only source 확인과 reviewer 대기만
+  허용합니다. 첫 finding이 도착해도 나머지 active review가 terminal이 되기 전에는
+  writer·patch를 시작하지 않습니다.
+- 후보가 review 중 바뀌면 진행 중인 review 전체와 그 finding을 `Invalidated`로 처리합니다.
+  변경 뒤 도착한 finding을 새 후보의 correction 입력이나 완료 증거로 재사용하지 않습니다.
+- `FindingsCollected`는 예정한 reviewer가 모두 terminal이고 현재 Agent가 finding 전체의
+  권위·blocking·처분을 한 번에 동결한 상태입니다. 수정할 finding이 0개이면 같은 candidate로
+  closure review를 호출하고, 하나 이상이면 이 상태에서만 한 correction batch로 전이합니다.
+- 단순 진행 상태 질문은 현재 phase를 관찰하는 edge이며 위 상태를 바꾸지 않습니다. 답변을
+  위해 active reviewer를 interrupt하거나 writer·review 원자를 중단 상태로 바꾸지 않고,
+  보고 뒤 같은 candidate·review set·남은 terminal gate에서 계속합니다. 사용자가 현재
+  작업의 중단·취소·대체나 주체·범위·권한 이의를 명시한 경우에만 Bootstrap 판정 결과에
+  따라 기존 phase를 중단하거나 `Invalidated`로 전이합니다.
+
+이 phase state는 세션 원장의 기존 `I`와 `C`를 소비하며 별도 repository artifact·registry·
+자동 verifier를 만들지 않습니다. Review tool의 실행 성공, reviewer 한 명의 조기 finding,
+상태 보고와 commentary는 phase 전이 증거를 대신하지 않습니다.
+
 실행 중 처음 드러난 source·환경·검증 증거는 이 문서의 새 발견·실제 차단 판정으로
 분류합니다. 안전한 단위는 계속 수행하고, 새 증거로 생긴 사용자 소유 결정이 남은 결과에
 필요하면 그 입력 전체를 한 번에 모아 다음 결정 라운드를 엽니다. 첫 mutation 전에 이미
