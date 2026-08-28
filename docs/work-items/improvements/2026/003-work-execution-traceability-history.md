@@ -736,3 +736,97 @@ Release checklist의 현재 hotfix 상태로 명사를 바꿔도 같은 결론�
 두 전이나 단일 책임 artifact의 단순 질문은 불필요하게 합치거나 확대하지 않아야 합니다.
 독립 행동 검증은 통제 후보의 모델링 효과와 현재 evaluator·runner invocation만 증명하며,
 미래 설명 actor의 실제 호출을 완료로 승격하지 않습니다.
+
+## 사건 1 — 카탈로그 개발 설계를 질문 없이 확정한 현재 실패
+
+### 사건과 최초 단절
+
+기능 범위 질문 뒤 카탈로그 계획은 API 주소, 상세 정보 범위, DB 구조, 초기 데이터와 갱신
+책임을 사용자 선택 없이 확정하고 `Planned`·`남은 사용자 소유 결정 없음`으로 기록했습니다.
+후속 댓글이 API 계층, 차량 정보 범위와 seed 취득 방법을 직접 문제 삼았을 때에도 Agent는
+API 기술 추천을 직접 재검토해 답하지 않았고 정보 범위·데이터 운영 책임도 사용자 결정으로
+분리하지 않은 채 `/cars/...`가 맞다는 결론과 문서 반영을 먼저 투영했습니다. 사용자는 다시
+작업을 중단하고 개발 설계 결정을 왜 묻지 않았는지 지적해야 했습니다.
+
+첫 단절은 계획 문서 작성이나 댓글 mutation이 아니라 그보다 앞선 `결과 변경 값 → 결정
+권위 입장`입니다. Agent는 저장소 기준과 공식 자료를 조사했다는 사실을 모든 차원의 단일
+정답 근거로 사용했습니다. 그 결과 정보 범위·데이터 운영 책임처럼 프로젝트 외부 판단이
+필요한 값, source로 유일하게 닫힌 값과 API·schema 기술 추천을 분리하지 않은 채 실질
+commentary와 writer 후보로 넘겼습니다.
+
+### 시스템 원인과 기존 방어
+
+사용자 결정과 Agent 추천을 분리하는 공통 통제는 사건 전에 존재했고 main의 `dev-plan`과
+`verify-plan`도 추천의 `Planned` 승격을 차단하도록 강화돼 있었습니다. 그러나 feature
+worktree는 그 control commit을 포함하지 않은 이전 skill blob을 사용했고, phase identity가
+현재 skill locator와 target candidate의 control 차이를 writer 입장에서 차단하지 못했습니다.
+후속 댓글 처리에서는 최신 control을 실제로 읽었지만, 기존 기준선의 호출 시점이 mutation·
+review 중심이라 첫 실질 추천과 반영 약속을 입장 결과 없이 통과시켰습니다.
+
+직접 오류는 질문 대신 제품·운영 값을 확정한 것이고, source 조사를 결정 권위 closure로
+대체할 수 있었던 이유는 첫 실질 projection이 결정 원장의 consumer가 아니었기 때문입니다.
+시스템 root는 질문 문구 부족이 아니라 `결정 차원·권위·source → 첫 실질 projection → writer
+→ Planned` 전이에서 같은 identity를 강제하지 못한 control invocation topology입니다.
+
+### 처분·검증 기준과 반사실
+
+- 의미 authority와 활성 결정 기준선의 단일 owner인 workflow/100을 유지합니다.
+- 첫 실질 commentary·답변·계획 결론까지 writer와 같은 입장 gate의 consumer로 포함합니다.
+- 명시된 skill locator와 target worktree의 동명 control을 구분하고 충돌을 조용히 해소하지
+  않습니다.
+- 계획·설계의 열린 사용자 결정은 대안·차이·추천·응답 형식으로 먼저 묻습니다. API·schema·
+  module 같은 기술 선택은 직접 비교해 추천하고, 그 안의 제품 범위·외부 계약·운영 책임만
+  분리해 사용자에게 묻습니다.
+- 카탈로그별 checklist, 외부 dispatcher와 자동 질문 생성기는 추가하지 않습니다.
+
+Root 제거 반사실에서는 API는 기술 추천으로 직접 재검토해 답하고, 정보 범위·data lifecycle은
+프로젝트 외부 판단으로 분류해 즉시 한 질문 라운드를 열었을 것입니다. 답 전에는 계획을
+`Proposed`에서 올리거나 의존 내용을 반영한다고 약속하지 않았을 것입니다. 정비소 예약이나 결제 계획으로 명사를 바꿔도 같은 전이를
+보호하며, 기존 source와 사용자 요구가 외부 판단을 모두 닫은 국소 계획은 불필요하게
+질문으로 막지 않아야 합니다. 행동 검증은 regression·명사 변경·false-block과 실제 routing을
+각각 판정해야 하며, 미래 plan writer의 실제 호출은 후속 live 증거로만 판정합니다.
+
+## 사건 2 — 사용자 보고 50회 이상 반복에도 즉시 질문 통제가 작동하지 않은 실패
+
+### 사건 경계와 최초 단절
+
+사용자는 필요한 내용이 있으면 바로 물으라는 지시를 50회 이상 반복했지만 같은 종류의
+질문 누락이 계속됐다고 보고했습니다. 이 횟수는 사용자 관찰의 authoritative input이지만,
+현재 접근 가능한 Git과 사건 artifact만으로 각 과거 generation을 독립 계수할 수는 없습니다.
+따라서 반복 영향은 인정하되 정확한 숫자를 저장소 증거로 재구성했다고 주장하지 않습니다.
+
+이 사건의 요구는 특정 카탈로그 질문 하나가 아니라, 매 generation에서 결과를 바꾸는 사용자
+소유 판단을 발견한 즉시 질문하는 것이었습니다. 현재 직접 추적한 카탈로그 대표 사건의 최초
+단절은 반복 지시의 문구를 잊은 마지막 답변이 아니라, 새 요청의 Bootstrap 뒤 `결정 차원 →
+권위 입장 → 첫 실질 projection` 전이에 그 지시와 실제 결정 분류 결과가 소비되지 않은
+지점입니다. 나머지 과거 generation 각각의 최초 단절과 원인 분포는 현재 증거로 미증명입니다.
+
+### 통제 생애주기 원인과 기존 방어 실패
+
+Git에는 질문·결정 권위·추천 승격을 고치는 통제가 여러 차례 추가됐고, 가장 가까운 방어는
+main의 `dev-plan`·`verify-plan`에서 Agent 추천을 사용자 결정으로 바꾸지 못하게 했습니다.
+그러나 과거 완료는 통제 문구와 모델링된 답변을 검증했을 뿐, 이후 실제 top-level actor가
+영향 전에 같은 control identity를 읽고 그 결과를 첫 projection과 writer admission에
+전달하는지는 증명하지 못했습니다. 현재 확인한 대표 경로에는 feature worktree의 이전 skill
+blob을 조용히 소비한 경로와, 최신 통제를 읽고도 commentary 입장 전에 호출하지 않은 경로가
+있습니다. 이 두 경로가 다른 모든 과거 generation에서도 실제 원인이었다고 소급하지 않습니다.
+
+대표 두 경로가 함께 드러낸 반복 가능 구조는 개별 질문 목록의 부족이 아니라 control
+lifecycle이 content 작성·commit·자기 모델링 검증에서 멈추고 `실제 control identity → live
+actor invocation → 첫 projection → writer`를 같은 증거로 결속하지 않은 것입니다. 이
+구조에서는 저장소 방어가 늘어도 다음 generation의 실제 admission이 다시 생략될 수 있습니다.
+이는 관찰된 반복을 허용한 공통 구조의 설명이며, 미추적 generation별 실제 원인을 확정한
+주장은 아닙니다.
+
+### 처분·검증 기준과 반사실
+
+이 사건은 별도 카탈로그 규칙을 추가하지 않고 사건 1과 같은 공통 owner의 invocation 경계를
+강화합니다. Exact skill locator와 target control을 구분하고, 첫 실질 projection 전에 사용자
+소유 판단·source 제약·Agent 기술 결정을 분류하며, 열린 사용자 결정이 있으면 writer를
+차단합니다. 동시에 기술 결정을 전부 질문하는 false block을 허용하지 않습니다.
+
+Root가 제거됐다면 명사가 카탈로그·정비소 예약·차량 비교로 바뀌어도 사용자 소유 판단만
+한 질문 라운드로 먼저 나가고, 기존 계약이 결과를 고정한 CSV 계획은 질문 없이 진행됐을
+것입니다. 모델링된 사례의 통과는 현재 control content의 효과만 증명합니다. 반복 실패가
+실제로 끝났다는 완료 판정에는 이후 top-level 계획 actor의 live invocation 증거가 별도로
+필요합니다.

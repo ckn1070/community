@@ -65,6 +65,10 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
 - 완료 보고는 삽입 결과보다 원래 artifact의 상태를 먼저 투영합니다. 요청된 Git object에
   artifact가 없으면 첫 화면에서 `수정됨·미커밋`과 전체 미완료를 직접 밝히고, 통제 commit을
   그 결과의 대체 완료로 나열하지 않습니다.
+- 결과를 바꾸는 값을 처음 선택·유지·교체하는 실질 projection도 writer와 같은 결정 입장
+  gate를 소비합니다. 사용자 선택, source 제약, Agent 책임인 기술 추천, 프로젝트 외부 판단이
+  필요한 열린 사용자 결정과 미증명을 분리합니다. 열린 값을 질문 전에 확정하거나 반영을
+  약속하지 않되, API·schema 같은 기술 추천을 근거 없이 사용자 선택으로 넘기지도 않습니다.
 
 상세한 선택·대안·재검토 조건은
 [003 작업 실행 추적성 설계](003-work-execution-traceability-design.md), Git만으로 복원하기
@@ -124,6 +128,15 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
 - 같은 상태를 보고할 때에는 통제 commit 완료를 첫 판정으로 두고 Scenario 미커밋을 뒤의
   caveat에 묻었습니다. 기존 first-screen 통제가 있었지만 projection root가 삽입 결과로
   바뀌어 원래 사용자 결과의 material incomplete가 우회됐습니다.
+- 카탈로그 계획에서는 main의 최신 `dev-plan`이 추천의 사용자 결정 승격을 차단했지만 target
+  feature branch가 이전 skill blob을 유지했고, 계획 후보는 API·DB·초기 데이터와 운영 값을
+  사용자 선택 없이 `Planned`로 올렸습니다. 후속 댓글 처리에서는 최신 통제를 실제로 읽고도
+  첫 실질 commentary 전에 결정 입장 결과를 만들지 않아 API 기술 추천을 직접 재검토해
+  답하지 않았고, 정보 범위와 초기 데이터 운영 책임도 사용자에게 묻지 않은 채 반영 대상으로
+  선언했습니다. 현재 후보는 공통 owner의 첫 projection 입장과 exact control locator 결속을
+  강화하고, 같은 권위 계약을 소비하는 설계 workflow·work item lifecycle·`dev-plan`·
+  `verify-plan`을 동기화합니다. 모델링된 행동 검증과 이번 evaluator·runner invocation 외의
+  미래 plan writer 호출은 계속 미검증입니다.
 
 ## 남은 책임과 재개 조건
 
