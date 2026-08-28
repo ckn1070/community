@@ -148,6 +148,9 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
   미관찰이면 전체 invocation 완료로 합산하지 않습니다.
 - 실제 다중 phase가 없는 읽기 전용·단일 actor 결과에는 존재하지 않는 writer·reviewer·Git
   evidence를 강제하지 않습니다.
+- 행동 evaluator의 범위 과대를 전체 blocker로 소비한 경로는 workflow/100의 canonical
+  절차에서 보강했습니다. 이 work item은 바로잡은 coverage의 행동 verdict와 실제 invocation
+  범위가 닫혀야 `Done`으로 판정합니다.
 - 이 work item의 `Done`은 현재 통제 후보의 독립 행동 검증뿐 아니라 실제 invocation을
   주장한 범위의 transition coverage가 복원된 뒤에만 다시 판정합니다. 사용자에게 추가
   runtime이나 외부 dispatcher 구현을 요구하지 않습니다.

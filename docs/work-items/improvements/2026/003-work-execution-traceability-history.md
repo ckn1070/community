@@ -830,3 +830,46 @@ Root가 제거됐다면 명사가 카탈로그·정비소 예약·차량 비교�
 것입니다. 모델링된 사례의 통과는 현재 control content의 효과만 증명합니다. 반복 실패가
 실제로 끝났다는 완료 판정에는 이후 top-level 계획 actor의 live invocation 증거가 별도로
 필요합니다.
+
+## 행동 검증 범위를 미래 작업으로 넓혀 실행 회고를 중단한 재발
+
+### 두 사건과 공통 불변식
+
+선행 심화 회고는 모델링된 통제 효과와 실제 actor invocation을 분리하고, 단일 phase 결과에
+존재하지 않는 writer·reviewer·Git 전이를 요구하지 않도록 workflow에 적용·검증했습니다.
+또한 실행 회고에 안전한 통제 적용·검증·Git이 남아 있으면 상태 보고로 끝내지 않는 계약을
+retrospective skill에 적용했습니다.
+
+후속 사건에서는 개발 설계 결정 gate의 실제 호출을 검증하면서 evaluator가 아직 오지 않은
+사용자 답변과 그 뒤 전체 plan writer·reviewer·Git까지 필수 전이로 넓혀 `검증 불가`라고
+판정했습니다. 현재 Agent는 실제 통제 효과가 첫 응답의 결정 분류·질문·writer 미시작에서
+끝난다는 점을 직접 대조하지 않고 이 판정을 전체 회고 blocker로 받아들였습니다. 그 결과
+안전하게 수행할 재판정과 local commit이 남아 있는데도 사용자에게 상태와 다음 결정을 먼저
+물었고, 사용자는 기존 작업을 다시 마무리하라고 요구해야 했습니다.
+
+### 이전 방어 생애주기의 2차 시스템 원인
+
+이번 최초 단절은 최종 보고 문구가 아니라 `행별 evaluator verdict → 현재 Agent의 closure·
+blocker 판정`입니다. 다섯 번의 인과를 닫으면 직접 오류는 미래 전이의 미실행을 현재 실패로
+받은 것, 그 허용 원인은 evaluator의 전체 회고 결론을 행별 evidence finding과 구분하지 않은
+것, interface 공백은 case contract가 exact 통제 효과의 terminal을 넘어도 consumer가 다시
+잘라내는 admission이 없었던 것, 기존 oracle 우회는 `검증 불가`라는 보수적 표지를 원래 결과
+범위 대조보다 우선한 것입니다. 2차 root는 통제 내용이나 완료 문구 부족이 아니라
+`case coverage 동결 → evaluator 행별 verdict → 현재 Agent의 closure·실제 차단 gate` 사이에
+원래 결과와 exact terminal identity를 다시 결속하지 않은 consumer handoff입니다.
+
+이전 방어는 올바른 증거 등급과 실제 차단 기준을 이미 소유했지만, evaluator가 범위를 넓힌
+뒤 그 finding을 소비하는 경로를 직접 검증하지 않았습니다. 구현된 규칙을 읽은 사실도 실제
+소비를 보장하지 못했고, 후속 사건으로 이전 완료 범위와 invocation verdict는 무효화됐습니다.
+
+### 통제 처분 결과와 반사실
+
+증거 등급 분리, 실제 transition 표와 실행 회고 terminal 계약은 유지했고, 실패한 consumer
+handoff는 canonical owner인 workflow/100에서 강화했습니다. 현재 실행 규칙은 이 History에
+복제하지 않습니다.
+
+Root가 제거됐다면 카탈로그 결정 gate의 실제 호출은 첫 응답에서 사용자 소유 결정을 한
+라운드로 묻고 기술 결정을 제외했으며 writer를 시작하지 않은 시점에 판정됐을 것입니다.
+정비소 계획이나 단일 read-only 감사로 명사를 바꿔도 미래 사용자 응답·writer chain을 현재
+필수 전이로 만들지 않습니다. 반대로 현재 결과가 실제 다중 phase 완료를 주장한다면 각
+producer·consumer 전이의 미관찰은 계속 `검증 불가`이며 보수성 자체를 제거하지 않습니다.

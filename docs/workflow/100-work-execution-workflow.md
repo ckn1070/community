@@ -1106,6 +1106,12 @@ context라는 사실만으로 두 번째 등급이 되지 않습니다. 여러 p
 → 다음 phase 인계 또는 terminal 효과
 ```
 
+Transition coverage는 선택한 통제가 이번 결과에서 실제로 바꾸는 첫 영향부터 그 결과의
+terminal까지만 포함합니다. 아직 오지 않은 사용자 답변, 그 답변 뒤 새 generation이나 현재
+결과가 주장하지 않는 writer·reviewer·Git은 미래 consumer이지 현재 필수 전이가 아닙니다.
+Evaluator가 사례를 만들기 쉽다는 이유로 이 미래 전이를 필수 행에 넣거나, 그 미실행을 현재
+결과의 실패·차단으로 판정하지 않습니다.
+
 한 전이라도 실제 실행되지 않았거나 actor·candidate identity를 직접 대조할 수 없으면 그
 전이의 invocation verdict는 `검증 불가`입니다. 모델링된 효과의 `통과`로 채우거나 다른
 전이의 `통과`와 합산하지 않습니다. 특히 회고 뒤 원래 작업으로 복귀하는 미래 전이는 같은
@@ -1116,6 +1122,15 @@ invocation 미검증`으로 남기고 사건 artifact나 return-consumer closure
 반대로 하나의 실제 actor와 직접 source만으로 끝나는 읽기 전용 판정·단일 phase 작업에는
 존재하지 않는 writer→reviewer→Git 전이를 요구하지 않습니다. Verdict와 완료 보고는 실제로
 주장한 결과가 필요로 하는 전이 중 가장 낮은 증거 등급보다 넓을 수 없습니다.
+
+Evaluator는 동결한 행별 증거 verdict만 소유합니다. Evaluator가 전체 회고의 완료·차단이나
+사용자에게 물을 다음 행동까지 제안해도 현재 Agent는 이를 finding으로 받아, 각 행을 원래
+결과·통제 효과·실제 terminal에 다시 mapping한 뒤에만 closure identity를 만듭니다. 동결
+범위 밖의 미래 전이는 후속 위험으로 분리하고 현재 verdict에 합산하지 않습니다. 범위가
+과도했다면 현재 후보를 바꾸지 않고 case contract를 바로잡아 해당 행만 다시 평가합니다.
+재평가가 닫히기 전에는 상태 보고·질문·`Blocked`로 전환하거나 Git phase로 건너뛰지 않습니다.
+재평가를 통과한 뒤 실제 차단 gate를 통과하지 않은 안전한 통제 적용·후속 검증·Git phase를
+계속 수행합니다.
 
 행동 verdict를 받은 뒤 실행 회고를 Git·보고 phase로 넘기기 전에는 다음 closure identity를
 현재 operation map에 결속합니다.
