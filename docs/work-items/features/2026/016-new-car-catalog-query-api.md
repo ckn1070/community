@@ -6,14 +6,14 @@ In Progress
 
 ## 현재 위치와 다음 작업
 
-catalog 공개 enum과 모듈 경계, Flyway V13의 11개 테이블·129개 named constraint·4개 조회
+catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·129개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
 검증까지 구현했습니다. 아직 조회 persistence, Web API와 실제
 production 데이터는 없습니다.
 
 현재 작업은 schema를 사용하는 조회 persistence와 application 규칙을 구현하는 것입니다. 그
 다음에 Web API, Security와 OpenAPI를 구현합니다. 실제 브랜드 전체 데이터는 기능 구현을
-검증한 뒤 [016 자동차 카탈로그 초기 데이터 구축](016-car-catalog-initial-data.md)에서 적재합니다.
+검증한 뒤 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)에서 적재합니다.
 
 ## 달성할 결과
 
@@ -37,11 +37,11 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 1. 기능 범위 | 공개 브랜드·모델·상세 조회와 filter | 완료 | 아래 포함·제외 범위가 유지됨 |
 | 2. 실제 자료 조사 | ICE/HEV·MPV·BEV·FCEV 정보 분류 | 완료 | 공식 자료가 요구하는 관계와 칼럼을 설명함 |
 | 3. DB 설계 | 정확한 11개 테이블, 칼럼, FK·UNIQUE·CHECK·index | 완료 | 상세 설계가 독립 검증을 통과함 |
-| 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13·129개 제약·4개 index·7개 동력 graph 공개 전 검증·대표 fixture·실제 권한 검증 통과 |
+| 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·129개 제약·4개 index·7개 동력 graph 공개 전 검증·대표 fixture·실제 권한 검증 통과 |
 | 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **다음 작업** | filter·가격·과거 조회와 SQL 상한 통과 |
 | 6. 공개 API 개발 | Controller·Security·OpenAPI | 후속 | 비회원 세 GET과 오류 계약 통과 |
 | 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | 후속 | blocking finding 0건 |
-| 8. 실제 데이터 | 공개 범위 결정, 공식 자료 mapping, data migration | 후속 016 | 선택 범위의 누락 0건 |
+| 8. 실제 데이터 | 공개 범위 결정, 공식 자료 mapping, data migration | 후속 017 | 선택 범위의 누락 0건 |
 | 9. Git·원격·배포 | commit, 별도 push와 CI·Sonar, 별도 staging 적용 | 조건부 | 각 단계의 명시 권한과 gate 충족 |
 
 ## 포함 범위
@@ -71,10 +71,10 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 
 ## DB 계약
 
-상세 칼럼과 제약은 [신차 카탈로그 조회 기능 DB 설계](015-new-car-catalog-query-api-design.md)가
+상세 칼럼과 제약은 [신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md)가
 소유합니다. 구현 대상은 그 설계에 정의된 자동차 제품 구조 11개 테이블입니다. 기존 7개
 초안의 핵심 분류를 유지하면서 모델 연식, 기술 변형, 가격 이력과 선택 품목을 보완했습니다.
-공식 자료와 DB 값의 대응은 016 초기 데이터 작업의
+공식 자료와 DB 값의 대응은 017 초기 데이터 작업의
 version-controlled mapping에서 관리하며 runtime schema에 source 테이블이나 FK를 두지
 않습니다. fact마다 identity/version/source 테이블을 추가하는 157개 구조는 구현 대상이 아닙니다.
 
@@ -253,12 +253,24 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 
 완료 결과는 schema 구현이 만족해야 할 자동화된 입력·실패 계약입니다.
 
-### 작업 2. `V13__create_car_catalog_schema.sql`을 구현합니다
+### 작업 2. V13~V17에 카탈로그 테이블을 구현합니다
 
-- 현재 최신 V12 다음 번호인 `V13__create_car_catalog_schema.sql`에서 자동차 hierarchy를
-  만들고 powertrain/component, variant/configuration, price/option/certification을 의존 순서로
-  만듭니다.
-- PK·FK·UNIQUE·CHECK와 필요한 index를 같은 migration에 포함합니다.
+- 현재 최신 V12 다음에서 브랜드부터 인증까지 11개 테이블을 FK 의존 순서의 5개
+  migration으로 만듭니다.
+
+| migration | 함께 생성하는 table | 이 경계에서 함께 실패·재시도하는 이유 |
+| --- | --- | --- |
+| `V13__create_car_product_hierarchy.sql` | `car_brand`, `car_model`, `car_generation`, `car_model_year` | 뒤의 모든 카탈로그 행이 의존하는 제품 식별 계층이며 일부 계층만으로는 조회 입력이 성립하지 않음 |
+| `V14__create_car_powertrain_schema.sql` | `car_powertrain`, `car_powertrain_component` | 동력계통 본체와 반복 장치가 하나의 기술 사양을 구성함 |
+| `V15__create_car_vehicle_offering.sql` | `car_vehicle_variant`, `car_configuration` | 기술 변형과 공개 가능한 판매 구성이 함께 있어야 현재 조회 대상이 됨 |
+| `V16__create_car_pricing_and_option_history.sql` | `car_configuration_price`, `car_configuration_option` | 판매 구성에 종속된 두 기준일 이력을 같은 상업 정보 단계에서 복구함 |
+| `V17__create_car_certification.sql` | `car_certification` | 판매 구성과 독립적으로 보완·재시도할 수 있는 조건별 측정 정보임 |
+
+기능 전체를 V13 하나에 두면 뒤쪽 DDL 오류도 11개 테이블 전체를 rollback·재적용하게 되고,
+검토 시 서로 다른 다섯 책임이 한 파일에 섞입니다. 반대로 테이블마다 V13~V23으로 나누면
+application이 소비하지 않는 부모만의 중간 checkpoint가 생기고 version·검토 단위만 늘어납니다.
+따라서 FK 선행 순서는 유지하되, 내부 table이 함께 있어야 의미가 완성되는 다섯 단위마다
+PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 - 기존 Flyway callback의 generic grant 뒤에 11개 catalog table의 DML·TRUNCATE·REFERENCES·
   TRIGGER와 11개 identity sequence의 모든 권한을 exact 이름으로 revoke합니다. 기존 비-catalog
   table과 sequence 권한은 유지합니다.
@@ -334,8 +346,8 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 
 ## 관련 문서
 
-- **물리 DB 상세**: [015 신차 카탈로그 조회 기능 DB 설계](015-new-car-catalog-query-api-design.md)
-- **후속 production data**: [016 자동차 카탈로그 초기 데이터 구축](016-car-catalog-initial-data.md)
+- **물리 DB 상세**: [016 신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md)
+- **후속 production data**: [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)
 - **제품 방향**: [200 제품 기능 범위](../../../product/200-feature-scope.md)
 - **현재 코드 구조**: [210 모듈 지도](../../../project/210-module-map.md)
 - **API 기준**: [230 REST API 설계](../../../architecture/230-rest-api-design.md)

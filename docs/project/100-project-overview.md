@@ -6,15 +6,15 @@
 ## 현재 단계
 
 Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 account/auth 기반 기능이 구현된 단계입니다.
-[015 신차 카탈로그 schema·조회 API](../work-items/features/2026/015-new-car-catalog-query-api.md)는
+[016 신차 카탈로그 schema·조회 API](../work-items/features/2026/016-new-car-catalog-query-api.md)는
 주요 자동차 정보·과거 차량·관계형 저장과 schema 우선 개발 요구를 브랜드·모델·세대·연식,
 동력계통·복수 장치·기술 변형·판매 구성·가격 이력·옵션과 조건별 인증을 담는
 11개 테이블 및 공개 조회 계약으로 구체화한 `In Progress` 작업입니다. 현재 `catalog` 모듈 공개
-enum, Flyway V13의 11개 테이블, 공개 전 data 검증, 실제 PostgreSQL schema·대표 fixture와
+enum, Flyway V13~V17의 11개 테이블, 실제 PostgreSQL schema·대표 fixture와
 runtime statement 기반 SELECT-only 권한 검증이 구현됐습니다. 다음 단계인 조회 persistence와
 API는 아직 구현되지 않았습니다. 실제 브랜드·과거
 범위와 production data는
-[016 자동차 카탈로그 초기 데이터 구축](../work-items/features/2026/016-car-catalog-initial-data.md)의
+[017 자동차 카탈로그 초기 데이터 구축](../work-items/features/2026/017-car-catalog-initial-data.md)의
 별도 `Proposed` 작업이며 U2-C를 택하면 discovery 뒤 exact 범위의 2차 사용자 결정이 필요합니다.
 커뮤니티 제품 기능도 아직 backlog입니다. 회원과 관리자 인증·인가
 기반은 실행 가능한 코드와 migration, test로 존재합니다.
@@ -38,7 +38,7 @@ API는 아직 구현되지 않았습니다. 실제 브랜드·과거
 - Java 21과 Spring Boot 4 기반 단일 애플리케이션
 - `account`, `auth`, `notification`, `catalog`, `shared`, `config` package
 - Spring Modulith와 ArchUnit module boundary 검증
-- PostgreSQL과 Flyway V1~V13 schema
+- PostgreSQL과 Flyway V1~V17 schema
 - Spring Security Resource Server 기반 stateless Bearer JWT
 - Resend 기반 이메일 발송 adapter
 - Gradle check, Spotless, JaCoCo, SonarQube Cloud 품질 흐름

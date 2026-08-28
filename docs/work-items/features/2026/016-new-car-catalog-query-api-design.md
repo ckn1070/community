@@ -6,10 +6,10 @@
 반복되는 정보와 관계를 기준으로 테이블, 칼럼, 제약, 인덱스와 조회 경로를 정합니다.
 
 현재 상태는 `In Progress`입니다. 이 문서의 11개 테이블과 공개 전 data 검증 gate는 Flyway
-V13·application 시작 검증기·실제 PostgreSQL 통합 테스트로 구현됐습니다. 다음 작업은 이
+V13~V17·application 시작 검증기·실제 PostgreSQL 통합 테스트로 구현됐습니다. 다음 작업은 이
 schema를 사용하는 조회 persistence와 application
 규칙을 구현하는 것입니다. 실제 브랜드 전체 데이터를 적재하는 작업은 schema와 조회 기능을
-완성한 뒤 [016 자동차 카탈로그 초기 데이터 구축](016-car-catalog-initial-data.md)에서 진행합니다.
+완성한 뒤 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)에서 진행합니다.
 
 ## 요구사항을 DB 설계로 바꾼 결과
 
@@ -42,7 +42,7 @@ schema를 사용하는 조회 persistence와 application
 
 대표 자료 기준으로 현재 조회 범위에 필요한 정보 분류에는 막는 누락이 없습니다. 다만 모든
 제조사·과거 연식의 원문 항목까지 빠짐없다고 확정하는 단계는 아닙니다. 실제 전체 누락 검증은
-016의 공식 자료 inventory에서 `원문 항목 → table.column` 대응이 불가능한 항목을 발견하는
+017의 공식 자료 inventory에서 `원문 항목 → table.column` 대응이 불가능한 항목을 발견하는
 방식으로 수행하며, 반복되는 핵심값이 나오면 데이터 적재 전에 이 schema를 보완합니다.
 
 공식 자료는 [K5 가격·옵션](https://www.kia.com/kr/vehicles/k5/price/private),
@@ -603,8 +603,8 @@ configuration/price/option을 각각 묶음 조회합니다. 결과 수만큼 SQ
 
 ## 관련 문서
 
-- **작업 상태·API·개발 계획**: [015 신차 카탈로그 schema·조회 API](015-new-car-catalog-query-api.md)
-- **후속 실제 데이터**: [016 자동차 카탈로그 초기 데이터 구축](016-car-catalog-initial-data.md)
+- **작업 상태·API·개발 계획**: [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)
+- **후속 실제 데이터**: [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)
 - **제품 범위**: [200 제품 기능 범위](../../../product/200-feature-scope.md)
 - **현재 코드 구조**: [210 모듈 지도](../../../project/210-module-map.md)
 - **DB 기준**: [230 Spring Data JPA](../../../tech-stack/230-spring-data-jpa.md),

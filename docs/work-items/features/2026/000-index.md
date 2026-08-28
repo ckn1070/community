@@ -19,5 +19,5 @@
 | 013 | Done | [013 Staging application GitOps delivery](013-autoscaling-safe-application-delivery.md) | - | Repository와 live 기술 delivery 완료, 기능 qualification은 선택 runbook으로 분리 |
 | 014 | Done | [014 Staging 외부 HTTPS ingress](014-staging-external-https-ingress.md) | [014 설계](014-staging-external-https-ingress-design.md) | LBC·ALB·ACM·Cloudflare DNS-only 외부 경로 구축 완료 |
 | 015 | Done | [015 API 운영 추적성](015-api-operational-traceability.md) | - | 정상·거부·실패 API 완료 이벤트와 고객 상관관계 자동화 |
-| 016 | In Progress | [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md) | [016 신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md) | V13·공개 전 검증·대표 fixture·실제 SELECT-only 권한 검증 완료, 조회 persistence 개발이 다음 단계 |
+| 016 | In Progress | [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md) | [016 신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md) | V13~V17·공개 전 검증·대표 fixture·실제 SELECT-only 권한 검증 완료, 조회 persistence 개발이 다음 단계 |
 | 017 | Proposed | [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md) | - | 016 구현 뒤 U1 브랜드와 U2 과거 기간을 확정하고 공식 source inventory·mapping·data migration 수행 |

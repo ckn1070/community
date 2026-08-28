@@ -6,16 +6,16 @@ Proposed
 
 ## 현재 위치와 선행 작업
 
-이 작업은 [015 신차 카탈로그 schema·조회 API](015-new-car-catalog-query-api.md)의 11개 테이블과
+이 작업은 [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)의 11개 테이블과
 조회 기능이 구현된 뒤 시작합니다. 현재는 실제 공개할 브랜드 범위와 과거 기간이 정해지지
 않았으며 production data도 없습니다.
 
-015의 schema 개발은 이 결정을 기다리지 않고 먼저 진행합니다. 실제 데이터 작업을 시작할
+016의 schema 개발은 이 결정을 기다리지 않고 먼저 진행합니다. 실제 데이터 작업을 시작할
 때는 아래 U1과 U2를 사용자가 확정해야 합니다.
 
 ## 달성할 결과
 
-선택한 대한민국 자동차 범위의 공식 가격표·catalog·제원·인증 자료를 015 schema에 mapping하고,
+선택한 대한민국 자동차 범위의 공식 가격표·catalog·제원·인증 자료를 016 schema에 mapping하고,
 빠진 모델·연식·판매 구성·주요 값이 없는지 검수한 뒤 versioned Flyway data migration으로
 적용합니다.
 
@@ -26,7 +26,7 @@ Proposed
 
 | 단계 | 만드는 결과 | 현재 상태 |
 | --- | --- | --- |
-| 1. 015 schema·조회 구현 | 실제 데이터를 받을 11개 테이블과 API | 선행 작업 |
+| 1. 016 schema·조회 구현 | 실제 데이터를 받을 11개 테이블과 API | 선행 작업 |
 | 2. 공개 범위 결정 | U1 브랜드와 U2 과거 기간 | **다음 사용자 결정** |
 | 3. 공식 source inventory | 모델·연식·가격표·catalog·제원·인증 목록 | 후속 |
 | 4. source→table mapping | 원문 항목과 정확한 table.column 대응표 | 후속 |
@@ -97,7 +97,7 @@ source를 읽은 뒤 다음 단위로 mapping 표를 작성합니다.
 typed column에 해당하는 값을 JSONB로 우회하지 않습니다. 예를 들어 EV 배터리 kWh·Ah·V는
 component 칼럼, 카니발 휠·카메라별 연비는 certification 행, K5 트림 가격은 price 행에
 mapping합니다. 원문에 있으나 현재 schema에 넣을 수 없는 반복 핵심값이 발견되면 data를 버리거나
-EAV로 우회하지 않고 015 schema 보완을 먼저 엽니다.
+EAV로 우회하지 않고 016 schema 보완을 먼저 엽니다.
 
 ## coverage 기준
 
@@ -154,7 +154,7 @@ inventory와 mapping의 실제 규모를 본 뒤 다음 중 가장 단순한 방
 
 - 모델 목록부터 시작해 연식별 가격표·catalog·제원·인증 source를 등록합니다.
 - source의 configuration, 옵션, 조건별 인증 행을 먼저 세고 DB target을 지정합니다.
-- schema에 없는 반복 핵심값은 적재 전에 015 보완 대상으로 보고합니다.
+- schema에 없는 반복 핵심값은 적재 전에 016 보완 대상으로 보고합니다.
 
 완료 결과는 누락을 숨길 수 없는 분모와 source→table.column 대응표입니다.
 
@@ -189,7 +189,7 @@ inventory와 mapping의 실제 규모를 본 뒤 다음 중 가장 단순한 방
 
 ## 전환·권한 경계
 
-- 015는 schema와 API, 016은 production data migration을 소유합니다.
+- 016은 schema와 API, 017은 production data migration을 소유합니다.
 - 외부 데이터 공급 계약, custom 도구 도입, push와 staging 적용은 각각 별도 권한이 필요합니다.
 - 권리가 확인되지 않은 media는 URL을 공개 data로 넣지 않습니다.
 - 선택 범위의 공식 자료가 확보되지 않으면 임의 추정하지 않고 범위 축소 또는 공식 공급자
@@ -197,8 +197,8 @@ inventory와 mapping의 실제 규모를 본 뒤 다음 중 가장 단순한 방
 
 ## 관련 문서
 
-- **선행 schema·API**: [015 신차 카탈로그 schema·조회 API](015-new-car-catalog-query-api.md)
-- **물리 DB 설계**: [015 신차 카탈로그 조회 기능 DB 설계](015-new-car-catalog-query-api-design.md)
+- **선행 schema·API**: [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)
+- **물리 DB 설계**: [016 신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md)
 - **제품 범위**: [200 제품 기능 범위](../../../product/200-feature-scope.md)
 - **DB 변경**: [240 Flyway](../../../tech-stack/240-flyway.md),
   [250 PostgreSQL](../../../tech-stack/250-postgresql.md)

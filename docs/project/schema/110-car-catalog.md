@@ -1,7 +1,7 @@
 # 자동차 카탈로그 Schema Reference
 
-이 문서는 `V13__create_car_catalog_schema.sql` 적용 뒤의 자동차 카탈로그 물리 schema를 요약합니다.
-실행 가능한 source of truth는 migration이며, 설계 이유와 조회 계약은 015 work item이 소유합니다.
+이 문서는 카탈로그 migration V13~V17 적용 뒤의 자동차 카탈로그 물리 schema를 요약합니다.
+실행 가능한 source of truth는 migration이며, 설계 이유와 조회 계약은 016 work item이 소유합니다.
 
 ## 적용 범위
 
@@ -19,7 +19,12 @@ car_brand
                   └─ car_certification
 ```
 
-- migration: `V13__create_car_catalog_schema.sql`
+- migration:
+  - `V13__create_car_product_hierarchy.sql`: 브랜드·모델·세대·연식
+  - `V14__create_car_powertrain_schema.sql`: 동력계통·구성 장치
+  - `V15__create_car_vehicle_offering.sql`: 기술 변형·판매 구성
+  - `V16__create_car_pricing_and_option_history.sql`: 가격·선택 품목 이력
+  - `V17__create_car_certification.sql`: 조건별 인증
 - runtime 권한: 11개 테이블 `SELECT`만 허용, DML·`TRUNCATE`·sequence 권한 없음
 - 삭제 정책: 제품 관계는 `RESTRICT`, configuration의 가격·옵션 이력만 `CASCADE`
 - 외부 식별자: 공개 대상 7개 테이블은 UUID `public_id`, 내부 관계는 `BIGINT id`
@@ -145,7 +150,7 @@ car_brand
 
 ## 관련 문서
 
-- **실행 source**: `src/main/resources/db/migration/V13__create_car_catalog_schema.sql`
-- **설계와 조회 계약**: [015 신차 카탈로그 schema·조회 API](../../work-items/features/2026/015-new-car-catalog-query-api.md),
-  [DB 설계](../../work-items/features/2026/015-new-car-catalog-query-api-design.md)
+- **실행 source**: 위에 열거한 V13~V17 migration
+- **설계와 조회 계약**: [016 신차 카탈로그 schema·조회 API](../../work-items/features/2026/016-new-car-catalog-query-api.md),
+  [DB 설계](../../work-items/features/2026/016-new-car-catalog-query-api-design.md)
 - **migration 운영 기준**: [Flyway](../../tech-stack/240-flyway.md)
