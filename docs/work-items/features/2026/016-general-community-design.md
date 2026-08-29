@@ -3,9 +3,9 @@
 ## 설계 상태와 경계
 
 이 문서는 [016 확장 가능한 차량 비연결 일반 커뮤니티 기반](016-general-community.md)의 기술 계약과 대안
-비교를 소유합니다. 사용자 경험을 바꾸는 조회 공개 범위, 게시판 형태와 삭제 방식은 본문의
-결정 카드에서 아직 선택되지 않았으므로 조건부 설계를 유지합니다. 선택되지 않은 추천 분기를
-확정 요구로 사용하지 않습니다.
+비교를 소유합니다. 사용자는 Board·Post·Comment 공개 조회, 자유게시판 하나, 삭제 원문 DB
+보존과 Post 완전 비노출·Comment placeholder를 확정했습니다. 본문은 이 한 계약만을 구현
+대상으로 사용하며 선택되지 않은 과거 대안을 조건부 설계로 남기지 않습니다.
 
 이번 기능은 Carmunity 제품 SOT가 이미 포함한 커뮤니티 영역에서 차량 연결을 제외한 첫
 기능입니다. 현재에는 Board·Post·Comment만 구현하지만, 제품 범위에 이미 존재하는 반응·
@@ -21,7 +21,7 @@
 | 프로젝트 아키텍처 | 단일 배포 modular monolith와 module 내부 hexagonal 구조, 단순 조회 projection을 허용합니다. | `community`를 업무 module로 만들고 변경과 조회 구조의 강도를 다르게 적용합니다. |
 | 모듈 구조 가이드 | 다른 module의 internal·table을 직접 사용하지 않고 공개 API로 협력합니다. | 작성자 표시 이름은 `account.api`를 통하고 cross-module join·FK를 만들지 않습니다. |
 | Account 도메인 | profile의 `display_name`은 커뮤니티 공개 정보이고 account public id가 외부 식별자입니다. | JWT `sub`와 author reference는 account public UUID, 화면 표시값은 account owner 계약을 사용합니다. |
-| 인증/인가 정책 | 일반 `/api/**`는 full session·password-change-not-required가 기본이고 public endpoint만 allow-list에서 엽니다. | 쓰기는 기본 보호 계약을 유지하고 조회만 사용자 선택에 따라 공개 예외가 됩니다. |
+| 인증/인가 정책 | 일반 `/api/**`는 full session·password-change-not-required가 기본이고 public endpoint만 allow-list에서 엽니다. | 쓰기는 기본 보호 계약을 유지하고 Board·Post·Comment GET을 공개 예외로 명시합니다. |
 | REST·JPA·Flyway 기준 | public id, DTO 분리, bounded pagination, projection, forward migration과 DB constraint를 요구합니다. | UUID, count 없는 slice response, read projection, 새 versioned migration과 실제 query index를 사용합니다. |
 
 현재 JWT는 display name을 담지 않습니다. token 탈취 노출과 이름 변경 뒤 stale claim을 피하기
@@ -52,7 +52,7 @@ Post는 같은 module의 Board 내부 PK, 댓글은 Post 내부 PK를 persistenc
 | 미래 기능이 붙어도 core identity·경계를 교체하지 않는 구조를 사용합니다. | 사용자 확정 요구 | 확정 |
 | account public id, display name 공개 의미와 기본 보호 API 조건 | 저장소 source | 확정 |
 | `community` module, Board, account batch API, API·schema·test와 확장 경계 | Agent 기술 결정 | 아래 대안 비교로 확정 |
-| 조회 공개 범위, 첫 게시판 구성, 작성자 삭제 방식 | 열린 사용자 결정 | 본문 결정 카드 대기 |
+| Board·Post·Comment 공개 조회, 자유게시판 하나, Post 비노출·Comment 삭제 표시 | 사용자 확정 요구 | 확정 |
 
 ## 미래 기능 지도와 현재 경계
 
@@ -84,6 +84,48 @@ core와 첫 additive 연결 지점을 정합니다.
 - 후속 기능이 요구하는 schema는 nullable 만능 field나 JSONB bag이 아니라 owner가 분명한
   association·aggregate·read model로 추가합니다.
 
+## 구현 진입 gate와 의존 순서
+
+이 문서는 목표 구조를 설명하지만 문서에 package 그림이 있다는 사실은 package를 먼저 만들
+권한이나 순서를 뜻하지 않습니다. `$verify-plan` 독립 감사에 필수 결함이 없고 work item이
+`Planned` checkpoint로 commit되기 전에는 source code, test code, 설정, Flyway migration,
+module·package 껍데기, public API type, adapter와 exploratory spike를 만들지 않습니다.
+Read-only source 조사와 계획·상세 설계 Markdown만 gate 전에 허용합니다.
+
+Gate는 다음 계약이 모두 exact일 때만 열립니다.
+
+- 제품 결정, API·오류·Security·cache, domain 상태·action·visibility·commentability
+- table·column·type·nullability·default·FK·check·index·seed·migration·recovery
+- transaction·lock·idempotency, module·package·의존 방향과 account 협력
+- validation·privacy·logging·limit, test·quality·SOT·rollout과 미래 additive 경계
+- fresh `$verify-plan` 통과와 `Planned` checkpoint commit
+
+Gate 뒤 첫 구현은 빈 module 골격이 아니라 `community` core와 exact schema를 함께 만드는
+단위입니다. 작성자 batch 계약은 schema·domain 결과를 소비하지 않아 작업 2와 기술적으로
+독립이지만, unused producer의 체류 시간을 줄이기 위해 core·schema 뒤, 첫 조회 API 직전에
+배치하는 순서를 권장합니다. 두 결과의 첫 hard 합류점은 Board/Post 조회입니다.
+
+```text
+상세 설계 동결·독립 감사
+  → Planned checkpoint + 새 구현 요청
+  → work item·router In Progress projection
+  ├─ community domain core + Flyway schema ─┐
+  └─ account 공개 profile batch 계약 ──────┴→ Board/Post API
+  → Comment API
+  → 개발 통합·`verify-dev`
+  → 문서 SOT·`verify-documentation`
+  → Git·remote gate
+  → work item·router 최종 상태 projection
+```
+
+현재 실행 권장 순서는 `core·schema → account batch → Board/Post API`이지만 앞의 두 결과 사이에는
+hard dependency가 없습니다. Board/Post query service가 만드는 `AuthorProfileLookupPort` adapter가
+account batch named interface를 처음 소비하므로, 작업 4는 두 결과 없이는 시작할 수 없습니다.
+
+구현 중 결과를 바꾸는 미결정이 발견되면 새 mutation을 중단하고 영향을 받는 설계를
+`Proposed`로 되돌려 수정·재검증합니다. 새 `Planned` checkpoint 전에는 구현을 재개하지
+않습니다.
+
 ## Agent 기술 결정
 
 ### D1. 독립 `community` module
@@ -96,7 +138,9 @@ core와 첫 additive 연결 지점을 정합니다.
 - **선택 근거**: 현재 modular monolith를 유지하면서 콘텐츠 상태와 transaction을 account
   내부 구현에서 분리합니다.
 - **영향**: REST Controller도 `community.internal.adapter.in.web`에 두며 `community.api`는
-  다른 module consumer가 생기기 전에는 만들지 않습니다.
+  다른 module consumer가 생기기 전에는 만들지 않습니다. 이 module은 목표 경계이며 설계
+  gate 전에 만드는 선행 골격이 아닙니다. 첫 구현에서 Board·Post·Comment core와 Flyway
+  schema를 담는 실제 code·test와 함께 생성합니다.
 - **배제한 대안**: account 배치는 인증 주체와 콘텐츠 생명주기를 섞고, 전역 Controller·Service
   구조는 module verification으로 경계를 보호하기 어렵습니다.
 - **재검토 조건**: moderation이나 media가 독립 생명주기와 다수 module consumer를 가져 별도
@@ -112,8 +156,9 @@ core와 첫 additive 연결 지점을 정합니다.
 - **선택**: `community_board`에 내부 PK, UUID `public_id`, 변경되지 않는 `code`, 사용자 표시
   `name`, `display_order`와 감사 시각을 둡니다. 모든 Post는 `board_id NOT NULL` FK로 Board
   하나를 참조합니다. Board collection은 `(displayOrder ASC, publicId ASC)`로 정렬합니다.
-  현재에는 선택한 초기 Board seed와 목록·상세 조회만 구현하고 create/update/reorder/archive
-  관리 API는 만들지 않습니다. 초기 row의 public id와 code는 migration에 literal 값으로
+  현재에는 `54be05ef-b451-4865-b124-b7633d04511e`/`free`/`자유게시판`/`100` 한 row와
+  목록·상세 조회만 구현하고 create/update/reorder/archive 관리 API는 만들지 않습니다.
+  초기 row의 public id와 code는 migration에 literal 값으로
   명시해 개발·검증·운영 환경에서 같은 외부 identity를 재현하며 DB UUID 생성 함수에
   의존하지 않습니다.
 - **선택 근거**: 초기 한 게시판의 구현 비용은 작은 reference row와 FK뿐이지만, 이후 게시판을
@@ -138,13 +183,19 @@ core와 첫 additive 연결 지점을 정합니다.
 - **선택**: post/comment에는 `author_account_public_id UUID`만 저장합니다. `account.api`에
   `AccountPublicProfileLookup`과 `AccountPublicProfile(accountPublicId, displayName)`을 추가하고
   community의 `AuthorProfileLookupPort` adapter가 한 slice의 `Set<UUID>`를 한 query로
-  조회합니다.
+  조회합니다. 입력은 중복 제거된 non-null public id 집합이고 빈 집합은 query 없이 빈 Map을
+  반환합니다. 결과는 account public id를 key로 한 Map이며 요청 id 중 누락이 있으면
+  `COMMUNITY_AUTHOR_PROFILE_UNAVAILABLE`로 전체 응답을 실패시킵니다. 삭제 Comment는 author를
+  응답하지 않으므로 batch 입력에서 제외합니다.
 - **선택 근거**: 이름 변경과 향후 account 공개 정책을 account owner 한 곳에서 반영하면서
   JWT stale data, cross-module table 의존과 N+1을 모두 피합니다.
 - **영향**: account profile batch lookup이 post/comment query의 동기 dependency가 됩니다.
   현재 account는 탈퇴도 row 상태로 보존하므로 기존 author UUID가 사라지지 않습니다.
   Community query service는 account API DTO에 직접 퍼지지 않고 port 결과만 소비하므로 이후
-  bounded cache나 author read model을 adapter 교체로 비교할 수 있습니다.
+  bounded cache나 author read model을 adapter 교체로 비교할 수 있습니다. 이 계약은 schema나
+  domain core가 소비하지 않습니다. Account producer 계약은 독립 구현할 수 있지만 권장 배치상
+  Community core·schema 뒤 첫 Board/Post 조회 projection 직전에 만들고, community port·adapter는
+  최초 consumer인 Board/Post query 구현에서 추가합니다.
 - **배제한 대안**: snapshot은 이름 변경 동기화가 필요하고, direct join·FK는 module 공개
   계약을 우회하며, JWT claim은 token TTL 동안 오래된 이름을 노출합니다.
 - **재검토 조건**: account 물리 삭제·익명화, display name 변경 또는 비동기 read model이
@@ -198,8 +249,8 @@ core와 첫 additive 연결 지점을 정합니다.
   요청마다 현재 조회 권한과 resource 노출 여부를 별도로 검사합니다. 새 글 추가가 이미 받은
   다음 cursor 앞에 생겨도 이어 읽는 구간의 중복을 만들지 않습니다. 이 cursor는 database
   snapshot을 고정하지 않습니다. 후속 요청은 경계 아래의 현재 visibility를 읽으므로 그 사이
-  visibility에서 제외되거나 물리 삭제된 row는 사라지고, 자리 유지 placeholder는 같은 위치에
-  남습니다. 정렬 key가 변하지 않은 나머지 visible row는 중복·건너뜀 없이 이어집니다.
+  삭제된 Post는 사라지고 삭제된 Comment는 같은 위치에 placeholder로 남습니다. 정렬 key가
+  변하지 않은 나머지 visible row는 중복·건너뜀 없이 이어집니다.
 - **배제한 대안**: action URI는 REST 기준과 어긋나고 전체 건수 `Page`는 제품 요구 없이 count
   query를 계약화합니다. Offset `Slice`는 현재 구현은 단순하지만 미래 feed 성장과 API
   pagination 구조 변경 비용을 남깁니다.
@@ -254,9 +305,10 @@ core와 첫 additive 연결 지점을 정합니다.
   `DELETE_POST`, `CREATE_COMMENT`, `UPDATE_COMMENT`, `DELETE_COMMENT`와 필요한 resource 사실을
   전달합니다. 현재 `CREATE_POST`는 유효한 actor와 visible Board를 요구하고,
   `CREATE_COMMENT`는 visible 여부와 별개인 `commentable` Post를 요구합니다. `commentable`은
-  author lifecycle이 `ACTIVE`이고 조회 정책상 visible하여 새 댓글을 받을 수 있는 상태입니다.
-  Update/delete action은 저장된 author UUID 일치를 요구합니다. 조회 query는 선택한 작성자
-  삭제 결과와 Board 존재를 visibility predicate로 적용합니다.
+  author lifecycle이 `ACTIVE`이고 공개 조회에 노출돼 새 댓글을 받을 수 있는 상태입니다.
+  Update/delete action은 저장된 author UUID 일치를 요구합니다. 조회 query는 확정된 작성자
+  삭제 결과와 Board 존재를 visibility predicate로 적용합니다. Post는 `ACTIVE`만 visible하고,
+  active Post의 Comment는 `ACTIVE`와 `AUTHOR_DELETED`가 모두 목록에 visible합니다.
 - **선택 근거**: 인증, resource action 권한과 조회 노출을 각 책임 경계에서 검증하면 미래
   `HIDE`, `RESTORE`, `LOCK`, `MOVE`를 author DELETE 우회가 아니라 별도 action으로 추가할 수
   있습니다. 현재 필요 없는 동적 permission schema나 rule DSL은 만들지 않습니다.
@@ -271,30 +323,49 @@ core와 첫 additive 연결 지점을 정합니다.
   실제 요구가 되면 action set과 policy input을 확장하고, 규칙이 data-driven이어야 할 때만
   assignment schema를 도입합니다.
 
-### D8. 낙관적 수정과 공유 댓글 생성-배타 게시글 삭제 lock
+현재 state/action matrix는 다음과 같습니다.
 
-- **배경**: 같은 콘텐츠의 동시 수정과 댓글 생성 중 parent 삭제가 data loss·중간 상태를
-  만들 수 있습니다. 모든 Comment 생성에 `FOR UPDATE`를 쓰면 같은 인기 Post의 Comment
-  생성끼리도 직렬화됩니다.
-- **검토한 선택지**: last-write-wins, 모든 변경 pessimistic lock, Comment 생성·Post 삭제 모두
-  `FOR UPDATE`, `@Version`과 `FOR SHARE` create/`FOR UPDATE` delete 조합
+| Resource state | Public 조회 | Create child | Author PATCH | Author DELETE | 다른 actor 변경 |
+| --- | --- | --- | --- | --- | --- |
+| Post `ACTIVE` | 목록·상세 `200` | Comment 생성 가능 | `200` | `AUTHOR_DELETED` 전이 후 `204` | `403` |
+| Post `AUTHOR_DELETED` | 목록 제외, 상세·하위 `404` | `404` | `404` | 반복 `204` | `404` |
+| Active Post의 Comment `ACTIVE` | 원문 `200` | 해당 없음 | `200` | `AUTHOR_DELETED` 전이 후 `204` | `403` |
+| Active Post의 Comment `AUTHOR_DELETED` | placeholder `200` | 해당 없음 | `404` | 반복 `204` | `404` |
+| Deleted Post의 모든 Comment | `404` | 해당 없음 | `404` | `404` | `404` |
+
+`ROLE_ADMIN`·`ROLE_SUPER_ADMIN`도 위 author action을 우회하지 않습니다. 같은 작성자의 반복
+DELETE는 이미 저장된 author reference와 lifecycle state를 읽어 판단하며 version을 다시
+증가시키거나 `deleted_at`을 바꾸지 않습니다.
+
+### D8. 낙관적 수정과 공유 댓글 변경-배타 게시글 삭제 lock
+
+- **배경**: 같은 콘텐츠의 동시 수정과 Comment 변경 중 parent 삭제가 data loss·중간 상태를
+  만들 수 있습니다. 모든 Comment 변경에 `FOR UPDATE`를 쓰면 같은 인기 Post의 독립 Comment
+  변경끼리도 직렬화됩니다.
+- **검토한 선택지**: last-write-wins, 모든 변경 pessimistic lock, Comment 변경·Post 삭제 모두
+  `FOR UPDATE`, `@Version`과 `FOR SHARE`/`FOR UPDATE`, `FOR KEY SHARE` comment write와
+  `FOR UPDATE` post delete 조합
 - **선택**: Post·Comment에 version column과 JPA optimistic lock을 사용하고 conflict를
-  `409`로 변환합니다. Comment 생성은 `ACTIVE`이고 `commentable`인 Post row를 PostgreSQL
-  `FOR SHARE`로 읽고 insert하며, Post 삭제는 같은 row를 `FOR UPDATE`로 잠근 뒤 선택한 상태
-  변경 또는 물리 삭제를 실행합니다.
-- **선택 근거**: 일반 수정은 lock 대기 없이 충돌을 감지합니다. `FOR SHARE`끼리는 호환되고
-  `FOR UPDATE`와는 충돌하므로 Comment 생성끼리는 병렬로 진행하고 parent 삭제와의 정확한
-  race만 짧게 직렬화합니다.
+  `409`로 변환합니다. Comment 생성·수정·삭제는 `ACTIVE`인 Post row를 PostgreSQL
+  native `SELECT ... FOR KEY SHARE`로 읽고, 생성은 추가로 `commentable`을 검사한 뒤 child를
+  변경합니다. JPA `PESSIMISTIC_READ`의 `FOR SHARE`로 대체하지 않습니다. Post 삭제는 같은 row를
+  명시적 `FOR UPDATE`로 잠근 뒤 `AUTHOR_DELETED` 상태와 `deleted_at`을 기록합니다.
+- **선택 근거**: 일반 Post PATCH의 non-key UPDATE가 취득하는 `FOR NO KEY UPDATE`와 Comment의
+  `FOR KEY SHARE`는 호환되고, 명시적 Post delete `FOR UPDATE`와는 충돌합니다. 따라서 서로 다른
+  Comment 변경과 일반 Post PATCH는 병렬로 진행하고 parent 삭제와의 정확한 race만 짧게
+  직렬화합니다. Transaction isolation은 현재 Spring/PostgreSQL 기본인
+  `READ_COMMITTED`를 사용합니다. Lock 대기 뒤 같은 statement가 최신 committed Post state를
+  검사하므로 non-active parent를 이전 snapshot의 active 값으로 처리하지 않습니다.
 - **영향**: long transaction과 외부 account lookup을 lock 구간에 넣지 않습니다. author
   표시 조립은 read transaction 밖 또는 read-only 경계에서 수행합니다. Persistence 통합
-  test는 두 Comment 생성의 동시 진행과 create/delete 두 commit 순서의 terminal state를
-  실제 PostgreSQL에서 검증합니다. Delete가 먼저 commit되면 기다리던 create는 Post의
-  non-commentable/부재를 다시 읽어 `404`로 끝나고 insert하지 않습니다. Create가 먼저
-  commit되면 자리 유지·전체 숨김은 Comment row를 보존해 각 visibility를 적용하고, 물리 삭제는
-  같은 transaction에서 cascade로 제거합니다.
+  test는 독립 Comment 변경의 동시 진행과 각 Comment write/Post delete 두 commit 순서의
+  terminal state를 실제 PostgreSQL에서 검증합니다. Post delete가 먼저 commit되면 기다리던
+  Comment write는 Post의 non-active 상태를 다시 읽어 `404`로 끝납니다. Comment write가 먼저
+  commit되면 변경 row를 보존하고, 뒤이어 Post가 삭제되면 parent visibility로 모든 하위
+  endpoint에서 함께 숨깁니다.
 - **배제한 대안**: last-write-wins는 동시 수정 손실을 숨기고 모든 row lock은 읽기·수정
-  contention을 불필요하게 키웁니다. Comment 생성의 `FOR UPDATE`는 hot Post의 독립 insert까지
-  직렬화합니다.
+  contention을 불필요하게 키웁니다. `FOR SHARE`는 Post PATCH의 `FOR NO KEY UPDATE`와도
+  충돌하고, Comment write의 `FOR UPDATE`는 hot Post의 독립 변경까지 직렬화합니다.
 - **재검토 조건**: lock wait가 실제 병목이면 Post lifecycle coordination을 별도 row/guard로
   분리하거나 queueing 전략을 비교합니다. stale client update가 실제 문제로 관찰되면 ETag·
   `If-Match`와 `412` 계약을 추가합니다.
@@ -305,7 +376,9 @@ core와 첫 additive 연결 지점을 정합니다.
   즉시 drop할 수 없습니다.
 - **검토한 선택지**: down migration 자동화, 기존 migration 수정, raw 이전 image, 새 migration
   source를 포함한 exact compatibility image, current schema 위 forward fix
-- **선택**: 새 versioned migration으로 table·constraint·index를 추가합니다. Staging rollout을
+- **선택**: 현재 branch의 V12 다음인 `V13__create_community_core.sql`로 table·constraint·
+  index·자유게시판 seed를 추가합니다. 구현 시작 전 main에 새 V13이 생겼다면 code를 만들기
+  전에 번호만 다음 미사용 version으로 재동결합니다. Staging rollout을
   별도 승인받으면 baseline application 동작과 새 migration source를 함께 가진 exact rollback
   image를 준비하고, 새 migration이 적용된 DB snapshot에서 그 image의 migration process가
   현재 Flyway history·checksum을 통과할 때만 rollback 후보로 인정합니다. 후보가 없으면
@@ -345,74 +418,80 @@ core와 첫 additive 연결 지점을 정합니다.
 - **재검토 조건**: notification·search·analytics 중 첫 durable consumer, cross-module 후속 작업,
   또는 동기 query로 충족할 수 없는 측정된 latency가 확정됩니다.
 
-## 조건부 제품 결정의 기술 영향
+## 확정 제품 결정의 기술 영향
 
-### 조회 공개 범위
+### 공개 조회와 보호 쓰기
 
-| 선택 | Security | OpenAPI·test | Data·운영 영향 |
+Board·Post·Comment의 모든 `GET` operation은 중앙 public operation source에 추가합니다.
+OpenAPI GET operation에는 Bearer security requirement와 `401`·`403` response를 넣지 않고
+anonymous Web·Security test를 통과시킵니다. 생성·수정·삭제는 기존 기본 계약인
+`SESSION_FULL`, `PASSWORD_CHANGE_NOT_REQUIRED`를 요구합니다. 공개되는 값은 콘텐츠,
+account public id와 display name뿐이며 내부 PK·email·account 내부 상태를 노출하지 않습니다.
+
+표시 이름과 콘텐츠가 인터넷에 공개되므로 production rollout 전 moderation·rate-limit을 별도
+작업으로 확정합니다. 이 운영 선행 조건은 API 구현 완료와 production 공개 준비 완료를
+구분하며, 현재 공개 조회 계약을 조건부로 되돌리지 않습니다.
+
+### 자유게시판 seed
+
+최초 migration은 다음 한 row만 literal로 삽입합니다.
+
+| Public UUID | Code | Name | Display order |
 | --- | --- | --- | --- |
-| 공개 | Board·Post·Comment `GET` path를 중앙 public operation source에 추가 | GET은 security requirement·401·403이 없고 anonymous test가 성공 | 표시 이름·콘텐츠가 인터넷 공개이며 rollout 전 moderation·rate-limit 재검토 |
-| 회원 전용 | 기본 `/api/**` 보호 규칙 유지 | GET에도 Bearer security와 401·403 계약 | 미인증 노출은 없지만 가입 전 탐색 불가 |
+| `54be05ef-b451-4865-b124-b7633d04511e` | `free` | `자유게시판` | `100` |
 
-쓰기는 두 선택 모두 `SESSION_FULL`, `PASSWORD_CHANGE_NOT_REQUIRED`를 요구합니다.
+Board identity와 Post `board_id NOT NULL` FK는 게시판이 하나여도 유지합니다. 후속 Board는 새
+row를 추가하고 navigation에 노출하는 additive 변경이며 기존 Post backfill이 없습니다.
+Board create/update/reorder/archive와 글 이동은 현재 구현하지 않습니다.
 
-### 게시판 형태
+### 작성자 삭제의 혼합 visibility
 
-Board identity와 Post FK는 세 선택 모두 동일합니다. 선택은 첫 seed와 현재 관리 기능 범위만
-바꿉니다.
+Post와 Comment 모두 row·원문·`author_account_public_id`를 DB에 보존하고
+`lifecycle_state VARCHAR(20) NOT NULL`과 `deleted_at TIMESTAMPTZ NULL`로 작성자 삭제를
+표현합니다. 작성자 삭제는 moderation restriction과 다른 lifecycle입니다.
 
-| 선택 | 초기 data·API | 공통 Schema | 구현 영향 |
+| Resource | DELETE 뒤 조회 | 변경·반복 DELETE | Schema·index·FK |
 | --- | --- | --- | --- |
-| 단일 | `general`/일반/order 100 한 row seed, Board read API | `community_board`, Post `board_id NOT NULL` | 가장 작은 화면, 후속 Board 추가 시 Post backfill 없음 |
-| 고정 3개 | `free`/자유/100, `questions`/질문/200, `information`/정보공유/300 seed | 단일과 동일 | 이름·잘못 선택한 글 이동 정책 필요 |
-| 관리형 | Board read와 관리자 create/update/reorder/archive | 기존 order 변경과 status·version 확장 | 관리자 권한·생명주기가 별도 선행 기능 |
+| Post | Board 목록에서 제외, 상세와 모든 하위 Comment endpoint `404` | PATCH와 새 Comment 생성 `404`; 같은 작성자 반복 DELETE `204`, 다른 actor `404` | 원문·author 보존, `ACTIVE` partial cursor index, Comment FK `RESTRICT` |
+| Active Post의 Comment | 목록에서 `AUTHOR_DELETED` placeholder, body·author field 생략 | PATCH `404`; 같은 작성자 반복 DELETE `204`, 다른 actor `404` | 원문·author 보존, active/deleted 모두 포함하는 cursor index |
 
-관리형을 선택하면 현재 작업 하나로는 목표가 둘이 되므로 board 관리 기반과 일반 콘텐츠를
-별도 work item으로 분리한 뒤 의존 순서를 다시 검증합니다.
-
-Seed public id도 환경마다 바뀌지 않는 다음 literal을 사용합니다.
-
-| Code | Public UUID |
-| --- | --- |
-| `general` | `77c9c5a7-f0b3-43b5-9828-3568f194f2b7` |
-| `free` | `54be05ef-b451-4865-b124-b7633d04511e` |
-| `questions` | `efefee45-a64a-4840-98fd-7b8f273ed1dc` |
-| `information` | `302683c3-b101-493f-830f-892d59e9f8d2` |
-
-### 삭제 방식
-
-| 선택 | Post와 Comment API | 반복 DELETE | Schema·index·FK |
-| --- | --- | --- | --- |
-| 자리 유지 | 삭제 Post는 목록·상세 `200` placeholder, 수정·새 Comment 생성은 `404`. 기존 Comment 목록과 active Comment의 작성자 수정·삭제는 유지. 삭제 Comment도 목록 placeholder | 같은 작성자 `204`, 다른 actor `404` | Post·Comment `ACTIVE/AUTHOR_DELETED`, `deleted_at`, nullable content+상태 check, 내부 author 보존, Comment FK `RESTRICT`, 목록 index에 두 상태 포함 |
-| 전체 숨김 | 삭제 Post는 목록에서 제외하고 상세·모든 하위 Comment endpoint `404`. Active Post 아래 개별 삭제 Comment도 목록·변경에서 제외 | 삭제 Post와 active parent 아래 개별 삭제 Comment는 같은 작성자의 반복 DELETE만 `204`. 삭제 Post 아래 Comment와 다른 actor는 `404` | Post·Comment 상태·시각, 원문·내부 author 보존, Comment FK `RESTRICT`, `ACTIVE` partial index와 active parent predicate |
-| 물리 삭제 | Post와 하위 Comment row, 개별 Comment row를 즉시 삭제하고 이후 모든 조회·변경 `404` | 누구에게나 `404` | 삭제 상태 없음, Comment FK `ON DELETE CASCADE`, partial index 없음 |
-
-자리 유지에서 placeholder는 원문·account public id·display name을 노출하지 않습니다. 삭제된
-Post에 새 대화를 늘리는 것은 막지만, 이미 남긴 active Comment 작성자는 자신의 콘텐츠를 계속
-수정·삭제할 수 있습니다. 삭제 placeholder 자체의 PATCH는 `404`입니다. 전체 숨김은 하위
-Comment row를 수정하지 않고 active parent predicate로 함께 숨깁니다. 물리 삭제의 cascade로
-다른 작성자의 Comment도 제거된다는 영향은
-사용자 선택문에 포함하며 구현 중 `RESTRICT`로 바꾸지 않습니다.
+삭제 Post의 하위 Comment row는 상태를 일괄 변경하지 않습니다. Parent visibility predicate가
+모든 하위 endpoint를 숨기므로 하위 Comment author도 조회·수정·삭제할 수 없습니다. 삭제
+Comment 응답은 `placeholder="삭제된 댓글입니다."`와 `deletedAt`만 추가하며 원문과 account
+표현을 노출하지 않습니다. 보존 기간·privacy redaction·관리자 열람은 account 탈퇴·익명화나
+production 운영 전에 별도 privacy 작업으로 결정합니다.
 
 ## 목표 API 계약
 
-조회 endpoint의 public/protected 여부와 초기 Board seed는 사용자 선택에 따라 확정합니다.
+모든 GET은 public이고 모든 write는 인증·session 상태와 resource action policy를 적용합니다.
 
 | Method | Path | Request | Success | 권한 |
 | --- | --- | --- | --- | --- |
-| `GET` | `/api/v1/boards` | - | `200` Board collection | 조회 선택 |
-| `GET` | `/api/v1/boards/{boardId}` | - | `200` Board 상세 | 조회 선택 |
+| `GET` | `/api/v1/boards` | - | `200` Board collection | 공개 |
+| `GET` | `/api/v1/boards/{boardId}` | - | `200` Board 상세 | 공개 |
 | `POST` | `/api/v1/boards/{boardId}/posts` | title, body | `201`, body, `Location` | 인증 쓰기 |
-| `GET` | `/api/v1/boards/{boardId}/posts?limit=20&cursor=...` | query | `200` post cursor slice | 조회 선택 |
-| `GET` | `/api/v1/posts/{postId}` | - | `200` detail | 조회 선택 |
+| `GET` | `/api/v1/boards/{boardId}/posts?limit=20&cursor=...` | query | `200` post cursor slice | 공개 |
+| `GET` | `/api/v1/posts/{postId}` | - | `200` detail | 공개 |
 | `PATCH` | `/api/v1/posts/{postId}` | title 또는 body | `200` | 작성자 |
 | `DELETE` | `/api/v1/posts/{postId}` | - | `204` | 작성자 |
 | `POST` | `/api/v1/posts/{postId}/comments` | body | `201`, body, `Location` | 인증 쓰기 |
-| `GET` | `/api/v1/posts/{postId}/comments?limit=50&cursor=...` | query | `200` comment cursor slice | 조회 선택 |
+| `GET` | `/api/v1/posts/{postId}/comments?limit=50&cursor=...` | query | `200` comment cursor slice | 공개 |
 | `PATCH` | `/api/v1/posts/{postId}/comments/{commentId}` | body | `200` | 작성자 |
 | `DELETE` | `/api/v1/posts/{postId}/comments/{commentId}` | - | `204` | 작성자 |
 
-최초 범위의 Board·Post·Comment 응답은 공개 조회 선택에서도 `Cache-Control: no-store`를
+모든 request·response body는 `application/json`입니다. `CreatePostRequest`는 required `title`,
+`body`, `UpdatePostRequest`는 optional `title`, `body` 중 하나 이상을 받습니다.
+`CreateCommentRequest`와 `UpdateCommentRequest`는 required `body`를 받습니다. 알 수 없는 field는
+무시하고 domain·저장·응답에 전달하지 않습니다. Null은 required field 누락 또는 빈 PATCH로
+`400`입니다.
+
+Post 생성은 active detail body와 `/api/v1/posts/{postId}` `Location`, Comment 생성은 active
+comment body와 `/api/v1/posts/{postId}/comments/{commentId}` `Location`을 반환합니다. PATCH도
+변경 뒤 active detail/comment body를 반환합니다. DELETE `204`에는 body가 없습니다. 모든 UUID
+path parameter가 문법적으로 잘못됐으면 `400`, 올바르지만 없거나 비노출이면 아래 resource별
+`404`를 반환합니다.
+
+최초 범위의 Board·Post·Comment 응답은 공개 조회에서도 `Cache-Control: no-store`를
 사용합니다. 현재 display name·작성자 삭제·visibility가 즉시 바뀔 수 있는데 validator와
 무효화 계약은 없기 때문입니다. HTTP cache가 실제 요구가 되면 ETag·재검증과 삭제·moderation
 무효화 경로를 함께 설계하고 이 값을 완화합니다.
@@ -431,21 +510,12 @@ Comment row를 수정하지 않고 active parent predicate로 함께 숨깁니�
 total count를 제공하지 않습니다. 이후 차량별 수천 개 Board 탐색이 필요하면 이 endpoint에
 전부 섞지 않고 차량 scope/filter가 명시된 별도 cursor query를 추가합니다.
 
-Post 응답은 `state` discriminator를 사용합니다. 공통 field는 `postId`,
-`board: { boardId, code, name, displayOrder }`, `state`, `createdAt`, `updatedAt`입니다.
-
-- `ActivePostSummaryResponse`: `state="ACTIVE"`, `title`, `author: { accountId, displayName }`
-- `AuthorDeletedPostSummaryResponse`: `state="AUTHOR_DELETED"`,
-  `placeholder="삭제된 게시글입니다."`, `deletedAt`; `title`, `body`, `author`는 **null이 아니라
-  field 자체를 생략**합니다.
-- `ActivePostDetailResponse`: active summary field와 `body`
-- `AuthorDeletedPostDetailResponse`: deleted summary와 같은 field만 사용하고 `body`를
-  추가하지 않습니다.
-
-Post summary와 detail OpenAPI schema는 자리 유지 선택에서 각각 위 active/deleted variant의
-`oneOf`이며 discriminator property는 `state`입니다. 전체 숨김·물리 삭제 선택에서는 active
-variant만 응답하고 삭제 variant는 선택 반영 단계에서 계약에서 제거합니다. Comment 목록은
-Post detail에 중첩하지 않고 별도 slice endpoint가 소유합니다.
+Post 응답은 visible `ACTIVE` row만 표현합니다. Summary는 `postId`,
+`board: { boardId, code, name, displayOrder }`, `state="ACTIVE"`, `title`,
+`author: { accountId, displayName }`, `createdAt`, `updatedAt`을 가집니다. Detail은 summary에
+`body`를 추가합니다. `AUTHOR_DELETED` Post는 response variant가 아니라 목록에서 제외되고
+상세·하위 endpoint가 `404`이므로 OpenAPI에 deleted Post schema를 만들지 않습니다. Comment
+목록은 Post detail에 중첩하지 않고 별도 slice endpoint가 소유합니다.
 
 Comment 응답도 `state` discriminator를 사용합니다. 공통 field는 `commentId`, `postId`,
 `state`, `createdAt`, `updatedAt`입니다.
@@ -455,9 +525,9 @@ Comment 응답도 `state` discriminator를 사용합니다. 공통 field는 `com
 - `AuthorDeletedCommentResponse`: `state="AUTHOR_DELETED"`,
   `placeholder="삭제된 댓글입니다."`, `deletedAt`; `body`, `author`는 field 자체를 생략합니다.
 
-자리 유지의 Comment OpenAPI schema는 두 variant의 `oneOf`입니다. 전체 숨김·물리 삭제는 active
-variant만 응답합니다. Web·OpenAPI test는 variant별 required/omitted field, discriminator,
-placeholder literal과 삭제 variant의 account·원문 비노출을 고정합니다.
+Comment OpenAPI schema는 두 variant의 `oneOf`이며 discriminator property는 `state`입니다.
+Web·OpenAPI test는 variant별 required/omitted field, discriminator, placeholder literal과
+삭제 variant의 account·원문 비노출을 고정합니다.
 
 Post와 Comment slice는 다음 field를 갖는 module-local response를 각각 사용합니다.
 
@@ -482,75 +552,95 @@ Post와 Comment slice는 다음 field를 갖는 module-local response를 각각 
 | comment 미존재·parent 불일치·비노출 | `404` | `COMMUNITY_COMMENT_NOT_FOUND` |
 | optimistic lock conflict | `409` | `COMMUNITY_CONTENT_CONFLICT` |
 | unsupported content type | `415` | 기존 공통 media type 오류 |
+| 저장된 active 작성자의 공개 profile 누락 | `500` | `COMMUNITY_AUTHOR_PROFILE_UNAVAILABLE` |
 
-반복 DELETE는 자리 유지·전체 숨김에서 내부 author UUID가 같은 actor에게만 `204`, 다른
-actor에게 `404`입니다. 물리 삭제는 row와 author 근거가 없으므로 누구에게나 `404`입니다.
+반복 DELETE는 Post와 active Post 아래 Comment 모두 내부 author UUID가 같은 actor에게만
+`204`, 다른 actor에게 `404`입니다. 삭제 Post 아래 Comment endpoint는 parent visibility로
+actor와 무관하게 `404`입니다.
+
+작성자 profile 누락 오류에는 account id·content 원문을 넣지 않고 request id와 고정 code만
+노출합니다. 운영 log에는 content public id와 누락된 account public id를 구조화 field로
+기록하되 email·JWT·본문은 기록하지 않습니다.
 
 ## 목표 persistence 계약
 
-사용자 선택 전에도 공통으로 필요한 column은 다음과 같습니다.
+첫 migration의 table·column 계약은 다음과 같습니다. UUID는 application에서 생성하므로 DB
+default를 두지 않고, 감사 시각은 저장소 관례대로 `NOW()`를 기본값으로 둡니다.
 
 ### `community_board`
 
-| Column | Type | 의미 |
-| --- | --- | --- |
-| `id` | `BIGINT IDENTITY` | 내부 PK |
-| `public_id` | `UUID` | API 공개 식별자, unique |
-| `code` | `VARCHAR(50)` | 변경되지 않는 seed·business key, unique |
-| `name` | `VARCHAR(80)` | 사용자 표시 이름 |
-| `display_order` | `INTEGER` | 0 이상 navigation 정렬값. 중복 허용, public id로 tie-break |
-| `created_at`, `updated_at` | `TIMESTAMPTZ` | 감사 시각 |
+| Column | Type | Nullable | Default | 의미 |
+| --- | --- | --- | --- | --- |
+| `id` | `BIGINT GENERATED BY DEFAULT AS IDENTITY` | no | identity | 내부 PK |
+| `public_id` | `UUID` | no | 없음 | API 공개 식별자, unique |
+| `code` | `VARCHAR(50)` | no | 없음 | 변경되지 않는 seed·business key, unique |
+| `name` | `VARCHAR(80)` | no | 없음 | 사용자 표시 이름 |
+| `display_order` | `INTEGER` | no | 없음 | 0 이상 navigation 정렬값. 중복 허용, public id tie-break |
+| `created_at` | `TIMESTAMPTZ` | no | `NOW()` | 생성 시각 |
+| `updated_at` | `TIMESTAMPTZ` | no | `NOW()` | 마지막 갱신 시각 |
 
 현재 Board는 seed와 조회만 지원하므로 version·status를 미리 넣지 않습니다. 관리 기능이
 생길 때 실제 상태 전이에 맞춰 additive column을 추가하고 기존 `display_order`를 사용합니다.
-선택한 초기 Board는 위 표의 literal `public_id`·`code`와 100 단위 order로 migration에
+`54be05ef-b451-4865-b124-b7633d04511e`/`free`/`자유게시판`/`100`을 migration에
 삽입하고, 환경별 fixture가 다른 identity·순서를 만들지 않게 합니다.
 
 ### `community_post`
 
-| Column | Type | 의미 |
-| --- | --- | --- |
-| `id` | `BIGINT IDENTITY` | 내부 PK |
-| `public_id` | `UUID` | API 공개 식별자, unique |
-| `board_id` | `BIGINT` | 같은 module `community_board.id` 필수 FK |
-| `author_account_public_id` | `UUID` | JWT `sub`와 비교할 작성자 reference |
-| `title` | `VARCHAR(120)` | 게시글 제목. 삭제 선택에 따라 nullable 여부 확정 |
-| `body` | `TEXT` | 최대 10,000자 plain text. 삭제 선택에 따라 nullable 여부 확정 |
-| `version` | `BIGINT` | optimistic lock |
-| `created_at`, `updated_at` | `TIMESTAMPTZ` | 감사 시각 |
-| 조건부 column | - | 삭제 상태·시각은 사용자 선택 뒤 추가 |
+| Column | Type | Nullable | Default | 의미 |
+| --- | --- | --- | --- | --- |
+| `id` | `BIGINT GENERATED BY DEFAULT AS IDENTITY` | no | identity | 내부 PK |
+| `public_id` | `UUID` | no | 없음 | API 공개 식별자, unique |
+| `board_id` | `BIGINT` | no | 없음 | `community_board.id` FK |
+| `author_account_public_id` | `UUID` | no | 없음 | JWT `sub`와 비교할 작성자 reference |
+| `title` | `VARCHAR(120)` | no | 없음 | 삭제 뒤에도 보존하는 canonical 제목 |
+| `body` | `TEXT` | no | 없음 | 삭제 뒤에도 보존하는 최대 10,000 code point plain text |
+| `lifecycle_state` | `VARCHAR(20)` | no | `'ACTIVE'` | `ACTIVE` 또는 `AUTHOR_DELETED` |
+| `deleted_at` | `TIMESTAMPTZ` | yes | 없음 | 작성자 삭제 시각 |
+| `version` | `BIGINT` | no | `0` | optimistic lock |
+| `created_at` | `TIMESTAMPTZ` | no | `NOW()` | 생성 시각 |
+| `updated_at` | `TIMESTAMPTZ` | no | `NOW()` | 마지막 갱신 시각 |
 
 ### `community_comment`
 
-| Column | Type | 의미 |
-| --- | --- | --- |
-| `id` | `BIGINT IDENTITY` | 내부 PK |
-| `public_id` | `UUID` | API 공개 식별자, unique |
-| `post_id` | `BIGINT` | 같은 module `community_post.id` FK |
-| `author_account_public_id` | `UUID` | JWT `sub`와 비교할 작성자 reference |
-| `body` | `TEXT` | 최대 2,000자 plain text. 삭제 선택에 따라 nullable 여부 확정 |
-| `version` | `BIGINT` | optimistic lock |
-| `created_at`, `updated_at` | `TIMESTAMPTZ` | 감사 시각 |
-| 조건부 column | - | 삭제 상태·시각은 사용자 선택 뒤 추가 |
+| Column | Type | Nullable | Default | 의미 |
+| --- | --- | --- | --- | --- |
+| `id` | `BIGINT GENERATED BY DEFAULT AS IDENTITY` | no | identity | 내부 PK |
+| `public_id` | `UUID` | no | 없음 | API 공개 식별자, unique |
+| `post_id` | `BIGINT` | no | 없음 | `community_post.id` FK |
+| `author_account_public_id` | `UUID` | no | 없음 | JWT `sub`와 비교할 작성자 reference |
+| `body` | `TEXT` | no | 없음 | 삭제 뒤에도 보존하는 최대 2,000 code point plain text |
+| `lifecycle_state` | `VARCHAR(20)` | no | `'ACTIVE'` | `ACTIVE` 또는 `AUTHOR_DELETED` |
+| `deleted_at` | `TIMESTAMPTZ` | yes | 없음 | 작성자 삭제 시각 |
+| `version` | `BIGINT` | no | `0` | optimistic lock |
+| `created_at` | `TIMESTAMPTZ` | no | `NOW()` | 생성 시각 |
+| `updated_at` | `TIMESTAMPTZ` | no | `NOW()` | 마지막 갱신 시각 |
 
-자리 유지·전체 숨김 선택의 조건부 column은 `lifecycle_state VARCHAR(20) NOT NULL`과
-`deleted_at TIMESTAMPTZ NULL`입니다. 상태 check는 `ACTIVE`, `AUTHOR_DELETED`만 허용하고
-`ACTIVE`일 때 `deleted_at IS NULL`, `AUTHOR_DELETED`일 때 `deleted_at IS NOT NULL`을
-강제합니다. 자리 유지는 author-deleted content를 null로 만들고 전체 숨김은 원문을 유지하는
-별도 content check를 사용합니다. 이 상태는 작성자 lifecycle만 소유하며 후속 moderator
-restriction을 enum 값으로 추가하지 않습니다. 물리 삭제 선택에는 두 column을 만들지 않습니다.
+Constraint와 index는 다음 이름과 의미를 사용합니다.
 
-공통 constraint와 index:
-
-- `public_id` unique, 시간 역전 방지와 canonical Unicode White_Space trim·CR 부재·
-  `CHAR_LENGTH` code point 길이 check
-- post `board_id` FK와 `(board_id, created_at DESC, public_id DESC)` cursor index
-- comment `post_id` FK와 `(post_id, created_at ASC, public_id ASC)` cursor index
-- Board `(display_order ASC, public_id ASC)` index와 `display_order >= 0` check
-- 전체 숨김만 Post·Comment cursor index에 `lifecycle_state = 'ACTIVE'` predicate를 둠.
-  자리 유지는 placeholder를 포함하므로 partial index를 사용하지 않고, 물리 삭제에는 상태
-  predicate가 없음
-- `author_account_public_id`에는 account cross-module FK를 만들지 않음
+- 각 table의 `pk_community_*` PK, `uk_community_*_public_id` unique와 Board의
+  `uk_community_board_code` unique
+- `fk_community_post_board`: `board_id -> community_board(id) ON DELETE RESTRICT`
+- `fk_community_comment_post`: `post_id -> community_post(id) ON DELETE RESTRICT`
+- `chk_community_*_updated_at`: `updated_at >= created_at`
+- Post·Comment의 `chk_community_*_lifecycle_state`: `ACTIVE`, `AUTHOR_DELETED`만 허용
+- Post·Comment의 `chk_community_*_deleted_at`: `ACTIVE`면 `deleted_at IS NULL`,
+  `AUTHOR_DELETED`면 `deleted_at IS NOT NULL AND deleted_at >= created_at AND
+  deleted_at <= updated_at`
+- `chk_community_post_title`, `chk_community_post_body`, `chk_community_comment_body`는
+  canonical Unicode White_Space trim·CR 부재·
+  `CHAR_LENGTH` code point 범위를 D6과 같은 고정 식으로 검사합니다. 삭제돼도 원문이 남으므로
+  content column과 content check는 모든 상태에서 동일하게 적용됩니다.
+- `chk_community_board_display_order`: `display_order >= 0`
+- `chk_community_board_code`: `code ~ '^[a-z][a-z0-9-]{0,49}$'`
+- `chk_community_board_name`: canonical trim 뒤 1~80 code point
+- `chk_community_post_version`, `chk_community_comment_version`: `version >= 0`
+- `idx_community_board_order`: `(display_order ASC, public_id ASC)`
+- `idx_community_post_board_cursor_active`:
+  `(board_id, created_at DESC, public_id DESC) WHERE lifecycle_state = 'ACTIVE'`
+- `idx_community_comment_post_cursor`:
+  `(post_id, created_at ASC, public_id ASC)`; 삭제 Comment placeholder도 읽으므로 partial
+  predicate를 두지 않습니다.
+- `author_account_public_id`에는 account cross-module FK를 만들지 않습니다.
 
 목록 응답에는 최초 범위에 없는 댓글 수 집계를 넣지 않습니다. 댓글 수가 실제 화면 요구로
 확정되면 상세 계산·목록 grouped query·비정규화 counter의 비용과 삭제 댓글 포함 의미를 별도
@@ -562,9 +652,9 @@ restriction을 enum 값으로 추가하지 않습니다. 물리 삭제 선택에
 | --- | --- | --- |
 | Post 생성 | Board 존재·허용 확인, public id 생성, domain validation, post insert | Board FK·unique·check 실패 rollback |
 | Post 수정 | post load, author 검사, domain update, save | version conflict 409 |
-| Post 삭제 | post `FOR UPDATE`, action policy, 자리 유지·전체 숨김 상태 변경 또는 물리 삭제+cascade | comment 생성과 순서 직렬화, 선택별 반복 DELETE 계약 |
-| Comment 생성 | active post `FOR SHARE` 상태 검사, comment insert | 다른 comment 생성과 공유, post 삭제와 충돌 |
-| Comment 수정·삭제 | comment와 parent load, author 검사, 선택별 상태 변경 또는 물리 삭제 | 자리 유지의 active child만 삭제 Post 아래 변경 허용, version conflict 409 |
+| Post 삭제 | post `FOR UPDATE`, action policy, `AUTHOR_DELETED`·`deleted_at` update | comment 생성과 순서 직렬화, 같은 작성자 반복 `204` |
+| Comment 생성 | active post native `FOR KEY SHARE`, commentable 검사, comment insert | 다른 comment write·Post PATCH와 공유, post delete `FOR UPDATE`와 충돌 |
+| Comment 수정·삭제 | active post native `FOR KEY SHARE`, comment load, author 검사, 수정 또는 `AUTHOR_DELETED`·`deleted_at` update | 다른 comment write·Post PATCH와 공유, post delete와 충돌, 삭제 parent 아래 모두 404, 삭제 Comment PATCH 404, 같은 작성자 반복 DELETE 204, version conflict 409 |
 | 목록·상세 | cursor read query와 transaction 밖/bounded account batch 조립 | count·account lookup N+1 금지 |
 
 account batch lookup은 community 변경 transaction 안에서 DB row lock을 유지한 채 호출하지
@@ -573,6 +663,9 @@ application 오류와 운영 log로 드러내며, 향후 account 익명화 정�
 공개 표현을 반환하도록 계약을 확장합니다.
 
 ## 목표 package와 경계
+
+아래 그림은 `Planned` 이후 첫 core·schema 구현에서 만들어질 목표 경계입니다. 설계 gate 전에
+빈 package나 module을 만드는 순서를 뜻하지 않습니다.
 
 ```text
 community
@@ -606,27 +699,30 @@ community -X-> account.internal / account table
 - title/body/comment의 CRLF·CR 정규화, ASCII/Unicode White_Space blank와 양끝 trim
 - BMP 문자, 정상 supplementary emoji와 결합 문자의 Unicode code point 최대 길이 경계
 - action policy의 author 일치 수정·삭제 성공, 비작성자 거부와 admin 우회 부재
-- 선택한 삭제 상태 전이, parent 상태별 action과 actor별 반복 DELETE
+- 혼합 삭제 상태 전이, parent 상태별 action과 actor별 반복 DELETE
 - parent post 상태별 comment 생성 허용·거부
 - account batch 결과를 post/comment slice에 누락 없이 조립
+- account batch 빈 입력은 query 없이 빈 결과, active 작성자 누락은 redacted
+  `COMMUNITY_AUTHOR_PROFILE_UNAVAILABLE`
 
 ### Web·Security test
 
 - Board 목록·상세와 모든 Post·Comment endpoint 성공 status, body, `Location`
-- 단일·고정 3개 seed의 `(displayOrder ASC, publicId ASC)` Board collection 순서
-- 선택한 삭제 방식의 Post·Comment 목록·상세·변경 visibility와 placeholder 표현
+- 자유게시판 literal seed와 `(displayOrder ASC, publicId ASC)` Board collection 순서
+- 삭제 Post 비노출, 삭제 Comment placeholder와 parent별 변경 visibility
 - request validation, 빈 PATCH, malformed UUID·cursor, parent mismatch
 - escaped `U+0000`·고립 high/low surrogate의 `400`과 정상 emoji pair 성공
-- 선택한 조회 정책의 anonymous·full session·limited/password-change-required matrix
+- 공개 GET과 보호 write의 anonymous·full session·limited/password-change-required matrix
 - 모든 community 응답의 `Cache-Control: no-store`
 - 비작성자 403, 미존재·비노출 404와 공통 Problem Details
+- active 작성자 profile 누락의 500 고정 code와 응답·log 개인정보 비노출
 - OpenAPI 전체 path·response·schema·public/protected 분류
 
 ### PostgreSQL 통합 test
 
 - 최신 Flyway migration 전체 적용과 JPA mapping
-- Board literal seed·UUID/code unique·display order, Post Board FK, content check, Comment FK와
-  삭제 선택별 `RESTRICT`/`CASCADE`·상태 constraint
+- Board literal seed·UUID/code unique·display order, Post Board FK, content check, Comment
+  `RESTRICT` FK와 상태·삭제시각 constraint
 - Board-scoped Post 최신순·Comment 작성순 cursor slice, `limit + 1`, public UUID tie-breaker,
   고정 dataset의 다음 cursor 중복·누락 부재와 별도 total count 부재
 - collection kind·path scope가 다른 cursor 거부와 동시 추가·삭제 시 D5의 non-snapshot
@@ -637,7 +733,7 @@ community -X-> account.internal / account table
 - HTTP JSON→domain→PostgreSQL 경로가 `U+0000`·고립 surrogate를 저장·치환하지 않고 거부하며
   정상 surrogate pair를 원형대로 저장하는 대조 test
 - optimistic update conflict
-- 동시 comment create의 공유 진행과 comment create-post delete 경합의 terminal state
+- 독립 comment write와 Post PATCH의 병렬 진행, 각 comment write-post delete 경합의 두 terminal state
 
 ### 전체 gate
 
@@ -645,6 +741,15 @@ community -X-> account.internal / account table
 - ArchUnit module/internal/domain/application/persistence 경계
 - Docker daemon preflight와 PostgreSQL Testcontainers
 - `./gradlew check`
+- Frozen 개발 후보의 `$verify-dev` 독립 검증
+- 검증된 개발 source를 입력으로 한 `$documentation` SOT 작성과 frozen Markdown 후보의
+  `$verify-documentation final` 독립 감사
+- 최종 합류 시 문서가 소비한 개발 source hash와 최종 개발 후보의 drift 부재
+- Git·remote actual 결과에 따른 work item·router의 `In Progress`/`Done` 재투영과 상태
+  Markdown의 별도 documentation 검증·Git phase
+- Feature push, same-repository PR, review·main merge를 별도 권한과 효과로 분리
+- 상태-only commit도 별도 PR로 main에 통합한 뒤 새 exact main SHA의 required CI와 최신 main
+  Sonar 재확인; 실패·미확정이면 `Done` 금지
 - push가 별도 승인된 구현에서는 final SHA required CI와 Sonar revision·Quality Gate·Open issues
 
 ## 후속 기능별 additive 확장 경로
@@ -740,7 +845,7 @@ module은 해당 기능의 제품 의미와 운영 책임이 확정된 work item
 
 - API와 application log에 제목·본문·댓글 원문을 기록하지 않습니다.
 - account 내부 id, email, profile 내부 row와 JWT 원문을 응답·오류에 노출하지 않습니다.
-- 공개 조회를 선택해도 쓰기는 정상 full session만 허용합니다.
+- 조회는 공개하지만 쓰기는 정상 full session만 허용합니다.
 - rate limiting, 신고·관리자 hide와 sanctions가 없으므로 이 core API의 기술 완료를 production
   공개 운영 준비 완료로 보고하지 않습니다.
 - 새 table과 endpoint는 기존 account/auth operation을 변경하지 않는 additive rollout입니다.
