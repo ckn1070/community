@@ -17,7 +17,10 @@ final class ApiEndpointAccessPolicy {
               HttpMethod.POST, "/api/v1/admin/invitations/{invitationId}/acceptances"),
           new PublicOperation(HttpMethod.POST, "/api/v1/auth/password-resets"),
           new PublicOperation(HttpMethod.POST, "/api/v1/auth/password-resets/confirm"),
-          new PublicOperation(HttpMethod.POST, "/api/v1/auth/logout"));
+          new PublicOperation(HttpMethod.POST, "/api/v1/auth/logout"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/car/brands"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/car/models"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/car/models/{carModelId}"));
 
   private ApiEndpointAccessPolicy() {}
 
