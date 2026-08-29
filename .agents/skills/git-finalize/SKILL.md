@@ -50,7 +50,14 @@ owner에 반환한다. 이 skill에서 공통 discovery·closure 횟수를 다�
 
 operation map에 stage·commit이 있으면 커밋 workflow를 순서대로 실행한다.
 
-첫 Git mutation 전에 예정 commit 순서를 사용자 commentary에 투영한다. 각 항목은 예정
+첫 Git mutation 전에 커밋 workflow의 분할 반증 gate를 실행한다. 예정 subject와 상위 작업명을
+입력에서 제외하고 final diff의 실제 consumer·재시작·복구·revert 경계에서 가장 이른 유효
+prefix를 먼저 찾으며, 각 prefix의 source·compile·직접 test 결과 또는 더 이른 prefix가
+성립하지 않는 직접 dependency를 고정한다. 같은 요청·파일·공유 test, 전체 test 통과나
+작성자의 불가분 선언은 이 증거가 아니다. History rewrite와 source만으로 분할 가능성이
+닫히지 않는 일반 commit은 기존 dirty를 건드리지 않는 격리 candidate에서 prefix를 검증한다.
+
+이 증거를 만든 뒤 예정 commit 순서를 사용자 commentary에 투영한다. 각 항목은 예정
 subject, 원래 요구에서 동결한 하나의 결과, exact path·hunk와 필수 dependency, 적용된
 specialist 검증과 같은 `R/G/C/P` identity를 포함한다. 결과 경계는 이름으로 선언하지 않고 다음 consumer, 실패 뒤
 재시작 지점, retry·복구 방법과 독립 revert 가능성을 대조한다. 하나라도 다르면 불가분
@@ -58,9 +65,9 @@ dependency가 증명되지 않는 한 별도 결과로 투영한다.
 
 이 투영이 없거나 상위 목적 이름으로 서로 다른 경계를 합치거나, 한 subject가 독립적인
 병렬 결과를 나열하거나, 그 commit만 revert했을 때 다른 결과의 코드·test·문서가 함께
-사라지면 stage하지 않고 결과 단위 또는 specialist 검증으로 반환한다. 이 투영은
-사용자에게 새 승인을 묻는 절차가 아니라, source-backed 결과 단위 gate가 실제 Git
-경로에서 호출됐다는 관찰 가능한 실행 증거다.
+사라지거나, 더 이른 유효 prefix가 있는데도 합치면 stage하지 않고 결과 단위 또는 specialist
+검증으로 반환한다. 이 투영은 사용자에게 새 승인을 묻는 절차가 아니라 분할 반증 결과의
+projection이다. 투영 자체를 source-backed 결과 단위 gate의 실행 증거로 다시 사용하지 않는다.
 
 첫 Git mutation과 sandbox·tool approval 호출에는 operation map을 만든 exact 사용자 원문
 원자, 적용한 workflow 상시 예외 또는 직접 Git 요청, exact 효과·path와 제외 효과를 함께

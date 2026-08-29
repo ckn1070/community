@@ -171,6 +171,37 @@ payload에 포함해 이 충돌을 해소하지 않습니다.
 6. subject의 각 의미 구절과 staged hunk를 양방향으로 대조합니다. `A와 B`, `A·B`,
    `A 및 B`처럼 독립 결과를 병렬 나열해야 하면 확정된 결과 단위로 돌아갑니다.
 
+### 분할 반증 gate
+
+첫 Git mutation 전에 예정 subject나 상위 작업명을 보지 않은 상태에서 final diff와 실제
+source·consumer·test로 만들 수 있는 가장 이른 유효 prefix를 먼저 찾습니다. 각 변경은
+독립적으로 호출·소비되는 결과, 실패 뒤 재시작·복구 지점과 revert 영향이 달라지는 지점에서
+분할 후보가 됩니다. 그다음에만 예정 commit 순서와 다음 증거를 대조합니다.
+
+```text
+예정 commit
+→ 하나의 관찰 결과와 exact path·hunk
+→ 다음 consumer·재시작·복구·revert 경계
+→ 그 commit 직후 prefix의 source·compile·직접 test 검증
+→ 인접 분할 후보를 합쳤다면 더 이른 prefix가 유효할 수 없는 직접 증거
+```
+
+인접 후보를 합치는 쪽이 그 불가분성을 증명합니다. 같은 사용자 요청·상위 기능·파일,
+공유 port·fixture·test 파일, 전체 test 통과와 한 문장짜리 계획은 직접 증거가 아닙니다.
+더 이른 prefix가 compile·직접 test를 통과하거나 이후 결과를 제거해도 앞 결과의 consumer가
+유지되면 별도 commit으로 분리합니다. 같은 파일에 순차 hunk가 있어도 격리 candidate에서
+각 prefix를 재구성할 수 있으면 파일 단위로 합치지 않습니다.
+
+History rewrite는 격리 worktree에서 모든 replacement prefix를 실제로 만들고 검증합니다.
+일반 commit에서 분할 가능성이 source만으로 닫히지 않으면, 기존 dirty를 건드리지 않는 격리
+candidate로 더 이른 prefix를 검증합니다. 안전하게 재구성할 수 없으면 불가분으로 추정하지
+않고 더 작은 보수적 경계를 선택하거나 정확한 same-file 분리 blocker를 작업 실행
+워크플로우에 반환합니다.
+
+사용자 commentary의 예정 순서는 이 gate의 결과 projection입니다. 작성자가 그 projection을
+만들었다는 사실, Conventional Commit 형식과 최종 tree의 정합성은 위 prefix 증거를 대신하지
+않습니다.
+
 Commit의 결과는 그 commit 직후의 tree입니다. Rewrite 시작 전에 이미 결함으로 확정된
 상태를 중간 commit에서 다시 만든 뒤 후속 commit으로 고치는 순서는, 최종 tree가 옳고
 각 subject가 서로 달라도 유효한 결과 분리가 아닙니다. 후속 요구가 새로 생겼거나

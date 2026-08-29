@@ -120,7 +120,10 @@ payload를 두지 않습니다.
   이름을 대조한 뒤에만 생성합니다.
 - 첫 `git add`·`git commit`과 같은 generation에서 커밋 워크플로우와 Git 마무리를 실제로
   읽고, 현재 final diff의 결과 단위를 다음 consumer·복구·revert 경계로 다시 분류합니다.
-  그 결과로 예정 commit 순서와 exact path·hunk 귀속을 사용자 commentary에 투영합니다.
+  [커밋 워크플로우의 분할 반증 gate](docs/workflow/300-commit-workflow.md#분할-반증-gate)에서
+  단일 커밋 가정을 배제한 분할 후보와 각 prefix의 실행 가능성을 먼저 대조한 뒤, 예정 commit
+  순서와 exact path·hunk 귀속을 사용자 commentary에 투영합니다. 작성자가 같은 commentary에서
+  모든 변경을 불가분이라고 선언한 사실은 분할 반증이나 결과 경계 증거가 아닙니다.
   과거 turn의 read·plan, 상위 작업명, 전체 diff label과 test 통과는 현재 Git phase의
   invocation이나 commit 경계 증거가 아닙니다. 이 phase 인계와 투영이 없으면 Git mutation을
   호출하지 않습니다.
