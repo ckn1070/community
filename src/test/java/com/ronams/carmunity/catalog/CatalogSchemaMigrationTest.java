@@ -87,7 +87,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             "create car certification");
   }
 
-  /** 설계가 이름으로 고정한 129개 constraint와 조회 index 네 개를 빠짐없이 생성합니다. */
+  /** 설계가 이름으로 고정한 133개 constraint와 조회 index 네 개를 빠짐없이 생성합니다. */
   @Test
   void createsExactNamedConstraintsAndQueryIndexes() {
     Set<String> constraintNames =
@@ -232,6 +232,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             jdbcTemplate.queryForObject(
                 """
                 SELECT capacity_kwh = 84
+                   AND usable_capacity_kwh = 77.4
                    AND capacity_ah = 230
                    AND voltage_v = 697
                    AND manufacturer_name = 'PACK-TEST'
@@ -244,6 +245,46 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                 """,
                 Boolean.class))
         .isTrue();
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                SELECT max_ac_charge_kw = 11
+                   AND ac_charge_connector = 'TYPE_2'
+                   AND ac_charge_minutes = 455
+                   AND ac_charge_from_percent = 10
+                   AND ac_charge_to_percent = 100
+                   AND ac_charge_power_kw = 11
+                   AND max_dc_charge_kw = 240
+                   AND dc_charge_connector = 'CCS_COMBO_2'
+                   AND fast_charge_minutes = 18
+                   AND fast_charge_from_percent = 10
+                   AND fast_charge_to_percent = 80
+                   AND fast_charge_power_kw = 350
+                FROM car_powertrain
+                WHERE id = -142
+                """,
+                Boolean.class))
+        .isTrue();
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                """
+                SELECT max_braked_towing_capacity_kg = 1800
+                   AND max_unbraked_towing_capacity_kg = 750
+                   AND max_roof_load_kg = 80
+                   AND minimum_turning_radius_m = 5.75
+                FROM car_vehicle_variant
+                WHERE id = -172
+                """,
+                Boolean.class))
+        .isTrue();
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT certification_standard FROM car_certification WHERE id = -212",
+                String.class))
+        .isEqualTo("KOREA");
 
     assertThat(
             jdbcTemplate.queryForList(
@@ -307,7 +348,47 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                     "INVALID-CHARGE-" + UUID.randomUUID()))
         .isInstanceOf(DataIntegrityViolationException.class);
 
+    assertThatThrownBy(
+            () ->
+                jdbcTemplate.update(
+                    """
+                    INSERT INTO car_powertrain (
+                        public_id, model_year_id, code, name, propulsion_type,
+                        primary_fuel_type, drivetrain_type, ac_charge_minutes
+                    ) VALUES (?, ?, ?, '잘못된 완속 충전 조건', 'BEV', 'ELECTRICITY', 'RWD', 455)
+                    """,
+                    UUID.randomUUID(),
+                    modelYearId,
+                    "INVALID-AC-CHARGE-" + UUID.randomUUID()))
+        .isInstanceOf(DataIntegrityViolationException.class);
+
+    assertThatThrownBy(
+            () ->
+                jdbcTemplate.update(
+                    """
+                    INSERT INTO car_powertrain (
+                        public_id, model_year_id, code, name, propulsion_type,
+                        primary_fuel_type, drivetrain_type, max_ac_charge_kw
+                    ) VALUES (?, ?, ?, '충전할 수 없는 동력계통', 'ICE', 'GASOLINE', 'FWD', 11)
+                    """,
+                    UUID.randomUUID(),
+                    modelYearId,
+                    "INVALID-ICE-CHARGE-" + UUID.randomUUID()))
+        .isInstanceOf(DataIntegrityViolationException.class);
+
     long powertrainId = createMinimalPowertrain(modelYearId, "ICE");
+
+    assertThatThrownBy(
+            () ->
+                jdbcTemplate.update(
+                    """
+                    INSERT INTO car_powertrain_component (
+                        powertrain_id, component_type, component_role, name,
+                        capacity_kwh, usable_capacity_kwh
+                    ) VALUES (?, 'BATTERY', 'ENERGY_STORAGE', '잘못된 배터리', 80, 84)
+                    """,
+                    powertrainId))
+        .isInstanceOf(DataIntegrityViolationException.class);
     assertThatThrownBy(
             () ->
                 jdbcTemplate.update(
@@ -336,10 +417,37 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             () ->
                 jdbcTemplate.update(
                     """
+                    UPDATE car_vehicle_variant
+                    SET max_braked_towing_capacity_kg = 500,
+                        max_unbraked_towing_capacity_kg = 750
+                    WHERE id = ?
+                    """,
+                    variantId))
+        .isInstanceOf(DataIntegrityViolationException.class);
+
+    assertThatThrownBy(
+            () ->
+                jdbcTemplate.update(
+                    """
                     INSERT INTO car_certification (
                         vehicle_variant_id, condition_code, condition_name, certification_type,
+                        certification_standard, combined_efficiency, efficiency_unit, co2_g_per_km
+                    ) VALUES (?, ?, '인증 기준 없는 측정값', 'LIQUID_FUEL', ' ', 12.5, 'KM_PER_L', 130)
+                    """,
+                    variantId,
+                    "INVALID-STANDARD-" + UUID.randomUUID()))
+        .isInstanceOf(DataIntegrityViolationException.class);
+
+    assertThatThrownBy(
+            () ->
+                jdbcTemplate.update(
+                    """
+                    INSERT INTO car_certification (
+                        vehicle_variant_id, condition_code, condition_name, certification_type,
+                        certification_standard,
                         combined_efficiency, efficiency_unit, combined_range_km
-                    ) VALUES (?, ?, '온도 조건 없는 전기 인증', 'ELECTRIC', 5.0, 'KM_PER_KWH', 400)
+                    ) VALUES (?, ?, '온도 조건 없는 전기 인증', 'ELECTRIC', 'KOREA',
+                        5.0, 'KM_PER_KWH', 400)
                     """,
                     variantId,
                     "INVALID-ELECTRIC-" + UUID.randomUUID()))
@@ -608,13 +716,16 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
       INSERT INTO car_powertrain (
           id, public_id, model_year_id, code, name, propulsion_type, primary_fuel_type,
           drivetrain_type, transmission_type, transmission_gears,
-          fast_charge_minutes, fast_charge_from_percent, fast_charge_to_percent
+          max_ac_charge_kw, ac_charge_connector,
+          ac_charge_minutes, ac_charge_from_percent, ac_charge_to_percent, ac_charge_power_kw,
+          max_dc_charge_kw, dc_charge_connector,
+          fast_charge_minutes, fast_charge_from_percent, fast_charge_to_percent, fast_charge_power_kw
       ) VALUES
-          (-140, '00000000-0000-0000-0000-000000000140', -130, 'HEV-TEST', '하이브리드 테스트', 'HEV', 'GASOLINE', 'FWD', 'AUTOMATIC', 6, NULL, NULL, NULL),
-          (-141, '00000000-0000-0000-0000-000000000141', -131, 'ICE-TEST', '내연기관 테스트', 'ICE', 'GASOLINE', 'FWD', 'AUTOMATIC', 8, NULL, NULL, NULL),
-          (-142, '00000000-0000-0000-0000-000000000142', -132, 'BEV-TEST', '전기 테스트', 'BEV', 'ELECTRICITY', 'RWD', 'REDUCTION_GEAR', 1, 18, 10, 80),
-          (-143, '00000000-0000-0000-0000-000000000143', -133, 'FCEV-TEST', '수소전기 테스트', 'FCEV', 'HYDROGEN', 'FWD', 'REDUCTION_GEAR', 1, NULL, NULL, NULL),
-          (-144, '00000000-0000-0000-0000-000000000144', -130, 'K5-ICE-TEST', 'K5 내연기관 테스트', 'ICE', 'GASOLINE', 'FWD', 'AUTOMATIC', 8, NULL, NULL, NULL);
+          (-140, '00000000-0000-0000-0000-000000000140', -130, 'HEV-TEST', '하이브리드 테스트', 'HEV', 'GASOLINE', 'FWD', 'AUTOMATIC', 6, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+          (-141, '00000000-0000-0000-0000-000000000141', -131, 'ICE-TEST', '내연기관 테스트', 'ICE', 'GASOLINE', 'FWD', 'AUTOMATIC', 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+          (-142, '00000000-0000-0000-0000-000000000142', -132, 'BEV-TEST', '전기 테스트', 'BEV', 'ELECTRICITY', 'RWD', 'REDUCTION_GEAR', 1, 11, 'TYPE_2', 455, 10, 100, 11, 240, 'CCS_COMBO_2', 18, 10, 80, 350),
+          (-143, '00000000-0000-0000-0000-000000000143', -133, 'FCEV-TEST', '수소전기 테스트', 'FCEV', 'HYDROGEN', 'FWD', 'REDUCTION_GEAR', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+          (-144, '00000000-0000-0000-0000-000000000144', -130, 'K5-ICE-TEST', 'K5 내연기관 테스트', 'ICE', 'GASOLINE', 'FWD', 'AUTOMATIC', 8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
       INSERT INTO car_powertrain_component (
           id, powertrain_id, component_type, component_role, position, name, fuel_type,
@@ -637,7 +748,8 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
           (-164, -142, 'MOTOR', 'TRACTION', 'FRONT', 'BEV 전륜 모터', NULL, NULL, 74, NULL, NULL, NULL, NULL, 1);
 
       UPDATE car_powertrain_component
-      SET capacity_ah = 230,
+      SET usable_capacity_kwh = 77.4,
+          capacity_ah = 230,
           voltage_v = 697,
           manufacturer_name = 'PACK-TEST',
           cell_manufacturer_name = 'CELL-TEST',
@@ -648,14 +760,16 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
 
       INSERT INTO car_vehicle_variant (
           id, public_id, model_year_id, powertrain_id, code, name, body_type, roof_type,
-          seating_capacity, length_mm, width_mm, height_mm, wheelbase_mm, wheel_size_inch
+          seating_capacity, length_mm, width_mm, height_mm, wheelbase_mm, wheel_size_inch,
+          max_braked_towing_capacity_kg, max_unbraked_towing_capacity_kg,
+          max_roof_load_kg, minimum_turning_radius_m
       ) VALUES
-          (-170, '00000000-0000-0000-0000-000000000170', -130, -140, 'K5-HEV-TEST', 'K5 HEV 테스트', 'SEDAN', 'STANDARD', 5, 4905, 1860, 1445, 2850, 18),
-          (-171, '00000000-0000-0000-0000-000000000171', -131, -141, 'CARNIVAL-ICE-TEST', '카니발 9인승 테스트', 'MPV', 'STANDARD', 9, 5155, 1995, 1775, 3090, 19),
-          (-172, '00000000-0000-0000-0000-000000000172', -132, -142, 'EV6-BEV-TEST', 'EV6 테스트', 'SUV', 'STANDARD', 5, 4695, 1890, 1550, 2900, 20),
-          (-173, '00000000-0000-0000-0000-000000000173', -133, -143, 'NEXO-FCEV-TEST', '넥쏘 테스트', 'SUV', 'STANDARD', 5, 4670, 1860, 1640, 2790, 19),
-          (-174, '00000000-0000-0000-0000-000000000174', -130, -144, 'K5-ICE-TEST', 'K5 ICE 테스트', 'SEDAN', 'STANDARD', 5, 4905, 1860, 1445, 2850, 17),
-          (-175, '00000000-0000-0000-0000-000000000175', -131, -141, 'CARNIVAL-7-HIGH-TEST', '카니발 7인승 하이루프 테스트', 'MPV', 'HIGH_ROOF', 7, 5155, 1995, 2045, 3090, 18);
+          (-170, '00000000-0000-0000-0000-000000000170', -130, -140, 'K5-HEV-TEST', 'K5 HEV 테스트', 'SEDAN', 'STANDARD', 5, 4905, 1860, 1445, 2850, 18, NULL, NULL, NULL, NULL),
+          (-171, '00000000-0000-0000-0000-000000000171', -131, -141, 'CARNIVAL-ICE-TEST', '카니발 9인승 테스트', 'MPV', 'STANDARD', 9, 5155, 1995, 1775, 3090, 19, NULL, NULL, NULL, NULL),
+          (-172, '00000000-0000-0000-0000-000000000172', -132, -142, 'EV6-BEV-TEST', 'EV6 테스트', 'SUV', 'STANDARD', 5, 4695, 1890, 1550, 2900, 20, 1800, 750, 80, 5.75),
+          (-173, '00000000-0000-0000-0000-000000000173', -133, -143, 'NEXO-FCEV-TEST', '넥쏘 테스트', 'SUV', 'STANDARD', 5, 4670, 1860, 1640, 2790, 19, NULL, NULL, NULL, NULL),
+          (-174, '00000000-0000-0000-0000-000000000174', -130, -144, 'K5-ICE-TEST', 'K5 ICE 테스트', 'SEDAN', 'STANDARD', 5, 4905, 1860, 1445, 2850, 17, NULL, NULL, NULL, NULL),
+          (-175, '00000000-0000-0000-0000-000000000175', -131, -141, 'CARNIVAL-7-HIGH-TEST', '카니발 7인승 하이루프 테스트', 'MPV', 'HIGH_ROOF', 7, 5155, 1995, 2045, 3090, 18, NULL, NULL, NULL, NULL);
 
       INSERT INTO car_configuration (
           id, public_id, vehicle_variant_id, code, trim_name, sales_started_on, sales_ended_on,
@@ -680,16 +794,17 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
 
       INSERT INTO car_certification (
           id, vehicle_variant_id, condition_code, condition_name, certification_type,
+          certification_standard,
           temperature_condition, wheel_size_inch, built_in_camera,
           combined_efficiency, efficiency_unit, combined_range_km, co2_g_per_km
       ) VALUES
-          (-210, -170, 'HEV-TEST', '하이브리드 인증 테스트', 'LIQUID_FUEL', NULL, 18, FALSE, 18.1, 'KM_PER_L', NULL, 88),
-          (-211, -171, 'ICE-TEST', '내연기관 인증 테스트', 'LIQUID_FUEL', NULL, 19, FALSE, 9.0, 'KM_PER_L', NULL, 190),
-          (-212, -172, 'BEV-NORMAL-TEST', '전기 20인치 상온 테스트', 'ELECTRIC', 'NORMAL', 20, FALSE, 4.8, 'KM_PER_KWH', 470, NULL),
-          (-213, -172, 'BEV-LOW-TEST', '전기 19인치 저온 테스트', 'ELECTRIC', 'LOW', 19, FALSE, NULL, 'KM_PER_KWH', 330, NULL),
-          (-214, -173, 'FCEV-TEST', '수소 인증 테스트', 'HYDROGEN', NULL, 19, FALSE, 96.2, 'KM_PER_KG', 600, NULL),
-          (-215, -174, 'K5-ICE-TEST', 'K5 내연기관 인증 테스트', 'LIQUID_FUEL', NULL, 17, FALSE, 12.5, 'KM_PER_L', NULL, 130),
-          (-216, -175, 'CARNIVAL-7-TEST', '카니발 7인승 18인치 빌트인 카메라 테스트', 'LIQUID_FUEL', NULL, 18, TRUE, 9.5, 'KM_PER_L', NULL, 180);
+          (-210, -170, 'HEV-TEST', '하이브리드 인증 테스트', 'LIQUID_FUEL', 'KOREA', NULL, 18, FALSE, 18.1, 'KM_PER_L', NULL, 88),
+          (-211, -171, 'ICE-TEST', '내연기관 인증 테스트', 'LIQUID_FUEL', 'KOREA', NULL, 19, FALSE, 9.0, 'KM_PER_L', NULL, 190),
+          (-212, -172, 'BEV-NORMAL-TEST', '전기 20인치 상온 테스트', 'ELECTRIC', 'KOREA', 'NORMAL', 20, FALSE, 4.8, 'KM_PER_KWH', 470, NULL),
+          (-213, -172, 'BEV-LOW-TEST', '전기 19인치 저온 테스트', 'ELECTRIC', 'KOREA', 'LOW', 19, FALSE, NULL, 'KM_PER_KWH', 330, NULL),
+          (-214, -173, 'FCEV-TEST', '수소 인증 테스트', 'HYDROGEN', 'KOREA', NULL, 19, FALSE, 96.2, 'KM_PER_KG', 600, NULL),
+          (-215, -174, 'K5-ICE-TEST', 'K5 내연기관 인증 테스트', 'LIQUID_FUEL', 'KOREA', NULL, 17, FALSE, 12.5, 'KM_PER_L', NULL, 130),
+          (-216, -175, 'CARNIVAL-7-TEST', '카니발 7인승 18인치 빌트인 카메라 테스트', 'LIQUID_FUEL', 'KOREA', NULL, 18, TRUE, 9.5, 'KM_PER_L', NULL, 180);
       """;
 
   private static final Set<String> EXPECTED_CONSTRAINTS =
@@ -751,7 +866,9 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
           chk_car_powertrain_transmission_type
           chk_car_powertrain_transmission_gears
           chk_car_powertrain_positive_values
+          chk_car_powertrain_ac_charge
           chk_car_powertrain_fast_charge
+          chk_car_powertrain_charge_applicability
           chk_car_powertrain_updated_at
           pk_car_powertrain_component
           uk_car_powertrain_component_identity
@@ -763,6 +880,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
           chk_car_powertrain_component_fuel_type
           chk_car_powertrain_component_aspiration_type
           chk_car_powertrain_component_positive_values
+          chk_car_powertrain_component_battery_capacity
           chk_car_powertrain_component_torque_rpm
           chk_car_powertrain_component_production_country
           chk_car_powertrain_component_sort_order
@@ -820,6 +938,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
           chk_car_certification_condition_code
           chk_car_certification_condition_name
           chk_car_certification_type
+          chk_car_certification_standard
           chk_car_certification_temperature
           chk_car_certification_positive_values
           chk_car_certification_measurement

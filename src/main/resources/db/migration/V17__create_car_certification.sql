@@ -5,6 +5,7 @@ CREATE TABLE car_certification (
     condition_code VARCHAR(100) NOT NULL,
     condition_name VARCHAR(180) NOT NULL,
     certification_type VARCHAR(16) NOT NULL,
+    certification_standard VARCHAR(32) NOT NULL,
     temperature_condition VARCHAR(12),
     wheel_size_inch NUMERIC(4, 1),
     tire_specification VARCHAR(80),
@@ -33,6 +34,7 @@ CREATE TABLE car_certification (
     CONSTRAINT chk_car_certification_type CHECK (
         certification_type IN ('LIQUID_FUEL', 'ELECTRIC', 'HYDROGEN')
     ),
+    CONSTRAINT chk_car_certification_standard CHECK (BTRIM(certification_standard) <> ''),
     CONSTRAINT chk_car_certification_temperature CHECK (
         (certification_type = 'ELECTRIC'
             AND temperature_condition IS NOT NULL

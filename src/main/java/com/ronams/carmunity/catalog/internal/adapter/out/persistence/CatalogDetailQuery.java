@@ -317,10 +317,17 @@ final class CatalogDetailQuery {
     private final BigDecimal zeroToHundredSeconds;
     private final Integer topSpeedKmh;
     private final BigDecimal maxAcChargeKw;
+    private final String acChargeConnector;
+    private final Integer acChargeMinutes;
+    private final Integer acChargeFromPercent;
+    private final Integer acChargeToPercent;
+    private final BigDecimal acChargePowerKw;
     private final BigDecimal maxDcChargeKw;
+    private final String dcChargeConnector;
     private final Integer fastChargeMinutes;
     private final Integer fastChargeFromPercent;
     private final Integer fastChargeToPercent;
+    private final BigDecimal fastChargePowerKw;
     private final List<Component> components = new ArrayList<>();
 
     private PowertrainBuilder(ResultSet resultSet) {
@@ -339,10 +346,17 @@ final class CatalogDetailQuery {
         zeroToHundredSeconds = decimal(resultSet, "zero_to_hundred_seconds");
         topSpeedKmh = integer(resultSet, "top_speed_kmh");
         maxAcChargeKw = decimal(resultSet, "max_ac_charge_kw");
+        acChargeConnector = resultSet.getString("ac_charge_connector");
+        acChargeMinutes = integer(resultSet, "ac_charge_minutes");
+        acChargeFromPercent = integer(resultSet, "ac_charge_from_percent");
+        acChargeToPercent = integer(resultSet, "ac_charge_to_percent");
+        acChargePowerKw = decimal(resultSet, "ac_charge_power_kw");
         maxDcChargeKw = decimal(resultSet, "max_dc_charge_kw");
+        dcChargeConnector = resultSet.getString("dc_charge_connector");
         fastChargeMinutes = integer(resultSet, "fast_charge_minutes");
         fastChargeFromPercent = integer(resultSet, "fast_charge_from_percent");
         fastChargeToPercent = integer(resultSet, "fast_charge_to_percent");
+        fastChargePowerKw = decimal(resultSet, "fast_charge_power_kw");
       } catch (SQLException exception) {
         throw new IllegalStateException("동력계통 projection을 읽을 수 없습니다.", exception);
       }
@@ -370,6 +384,7 @@ final class CatalogDetailQuery {
               integer(resultSet, "max_torque_rpm_from"),
               integer(resultSet, "max_torque_rpm_to"),
               decimal(resultSet, "capacity_kwh"),
+              decimal(resultSet, "usable_capacity_kwh"),
               decimal(resultSet, "capacity_ah"),
               decimal(resultSet, "voltage_v"),
               decimal(resultSet, "capacity_l"),
@@ -398,10 +413,17 @@ final class CatalogDetailQuery {
           zeroToHundredSeconds,
           topSpeedKmh,
           maxAcChargeKw,
+          acChargeConnector,
+          acChargeMinutes,
+          acChargeFromPercent,
+          acChargeToPercent,
+          acChargePowerKw,
           maxDcChargeKw,
+          dcChargeConnector,
           fastChargeMinutes,
           fastChargeFromPercent,
           fastChargeToPercent,
+          fastChargePowerKw,
           components);
     }
   }
@@ -425,6 +447,10 @@ final class CatalogDetailQuery {
     private final BigDecimal maxCargoCapacityL;
     private final Integer curbWeightKg;
     private final Integer grossVehicleWeightKg;
+    private final Integer maxBrakedTowingCapacityKg;
+    private final Integer maxUnbrakedTowingCapacityKg;
+    private final Integer maxRoofLoadKg;
+    private final BigDecimal minimumTurningRadiusM;
     private final BigDecimal wheelSizeInch;
     private final String frontTire;
     private final String rearTire;
@@ -455,6 +481,10 @@ final class CatalogDetailQuery {
         maxCargoCapacityL = decimal(resultSet, "max_cargo_capacity_l");
         curbWeightKg = integer(resultSet, "curb_weight_kg");
         grossVehicleWeightKg = integer(resultSet, "gross_vehicle_weight_kg");
+        maxBrakedTowingCapacityKg = integer(resultSet, "max_braked_towing_capacity_kg");
+        maxUnbrakedTowingCapacityKg = integer(resultSet, "max_unbraked_towing_capacity_kg");
+        maxRoofLoadKg = integer(resultSet, "max_roof_load_kg");
+        minimumTurningRadiusM = decimal(resultSet, "minimum_turning_radius_m");
         wheelSizeInch = decimal(resultSet, "wheel_size_inch");
         frontTire = resultSet.getString("front_tire");
         rearTire = resultSet.getString("rear_tire");
@@ -477,6 +507,7 @@ final class CatalogDetailQuery {
               resultSet.getString("condition_code"),
               resultSet.getString("condition_name"),
               resultSet.getString("certification_type"),
+              resultSet.getString("certification_standard"),
               resultSet.getString("temperature_condition"),
               decimal(resultSet, "certification_wheel_size_inch"),
               resultSet.getString("tire_specification"),
@@ -513,6 +544,10 @@ final class CatalogDetailQuery {
           maxCargoCapacityL,
           curbWeightKg,
           grossVehicleWeightKg,
+          maxBrakedTowingCapacityKg,
+          maxUnbrakedTowingCapacityKg,
+          maxRoofLoadKg,
+          minimumTurningRadiusM,
           wheelSizeInch,
           frontTire,
           rearTire,
@@ -699,10 +734,17 @@ final class CatalogDetailQuery {
           powertrain.zero_to_hundred_seconds,
           powertrain.top_speed_kmh,
           powertrain.max_ac_charge_kw,
+          powertrain.ac_charge_connector,
+          powertrain.ac_charge_minutes,
+          powertrain.ac_charge_from_percent,
+          powertrain.ac_charge_to_percent,
+          powertrain.ac_charge_power_kw,
           powertrain.max_dc_charge_kw,
+          powertrain.dc_charge_connector,
           powertrain.fast_charge_minutes,
           powertrain.fast_charge_from_percent,
           powertrain.fast_charge_to_percent,
+          powertrain.fast_charge_power_kw,
           component.component_type,
           component.component_role,
           component.position AS component_position,
@@ -719,6 +761,7 @@ final class CatalogDetailQuery {
           component.max_torque_rpm_from,
           component.max_torque_rpm_to,
           component.capacity_kwh,
+          component.usable_capacity_kwh,
           component.capacity_ah,
           component.voltage_v,
           component.capacity_l,
@@ -764,6 +807,10 @@ final class CatalogDetailQuery {
           variant.max_cargo_capacity_l,
           variant.curb_weight_kg,
           variant.gross_vehicle_weight_kg,
+          variant.max_braked_towing_capacity_kg,
+          variant.max_unbraked_towing_capacity_kg,
+          variant.max_roof_load_kg,
+          variant.minimum_turning_radius_m,
           variant.wheel_size_inch,
           variant.front_tire,
           variant.rear_tire,
@@ -775,6 +822,7 @@ final class CatalogDetailQuery {
           certification.condition_code,
           certification.condition_name,
           certification.certification_type,
+          certification.certification_standard,
           certification.temperature_condition,
           certification.wheel_size_inch AS certification_wheel_size_inch,
           certification.tire_specification,

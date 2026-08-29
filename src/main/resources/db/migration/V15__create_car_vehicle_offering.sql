@@ -21,6 +21,10 @@ CREATE TABLE car_vehicle_variant (
     max_cargo_capacity_l NUMERIC(8, 2),
     curb_weight_kg INTEGER,
     gross_vehicle_weight_kg INTEGER,
+    max_braked_towing_capacity_kg INTEGER,
+    max_unbraked_towing_capacity_kg INTEGER,
+    max_roof_load_kg INTEGER,
+    minimum_turning_radius_m NUMERIC(5, 2),
     wheel_size_inch NUMERIC(4, 1),
     front_tire VARCHAR(40),
     rear_tire VARCHAR(40),
@@ -64,6 +68,10 @@ CREATE TABLE car_vehicle_variant (
         AND (max_cargo_capacity_l IS NULL OR max_cargo_capacity_l > 0)
         AND (curb_weight_kg IS NULL OR curb_weight_kg > 0)
         AND (gross_vehicle_weight_kg IS NULL OR gross_vehicle_weight_kg > 0)
+        AND (max_braked_towing_capacity_kg IS NULL OR max_braked_towing_capacity_kg > 0)
+        AND (max_unbraked_towing_capacity_kg IS NULL OR max_unbraked_towing_capacity_kg > 0)
+        AND (max_roof_load_kg IS NULL OR max_roof_load_kg > 0)
+        AND (minimum_turning_radius_m IS NULL OR minimum_turning_radius_m > 0)
         AND (wheel_size_inch IS NULL OR wheel_size_inch > 0)
     ),
     CONSTRAINT chk_car_vehicle_variant_cargo_capacity CHECK (
@@ -72,9 +80,12 @@ CREATE TABLE car_vehicle_variant (
         OR max_cargo_capacity_l >= cargo_capacity_l
     ),
     CONSTRAINT chk_car_vehicle_variant_weight CHECK (
-        curb_weight_kg IS NULL
-        OR gross_vehicle_weight_kg IS NULL
-        OR gross_vehicle_weight_kg >= curb_weight_kg
+        (curb_weight_kg IS NULL
+            OR gross_vehicle_weight_kg IS NULL
+            OR gross_vehicle_weight_kg >= curb_weight_kg)
+        AND (max_braked_towing_capacity_kg IS NULL
+            OR max_unbraked_towing_capacity_kg IS NULL
+            OR max_braked_towing_capacity_kg >= max_unbraked_towing_capacity_kg)
     ),
     CONSTRAINT chk_car_vehicle_variant_updated_at CHECK (updated_at >= created_at)
 );

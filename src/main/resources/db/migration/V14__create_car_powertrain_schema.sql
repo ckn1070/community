@@ -17,10 +17,17 @@ CREATE TABLE car_powertrain (
     zero_to_hundred_seconds NUMERIC(5, 2),
     top_speed_kmh SMALLINT,
     max_ac_charge_kw NUMERIC(7, 2),
+    ac_charge_connector VARCHAR(40),
+    ac_charge_minutes SMALLINT,
+    ac_charge_from_percent SMALLINT,
+    ac_charge_to_percent SMALLINT,
+    ac_charge_power_kw NUMERIC(7, 2),
     max_dc_charge_kw NUMERIC(7, 2),
+    dc_charge_connector VARCHAR(40),
     fast_charge_minutes SMALLINT,
     fast_charge_from_percent SMALLINT,
     fast_charge_to_percent SMALLINT,
+    fast_charge_power_kw NUMERIC(7, 2),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
@@ -77,19 +84,55 @@ CREATE TABLE car_powertrain (
         AND (zero_to_hundred_seconds IS NULL OR zero_to_hundred_seconds > 0)
         AND (top_speed_kmh IS NULL OR top_speed_kmh > 0)
         AND (max_ac_charge_kw IS NULL OR max_ac_charge_kw > 0)
+        AND (ac_charge_power_kw IS NULL OR ac_charge_power_kw > 0)
         AND (max_dc_charge_kw IS NULL OR max_dc_charge_kw > 0)
+        AND (fast_charge_power_kw IS NULL OR fast_charge_power_kw > 0)
+    ),
+    CONSTRAINT chk_car_powertrain_ac_charge CHECK (
+        (ac_charge_minutes IS NULL
+            AND ac_charge_from_percent IS NULL
+            AND ac_charge_to_percent IS NULL
+            AND ac_charge_power_kw IS NULL)
+        OR (ac_charge_minutes IS NOT NULL
+            AND ac_charge_from_percent IS NOT NULL
+            AND ac_charge_to_percent IS NOT NULL
+            AND ac_charge_power_kw IS NOT NULL
+            AND ac_charge_minutes > 0
+            AND ac_charge_from_percent >= 0
+            AND ac_charge_from_percent < ac_charge_to_percent
+            AND ac_charge_to_percent <= 100)
     ),
     CONSTRAINT chk_car_powertrain_fast_charge CHECK (
         (fast_charge_minutes IS NULL
             AND fast_charge_from_percent IS NULL
-            AND fast_charge_to_percent IS NULL)
+            AND fast_charge_to_percent IS NULL
+            AND fast_charge_power_kw IS NULL)
         OR (fast_charge_minutes IS NOT NULL
             AND fast_charge_from_percent IS NOT NULL
             AND fast_charge_to_percent IS NOT NULL
+            AND fast_charge_power_kw IS NOT NULL
             AND fast_charge_minutes > 0
             AND fast_charge_from_percent >= 0
             AND fast_charge_from_percent < fast_charge_to_percent
             AND fast_charge_to_percent <= 100)
+    ),
+    CONSTRAINT chk_car_powertrain_charge_applicability CHECK (
+        (propulsion_type IN ('PHEV', 'EREV', 'BEV')
+            AND (ac_charge_connector IS NULL OR BTRIM(ac_charge_connector) <> '')
+            AND (dc_charge_connector IS NULL OR BTRIM(dc_charge_connector) <> ''))
+        OR (propulsion_type NOT IN ('PHEV', 'EREV', 'BEV')
+            AND max_ac_charge_kw IS NULL
+            AND ac_charge_connector IS NULL
+            AND ac_charge_minutes IS NULL
+            AND ac_charge_from_percent IS NULL
+            AND ac_charge_to_percent IS NULL
+            AND ac_charge_power_kw IS NULL
+            AND max_dc_charge_kw IS NULL
+            AND dc_charge_connector IS NULL
+            AND fast_charge_minutes IS NULL
+            AND fast_charge_from_percent IS NULL
+            AND fast_charge_to_percent IS NULL
+            AND fast_charge_power_kw IS NULL)
     ),
     CONSTRAINT chk_car_powertrain_updated_at CHECK (updated_at >= created_at)
 );
@@ -118,6 +161,7 @@ CREATE TABLE car_powertrain_component (
     max_torque_rpm_from INTEGER,
     max_torque_rpm_to INTEGER,
     capacity_kwh NUMERIC(8, 2),
+    usable_capacity_kwh NUMERIC(8, 2),
     capacity_ah NUMERIC(8, 2),
     voltage_v NUMERIC(8, 2),
     capacity_l NUMERIC(8, 2),
@@ -180,11 +224,18 @@ CREATE TABLE car_powertrain_component (
         AND (max_torque_rpm_from IS NULL OR max_torque_rpm_from > 0)
         AND (max_torque_rpm_to IS NULL OR max_torque_rpm_to > 0)
         AND (capacity_kwh IS NULL OR capacity_kwh > 0)
+        AND (usable_capacity_kwh IS NULL OR usable_capacity_kwh > 0)
         AND (capacity_ah IS NULL OR capacity_ah > 0)
         AND (voltage_v IS NULL OR voltage_v > 0)
         AND (capacity_l IS NULL OR capacity_l > 0)
         AND (capacity_kg IS NULL OR capacity_kg > 0)
         AND (pressure_bar IS NULL OR pressure_bar > 0)
+    ),
+    CONSTRAINT chk_car_powertrain_component_battery_capacity CHECK (
+        usable_capacity_kwh IS NULL
+        OR (component_type = 'BATTERY'
+            AND capacity_kwh IS NOT NULL
+            AND usable_capacity_kwh <= capacity_kwh)
     ),
     CONSTRAINT chk_car_powertrain_component_torque_rpm CHECK (
         max_torque_rpm_from IS NULL
@@ -200,6 +251,7 @@ CREATE TABLE car_powertrain_component (
         (component_type = 'ENGINE'
             AND displacement_cc IS NOT NULL
             AND capacity_kwh IS NULL
+            AND usable_capacity_kwh IS NULL
             AND capacity_ah IS NULL
             AND voltage_v IS NULL
             AND capacity_l IS NULL
@@ -213,6 +265,7 @@ CREATE TABLE car_powertrain_component (
             AND cylinder_count IS NULL
             AND aspiration_type IS NULL
             AND capacity_kwh IS NULL
+            AND usable_capacity_kwh IS NULL
             AND capacity_ah IS NULL
             AND voltage_v IS NULL
             AND capacity_l IS NULL
@@ -235,6 +288,7 @@ CREATE TABLE car_powertrain_component (
             AND cylinder_count IS NULL
             AND aspiration_type IS NULL
             AND capacity_kwh IS NULL
+            AND usable_capacity_kwh IS NULL
             AND capacity_ah IS NULL
             AND voltage_v IS NULL
             AND capacity_kg IS NULL
@@ -248,6 +302,7 @@ CREATE TABLE car_powertrain_component (
             AND cylinder_count IS NULL
             AND aspiration_type IS NULL
             AND capacity_kwh IS NULL
+            AND usable_capacity_kwh IS NULL
             AND capacity_ah IS NULL
             AND voltage_v IS NULL
             AND capacity_l IS NULL
@@ -262,6 +317,7 @@ CREATE TABLE car_powertrain_component (
             AND cylinder_count IS NULL
             AND aspiration_type IS NULL
             AND capacity_kwh IS NULL
+            AND usable_capacity_kwh IS NULL
             AND capacity_ah IS NULL
             AND voltage_v IS NULL
             AND cell_manufacturer_name IS NULL

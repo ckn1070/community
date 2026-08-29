@@ -192,7 +192,7 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         "UPDATE car_configuration SET standard_features = '[{\"category\":\"안전\",\"name\":\"충돌방지\",\"description\":null}]', warranties = '[{\"name\":\"배터리\",\"years\":10,\"distanceKm\":200000,\"note\":null}]', safety_ratings = '[{\"organization\":\"KNCAP\",\"rating\":\"1등급\",\"assessedOn\":\"2026-01-02\",\"note\":null}]', media = '[{\"type\":\"IMAGE\",\"url\":\"https://example.com/ev6.jpg\",\"alt\":\"EV6\",\"sortOrder\":0}]' WHERE id = ?",
         bev.configurationId());
     jdbcTemplate.update(
-        "INSERT INTO car_certification (vehicle_variant_id, condition_code, condition_name, certification_type, temperature_condition, wheel_size_inch, combined_efficiency, efficiency_unit, combined_range_km) VALUES (?, 'NORMAL-20', '20인치 상온', 'ELECTRIC', 'NORMAL', 20, 4.8, 'KM_PER_KWH', 470)",
+        "INSERT INTO car_certification (vehicle_variant_id, condition_code, condition_name, certification_type, certification_standard, temperature_condition, wheel_size_inch, combined_efficiency, efficiency_unit, combined_range_km) VALUES (?, 'NORMAL-20', '20인치 상온', 'ELECTRIC', 'KOREA', 'NORMAL', 20, 4.8, 'KM_PER_KWH', 470)",
         variantId);
     jdbcTemplate.update(
         "INSERT INTO car_configuration_option (configuration_id, code, name, option_type, is_selectable, price_before_tax_benefit, price_after_tax_benefit, included_items, effective_from, display_order) VALUES (?, 'ADAS', '주행 보조', 'PACKAGE', TRUE, 1200000, 1000000, '[\"후측방 충돌방지\"]', '2026-01-01', 1)",
@@ -214,18 +214,37 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         .satisfies(
             powertrain -> {
               assertThat(powertrain.propulsionType()).isEqualTo(PropulsionType.BEV);
+              assertThat(powertrain.acChargeConnector()).isEqualTo("TYPE_2");
+              assertThat(powertrain.acChargeMinutes()).isEqualTo(455);
+              assertThat(powertrain.acChargeFromPercent()).isEqualTo(10);
+              assertThat(powertrain.acChargeToPercent()).isEqualTo(100);
+              assertThat(powertrain.acChargePowerKw()).isEqualByComparingTo("11");
+              assertThat(powertrain.dcChargeConnector()).isEqualTo("CCS_COMBO_2");
+              assertThat(powertrain.fastChargePowerKw()).isEqualByComparingTo("350");
               assertThat(powertrain.components())
                   .extracting(CatalogModelDetail.Component::componentType)
                   .containsExactly("MOTOR", "BATTERY");
+              assertThat(powertrain.components())
+                  .filteredOn(component -> component.componentType().equals("BATTERY"))
+                  .singleElement()
+                  .extracting(CatalogModelDetail.Component::usableCapacityKwh)
+                  .isEqualTo(new java.math.BigDecimal("77.40"));
             });
     assertThat(detail.variants())
         .singleElement()
         .satisfies(
             variant -> {
+              assertThat(variant.maxBrakedTowingCapacityKg()).isEqualTo(1800);
+              assertThat(variant.maxUnbrakedTowingCapacityKg()).isEqualTo(750);
+              assertThat(variant.maxRoofLoadKg()).isEqualTo(80);
+              assertThat(variant.minimumTurningRadiusM()).isEqualByComparingTo("5.75");
               assertThat(variant.certifications())
                   .singleElement()
-                  .extracting(CatalogModelDetail.Certification::conditionCode)
-                  .isEqualTo("NORMAL-20");
+                  .satisfies(
+                      certification -> {
+                        assertThat(certification.conditionCode()).isEqualTo("NORMAL-20");
+                        assertThat(certification.certificationStandard()).isEqualTo("KOREA");
+                      });
               assertThat(variant.configurations())
                   .singleElement()
                   .satisfies(
@@ -321,7 +340,7 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     long modelYearId = createModelYear(modelId, modelCode);
     long powertrainId =
         jdbcTemplate.queryForObject(
-            "INSERT INTO car_powertrain (public_id, model_year_id, code, name, propulsion_type, primary_fuel_type, drivetrain_type) VALUES (?, ?, ?, '전기', 'BEV', 'ELECTRICITY', 'RWD') RETURNING id",
+            "INSERT INTO car_powertrain (public_id, model_year_id, code, name, propulsion_type, primary_fuel_type, drivetrain_type, max_ac_charge_kw, ac_charge_connector, ac_charge_minutes, ac_charge_from_percent, ac_charge_to_percent, ac_charge_power_kw, max_dc_charge_kw, dc_charge_connector, fast_charge_minutes, fast_charge_from_percent, fast_charge_to_percent, fast_charge_power_kw) VALUES (?, ?, ?, '전기', 'BEV', 'ELECTRICITY', 'RWD', 11, 'TYPE_2', 455, 10, 100, 11, 240, 'CCS_COMBO_2', 18, 10, 80, 350) RETURNING id",
             Long.class,
             UUID.randomUUID(),
             modelYearId,
@@ -330,11 +349,11 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         "INSERT INTO car_powertrain_component (powertrain_id, component_type, component_role, name, max_power_kw) VALUES (?, 'MOTOR', 'TRACTION', '모터', 168)",
         powertrainId);
     jdbcTemplate.update(
-        "INSERT INTO car_powertrain_component (powertrain_id, component_type, component_role, name, capacity_kwh) VALUES (?, 'BATTERY', 'ENERGY_STORAGE', '배터리', 84)",
+        "INSERT INTO car_powertrain_component (powertrain_id, component_type, component_role, name, capacity_kwh, usable_capacity_kwh) VALUES (?, 'BATTERY', 'ENERGY_STORAGE', '배터리', 84, 77.4)",
         powertrainId);
     long variantId =
         jdbcTemplate.queryForObject(
-            "INSERT INTO car_vehicle_variant (public_id, model_year_id, powertrain_id, code, name, body_type, seating_capacity, length_mm, width_mm, height_mm, wheelbase_mm) VALUES (?, ?, ?, ?, ?, 'SUV', 5, 4700, 1890, 1550, 2900) RETURNING id",
+            "INSERT INTO car_vehicle_variant (public_id, model_year_id, powertrain_id, code, name, body_type, seating_capacity, length_mm, width_mm, height_mm, wheelbase_mm, max_braked_towing_capacity_kg, max_unbraked_towing_capacity_kg, max_roof_load_kg, minimum_turning_radius_m) VALUES (?, ?, ?, ?, ?, 'SUV', 5, 4700, 1890, 1550, 2900, 1800, 750, 80, 5.75) RETURNING id",
             Long.class,
             UUID.randomUUID(),
             modelYearId,
