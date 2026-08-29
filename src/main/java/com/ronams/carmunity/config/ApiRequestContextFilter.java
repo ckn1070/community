@@ -47,7 +47,7 @@ public class ApiRequestContextFilter extends OncePerRequestFilter {
 
     try {
       filterChain.doFilter(request, response);
-    } catch (IOException | ServletException | RuntimeException | Error exception) {
+    } catch (Exception exception) {
       downstreamFailed = true;
       throw exception;
     } finally {

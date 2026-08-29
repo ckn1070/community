@@ -736,3 +736,140 @@ Release checklist의 현재 hotfix 상태로 명사를 바꿔도 같은 결론�
 두 전이나 단일 책임 artifact의 단순 질문은 불필요하게 합치거나 확대하지 않아야 합니다.
 독립 행동 검증은 통제 후보의 모델링 효과와 현재 evaluator·runner invocation만 증명하며,
 미래 설명 actor의 실제 호출을 완료로 승격하지 않습니다.
+
+## 사건 1 — 카탈로그 개발 설계를 질문 없이 확정한 현재 실패
+
+### 사건과 최초 단절
+
+기능 범위 질문 뒤 카탈로그 계획은 API 주소, 상세 정보 범위, DB 구조, 초기 데이터와 갱신
+책임을 사용자 선택 없이 확정하고 `Planned`·`남은 사용자 소유 결정 없음`으로 기록했습니다.
+후속 댓글이 API 계층, 차량 정보 범위와 seed 취득 방법을 직접 문제 삼았을 때에도 Agent는
+API 기술 추천을 직접 재검토해 답하지 않았고 정보 범위·데이터 운영 책임도 사용자 결정으로
+분리하지 않은 채 `/cars/...`가 맞다는 결론과 문서 반영을 먼저 투영했습니다. 사용자는 다시
+작업을 중단하고 개발 설계 결정을 왜 묻지 않았는지 지적해야 했습니다.
+
+첫 단절은 계획 문서 작성이나 댓글 mutation이 아니라 그보다 앞선 `결과 변경 값 → 결정
+권위 입장`입니다. Agent는 저장소 기준과 공식 자료를 조사했다는 사실을 모든 차원의 단일
+정답 근거로 사용했습니다. 그 결과 정보 범위·데이터 운영 책임처럼 프로젝트 외부 판단이
+필요한 값, source로 유일하게 닫힌 값과 API·schema 기술 추천을 분리하지 않은 채 실질
+commentary와 writer 후보로 넘겼습니다.
+
+### 시스템 원인과 기존 방어
+
+사용자 결정과 Agent 추천을 분리하는 공통 통제는 사건 전에 존재했고 main의 `dev-plan`과
+`verify-plan`도 추천의 `Planned` 승격을 차단하도록 강화돼 있었습니다. 그러나 feature
+worktree는 그 control commit을 포함하지 않은 이전 skill blob을 사용했고, phase identity가
+현재 skill locator와 target candidate의 control 차이를 writer 입장에서 차단하지 못했습니다.
+후속 댓글 처리에서는 최신 control을 실제로 읽었지만, 기존 기준선의 호출 시점이 mutation·
+review 중심이라 첫 실질 추천과 반영 약속을 입장 결과 없이 통과시켰습니다.
+
+직접 오류는 질문 대신 제품·운영 값을 확정한 것이고, source 조사를 결정 권위 closure로
+대체할 수 있었던 이유는 첫 실질 projection이 결정 원장의 consumer가 아니었기 때문입니다.
+시스템 root는 질문 문구 부족이 아니라 `결정 차원·권위·source → 첫 실질 projection → writer
+→ Planned` 전이에서 같은 identity를 강제하지 못한 control invocation topology입니다.
+
+### 처분·검증 기준과 반사실
+
+- 의미 authority와 활성 결정 기준선의 단일 owner인 workflow/100을 유지합니다.
+- 첫 실질 commentary·답변·계획 결론까지 writer와 같은 입장 gate의 consumer로 포함합니다.
+- 명시된 skill locator와 target worktree의 동명 control을 구분하고 충돌을 조용히 해소하지
+  않습니다.
+- 계획·설계의 열린 사용자 결정은 대안·차이·추천·응답 형식으로 먼저 묻습니다. API·schema·
+  module 같은 기술 선택은 직접 비교해 추천하고, 그 안의 제품 범위·외부 계약·운영 책임만
+  분리해 사용자에게 묻습니다.
+- 카탈로그별 checklist, 외부 dispatcher와 자동 질문 생성기는 추가하지 않습니다.
+
+Root 제거 반사실에서는 API는 기술 추천으로 직접 재검토해 답하고, 정보 범위·data lifecycle은
+프로젝트 외부 판단으로 분류해 즉시 한 질문 라운드를 열었을 것입니다. 답 전에는 계획을
+`Proposed`에서 올리거나 의존 내용을 반영한다고 약속하지 않았을 것입니다. 정비소 예약이나 결제 계획으로 명사를 바꿔도 같은 전이를
+보호하며, 기존 source와 사용자 요구가 외부 판단을 모두 닫은 국소 계획은 불필요하게
+질문으로 막지 않아야 합니다. 행동 검증은 regression·명사 변경·false-block과 실제 routing을
+각각 판정해야 하며, 미래 plan writer의 실제 호출은 후속 live 증거로만 판정합니다.
+
+## 사건 2 — 사용자 보고 50회 이상 반복에도 즉시 질문 통제가 작동하지 않은 실패
+
+### 사건 경계와 최초 단절
+
+사용자는 필요한 내용이 있으면 바로 물으라는 지시를 50회 이상 반복했지만 같은 종류의
+질문 누락이 계속됐다고 보고했습니다. 이 횟수는 사용자 관찰의 authoritative input이지만,
+현재 접근 가능한 Git과 사건 artifact만으로 각 과거 generation을 독립 계수할 수는 없습니다.
+따라서 반복 영향은 인정하되 정확한 숫자를 저장소 증거로 재구성했다고 주장하지 않습니다.
+
+이 사건의 요구는 특정 카탈로그 질문 하나가 아니라, 매 generation에서 결과를 바꾸는 사용자
+소유 판단을 발견한 즉시 질문하는 것이었습니다. 현재 직접 추적한 카탈로그 대표 사건의 최초
+단절은 반복 지시의 문구를 잊은 마지막 답변이 아니라, 새 요청의 Bootstrap 뒤 `결정 차원 →
+권위 입장 → 첫 실질 projection` 전이에 그 지시와 실제 결정 분류 결과가 소비되지 않은
+지점입니다. 나머지 과거 generation 각각의 최초 단절과 원인 분포는 현재 증거로 미증명입니다.
+
+### 통제 생애주기 원인과 기존 방어 실패
+
+Git에는 질문·결정 권위·추천 승격을 고치는 통제가 여러 차례 추가됐고, 가장 가까운 방어는
+main의 `dev-plan`·`verify-plan`에서 Agent 추천을 사용자 결정으로 바꾸지 못하게 했습니다.
+그러나 과거 완료는 통제 문구와 모델링된 답변을 검증했을 뿐, 이후 실제 top-level actor가
+영향 전에 같은 control identity를 읽고 그 결과를 첫 projection과 writer admission에
+전달하는지는 증명하지 못했습니다. 현재 확인한 대표 경로에는 feature worktree의 이전 skill
+blob을 조용히 소비한 경로와, 최신 통제를 읽고도 commentary 입장 전에 호출하지 않은 경로가
+있습니다. 이 두 경로가 다른 모든 과거 generation에서도 실제 원인이었다고 소급하지 않습니다.
+
+대표 두 경로가 함께 드러낸 반복 가능 구조는 개별 질문 목록의 부족이 아니라 control
+lifecycle이 content 작성·commit·자기 모델링 검증에서 멈추고 `실제 control identity → live
+actor invocation → 첫 projection → writer`를 같은 증거로 결속하지 않은 것입니다. 이
+구조에서는 저장소 방어가 늘어도 다음 generation의 실제 admission이 다시 생략될 수 있습니다.
+이는 관찰된 반복을 허용한 공통 구조의 설명이며, 미추적 generation별 실제 원인을 확정한
+주장은 아닙니다.
+
+### 처분·검증 기준과 반사실
+
+이 사건은 별도 카탈로그 규칙을 추가하지 않고 사건 1과 같은 공통 owner의 invocation 경계를
+강화합니다. Exact skill locator와 target control을 구분하고, 첫 실질 projection 전에 사용자
+소유 판단·source 제약·Agent 기술 결정을 분류하며, 열린 사용자 결정이 있으면 writer를
+차단합니다. 동시에 기술 결정을 전부 질문하는 false block을 허용하지 않습니다.
+
+Root가 제거됐다면 명사가 카탈로그·정비소 예약·차량 비교로 바뀌어도 사용자 소유 판단만
+한 질문 라운드로 먼저 나가고, 기존 계약이 결과를 고정한 CSV 계획은 질문 없이 진행됐을
+것입니다. 모델링된 사례의 통과는 현재 control content의 효과만 증명합니다. 반복 실패가
+실제로 끝났다는 완료 판정에는 이후 top-level 계획 actor의 live invocation 증거가 별도로
+필요합니다.
+
+## 행동 검증 범위를 미래 작업으로 넓혀 실행 회고를 중단한 재발
+
+### 두 사건과 공통 불변식
+
+선행 심화 회고는 모델링된 통제 효과와 실제 actor invocation을 분리하고, 단일 phase 결과에
+존재하지 않는 writer·reviewer·Git 전이를 요구하지 않도록 workflow에 적용·검증했습니다.
+또한 실행 회고에 안전한 통제 적용·검증·Git이 남아 있으면 상태 보고로 끝내지 않는 계약을
+retrospective skill에 적용했습니다.
+
+후속 사건에서는 개발 설계 결정 gate의 실제 호출을 검증하면서 evaluator가 아직 오지 않은
+사용자 답변과 그 뒤 전체 plan writer·reviewer·Git까지 필수 전이로 넓혀 `검증 불가`라고
+판정했습니다. 현재 Agent는 실제 통제 효과가 첫 응답의 결정 분류·질문·writer 미시작에서
+끝난다는 점을 직접 대조하지 않고 이 판정을 전체 회고 blocker로 받아들였습니다. 그 결과
+안전하게 수행할 재판정과 local commit이 남아 있는데도 사용자에게 상태와 다음 결정을 먼저
+물었고, 사용자는 기존 작업을 다시 마무리하라고 요구해야 했습니다.
+
+### 이전 방어 생애주기의 2차 시스템 원인
+
+이번 최초 단절은 최종 보고 문구가 아니라 `행별 evaluator verdict → 현재 Agent의 closure·
+blocker 판정`입니다. 다섯 번의 인과를 닫으면 직접 오류는 미래 전이의 미실행을 현재 실패로
+받은 것, 그 허용 원인은 evaluator의 전체 회고 결론을 행별 evidence finding과 구분하지 않은
+것, interface 공백은 case contract가 exact 통제 효과의 terminal을 넘어도 consumer가 다시
+잘라내는 admission이 없었던 것, 기존 oracle 우회는 `검증 불가`라는 보수적 표지를 원래 결과
+범위 대조보다 우선한 것입니다. 2차 root는 통제 내용이나 완료 문구 부족이 아니라
+`case coverage 동결 → evaluator 행별 verdict → 현재 Agent의 closure·실제 차단 gate` 사이에
+원래 결과와 exact terminal identity를 다시 결속하지 않은 consumer handoff입니다.
+
+이전 방어는 올바른 증거 등급과 실제 차단 기준을 이미 소유했지만, evaluator가 범위를 넓힌
+뒤 그 finding을 소비하는 경로를 직접 검증하지 않았습니다. 구현된 규칙을 읽은 사실도 실제
+소비를 보장하지 못했고, 후속 사건으로 이전 완료 범위와 invocation verdict는 무효화됐습니다.
+
+### 통제 처분 결과와 반사실
+
+증거 등급 분리, 실제 transition 표와 실행 회고 terminal 계약은 유지했고, 실패한 consumer
+handoff는 canonical owner인 workflow/100에서 강화했습니다. 현재 실행 규칙은 이 History에
+복제하지 않습니다.
+
+Root가 제거됐다면 카탈로그 결정 gate의 실제 호출은 첫 응답에서 사용자 소유 결정을 한
+라운드로 묻고 기술 결정을 제외했으며 writer를 시작하지 않은 시점에 판정됐을 것입니다.
+정비소 계획이나 단일 read-only 감사로 명사를 바꿔도 미래 사용자 응답·writer chain을 현재
+필수 전이로 만들지 않습니다. 반대로 현재 결과가 실제 다중 phase 완료를 주장한다면 각
+producer·consumer 전이의 미관찰은 계속 `검증 불가`이며 보수성 자체를 제거하지 않습니다.

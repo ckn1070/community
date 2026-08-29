@@ -21,7 +21,7 @@
 | --- | --- |
 | Open | 아직 실행 작업으로 전환되지 않은 backlog 후보 |
 | Proposed | 목표·범위와 결정을 제안 중 |
-| Planned | 사용자 선택과 독립 source 제약으로 닫힌 구현 가능한 계획이 검증됨 |
+| Planned | 사용자 소유 값과 Agent 소유 기술 결정이 각 권위 계약으로 닫힌 구현 가능한 계획이 검증됨 |
 | In Progress | 확정된 범위를 실행 중 |
 | Blocked | 공통 blocker gate가 확정한 입력·권한·외부 상태를 기다리는 문서 상태 |
 | Done | 공통 완료 판정이 닫힌 결과를 보존하는 문서 상태 |
@@ -29,9 +29,9 @@
 
 이 표는 판정을 다시 수행하는 상태 머신이 아니라 canonical owner가 확정한 결과의 문서
 label입니다. 계획 검증 통과만으로 `Planned`가 되지 않습니다. 사용자 선택이 남은 검증된
-계획 제안은 `Proposed`를 유지하고, 사용자 선택과 독립 source 제약으로 모든 결과 변경 값이
-닫힌 계획의 검증 결과만 `Planned`로 투영합니다. 공통 blocker·완료 판정은 각각 `Blocked`와
-`Done`으로 투영합니다.
+계획 제안은 `Proposed`를 유지하고, 사용자 소유 값은 사용자 선택이나 독립 source 제약으로,
+Agent 소유 기술 결정은 source·대안·trade-off와 독립 검증으로 닫힌 계획만 `Planned`로
+투영합니다. 공통 blocker·완료 판정은 각각 `Blocked`와 `Done`으로 투영합니다.
 
 ## 생성·승격 결과의 문서 투영
 
@@ -49,9 +49,9 @@ label입니다. 계획 검증 통과만으로 `Planned`가 되지 않습니다. 
   경계만 둡니다. 해결 방법·우선순위·수용 기준을 계획처럼 확정하지 않습니다.
 - 실행 후보로 확정된 결과는 목표가 하나인 Feature·Bug·Improvement·Spike의
   `Proposed` 문서에 투영합니다.
-- 사용자 선택과 독립 source 제약으로 닫힌 뒤 검증된 계획 결과만 `Planned`로 투영합니다.
-  계획 작성·상세화·검증·commit·push 요청과 verifier verdict는 사용자 선택을 대신하지
-  않습니다.
+- 사용자 소유 값과 Agent 소유 기술 결정이 위 권위 계약으로 닫힌 뒤 검증된 계획 결과만
+  `Planned`로 투영합니다. 계획 작성·상세화·검증·commit·push 요청과 verifier verdict는
+  사용자 선택을 대신하지 않으며, 기술 결정을 사용자 선택으로 바꾸지도 않습니다.
 
 ## 본문의 단일 책임
 

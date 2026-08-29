@@ -51,6 +51,12 @@ owner를 실제로 읽습니다. 읽은 content identity `R`, 현재 원자 `G`,
 Catalog description, skill 이름, 이전 turn의 기억과 `읽었다`는 자기 선언은 실제 load와
 결속 증거가 아닙니다.
 
+한 tool 호출에서 여러 source를 함께 요청했거나 출력이 잘림·pagination·token 제한으로
+끝까지 반환되지 않았으면 해당 source는 실제로 읽은 `R`이 아닙니다. 그 결과를 받은
+consumer는 같은 discovery phase에 남아 source별로 끝까지 다시 읽고 content identity를
+동결하기 전에는 specialist 결과 `P`를 만들거나 판단·writer·review·Git으로 인계하지
+않습니다.
+
 Skill 명시는 절차를 선택할 뿐 권한을 만들지 않습니다. 질문·언급이면 읽기 전용으로,
 실행 동사면 그 원자의 실행 범위로 판정하고, 사용자가 더 좁은 권한이나 금지 효과를
 명시하면 이를 보존합니다. Exact source를 먼저 읽겠다는 최소 안내는 읽을 source와
@@ -332,6 +338,33 @@ mutation specialist·상태 변경 tool을 호출하지 않습니다. 반대로 
 `무엇을 정했는가`를 판정할 때에는 행동이나 답변 전에 결정 차원별 활성 기준선을
 복원합니다.
 
+Source discovery만 하는 최소 안내를 제외하고, 결과를 바꾸는 값을 선택·유지·교체하거나
+`이 값이 맞다`, `이대로 반영한다`, `남은 결정이 없다`와 동등한 결론을 처음 투영하는
+commentary·답변·계획·writer 호출 전에도 같은 기준선을 먼저 닫습니다. 각 값은 다음 입장
+결과 중 하나여야 합니다.
+
+| 입장 결과 | 필요한 근거 | 다음 행동 |
+| --- | --- | --- |
+| 사용자 선택 | 결정 차원과 exact 값을 긍정적으로 선택한 사용자 원문 | 선택한 값만 동결해 소비 |
+| source 제약 | 독립 authoritative source가 허용 값을 하나로 제한함 | source와 파생 범위를 표시하고 질문 없이 소비 |
+| Agent 판단·추천 | 적용 specialist가 Agent 책임으로 분류한 기술 표준, 내부 구조·schema·API 실현, test 방식과 그 밖의 구현 값 | 사용자 결정으로 귀속하거나 승인 질문으로 넘기지 않고 근거·trade-off·재검토 조건을 제시. 계획이 결과이면 추천 상태로 writer가 기록할 수 있음 |
+| 열린 사용자 결정 | source가 하나로 제한하지 못하고 제품 동작·범위·UX 우선순위, 법·개인정보 감수 수준, 예산·외부 계약·운영 책임, 출시 범위·일정처럼 프로젝트 외부 판단이 필요한 값 | 관련 결정을 한 라운드에 모아 질문하고 그 값에 의존하는 projection·writer·review를 시작하지 않음 |
+| 미증명 | 필요한 원문·source·현재 상태를 읽지 못함 | 추측하지 않고 공백·영향과 안전한 독립 단위를 판정 |
+
+API 경로, module 경계, schema 정규화처럼 내부 기술 결과가 크거나 되돌리기 어렵다는 이유만으로
+`열린 사용자 결정`으로 승격하지 않습니다. 그 기술안이 제품 동작·정보 범위·외부 계약이나
+운영 책임 중 어느 값을 함께 선택해야만 닫히는 경우에는 그 외부 판단만 사용자 결정으로
+분리하고 기술안은 Agent 추천으로 연결합니다.
+
+계획·설계가 현재 결과이면 Agent 추천은 사용자 확정 결정으로 바꾸지 않고 `Proposed`의 기술
+후보로 기록할 수 있습니다. 모든 사용자 소유 값이 닫히고 적용 specialist가 요구한 source·
+대안·trade-off와 독립 검증을 갖춘 Agent 기술 결정은 `Planned`의 기술 계약으로 소비할 수
+있지만 사용자 선택으로 귀속하지 않습니다. 질문·반론·댓글이 기존 Agent 추천의 전제나 결과를 문제 삼아도
+사용자가 대체 값을 선택한 것은 아닙니다. 먼저 해당 추천을 다시 검토해 직접 답하고, 그 안에
+프로젝트 외부 판단이 있으면 그 차원만 `열린 사용자 결정` 또는 `미증명`으로 되돌립니다.
+열린 사용자 결정에는 대안·결과 차이·추천·한 줄 응답 형식을 제시하며, 답변 전에 그 값에
+의존하는 추천을 새 확정값으로 바꾸거나 `반영하겠다`고 약속하지 않습니다.
+
 ```text
 결정 차원 → 활성 값 → 권위·근거 source → 뒤의 명시적 대체 source 또는 없음
 → 유지·갱신·미확정
@@ -353,10 +386,9 @@ mutation specialist·상태 변경 tool을 호출하지 않습니다. 반대로 
 - 활성 값이 없는 차원만 미확정 비교·추천 절차로 보냅니다. 이미 확정된 차원을 다시 후보로
   열거나, 비교 절차가 기준선 복원을 대신하게 하지 않습니다.
 
-이 기준선은 상태 변경의 첫 mutation 전, 선행 선택을 전제로 한 흐름 설명이나 현재 결정
-상태 답변의 첫 실질 문장 전, 전문 검증과 Git phase 인계 전에 각각 대조합니다. 검증
-입력에는 원래 기준선과 유효한 대체 source를 포함하며, reviewer는 같은 작업에서 만든
-test·문서의 내부 일치만으로 활성 결정을 재정의하지 않습니다.
+이 기준선은 위 첫 실질 projection 전, 상태 변경의 첫 mutation 전, 전문 검증과 Git phase
+인계 전에 각각 대조합니다. 검증 입력에는 원래 기준선과 유효한 대체 source를 포함하며,
+reviewer는 같은 작업에서 만든 test·문서의 내부 일치만으로 활성 결정을 재정의하지 않습니다.
 
 여러 독립 조건이나 source가 있으면 세션 또는 `/tmp`의 활성 조건 원장에만 다음을
 연결합니다.
@@ -388,6 +420,10 @@ I = 실제로 읽은 control 기준선 R
   동결 content digest입니다. 다른 branch나 main에 최신 규칙이 존재한다는 사실은 해당
   invocation이 그 규칙을 소비했다는 증거가 아닙니다. Target ref를 바꿀 권한이 없으면
   exact `R`을 격리된 입력으로 전달하고 target branch를 임의 merge·reset하지 않습니다.
+  현재 요청에 skill locator가 명시돼 있으면 그 exact locator의 content를 `R`에 포함하며,
+  target worktree의 같은 이름 파일로 조용히 대체하지 않습니다. Target 경로를 지배하는
+  추가 `AGENTS.md`가 있으면 둘을 함께 소비합니다. 두 control identity의 충돌이 입장 결과를
+  바꾸면 더 편한 쪽을 고르지 않고 control source 충돌과 영향 범위를 먼저 반환합니다.
 - `G`는 Bootstrap이 확정한 현재 사용자 원자와 carry-forward·무효화 관계입니다. 이의나
   대체로 무효화된 원자의 이전 generation 결과는 내용이 유용해도 현재 evidence가 아닙니다.
 - `C`는 repository·worktree, fixed base, `HEAD`, index, tracked diff, untracked path·content와
@@ -651,6 +687,11 @@ format·protocol·actor 같은 선행 선택의 권위 source가 아닙니다. �
    결속합니다. Path·확장자·상위 skill 이름으로 분류하지 않으며, 새 executable·hook·자동
    verifier와 hard gate는 도구 workflow의 도입·존치 판정을 통과하지 않으면 후보에서
    제거합니다.
+
+   Reviewer finding이나 correction이 기존 후보의 actor·배치·영향 범위 또는 외부 효과를
+   바꾸면 finding consumer가 그 새 효과를 현재 positive source와 decision authority에
+   다시 mapping하고 위 입장 gate를 직접 호출합니다. Reviewer의 중요도·기계적 차단 추천과
+   앞 후보의 검증 성공은 이 재입장이나 specialist 결과 `P`를 대신하지 않습니다.
 3. 입장 gate를 통과한 관찰 효과, 원래 결과·제약·oracle과 각각의 독립 source를 reviewer
    입력으로 고정하고 후보 식별자를 동결한 뒤 read-only discovery review를 한 번 수행합니다.
    후보가 만든 test·문서는 구현과 설명 evidence로 검토하되 요구 source로 승격하지 않습니다.
@@ -680,6 +721,43 @@ Finding이 도착할 때마다 active writer에게 patch를 지시하거나 revi
 독립 discovery·closure 횟수를 늘리지 않습니다. Closure가 실패하면 같은 라운드에서
 patch·review를 반복하지 않고 후보와 원인 phase를 `Invalidated`로 돌려 새 라운드를
 구성합니다.
+
+이 순서는 설명용 목록이 아니라 actor 호출 전 admission state입니다. Review를 사용하는
+라운드는 세션 원장에 다음 상태 중 하나만 가지며, 현재 Agent는 각 tool 호출 직전에 허용된
+전이인지 대조합니다.
+
+```text
+Writing
+→ Frozen(candidate identity·digest, active writer=0)
+→ DiscoveryRunning(active review set)
+→ FindingsCollected(active review=0, 전체 finding·처분 동결)
+├─ correction=0 → ClosureRunning(same candidate, active review set)
+└─ correction>0 → Correcting
+   → Frozen(new candidate identity·digest, active writer=0)
+   → ClosureRunning(new candidate, active review set)
+ClosureRunning → Closed 또는 Invalidated
+```
+
+- 첫 discovery·closure reviewer 호출 전에 `Frozen`의 candidate identity·digest와
+  `active writer=0`을 실제 상태에서 확인합니다. 하나라도 없으면 reviewer를 호출하지
+  않습니다.
+- `DiscoveryRunning`·`ClosureRunning`에서는 read-only source 확인과 reviewer 대기만
+  허용합니다. 첫 finding이 도착해도 나머지 active review가 terminal이 되기 전에는
+  writer·patch를 시작하지 않습니다.
+- 후보가 review 중 바뀌면 진행 중인 review 전체와 그 finding을 `Invalidated`로 처리합니다.
+  변경 뒤 도착한 finding을 새 후보의 correction 입력이나 완료 증거로 재사용하지 않습니다.
+- `FindingsCollected`는 예정한 reviewer가 모두 terminal이고 현재 Agent가 finding 전체의
+  권위·blocking·처분을 한 번에 동결한 상태입니다. 수정할 finding이 0개이면 같은 candidate로
+  closure review를 호출하고, 하나 이상이면 이 상태에서만 한 correction batch로 전이합니다.
+- 단순 진행 상태 질문은 현재 phase를 관찰하는 edge이며 위 상태를 바꾸지 않습니다. 답변을
+  위해 active reviewer를 interrupt하거나 writer·review 원자를 중단 상태로 바꾸지 않고,
+  보고 뒤 같은 candidate·review set·남은 terminal gate에서 계속합니다. 사용자가 현재
+  작업의 중단·취소·대체나 주체·범위·권한 이의를 명시한 경우에만 Bootstrap 판정 결과에
+  따라 기존 phase를 중단하거나 `Invalidated`로 전이합니다.
+
+이 phase state는 세션 원장의 기존 `I`와 `C`를 소비하며 별도 repository artifact·registry·
+자동 verifier를 만들지 않습니다. Review tool의 실행 성공, reviewer 한 명의 조기 finding,
+상태 보고와 commentary는 phase 전이 증거를 대신하지 않습니다.
 
 실행 중 처음 드러난 source·환경·검증 증거는 이 문서의 새 발견·실제 차단 판정으로
 분류합니다. 안전한 단위는 계속 수행하고, 새 증거로 생긴 사용자 소유 결정이 남은 결과에
@@ -1028,6 +1106,12 @@ context라는 사실만으로 두 번째 등급이 되지 않습니다. 여러 p
 → 다음 phase 인계 또는 terminal 효과
 ```
 
+Transition coverage는 선택한 통제가 이번 결과에서 실제로 바꾸는 첫 영향부터 그 결과의
+terminal까지만 포함합니다. 아직 오지 않은 사용자 답변, 그 답변 뒤 새 generation이나 현재
+결과가 주장하지 않는 writer·reviewer·Git은 미래 consumer이지 현재 필수 전이가 아닙니다.
+Evaluator가 사례를 만들기 쉽다는 이유로 이 미래 전이를 필수 행에 넣거나, 그 미실행을 현재
+결과의 실패·차단으로 판정하지 않습니다.
+
 한 전이라도 실제 실행되지 않았거나 actor·candidate identity를 직접 대조할 수 없으면 그
 전이의 invocation verdict는 `검증 불가`입니다. 모델링된 효과의 `통과`로 채우거나 다른
 전이의 `통과`와 합산하지 않습니다. 특히 회고 뒤 원래 작업으로 복귀하는 미래 전이는 같은
@@ -1038,6 +1122,15 @@ invocation 미검증`으로 남기고 사건 artifact나 return-consumer closure
 반대로 하나의 실제 actor와 직접 source만으로 끝나는 읽기 전용 판정·단일 phase 작업에는
 존재하지 않는 writer→reviewer→Git 전이를 요구하지 않습니다. Verdict와 완료 보고는 실제로
 주장한 결과가 필요로 하는 전이 중 가장 낮은 증거 등급보다 넓을 수 없습니다.
+
+Evaluator는 동결한 행별 증거 verdict만 소유합니다. Evaluator가 전체 회고의 완료·차단이나
+사용자에게 물을 다음 행동까지 제안해도 현재 Agent는 이를 finding으로 받아, 각 행을 원래
+결과·통제 효과·실제 terminal에 다시 mapping한 뒤에만 closure identity를 만듭니다. 동결
+범위 밖의 미래 전이는 후속 위험으로 분리하고 현재 verdict에 합산하지 않습니다. 범위가
+과도했다면 현재 후보를 바꾸지 않고 case contract를 바로잡아 해당 행만 다시 평가합니다.
+재평가가 닫히기 전에는 상태 보고·질문·`Blocked`로 전환하거나 Git phase로 건너뛰지 않습니다.
+재평가를 통과한 뒤 실제 차단 gate를 통과하지 않은 안전한 통제 적용·후속 검증·Git phase를
+계속 수행합니다.
 
 행동 verdict를 받은 뒤 실행 회고를 Git·보고 phase로 넘기기 전에는 다음 closure identity를
 현재 operation map에 결속합니다.

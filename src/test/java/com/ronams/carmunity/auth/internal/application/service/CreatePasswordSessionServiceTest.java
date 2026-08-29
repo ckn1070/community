@@ -279,7 +279,9 @@ class CreatePasswordSessionServiceTest {
     }
 
     @Override
-    public void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt) {}
+    public void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt) {
+      // 이 service는 refresh token을 발급하는 로그인 성공만 기록합니다.
+    }
 
     @Override
     public void recordKnownFailure(

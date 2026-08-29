@@ -144,7 +144,9 @@ class AuthenticatePasswordServiceTest {
     }
 
     @Override
-    public void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt) {}
+    public void recordInteractiveSuccess(UUID accountPublicId, Instant occurredAt) {
+      // 이 service는 token 발급 없는 interactive 성공을 기록하지 않습니다.
+    }
 
     @Override
     public void recordKnownFailure(

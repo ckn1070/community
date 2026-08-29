@@ -75,8 +75,9 @@ class StagingSwaggerAuthenticationProviderTest {
   @Test
   void rejectsMemberAccount() {
     stubAuthentication(List.of("ROLE_MEMBER"), false, SessionAccess.FULL);
+    var authentication = token();
 
-    assertThatThrownBy(() -> provider.authenticate(token()))
+    assertThatThrownBy(() -> provider.authenticate(authentication))
         .isInstanceOf(BadCredentialsException.class);
 
     assertThat(resultRecorder.interactiveSuccessAccountId).isNull();
@@ -86,8 +87,9 @@ class StagingSwaggerAuthenticationProviderTest {
   @Test
   void rejectsAdminWhoMustChangePassword() {
     stubAuthentication(List.of("ROLE_SUPER_ADMIN"), true, SessionAccess.FULL);
+    var authentication = token();
 
-    assertThatThrownBy(() -> provider.authenticate(token()))
+    assertThatThrownBy(() -> provider.authenticate(authentication))
         .isInstanceOf(BadCredentialsException.class);
 
     assertThat(resultRecorder.interactiveSuccessAccountId).isNull();
@@ -97,8 +99,9 @@ class StagingSwaggerAuthenticationProviderTest {
   @Test
   void rejectsLimitedSessionAccount() {
     stubAuthentication(List.of("ROLE_ADMIN"), false, SessionAccess.LIMITED);
+    var authentication = token();
 
-    assertThatThrownBy(() -> provider.authenticate(token()))
+    assertThatThrownBy(() -> provider.authenticate(authentication))
         .isInstanceOf(BadCredentialsException.class);
 
     assertThat(resultRecorder.interactiveSuccessAccountId).isNull();
@@ -140,9 +143,13 @@ class StagingSwaggerAuthenticationProviderTest {
         UUID accountPublicId,
         String identifierHash,
         PasswordLoginFailureReason reason,
-        Instant occurredAt) {}
+        Instant occurredAt) {
+      // 이 provider 검증에서는 password 인증 실패 기록을 사용하지 않습니다.
+    }
 
     @Override
-    public void recordUnknownFailure(String identifierHash, Instant occurredAt) {}
+    public void recordUnknownFailure(String identifierHash, Instant occurredAt) {
+      // 이 provider 검증에서는 unknown account 실패 기록을 사용하지 않습니다.
+    }
   }
 }

@@ -32,8 +32,8 @@ Argo CD application delivery와 외부 HTTPS ingress까지 전체 구축 흐름�
 | --- | --- |
 | 현재 milestone | Staging 단일 node 전체 구축 필수 결과 완료 |
 | Node·ingress platform 확인 | Primary ENI의 `stg-car-community-k8s-node-sg`에 cluster tag를 적용하고, EC2를 ECR pull·LBC policy가 연결된 `stg-car-community-k8s-node-role`로 전환했습니다. IMDSv2 required·hop limit `2`, public subnet ELB role tag와 `stg-api.example.com` ACM certificate `Issued`를 확인했습니다. LBC chart `3.5.0`, replica `1`, exact digest image, required CRD 7개 `Established`, HPA 부재, providerID `aws:///ap-northeast-2a/i-0123456789abcdef0`와 external load balancer 제외 label 해제를 확인했습니다. 새 role의 private ECR exact digest pull regression과 temporary namespace cleanup도 성공했습니다. |
-| GitOps·workload 확인 | AppProject는 `networking.k8s.io/Ingress`를 허용하고 Secret·wildcard를 허용하지 않으며, staging overlay render와 target API server-side dry-run이 성공했습니다. Ingress source를 포함한 revision `4a75d77cf58c2139ee81915bff8dd2a2db23ea8f`는 remote `main`에 반영됐고 CI·Sonar·image publish가 성공했습니다. Argo CD Application은 `Synced`·`Healthy`이고 condition은 없으며, Service는 NodePort `30503`, Ingress는 ALB hostname `example-staging-alb.ap-northeast-2.elb.amazonaws.com`을 보고합니다. |
-| Public ingress E2E 확인 | 같은 ALB가 exact VPC와 public `2a`·`2b` subnet을 사용하고, HTTP `80`→HTTPS `443` redirect, exact TLS policy·ACM certificate, instance Target Group의 HTTP target `Healthy`를 확인했습니다. Frontend SG는 public `80`·`443`만 받고, node SG의 동적 NodePort `30503` source는 shared backend SG이며 public NodePort rule은 없습니다. DNS 전 ALB 직접 요청은 HTTPS readiness `200`과 HTTP `301`을 통과했습니다. Cloudflare DNS-only CNAME은 exact ALB hostname으로 수렴했고, public `stg-api.example.com`은 HTTPS readiness `200`, HTTP→HTTPS `301`, `CN=stg-api.example.com` Amazon certificate를 반환했습니다. |
+| GitOps·workload 확인 | AppProject는 `networking.k8s.io/Ingress`를 허용하고 Secret·wildcard를 허용하지 않으며, staging overlay render와 target API server-side dry-run이 성공했습니다. 배포 대상 application source의 CI·Sonar와 ARM64 image 게시가 성공했고, 그 exact digest를 고정한 deploy revision이 remote `main`에 반영됐습니다. Argo CD Application은 현재 remote `main` revision에서 `Succeeded`·`Synced`·`Healthy`이고 condition은 없으며, runtime Pod는 staging overlay의 exact digest와 같은 imageID로 Ready입니다. Service는 NodePort `30503`, Ingress는 ALB hostname `example-staging-alb.ap-northeast-2.elb.amazonaws.com`을 보고합니다. |
+| Public ingress E2E 확인 | 같은 ALB가 exact VPC와 public `2a`·`2b` subnet을 사용하고, HTTP `80`→HTTPS `443` redirect, exact TLS policy·ACM certificate, instance Target Group의 HTTP target `Healthy`를 확인했습니다. Frontend SG는 public `80`·`443`만 받고, node SG의 동적 NodePort `30503` source는 shared backend SG이며 public NodePort rule은 없습니다. DNS 전 ALB 직접 요청은 HTTPS readiness `200`과 HTTP `301`을 통과했습니다. Cloudflare DNS-only CNAME은 exact ALB hostname으로 수렴했고, public `stg-api.example.com`은 HTTPS readiness `200`, HTTP→HTTPS `301`, `CN=stg-api.example.com` Amazon certificate를 반환했습니다. Staging Swagger UI와 OpenAPI JSON의 비인증 요청은 `/login`으로 `302` 이동하고 로그인 화면은 `200`을 반환합니다. |
 | 다음 행동 | 필수 구축 결과에 남은 행동은 없습니다. 선택 후속 기능과 scenario-local backlog는 별도 승인 전 실행하지 않습니다. |
 | 현재 blocker | 없습니다. 필수 checklist와 전체 완료 조건을 모두 충족했습니다. |
 
@@ -272,12 +272,11 @@ Application prerequisite 확인·적용, GitHub App 설치와 최초 desired sta
   - **실행**: 앞 단계의 GitOps `200` script가 fresh `Synced`·`Healthy`까지 기다립니다.
     성공 후 운영자가 시작 directory 제한이 없는 EC2 terminal에 접속해 350 runbook 6절의
     세 `kubectl` 조회를 실행합니다. 별도의 두 번째 bootstrap script를 실행하지 않습니다.
-  - **완료**: Revision `197890b0e810bf39e727b6ed9e86b34fadc467d9`에서 PreSync
+  - **완료**: 현재 remote `main` revision에서 PreSync
     ConfigMap과 단일 Migration Job이 성공했고, Service·Deployment가 Synced 상태입니다.
     Application condition 없음·`Succeeded`·`Synced`·`Healthy`, Deployment rollout 성공,
-    runtime Pod Ready와 목표 ECR digest
-    `sha256:32351d30bdc40a547dc6acf42b18c99759298c3074168d0bbf3863d755aa96b3`와 같은
-    imageID를 확인했습니다. Runtime role의 `public.auth_role` `SELECT` 권한도 `t`로
+    runtime Pod Ready와 staging overlay의 목표 ECR digest와 같은 imageID를
+    확인했습니다. Runtime role의 `public.auth_role` `SELECT` 권한도 `t`로
     확인했습니다. 여기까지가
     Application delivery 기술 구축의 완료 경계입니다.
 
@@ -361,7 +360,7 @@ live postcondition을 근거로만 완료합니다. 모든 세부 명령과 roll
   - **현재 상태**: Target Group `Healthy`, DNS 전 ALB 직접 HTTPS readiness `200`과
     HTTP `301`, Cloudflare DNS-only CNAME의 exact ALB hostname 수렴, public HTTPS
     readiness `200`·HTTP→HTTPS `301`·ACM certificate, Service NodePort `30503`, Argo CD
-    revision `4a75d77cf58c2139ee81915bff8dd2a2db23ea8f`의 `Synced`·`Healthy`와 condition 부재를
+    현재 remote `main` revision의 `Synced`·`Healthy`와 condition 부재를
     확인했습니다.
   - **완료**: `stg-api.example.com` HTTPS `200`, HTTP→HTTPS `301`, target healthy,
     DNS-only CNAME과 Argo `Synced`·`Healthy`를 모두 확인합니다.

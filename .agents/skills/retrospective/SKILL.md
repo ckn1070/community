@@ -93,6 +93,13 @@ Why chain을 repository 문서에 복사하지 않습니다. Raw 상위 사건�
 포함하면 parent와 child의 identity·인과·verdict를 각각 유지하고, child 결과를 합쳐 parent
 사건 계약을 생략하지 않습니다.
 
+후속 generation마다 저장된 raw inventory의 모든 미완료 행과 각 phase를 현재 artifact에서
+다시 복원합니다. 현재 메시지가 명시적으로 취소·제외·대체하거나 순서를 바꾼 행만 갱신하며,
+나중에 발견한 별도 사건은 앞선 미완료 행의 안전한 완료를 직접 막는 dependency가 source로
+확정되지 않으면 그 행을 선점하거나 writer·review·Git 입력으로 먼저 보내지 않습니다. 각
+phase 인계 전에는 전체 미완료 행, 현재 처리할 가장 앞선 행과 뒤로 보류한 발견을 함께
+대조하며, 이 inventory에서 누락된 행이 있으면 인계하지 않습니다.
+
 일반·심화 subtype은 사건 당시의 통제 도입 시점과 영향 전 실제 invocation을 source·Git
 timeline으로 확인한 뒤에만 확정합니다. 사건 뒤 작성한 현재 workflow·skill 후보의 존재나
 반복·공통 주제는 이전 방어가 실패했다는 증거가 아닙니다. timeline이 없으면 실행 mode는
