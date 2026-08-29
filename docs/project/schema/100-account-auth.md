@@ -550,13 +550,15 @@ schema 작업에서 `430`의 대상 guard와 child-first 삭제 순서를 함께
 
 ## 문서 구조 기준
 
-현재 schema reference 문서 그룹은 다음 파일만 둡니다.
+현재 schema reference 문서 그룹은 다음 파일을 둡니다.
 
 - `docs/project/schema/000-index.md`
 - `docs/project/schema/100-account-auth.md`
+- `docs/project/schema/110-car-catalog.md`
 
 아직 실제 schema reference가 없는 영역의 빈 문서는 만들지 않습니다.
-community, vehicle catalog처럼 별도 schema reference가 필요해지는 시점에 같은 디렉터리에 새 문서를 추가합니다.
+community나 listing처럼 별도 schema reference가 필요해지는 시점에 같은 디렉터리에 새 문서를
+추가합니다.
 
 ## 관련 문서
 

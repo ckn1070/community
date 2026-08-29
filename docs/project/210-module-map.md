@@ -35,6 +35,10 @@ email verification·invitation·password reset service --> Clock.systemUTC() 직
 - `auth`는 account의 인증 subject와 저장 경계를 공개 계약으로 사용합니다.
 - `account`는 token과 account 상태 전이를 소유하고 이메일 전달은 notification에 위임합니다.
 - `notification`은 account 상태와 token lifecycle을 소유하지 않습니다.
+- `catalog`는 다른 module의 내부 상태를 쓰지 않습니다. 공개 package는 검색 입력에 사용하는
+  차체·동력·연료·판매 상태 enum만 제공하고, 조회 use case·read model·port는
+  `internal.application`, projection SQL은 `internal.adapter.out.persistence`에 둡니다.
+  현재 Web adapter는 없으며 다음 016 작업 단계에서 추가합니다.
 - `ChangePasswordService`처럼 실제 `Clock` bean을 주입받는 일부 `account` bean은 production의 유일한 provider인 `auth.internal`의 `JwtTokenConfiguration`에 의존합니다. 이메일 인증·관리자 초대·비밀번호 재설정 service는 public constructor에서 `Clock.systemUTC()`를 직접 만들어 이 bean을 우회합니다. 전자는 source import에 드러나지 않는 runtime DI 예외이고, 후자는 공용 시간 조립 경계가 일관되지 않은 예외입니다.
 
 `Clock` provider를 중립적인 조립 경계로 이동하고 이 예외를 제거하는 작업은 [공용 Clock bean의 auth 내부 소유](../work-items/bugs/2026/003-shared-clock-bean-ownership.md)가 소유합니다.
@@ -71,7 +75,9 @@ account persistence ─┬─> refresh_token <─┬─ auth persistence
 ## 관련 문서
 
 - **현재 구조 SOT**: [프로젝트 아키텍처](200-current-architecture.md)
-- **일반 배치 기준**: [Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
-- **제품 범위**: [기능 범위](../product/200-feature-scope.md)
+- **일반 배치 기준**: [210 Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
+- **자동차 카탈로그 업무 경계**: [130 자동차 카탈로그 도메인](../domain/130-car-catalog.md)
+- **자동차 카탈로그 물리 구조**: [110 자동차 카탈로그 Schema Reference](schema/110-car-catalog.md)
+- **제품 범위**: [200 제품 기능 범위](../product/200-feature-scope.md)
 - **미확정 횡단 구조**: [프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
 - **현재 persistence 예외 owner**: [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)

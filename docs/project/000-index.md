@@ -33,6 +33,8 @@
 | 기능을 어느 module에 배치하는가 | `210-module-map.md` |
 | 인증 데이터의 구조적 결정 | `220-account-auth-data-model.md` |
 | 정확한 table, column, constraint, index | `schema/100-account-auth.md` |
+| 자동차 카탈로그의 현재 개념·관계·상태 | `../domain/130-car-catalog.md` |
+| 자동차 카탈로그의 table 분리 이유와 정확한 물리 구조 | `schema/110-car-catalog.md` |
 | AWS부터 Kubernetes까지 전체 구조와 책임 경계 | `infrastructure/100-infrastructure-overview.md` |
 | Push부터 CI·image publish·GitOps 배포까지 전체 흐름 | `infrastructure/200-ci-cd-pipeline.md` |
 | VPC·EC2·ECR/IAM·RDS·Kubernetes·Argo CD·외부 HTTPS ingress의 현재 선택과 이유 | `infrastructure/000-index.md`의 `Infrastructure 구조와 구성요소` |

@@ -1,21 +1,25 @@
 # 프로젝트 개요
 
 이 문서는 현재 저장소의 구현 단계와 검증 가능한 기술 상태를 요약합니다.
-제품 목표와 미래 범위는 [제품 개요](../product/100-product-overview.md)가 소유합니다.
+제품 목표와 미래 범위는 [100 제품 개요](../product/100-product-overview.md)가 소유합니다.
 
 ## 현재 단계
 
-Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 account/auth 기반 기능이 구현된 단계입니다.
-[016 신차 카탈로그 schema·조회 API](../work-items/features/2026/016-new-car-catalog-query-api.md)는
-주요 자동차 정보·과거 차량·관계형 저장과 schema 우선 개발 요구를 브랜드·모델·세대·연식,
-동력계통·복수 장치·기술 변형·판매 구성·가격 이력·옵션과 조건별 인증을 담는
-11개 테이블 및 공개 조회 계약으로 구체화한 `In Progress` 작업입니다. 현재 `catalog` 모듈 공개
-enum, Flyway V13~V17의 11개 테이블, 실제 PostgreSQL schema·대표 fixture와
+Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 account/auth와 catalog 조회
+기반이 구현된 단계입니다.
+자동차 카탈로그의 현재 개념은 [130 자동차 카탈로그 도메인](../domain/130-car-catalog.md), 11개
+테이블의 분리 이유와 물리 계약은
+[110 자동차 카탈로그 Schema Reference](schema/110-car-catalog.md)가 소유합니다. 현재 `catalog`
+모듈 공개 enum, Flyway V13~V17의 11개 테이블, 실제 PostgreSQL schema·대표 fixture와
 runtime statement 기반 SELECT-only 권한 검증, 브랜드 목록·모델 page·모델 상세의 읽기 전용
 application/persistence가 구현됐습니다. 공개 Web API는 아직 구현되지 않았습니다. 실제 브랜드·과거
 범위와 production data는
 [017 자동차 카탈로그 초기 데이터 구축](../work-items/features/2026/017-car-catalog-initial-data.md)의
 별도 `Proposed` 작업이며 U2-C를 택하면 discovery 뒤 exact 범위의 2차 사용자 결정이 필요합니다.
+현재 구현 작업 상태와 다음 단계는
+[016 신차 카탈로그 schema·조회 API](../work-items/features/2026/016-new-car-catalog-query-api.md)에서
+확인합니다.
+
 커뮤니티 제품 기능도 아직 backlog입니다. 회원과 관리자 인증·인가
 기반은 실행 가능한 코드와 migration, test로 존재합니다.
 
@@ -63,12 +67,13 @@ application/persistence가 구현됐습니다. 공개 Web API는 아직 구현�
   actual Secret은 local `.env` 기반 bootstrap이 소유합니다. 구축 후 Resend key 교체와 새 Pod
   rollout operation source도 구현했습니다.
 
-미구현 제품 영역과 우선순위는 이 문서에 중복하지 않고 [제품 기능 범위](../product/200-feature-scope.md)에서 확인합니다.
+미구현 제품 영역과 우선순위는 이 문서에 중복하지 않고
+[200 제품 기능 범위](../product/200-feature-scope.md)에서 확인합니다.
 
 ## 관련 문서
 
 - **현재 구조**: [프로젝트 아키텍처](200-current-architecture.md), [모듈 지도](210-module-map.md)
-- **제품 범위**: [기능 범위](../product/200-feature-scope.md)
+- **제품 범위**: [200 제품 기능 범위](../product/200-feature-scope.md)
 - **기술 기준**: [현재 기술 스택](../tech-stack/100-current-stack.md)
 - **현재 infrastructure 개념과 선택**: [100 Infrastructure overview](infrastructure/100-infrastructure-overview.md),
   [Infrastructure 개념 목차](infrastructure/000-index.md)

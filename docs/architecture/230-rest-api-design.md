@@ -228,7 +228,7 @@ GET  /api/v1/posts/list
 
 ```text
 GET /api/v1/posts?authorId={memberId}&status=PUBLISHED&page=0&size=20&sort=createdAt,desc
-GET /api/v1/car-models?brand=hyundai&keyword=sonata
+GET /api/v1/car/models?q=sonata&brandId={brandId}&page=0&size=20&sort=NAME_ASC
 ```
 
 기준은 다음과 같습니다.

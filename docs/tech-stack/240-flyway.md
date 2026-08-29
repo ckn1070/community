@@ -86,8 +86,10 @@ Migration 경계는 table 수가 아니라 배포·복구 단위로 정합니다
 
 ## Schema Reference 기준
 
-Flyway migration 파일이 DB schema의 source of truth입니다.
-Schema reference 문서는 source of truth가 아니라, 여러 migration을 적용한 현재 최종 schema 상태를 사람이 읽기 쉽게 모은 문서입니다.
+Flyway migration 파일은 실행 가능한 DB schema의 authoritative source입니다.
+Schema reference는 migration 여러 개를 적용한 현재 최종 물리 구조를 사람이 조회하는 문서
+SOT입니다. Reference는 migration에서 파생되며 둘이 충돌하면 migration을 기준으로 reference를
+바로잡습니다.
 
 프로젝트 기준:
 
@@ -98,8 +100,8 @@ Schema reference 문서는 source of truth가 아니라, 여러 migration을 적
 - reference와 migration이 충돌하면 migration을 기준으로 보고, reference를 수정합니다.
 - 아직 reference가 없는 schema 영역에서 반복 조회가 필요해지면 `project` 문서 그룹에 새 schema reference를 추가합니다.
 
-현재 reference는 [account/auth](../project/schema/100-account-auth.md)와
-[자동차 카탈로그](../project/schema/110-car-catalog.md)로 나눕니다.
+현재 reference는 [100 Account 인증/인가](../project/schema/100-account-auth.md)와
+[110 자동차 카탈로그 Schema Reference](../project/schema/110-car-catalog.md)로 나눕니다.
 
 ## 현재 알려진 Migration 호환성 결함
 
@@ -267,8 +269,8 @@ Flyway migration SQL을 만들거나 수정하면 완료 전 아래 검증을 �
 
 ## 관련 문서
 
-- **현재 물리 schema**: [Account 인증/인가](../project/schema/100-account-auth.md),
-  [자동차 카탈로그](../project/schema/110-car-catalog.md)
+- **현재 물리 schema**: [100 Account 인증/인가](../project/schema/100-account-auth.md),
+  [110 자동차 카탈로그 Schema Reference](../project/schema/110-car-catalog.md)
 - **persistence 구현**: [Spring Data JPA](230-spring-data-jpa.md)
 - **database 기준**: [PostgreSQL](250-postgresql.md)
 - **migration test**: [테스트 스택](300-testing-stack.md)
