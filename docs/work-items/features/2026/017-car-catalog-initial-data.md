@@ -68,8 +68,8 @@ source 공백을 사용자에게 다시 제시하고 2차 범위를 확정한 �
 | --- | --- | --- |
 | 공식 모델 목록·heritage | 모델, 세대, 연식, 출시·종료 시점 | brand, model, generation, model_year |
 | 공식 가격표 | 동력계통, 인승·트림, 기본 가격, 선택 품목·색상, 가격·선택 상태 적용 시작일 | powertrain, variant, configuration, price, option |
-| 공식 catalog·제원 | 치수·중량·휠·타이어·동력 장치·성능·충전·기본 품목 | powertrain, component, variant, configuration |
-| 정부 또는 제조사 공식 인증표 | 조건별 연비·전비·수소 효율·CO₂·주행거리 | certification |
+| 공식 catalog·제원 | 치수·중량·견인·루프 적재·회전반경·휠·타이어·동력 장치·성능·충전·기본 품목 | powertrain, component, variant, configuration |
+| 정부 또는 제조사 공식 인증표 | 인증 기준과 조건별 연비·전비·수소 효율·CO₂·주행거리 | certification |
 | 공식 보증·안전·media 자료 | 보증, 공인 안전도, 공개 권리 | configuration JSONB |
 
 공식 자료는 runtime DB에 저장하거나 자동차 행의 FK로 연결하지 않습니다. 대신 inventory와
@@ -98,6 +98,25 @@ typed column에 해당하는 값을 JSONB로 우회하지 않습니다. 예를 �
 component 칼럼, 카니발 휠·카메라별 연비는 certification 행, K5 트림 가격은 price 행에
 mapping합니다. 원문에 있으나 현재 schema에 넣을 수 없는 반복 핵심값이 발견되면 data를 버리거나
 EAV로 우회하지 않고 016 schema 보완을 먼저 엽니다.
+
+### 주요 제원 정규화 규칙
+
+| 원문 정보 | DB 대상 | 규칙 |
+| --- | --- | --- |
+| 배터리 gross·nominal 용량 | `car_powertrain_component.capacity_kwh` | 제조사가 총 용량에 사용한 gross 또는 nominal 원문 명칭을 mapping에 남깁니다. |
+| 배터리 usable·net 용량 | `car_powertrain_component.usable_capacity_kwh` | 제조사가 별도로 공개한 값만 저장하며 총 용량에서 임의 계산하지 않습니다. |
+| 차량 최대 AC·DC 수전 출력 | `max_ac_charge_kw`, `max_dc_charge_kw` | 대표 충전 시간의 충전기 출력과 구분합니다. |
+| 대표 AC 충전 시간 | `ac_charge_minutes`, `ac_charge_from_percent`, `ac_charge_to_percent`, `ac_charge_power_kw` | 네 값이 모두 공개된 조건 중 충전기 출력이 가장 높은 한 건을 저장합니다. |
+| 대표 DC 충전 시간 | `fast_charge_minutes`, `fast_charge_from_percent`, `fast_charge_to_percent`, `fast_charge_power_kw` | 제조사가 대표로 제시한 최단 조건을 우선하고, 복수이면 네 값이 모두 공개된 조건 중 충전기 출력이 가장 높은 한 건을 저장합니다. |
+| 충전 단자 | `ac_charge_connector`, `dc_charge_connector` | 시장별 공식 명칭을 정규화하고 원문 명칭을 mapping에 남깁니다. |
+| 제동·비제동 견인중량 | variant의 두 towing column | 조건을 합치지 않고 제조사가 각각 공개한 값만 저장합니다. |
+| 루프 적재중량 | `max_roof_load_kg` | 정차 상태가 아닌 주행 중 허용값만 저장합니다. |
+| 최소 회전반경 | `minimum_turning_radius_m` | 원문이 회전직경만 제공하면 2로 나눈 변환식과 원문 단위를 mapping에 기록합니다. |
+| 인증 기준 | `car_certification.certification_standard` | `KOREA`, `WLTP`, `EPA`처럼 source가 선언한 기준을 정규화하며 추정하지 않습니다. |
+
+대표 충전 조건이 여러 개인 사실만으로 행이나 별도 충전 테이블을 늘리지 않습니다. 첫 조회는
+비교 가능한 대표 AC 한 건과 DC 한 건을 제공하고, 향후 조건별 충전 곡선·다중 시간 비교가 제품
+요구가 될 때만 반복 구조를 다시 설계합니다.
 
 ## coverage 기준
 

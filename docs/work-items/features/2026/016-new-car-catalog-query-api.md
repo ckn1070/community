@@ -6,7 +6,7 @@ In Progress
 
 ## 현재 위치와 다음 작업
 
-catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·129개 named constraint·4개 조회
+catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·133개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
 검증에 이어 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
 경계까지 구현했습니다. 검색 정규화·literal escape, 같은 configuration filter, 기준일 가격,
@@ -39,7 +39,7 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 1. 기능 범위 | 공개 브랜드·모델·상세 조회와 filter | 완료 | 아래 포함·제외 범위가 유지됨 |
 | 2. 실제 자료 조사 | ICE/HEV·MPV·BEV·FCEV 정보 분류 | 완료 | 공식 자료가 요구하는 관계와 칼럼을 설명함 |
 | 3. DB 설계 | 정확한 11개 테이블, 칼럼, FK·UNIQUE·CHECK·index | 완료 | 상세 설계가 독립 검증을 통과함 |
-| 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·129개 제약·4개 index·7개 동력 graph 공개 전 검증·대표 fixture·실제 권한 검증 통과 |
+| 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·133개 제약·4개 index·대표 fixture·실제 권한 검증 통과 |
 | 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **완료** | filter·가격·과거 조회와 목록 2개·상세 5개 SQL 상한, 대표 SQL 실행 계획 검증 통과 |
 | 6. 공개 API 개발 | Controller·Security·OpenAPI | **다음 작업** | 비회원 세 GET과 오류 계약 통과 |
 | 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | 후속 | blocking finding 0건 |
@@ -52,7 +52,9 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 - 브랜드→모델→세대→연식→기술 변형→판매 구성 관계
 - ICE, MHEV, HEV, PHEV, EREV, BEV, FCEV 동력 형식
 - 엔진, 모터, 배터리, 액체 연료탱크, 연료전지와 수소탱크
-- 차체·루프·인승·치수·중량·적재·휠·타이어·섀시 주요 제원
+- 차체·루프·인승·치수·중량·적재·견인·회전반경·휠·타이어·섀시 주요 제원
+- 외부 충전 차량의 AC·DC 단자, 최대 충전 출력과 대표 시간·SOC·충전기 출력 조건
+- 배터리 총·사용 가능 용량과 인증값의 적용 기준
 - 트림의 판매 기간, 적용 시작일별 기본 가격과 유상 옵션
 - 휠·카메라·온도 조건별 연비·전비·수소 효율·CO₂·주행거리
 - 공개 여부와 날짜로 계산하는 예정·판매 중·단종 상태
@@ -177,10 +179,10 @@ filter와 최솟값에서 제외하고, 모델의 모든 구성에 가격이 없
 | `generations[]` | 세대 id/name/changeType | generation |
 | `modelYears[]` | 연식 id/year/edition, 출시·판매 기간, 상태 | model_year |
 | `selectedModelYear` | 선택 연식의 위 값 | model_year |
-| `powertrains[]` | 동력 형식, 연료, 구동, 변속, 합산 출력·토크, 충전 | powertrain |
-| `powertrains[].components[]` | 엔진·모터·배터리·연료전지·탱크의 용량·출력·토크·회전수와 공개된 배터리 제조·cell 정보 | component |
-| `variants[]` | 차체·루프·인승·치수·중량·적재·휠·타이어·섀시 | vehicle_variant |
-| `variants[].certifications[]` | 조건, 효율·단위, CO₂와 주행거리 | certification |
+| `powertrains[]` | 동력 형식, 연료, 구동, 변속, 합산 출력·토크, AC·DC 단자와 대표 충전 조건 | powertrain |
+| `powertrains[].components[]` | 엔진·모터·배터리·연료전지·탱크의 용량·출력·토크·회전수와 배터리 총·사용 가능 용량·제조·cell 정보 | component |
+| `variants[]` | 차체·루프·인승·치수·중량·적재·견인·회전반경·휠·타이어·섀시 | vehicle_variant |
+| `variants[].certifications[]` | 조건, 인증 기준, 효율·단위, CO₂와 주행거리 | certification |
 | `variants[].configurations[]` | 트림, 판매 기간·상태, 기본 품목·보증·안전도·media | configuration |
 | `configurations[].price` | 기준일 기본 가격 두 종류와 표시 가격 | configuration_price |
 | `configurations[].options[]` | 기준일에 선택 가능한 품목·package·외장/내장 색상의 이름·종류·추가 가격·포함 품목 | configuration_option |
@@ -223,10 +225,14 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 - 같은 모델·세대·연식 code 중복과 다른 연식의 powertrain을 연결한 variant가 거부됩니다.
 - 대표 fixture는 ICE/HEV, BEV와 FCEV의 장치 조합을 표현합니다. DB는 component 종류별 전용
   칼럼 규칙을 강제하고, 동력 형식별 필수 자식의 완전성은 017 원문 mapping에서 검토합니다.
+- AC·DC 대표 충전 시간은 SOC 구간과 충전기 출력이 함께 있을 때만 저장되고 충전할 수 없는
+  동력 형식에는 충전값을 저장하지 않습니다.
+- 사용 가능 배터리 용량은 배터리 총 용량 이하이며 다른 component에는 저장하지 않습니다.
 - 카니발형 인승·루프·휠 변형을 트림 중복 없이 표현합니다.
 - K5형 같은 트림의 세제 혜택 전·후 가격과 유상 선택 품목을 표현합니다.
 - EV6형 kWh·Ah·V, 배터리 제조사·생산국·cell 형태·화학계, 전·후 모터와 휠별 전비·
-  주행거리를 표현합니다.
+  주행거리, AC·DC 단자와 대표 충전 조건을 표현합니다.
+- 견인중량·루프 적재중량·최소 회전반경과 인증 기준을 상세 응답에서 빠뜨리지 않습니다.
 - 넥쏘형 연료전지·수소 저장량, km/kg와 보증을 표현합니다.
 - 단종 세대·연식·configuration을 삭제하지 않고 기준일 상태를 복원합니다.
 - 가격 변경은 `effective_from`이 다른 행으로 보존되고 기준일의 가장 최근 한 행을 선택합니다.

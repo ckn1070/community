@@ -49,7 +49,7 @@ car_brand
 | 식별·소유 | `id`, `public_id`, `model_year_id`, `code`, `name` |
 | 에너지·구동 | `propulsion_type`, `primary_fuel_type`, `secondary_fuel_type`, `drivetrain_type`, `transmission_type`, `transmission_gears` |
 | 합산 성능 | `system_max_power_kw`, `system_max_power_ps`, `system_max_torque_nm`, `zero_to_hundred_seconds`, `top_speed_kmh` |
-| 충전 | `max_ac_charge_kw`, `max_dc_charge_kw`, `fast_charge_minutes`, `fast_charge_from_percent`, `fast_charge_to_percent` |
+| 충전 | `max_ac_charge_kw`, `ac_charge_connector`, `ac_charge_minutes`, `ac_charge_from_percent`, `ac_charge_to_percent`, `ac_charge_power_kw`, `max_dc_charge_kw`, `dc_charge_connector`, `fast_charge_minutes`, `fast_charge_from_percent`, `fast_charge_to_percent`, `fast_charge_power_kw` |
 | 감사 | `created_at`, `updated_at` |
 
 - 식별·관계: `pk_car_powertrain`, `fk_car_powertrain_model_year`,
@@ -57,8 +57,8 @@ car_brand
   `uk_car_powertrain_model_year_id`
 - 동력 형식: `ICE`, `MHEV`, `HEV`, `PHEV`, `EREV`, `BEV`, `FCEV`
 - 연료: `GASOLINE`, `DIESEL`, `LPG`, `ELECTRICITY`, `HYDROGEN`, `OTHER`
-- 핵심 check: 동력 형식별 외부 에너지 조합, 구동·변속 허용값, 양수 성능,
-  충전 시간·시작·종료 비율의 동시 입력, 감사 시각
+- 핵심 check: 동력 형식별 외부 에너지 조합, 구동·변속 허용값, 양수 성능, AC·DC 대표 충전
+  시간·시작·종료 비율·충전기 출력의 묶음 입력, 충전 가능 동력 형식, 감사 시각
 
 ### `car_powertrain_component`
 
@@ -66,7 +66,7 @@ car_brand
 | --- | --- |
 | 식별·배치 | `id`, `powertrain_id`, `component_type`, `component_role`, `position`, `name`, `fuel_type`, `sort_order` |
 | 엔진·성능 | `displacement_cc`, `cylinder_count`, `aspiration_type`, `max_power_kw`, `max_power_ps`, `max_power_rpm`, `max_torque_nm`, `max_torque_kgf_m`, `max_torque_rpm_from`, `max_torque_rpm_to` |
-| 저장 장치 | `capacity_kwh`, `capacity_ah`, `voltage_v`, `capacity_l`, `capacity_kg`, `pressure_bar` |
+| 저장 장치 | `capacity_kwh`, `usable_capacity_kwh`, `capacity_ah`, `voltage_v`, `capacity_l`, `capacity_kg`, `pressure_bar` |
 | 제조 정보 | `manufacturer_name`, `cell_manufacturer_name`, `production_country_code`, `cell_type`, `chemistry` |
 | 감사 | `created_at`, `updated_at` |
 
@@ -75,7 +75,8 @@ car_brand
 - 장치: `ENGINE`, `MOTOR`, `BATTERY`, `FUEL_TANK`, `FUEL_CELL`, `HYDROGEN_TANK`
 - 핵심 check: 장치별 role, position, 엔진·연료탱크 연료 필수, 흡기 방식
   `NATURALLY_ASPIRATED`·`TURBO`·`SUPERCHARGED`, 양수 제원, 토크 회전수 순서, 국가 코드,
-  장치별 필수 용량과 다른 장치 전용 column의 `NULL`, 감사 시각
+  사용 가능 배터리 용량이 총 용량 이하인지, 장치별 필수 용량과 다른 장치 전용 column의 `NULL`,
+  감사 시각
 
 ## 기술 변형과 판매 구성
 
@@ -85,7 +86,7 @@ car_brand
 | --- | --- |
 | 식별·소유 | `id`, `public_id`, `model_year_id`, `powertrain_id`, `code`, `name` |
 | 분류 | `body_type`, `roof_type`, `seating_capacity`, `door_count` |
-| 치수·적재·중량 | `length_mm`, `width_mm`, `height_mm`, `wheelbase_mm`, `front_track_mm`, `rear_track_mm`, `ground_clearance_mm`, `cargo_capacity_l`, `max_cargo_capacity_l`, `curb_weight_kg`, `gross_vehicle_weight_kg` |
+| 치수·적재·중량 | `length_mm`, `width_mm`, `height_mm`, `wheelbase_mm`, `front_track_mm`, `rear_track_mm`, `ground_clearance_mm`, `cargo_capacity_l`, `max_cargo_capacity_l`, `curb_weight_kg`, `gross_vehicle_weight_kg`, `max_braked_towing_capacity_kg`, `max_unbraked_towing_capacity_kg`, `max_roof_load_kg`, `minimum_turning_radius_m` |
 | 휠·섀시 | `wheel_size_inch`, `front_tire`, `rear_tire`, `front_suspension`, `rear_suspension`, `steering_type`, `front_brake`, `rear_brake` |
 | 감사 | `created_at`, `updated_at` |
 
@@ -95,7 +96,7 @@ car_brand
 - 복합 FK는 variant와 powertrain의 `model_year_id` 일치를 강제합니다.
 - 차체: `SEDAN`, `HATCHBACK`, `WAGON`, `COUPE`, `CONVERTIBLE`, `SUV`, `MPV`,
   `PICKUP`, `VAN`, `OTHER`
-- 핵심 check: roof 허용값, 양수 치수·중량, 최대 적재량과 총중량 순서, 감사 시각
+- 핵심 check: roof 허용값, 양수 치수·중량, 최대 적재량·총중량·견인중량 순서, 감사 시각
 
 ### `car_configuration`
 
@@ -128,13 +129,14 @@ car_brand
 
 | column group | columns |
 | --- | --- |
-| 식별·조건 | `id`, `vehicle_variant_id`, `condition_code`, `condition_name`, `certification_type`, `temperature_condition`, `wheel_size_inch`, `tire_specification`, `built_in_camera`, `curb_weight_kg` |
+| 식별·조건 | `id`, `vehicle_variant_id`, `condition_code`, `condition_name`, `certification_type`, `certification_standard`, `temperature_condition`, `wheel_size_inch`, `tire_specification`, `built_in_camera`, `curb_weight_kg` |
 | 측정값 | `efficiency_grade`, `city_efficiency`, `highway_efficiency`, `combined_efficiency`, `efficiency_unit`, `city_range_km`, `highway_range_km`, `combined_range_km`, `co2_g_per_km` |
 | 감사 | `created_at`, `updated_at` |
 
 - 식별·관계: `pk_car_certification`, `fk_car_certification_vehicle_variant`,
   `uk_car_certification_variant_condition`
 - 인증 종류: `LIQUID_FUEL`, `ELECTRIC`, `HYDROGEN`
+- 인증 기준: 비어 있지 않은 source-backed code. 현재 알려진 값만으로 enum을 닫지 않습니다.
 - 전기 인증만 `NORMAL` 또는 `LOW` 온도 조건을 필수로 가집니다.
 - 단위와 필수값: 액체연료 `KM_PER_L`+복합 효율+CO₂, 전기 `KM_PER_KWH`+복합 주행거리,
   수소 `KM_PER_KG`+복합 효율+복합 주행거리

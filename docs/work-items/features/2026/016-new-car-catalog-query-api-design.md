@@ -5,10 +5,10 @@
 이 문서는 신차 카탈로그 조회 기능을 구현하기 위한 물리 DB 설계입니다. 실제 자동차 자료에서
 반복되는 정보와 관계를 기준으로 테이블, 칼럼, 제약, 인덱스와 조회 경로를 정합니다.
 
-현재 상태는 `In Progress`입니다. 이 문서의 11개 테이블과 공개 전 data 검증 gate는 Flyway
-V13~V17·application 시작 검증기·실제 PostgreSQL 통합 테스트로 구현됐습니다. 다음 작업은 이
-schema를 사용하는 조회 persistence와 application
-규칙을 구현하는 것입니다. 실제 브랜드 전체 데이터를 적재하는 작업은 schema와 조회 기능을
+현재 상태는 `In Progress`입니다. 이 문서의 11개 테이블과 이를 사용하는 조회 persistence·
+application 규칙은 Flyway V13~V17과 실제 PostgreSQL 통합 테스트로 구현됐습니다. 다음 작업은
+Web API·Security·OpenAPI를 구현하는 것입니다. 실제
+브랜드 전체 데이터를 적재하는 작업은 schema와 조회 기능을
 완성한 뒤 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)에서 진행합니다.
 
 ## 요구사항을 DB 설계로 바꾼 결과
@@ -35,7 +35,9 @@ schema를 사용하는 조회 persistence와 application
 | --- | --- | --- | --- |
 | K5 가솔린·하이브리드 세단 | 연식별 동력계통·트림, 세제 혜택 전·후 가격, 기본·선택 품목 | powertrain, configuration, price, option | 현재 범위에 포함 |
 | 카니발 MPV | 인승·루프·휠별 치수와 공차중량, 빌트인 캠 조건별 연비·CO₂ | vehicle_variant, certification | 현재 범위에 포함 |
-| EV6 전기차 | 배터리 kWh·Ah·V와 제조 정보, 전·후 모터, 충전, 휠별 전비·주행거리 | powertrain, component, certification | 현재 범위에 포함 |
+| EV6형 전기차 | 배터리 총·사용 가능 용량과 Ah·V·제조 정보, 전·후 모터, AC·DC 대표 충전 조건과 단자, 휠별 전비·주행거리 | powertrain, component, certification | 현재 범위에 포함 |
+| 견인 가능한 승용·SUV | 제동·비제동 견인중량, 루프 적재중량, 최소 회전반경 | vehicle_variant | 현재 범위에 포함 |
+| 국내·해외 인증 자료 | 같은 효율·주행거리 수치에 적용된 인증 기준 | certification | 현재 범위에 포함 |
 | 넥쏘 수소전기차 | 모터·연료전지·배터리·수소 저장량, km/kg·항속거리와 보증 | component, certification, configuration JSONB | 현재 범위에 포함 |
 | 공통 판매 정보 | 판매 채널, 판매 기간, 적용일별 기본 가격과 옵션 가격·선택 가능 상태 | configuration, price, option | 현재 범위에 포함 |
 | 상세 타이어 등급·옵션 조합·세금·보조금 | 타이어 상품별 효율 등급, 옵션 필수·배타 규칙, 실구매 비용 | 없음 | 현재 API 범위 밖이며 필요할 때 별도 설계 |
@@ -49,6 +51,9 @@ schema를 사용하는 조회 persistence와 application
 [카니발 제원](https://www.kia.com/kr/vehicles/carnival/specification),
 [카니발 공식 catalog](https://www.kia.com/content/dam/kwp/kr/ko/vehicles/pdf/catalog/catalog_carnival.pdf),
 [EV6 제원](https://www.kia.com/kr/vehicles/ev6/specification),
+[EV6 충전 제원](https://www.kia.com/uk/new-cars/ev6/specification/),
+[아이오닉 5 충전 제원](https://www.hyundai.com/in/en/find-a-car/ioniq-5/specification),
+[EX30 배터리·견인·루프 제원](https://www.volvocars.com/us/cars/ex30-electric/specifications/),
 [넥쏘 제품 정보](https://www.hyundai.com/content/hyundai/kr/ko/vehicles/nexo/highlights.html)를
 대조했습니다. 값은 제조사의 연식 변경에 따라 바뀔 수 있으므로 실제 적재 시 다시 확인합니다.
 
@@ -126,6 +131,8 @@ car_brand
 | price와 option의 `effective_from` | 기본 가격 변경과 옵션 가격·선택 상태 변경은 서로 독립적으로 발생 | 둘 다 유지; 하나의 공통 version 행으로 묶지 않음 |
 | price와 option의 가격 칼럼 | price는 차량 기본 가격, option은 기본 가격에 더하는 개별 선택 품목 금액 | 의미와 FK가 달라 유지; 범용 가격 테이블로 합치지 않음 |
 | powertrain과 component의 출력·연료 | powertrain은 제조사가 발표한 시스템 전체 값, component는 개별 장치 값 | 합산으로 대체할 수 없어 둘 다 유지 |
+| `max_*_charge_kw`와 `*_charge_power_kw` | 전자는 차량의 최대 수전 능력, 후자는 대표 충전 시간의 외부 충전기 조건 | 240 kW 차량을 350 kW 충전기로 측정할 수 있어 둘 다 유지하고 대소 관계를 강제하지 않음 |
+| 배터리 `capacity_kwh`와 `usable_capacity_kwh` | 전자는 제조사가 공개한 총 용량, 후자는 사용 가능 용량 | 서로 계산하지 않고 공개된 값만 유지; 사용 가능 용량은 총 용량 이하로 검증 |
 | variant와 certification의 휠·타이어·공차중량 | variant는 차량 제원, certification은 공식 측정 조건 | 의미가 달라 둘 다 유지하고 조건 차이는 017 원문 mapping에서 확인 |
 | 상위 행의 공개 여부 | 현재 API는 공개된 configuration이 있을 때만 brand·model·year를 노출 | 상위 `is_published`는 중복이므로 제거 |
 
@@ -250,15 +257,26 @@ facelift를 별도 version 체계로 만들지 않고, 실제로 이름·차체�
 | `zero_to_hundred_seconds` | `NUMERIC(5,2) NULL` | 공식 0→100 km/h |
 | `top_speed_kmh` | `SMALLINT NULL` | 공식 최고속도 |
 | `max_ac_charge_kw` | `NUMERIC(7,2) NULL` | 최대 완속 충전 출력 |
+| `ac_charge_connector` | `VARCHAR(40) NULL` | 공식 AC 충전 단자 규격 |
+| `ac_charge_minutes` | `SMALLINT NULL` | 아래 SOC·출력 조건의 공식 AC 충전 시간 |
+| `ac_charge_from_percent` | `SMALLINT NULL` | AC 충전 시작 SOC |
+| `ac_charge_to_percent` | `SMALLINT NULL` | AC 충전 종료 SOC |
+| `ac_charge_power_kw` | `NUMERIC(7,2) NULL` | AC 시간 측정에 사용한 충전기 출력 |
 | `max_dc_charge_kw` | `NUMERIC(7,2) NULL` | 최대 급속 충전 출력 |
+| `dc_charge_connector` | `VARCHAR(40) NULL` | 공식 DC 충전 단자 규격 |
 | `fast_charge_minutes` | `SMALLINT NULL` | 아래 SOC 구간의 공식 충전 시간 |
 | `fast_charge_from_percent` | `SMALLINT NULL` | 급속 충전 시작 SOC |
 | `fast_charge_to_percent` | `SMALLINT NULL` | 급속 충전 종료 SOC |
+| `fast_charge_power_kw` | `NUMERIC(7,2) NULL` | 급속 시간 측정에 사용한 충전기 출력 |
 | `created_at`, `updated_at` | `TIMESTAMPTZ NOT NULL` | 생성·수정 시각 |
 
-`(model_year_id, code)`를 UNIQUE로 둡니다. 수치에는 양수 CHECK를 두고, SOC는
-`0 <= from < to <= 100`을 검사합니다. `PHEV`, `EREV`만 두 fuel을 요구하고 `BEV`는
-`ELECTRICITY`, `FCEV`는 `HYDROGEN`을 primary로 요구합니다.
+`(model_year_id, code)`를 UNIQUE로 둡니다. AC·DC 대표 충전 시간은 각각 시간·시작 SOC·종료
+SOC·충전기 출력을 한 묶음으로 입력하고 `0 <= from < to <= 100`과 양수를 검사합니다. 제조사가
+공개한 대표 AC 조건 한 개와 대표 DC 조건 한 개만 저장하므로 조건별 행을 위한 별도 테이블은
+만들지 않습니다. `max_*_charge_kw`는 차량이 받을 수 있는 최대 출력이고 `*_charge_power_kw`는
+공식 시간 측정에 사용한 충전기 출력이므로 서로 대소 관계를 강제하지 않습니다. 충전 관련 값은
+외부 충전이 가능한 `PHEV`, `EREV`, `BEV`에만 허용합니다. `PHEV`, `EREV`만 두 fuel을 요구하고
+`BEV`는 `ELECTRICITY`, `FCEV`는 `HYDROGEN`을 primary로 요구합니다.
 
 ### 6. `car_powertrain_component`
 
@@ -283,7 +301,8 @@ facelift를 별도 version 체계로 만들지 않고, 실제로 이름·차체�
 | `max_torque_nm` | `NUMERIC(8,2) NULL` | 장치 최대 토크 |
 | `max_torque_kgf_m` | `NUMERIC(8,2) NULL` | 공식 자료의 kgf·m 최대 토크 |
 | `max_torque_rpm_from`, `max_torque_rpm_to` | `INTEGER NULL` | 최대 토크 발생 회전수 또는 구간 |
-| `capacity_kwh` | `NUMERIC(8,2) NULL` | 배터리 용량 |
+| `capacity_kwh` | `NUMERIC(8,2) NULL` | 제조사가 gross 또는 nominal로 공개한 배터리 총 용량 |
+| `usable_capacity_kwh` | `NUMERIC(8,2) NULL` | 제조사가 별도로 공개한 사용 가능 용량 |
 | `capacity_ah` | `NUMERIC(8,2) NULL` | 배터리 전하량 |
 | `voltage_v` | `NUMERIC(8,2) NULL` | 배터리 정격전압 |
 | `capacity_l` | `NUMERIC(8,2) NULL` | 액체 연료·수소 탱크 부피 |
@@ -300,6 +319,7 @@ facelift를 별도 version 체계로 만들지 않고, 실제로 이름·차체�
 `(powertrain_id, component_type, component_role, position, name)`를 UNIQUE로 둡니다. 모든 수치는 양수이고
 토크 회전수 구간은 `from <= to`, 생산 국가는 대문자 두 글자를 검사하며 `aspiration_type`은
 `NATURALLY_ASPIRATED`, `TURBO`, `SUPERCHARGED`만 허용합니다.
+`usable_capacity_kwh`는 배터리에만 허용하며 `capacity_kwh`가 있을 때 그 값 이하여야 합니다.
 `ENGINE`은 `displacement_cc`, `BATTERY`는 `capacity_kwh`와 `capacity_ah` 중 하나 이상,
 `FUEL_TANK`는 `capacity_l`,
 `HYDROGEN_TANK`는 `capacity_kg`, `FUEL_CELL`은 `max_power_kw`를 필수로 하는 CHECK를 둡니다.
@@ -344,6 +364,10 @@ facelift를 별도 version 체계로 만들지 않고, 실제로 이름·차체�
 | `max_cargo_capacity_l` | `NUMERIC(8,2) NULL` | 공식 최대 적재 용량 |
 | `curb_weight_kg` | `INTEGER NULL` | 대표 공차중량 |
 | `gross_vehicle_weight_kg` | `INTEGER NULL` | 차량 총중량 |
+| `max_braked_towing_capacity_kg` | `INTEGER NULL` | 제동 장치가 있는 피견인차의 최대 견인중량 |
+| `max_unbraked_towing_capacity_kg` | `INTEGER NULL` | 제동 장치가 없는 피견인차의 최대 견인중량 |
+| `max_roof_load_kg` | `INTEGER NULL` | 주행 중 허용되는 최대 루프 적재중량 |
+| `minimum_turning_radius_m` | `NUMERIC(5,2) NULL` | 제조사가 공개한 최소 회전반경 |
 | `wheel_size_inch` | `NUMERIC(4,1) NULL` | 기본 휠 지름 |
 | `front_tire` | `VARCHAR(40) NULL` | 앞 타이어 규격 |
 | `rear_tire` | `VARCHAR(40) NULL` | 뒤 타이어 규격 |
@@ -355,7 +379,8 @@ facelift를 별도 version 체계로 만들지 않고, 실제로 이름·차체�
 `(model_year_id, code)`를 UNIQUE로 둡니다. `car_powertrain(model_year_id, id)`에 composite
 UNIQUE를 추가하고 `car_vehicle_variant(model_year_id, powertrain_id)`가 이를 참조하게 하여
 동력계통이 같은 모델 연식에 속함을 DB가 보장합니다. 인원·치수·중량은 양수이고 최대 적재
-용량은 기본 적재 용량 이상이어야 합니다.
+용량은 기본 적재 용량 이상이어야 합니다. 두 견인중량이 모두 있으면 제동 견인중량이 비제동
+견인중량 이상이어야 합니다.
 
 ### 8. `car_configuration`
 
@@ -452,6 +477,7 @@ configuration의 판매 기간은 소속 model year의 판매 기간 안에 있�
 | `condition_code` | `VARCHAR(100) NOT NULL` | 변형 안의 안정 조건 code |
 | `condition_name` | `VARCHAR(180) NOT NULL` | 사람이 읽는 측정 조건 |
 | `certification_type` | `VARCHAR(16) NOT NULL` | `LIQUID_FUEL`, `ELECTRIC`, `HYDROGEN` |
+| `certification_standard` | `VARCHAR(32) NOT NULL` | `KOREA`, `WLTP`, `EPA`처럼 수치에 적용된 인증 기준 code |
 | `temperature_condition` | `VARCHAR(12) NULL` | 전기차 주행거리의 `NORMAL`, `LOW` |
 | `wheel_size_inch` | `NUMERIC(4,1) NULL` | 인증 휠 크기 |
 | `tire_specification` | `VARCHAR(80) NULL` | 인증 타이어 규격 |
@@ -468,8 +494,9 @@ configuration의 판매 기간은 소속 model year의 판매 기간 안에 있�
 | `co2_g_per_km` | `NUMERIC(8,2) NULL` | 복합 CO₂ 배출량 |
 | `created_at`, `updated_at` | `TIMESTAMPTZ NOT NULL` | 생성·수정 시각 |
 
-`(vehicle_variant_id, condition_code)`를 UNIQUE로 둡니다. 수치는 0 이상이고 값이 있는 효율은
-양수입니다. 인증 종류와 단위를 각각 `LIQUID_FUEL→KM_PER_L`, `ELECTRIC→KM_PER_KWH`,
+`(vehicle_variant_id, condition_code)`를 UNIQUE로 둡니다. `certification_standard`는 비어 있지
+않은 source-backed code로 입력하며 현재 알려진 값만으로 enum을 닫지 않습니다. 수치는 0 이상이고
+값이 있는 효율은 양수입니다. 인증 종류와 단위를 각각 `LIQUID_FUEL→KM_PER_L`, `ELECTRIC→KM_PER_KWH`,
 `HYDROGEN→KM_PER_KG`로 결속합니다. 액체 연료·수소와 `ELECTRIC/NORMAL`은 복합 효율을,
 `ELECTRIC`, `HYDROGEN`은 복합 주행거리를 필수로 합니다. `ELECTRIC/LOW`는 공식 자료가 저온
 주행거리만 공개하는 경우 효율을 null로 둘 수 있고, 액체 연료는 `co2_g_per_km`를 필수로 합니다.
@@ -590,8 +617,8 @@ configuration/price/option을 각각 묶음 조회합니다. 결과 수만큼 SQ
   추가합니다.
 - 보증·안전도·media를 검색하거나 독립 갱신해야 하면 해당 JSONB만 관계형 테이블로
   승격합니다.
-- 상용·특장차가 범위에 들어오면 축 수, 적재중량, 견인능력과 body equipment를 typed column으로
-  추가합니다.
+- 상용·특장차가 범위에 들어오면 축 수, 화물 적재중량과 body equipment를 typed column으로
+  추가합니다. 일반 승용·SUV의 견인중량은 현재 variant에 포함되어 있습니다.
 - runtime 관리자 입력과 모든 정정 시점 복원이 제품 요구가 되면 writer 권한·감사·version
   정책을 별도 설계합니다.
 - 판매 구성 없이 브랜드·모델 소개만 먼저 공개해야 하면 configuration에서 파생하는 공개
