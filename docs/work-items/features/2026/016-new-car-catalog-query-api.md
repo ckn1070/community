@@ -9,14 +9,17 @@ In Progress
 catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·133개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
 검증에 이어 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
-경계까지 구현했습니다. 검색 정규화·literal escape, 같은 configuration filter, 기준일 가격,
-대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제 PostgreSQL로 검증했습니다. 아직
-Web API와 실제 production 데이터는 없습니다.
+경계, 세 공개 GET Web adapter까지 구현했습니다. 검색 정규화·literal escape, 같은
+configuration filter, 기준일 가격, 대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제
+PostgreSQL로 검증했습니다. 첫 진입 무필터 모델 page, 선택 filter, 목록에서 상세로 이어지는
+대표 연식, RFC 9457 오류, GET 전용 anonymous allow-list와 OpenAPI 3.1 nullability 계약도
+자동 검증합니다. 실제 production 데이터는 아직 없습니다.
 
-미완료 결과는 세 공개 GET의 Controller·DTO·validation, Security allow-list, RFC 9457 오류
-응답과 OpenAPI 계약입니다. 실제 production 데이터 적재는 이 작업의 미완료가 아니라
+로컬 구현과 전체 검증은 완료됐습니다. push가 요청되지 않아 final SHA의 required CI와 Sonar
+revision·Quality Gate·Open issues gate는 아직 확인하지 않았습니다. 실제 production 데이터
+적재는 이 작업의 미완료가 아니라
 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)의 범위입니다. 현재
-차단 사유는 없습니다.
+로컬 작업의 차단 사유는 없습니다.
 
 현재 업무 개념은 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md), 구현된 관계형
 구조와 조회 경로는
@@ -24,12 +27,12 @@ Web API와 실제 production 데이터는 없습니다.
 
 ## 남은 책임과 다음 작업
 
-다음 실행자는 현재 application 조회 결과를 소비하는 Web adapter를 구현합니다.
+다음 제품 작업은 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)입니다.
+016의 전체 완료를 닫으려면 별도 push 권한으로 final SHA의 remote gate를 확인합니다.
 
-1. 세 공개 GET의 Controller와 request·response DTO를 추가합니다.
-2. 입력 validation, RFC 9457의 400·404 오류와 Security의 401·403·405 회귀 계약을 연결합니다.
-3. OpenAPI schema와 실제 JSON nullability를 대조합니다.
-4. 전체 `check`, 영구 문서 최종 동기화와 독립 구현 검증을 통과시킵니다.
+1. 최초 브랜드와 과거 기간을 사용자 결정으로 확정합니다.
+2. 공식 source inventory와 11개 table mapping을 작성합니다.
+3. 별도 data migration과 실제 조회 검수를 수행합니다.
 
 DB 구조나 업무 개념을 바꿔야 한다면 먼저 해당 영구 문서를 갱신하고 별도 설계 변경으로
 다룹니다. 현재 사용자에게 필요한 결정은 없습니다.
@@ -38,7 +41,7 @@ DB 구조나 업무 개념을 바꿔야 한다면 먼저 해당 영구 문서를
 
 아래 내용은 016 착수 당시 사용한 목표·계약·수용 기준·개발 순서입니다. 현재 업무 개념,
 물리 schema와 구현 상태의 SOT가 아니며, 현재 계약은 위 영구 문서와 실제 source를 따릅니다.
-미구현 Web API의 목표 계약과 migration 분리 판단은
+Web API의 목표 계약과 migration 분리 판단은
 [016 신차 카탈로그 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)에 보존합니다.
 
 ### 달성할 결과
@@ -65,8 +68,8 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 3. DB 설계 | 정확한 11개 테이블, 칼럼, FK·UNIQUE·CHECK·index | 완료 | 상세 설계가 독립 검증을 통과함 |
 | 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·133개 제약·4개 index·대표 fixture·실제 권한 검증 통과 |
 | 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **완료** | filter·가격·과거 조회와 목록 2개·상세 5개 SQL 상한, 대표 SQL 실행 계획 검증 통과 |
-| 6. 공개 API 개발 | Controller·Security·OpenAPI | **다음 작업** | 비회원 세 GET과 오류 계약 통과 |
-| 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | 후속 | blocking finding 0건 |
+| 6. 공개 API 개발 | Controller·Security·OpenAPI | **완료** | 비회원 세 GET과 오류 계약 통과 |
+| 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | **로컬 완료** | blocking finding 0건 |
 | 8. 실제 데이터 | 공개 범위 결정, 공식 자료 mapping, data migration | 후속 017 | 선택 범위의 누락 0건 |
 | 9. Git·원격·배포 | commit, 별도 push와 CI·Sonar, 별도 staging 적용 | 조건부 | 각 단계의 명시 권한과 gate 충족 |
 
@@ -390,9 +393,9 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 | `docs/domain/130-car-catalog.md`와 router | 모델·세대·연식·변형·판매 구성·가격 의미 반영 |
 | `docs/project/210-module-map.md` | 구현된 `catalog` module과 의존 반영 |
 | `docs/project/schema/110-car-catalog.md`와 router | 11개 테이블의 실제 column·constraint·index와 분리 이유 반영 |
-| `docs/tech-stack/220-spring-security.md` | 미반영; Web API 단계에서 세 공개 GET allow-list와 함께 갱신 |
+| `docs/tech-stack/220-spring-security.md` | 세 공개 GET allow-list와 GET 이외 method 경계 반영 |
 | `docs/tech-stack/240-flyway.md` | catalog migration과 SELECT-only 권한 반영 |
-| `docs/tech-stack/260-openapi.md` | 미반영; Web API 단계에서 공개 조회·오류 schema와 함께 갱신 |
+| `docs/tech-stack/260-openapi.md` | 공개 조회·오류·OpenAPI 3.1 nullability 계약 반영 |
 | `docs/product/200-feature-scope.md` | 현재 사용자 기능 범위와 production data 경계 반영 |
 | `docs/project/100-project-overview.md` | 현재 구현 단계와 실제 data 미적재 상태 반영 |
 

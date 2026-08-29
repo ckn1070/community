@@ -33,6 +33,12 @@
   - `POST /api/v1/auth/password-resets`
   - `POST /api/v1/auth/password-resets/confirm`
   - `POST /api/v1/admin/invitations/{invitationId}/acceptances`
+  - `GET /api/v1/car/brands`
+  - `GET /api/v1/car/models`
+  - `GET /api/v1/car/models/{carModelId}`
+- 카탈로그는 위 세 GET만 anonymous에게 공개합니다. 같은 path의 쓰기 method는 public
+  allow-list에 포함하지 않아 anonymous 요청은 `401`, 보호 조건을 만족한 인증 요청이 MVC까지
+  도달했지만 mapping이 없으면 `405`로 응답합니다.
 - refresh token 재발급 endpoint는 access token 만료 후 호출되어야 하므로 public business API로 둡니다.
 - logout endpoint는 만료되거나 폐기된 access token을 가진 클라이언트도 refresh token을 폐기할 수 있어야 하므로 public business API로 둡니다.
 - `PUT /api/v1/auth/password`는 Bearer JWT와 `SESSION_FULL`을 요구하지만 비밀번호 변경 강제 상태에서도 허용합니다.

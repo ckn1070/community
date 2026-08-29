@@ -251,6 +251,6 @@ transaction 안에서 같은 기준일의 가격·옵션과 연식을 읽습니�
 
 - **실행 source**: 위에 열거한 V13~V17 migration
 - **현재 업무 개념과 조회 의미**: [130 자동차 카탈로그 도메인](../../domain/130-car-catalog.md)
-- **작업 상태와 미구현 Web API**: [016 신차 카탈로그 schema·조회 API](../../work-items/features/2026/016-new-car-catalog-query-api.md)
+- **작업 상태와 공개 조회 API**: [016 신차 카탈로그 schema·조회 API](../../work-items/features/2026/016-new-car-catalog-query-api.md)
 - **결정 근거**: [016 DB 설계 결정 기록](../../work-items/features/2026/016-new-car-catalog-query-api-design.md)
 - **migration 운영 기준**: [240 Flyway](../../tech-stack/240-flyway.md)
