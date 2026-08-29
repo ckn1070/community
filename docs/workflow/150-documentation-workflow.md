@@ -32,6 +32,23 @@ owner 후보를 복원합니다.
 현재 문서에 새 의미를 쓸 수 있는지는 작업 실행 워크플로우의 의미 authority와 문서
 source를 함께 따릅니다.
 
+현재 개념을 설명하거나 변경하는 문서에서는 source를 읽은 뒤 다음 owner 관계를 먼저
+닫습니다.
+
+```text
+현재 정의·구조·관계·작동 원리·불변식·제품 범위와 이를 이해하는 데 필요한 현재 이유
+→ project·product·domain·architecture·tech-stack 등의 영구 SOT
+→ 구현 source
+→ 작업 상태 또는 선택 과정이 필요할 때만 work item·design
+```
+
+Work item과 작업 `-design`은 현재 개념을 발견·설계한 source 후보일 수 있지만 canonical
+owner는 아닙니다. 영구 Reference/SOT가 자신의 mental model·경계·관계·현재 이유를 생략하고
+work item 또는 그 design을 `현재 기준`, `논리 모델`, `설계 이유`, `조회 계약`의 owner로
+가리키는 관계는 source 복원이 끝나지 않은 상태입니다. 반대로 작업 문서가 현재 영구 SOT를
+가리키거나, 영구 SOT가 작업 당시의 선택 과정·배제 대안만 design으로 연결하는 관계는
+허용합니다.
+
 ## 2. 변경 깊이 선택
 
 작업 실행 워크플로우에서 요청 계약과 변경 범위를 확정하고 앞 절에서 source·owner 후보를
@@ -71,6 +88,10 @@ outline을 고르기 전에 다음 두 방향을 닫습니다.
 각 주장은 현재 사실, 결정, 계획, 절차, 결과 또는 사건 중 무엇인지 구분하고 그 유형에
 맞는 source를 연결합니다. 문서끼리 일치한다는 사실을 repository 실행 사실로, local
 정적 검증을 live 환경 성공으로, 절차의 존재를 외부 책임 완료로 확대하지 않습니다.
+
+`결정`은 다시 현재 개념을 이해·변경하는 데 필요한 이유와 작업 당시의 선택 과정으로
+나눕니다. 전자는 책임 Reference/SOT의 현재 설명이며, 후자만 work item design의 결정
+기록입니다. 둘을 모두 `결정 이유`로 묶어 work item에 넘기지 않습니다.
 
 설명 문서의 coverage는 문서 유형별 증거를 분리해 판정합니다.
 
@@ -374,6 +395,19 @@ actual source에서 복원할 수 있어야 합니다. 전체 적용을 주장�
 후보만으로 핵심 개념·순서·분기·계층·호출·값 전달·상태를 하나의 의미로 복원한 뒤
 source의 구성요소·방향·조건·전달값과 비교합니다. static source·syntax 확인과 실제
 환경 실행 증거를 구분합니다.
+
+현재 개념을 다루는 후보는 각 section과 outbound link를 `현재 영구 owner`, `구현 source`,
+`작업 상태`, `선택 과정·배제 대안` 중 하나로 역분류합니다. 다음 중 하나라도 있으면 결과
+gate를 통과하지 않습니다.
+
+- 영구 SOT가 현재 정의·구조·관계·작동 원리·불변식·제품 범위 또는 이를 이해하는 데 필요한
+  현재 이유를 work item·backlog·작업 `-design`이 소유한다고 선언합니다.
+- 영구 SOT만 읽어서는 현재 mental model을 복원할 수 없고 work item이나 design을 반드시
+  읽어야 합니다.
+- Work item이 현재 기준을 영구 SOT로 승격하지 않은 채 자신의 계획·설계를 현재 canonical
+  contract로 가리킵니다.
+- Router가 현재 개념을 찾는 독자를 work item으로 보내거나, 작업 당시의 선택 과정을 찾는
+  독자를 현재 SOT와 구분하지 않습니다.
 
 Markdown topology는 다음 깊이로 직접 확인합니다.
 
