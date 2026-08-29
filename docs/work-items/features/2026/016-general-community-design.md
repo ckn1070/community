@@ -1,21 +1,23 @@
-# 차량 비연결 일반 커뮤니티 상세 설계
+# 확장 가능한 차량 비연결 일반 커뮤니티 상세 설계
 
 ## 설계 상태와 경계
 
-이 문서는 [016 차량 비연결 일반 커뮤니티](016-general-community.md)의 기술 계약과 대안
+이 문서는 [016 확장 가능한 차량 비연결 일반 커뮤니티 기반](016-general-community.md)의 기술 계약과 대안
 비교를 소유합니다. 사용자 경험을 바꾸는 조회 공개 범위, 게시판 형태와 삭제 방식은 본문의
 결정 카드에서 아직 선택되지 않았으므로 조건부 설계를 유지합니다. 선택되지 않은 추천 분기를
 확정 요구로 사용하지 않습니다.
 
 이번 기능은 Carmunity 제품 SOT가 이미 포함한 커뮤니티 영역에서 차량 연결을 제외한 첫
-기능입니다. Carmunity와 AutoSquare의 관계, 카탈로그 reference 단위와 차량 커뮤니티 방향을
-결정하지 않으며, 그 후보를 현재 요구사항으로 가져오지 않습니다.
+기능입니다. 현재에는 Board·Post·Comment만 구현하지만, 제품 범위에 이미 존재하는 반응·
+북마크·신고·media와 일반적으로 뒤따를 검색·알림·대댓글이 기존 core를 교체하지 않고 붙을
+수 있는 책임 경계를 설계합니다. Carmunity와 AutoSquare의 관계, 카탈로그 reference 단위와
+차량 커뮤니티 방향은 결정하지 않으며, 그 후보를 현재 요구사항으로 가져오지 않습니다.
 
 ## 현재 source에서 파생되는 제약
 
 | Source | 현재 사실 | 이번 설계에 미치는 제약 |
 | --- | --- | --- |
-| 제품 개요·기능 범위 | 자동차 정보와 연결된 커뮤니티가 제품 영역이지만 상세 기능은 미구현입니다. | 일반 게시글·댓글만 새 work item에서 구체화하고 차량 연결은 만들지 않습니다. |
+| 제품 개요·기능 범위 | 자동차 정보와 연결된 커뮤니티, 댓글·반응·북마크·신고·media가 제품 영역이지만 상세 기능은 미구현입니다. | Board·Post·Comment core만 구현하고 후속 기능은 additive extension 경계로 분리합니다. |
 | 프로젝트 아키텍처 | 단일 배포 modular monolith와 module 내부 hexagonal 구조, 단순 조회 projection을 허용합니다. | `community`를 업무 module로 만들고 변경과 조회 구조의 강도를 다르게 적용합니다. |
 | 모듈 구조 가이드 | 다른 module의 internal·table을 직접 사용하지 않고 공개 API로 협력합니다. | 작성자 표시 이름은 `account.api`를 통하고 cross-module join·FK를 만들지 않습니다. |
 | Account 도메인 | profile의 `display_name`은 커뮤니티 공개 정보이고 account public id가 외부 식별자입니다. | JWT `sub`와 author reference는 account public UUID, 화면 표시값은 account owner 계약을 사용합니다. |
@@ -29,25 +31,58 @@
 
 | 용어 | 의미 | 생명주기 owner |
 | --- | --- | --- |
-| 일반 게시글 | 차량·category reference 없이 제목과 plain text 본문을 가진 사용자 콘텐츠 | `community` |
+| Board | 게시글이 모이는 안정된 컨테이너입니다. 초기에는 seed된 게시판만 조회하며 관리 생명주기는 구현하지 않습니다. | `community` |
+| 일반 게시글 | Board 하나에 속하고 차량 reference 없이 제목과 plain text 본문을 가진 사용자 콘텐츠 | `community` |
 | 댓글 | 한 게시글에 직접 속하는 평면 사용자 콘텐츠. 다른 댓글을 parent로 갖지 않습니다. | `community` |
 | 작성자 public id | JWT `sub`와 같은 account UUID. 소유권 비교와 account 공개 표현 조회에 사용합니다. | 식별자 발급·상태는 `account`, 콘텐츠 참조는 `community` |
 | 작성자 표현 | API에 노출하는 account public id와 현재 display name의 작은 표현 | 공개 값은 `account.api`, 응답 조립은 `community` |
 | 내부 PK | table FK, 정렬 tie-breaker와 persistence에만 쓰는 `BIGINT` 값 | 각 table owner |
 
-`Post`와 `Comment`는 수정·삭제 권한과 상태를 갖는 domain model입니다. 하나의 게시글이 많은
+`Board`는 첫 slice에서 읽기 전용 reference model이고, `Post`와 `Comment`는 수정·삭제 권한과
+상태를 갖는 domain model입니다. 하나의 게시글이 많은
 댓글 collection을 메모리에 소유하지 않습니다. `Post`와 `Comment`를 각각 변경 단위로 두고,
-댓글은 같은 module의 post 내부 PK만 persistence FK로 참조합니다.
+Post는 같은 module의 Board 내부 PK, 댓글은 Post 내부 PK를 persistence FK로 참조합니다.
 
 ## 권위별 결정 색인
 
 | 결정 | 권위 | 상태 |
 | --- | --- | --- |
 | 차량과 무관한 게시글·댓글을 먼저 계획합니다. | 사용자 확정 요구 | 확정 |
-| 차량 field·차종 게시판·오너 인증을 만들지 않습니다. | 사용자 확정 요구 | 확정 |
+| 차량 field·차종 게시판·오너 인증과 미래 기능 구현을 현재 core에 넣지 않습니다. | 사용자 확정 요구 | 확정 |
+| 미래 기능이 붙어도 core identity·경계를 교체하지 않는 구조를 사용합니다. | 사용자 확정 요구 | 확정 |
 | account public id, display name 공개 의미와 기본 보호 API 조건 | 저장소 source | 확정 |
-| `community` module, account batch API, API·schema·test 구조 | Agent 기술 결정 | 아래 대안 비교로 확정 |
-| 조회 공개 범위, 게시판 형태, 삭제 방식 | 열린 사용자 결정 | 본문 결정 카드 대기 |
+| `community` module, Board, account batch API, API·schema·test와 확장 경계 | Agent 기술 결정 | 아래 대안 비교로 확정 |
+| 조회 공개 범위, 첫 게시판 구성, 작성자 삭제 방식 | 열린 사용자 결정 | 본문 결정 카드 대기 |
+
+## 미래 기능 지도와 현재 경계
+
+미래 기능 이름을 현재 schema field로 미리 예약하지 않습니다. 대신 아래에서 바뀌지 않아야 할
+core와 첫 additive 연결 지점을 정합니다.
+
+| 미래 기능군 | 예상 기능 | 처음 붙을 경계 | 현재 구현 |
+| --- | --- | --- | --- |
+| 탐색 단위 | 게시판 추가·정렬·비활성화, tag, 차량별 라운지 | Board lifecycle·Board association, Post-Tag association | Board identity와 Post FK만 구현 |
+| 대화·관계 | 대댓글, 반응, 북마크, 구독 | Comment parent relation, target별 aggregate와 unique actor-target constraint | 평면 Comment와 안정된 public id만 구현 |
+| 발견 | 통합 최신 feed, 전문 검색, 인기·추천 feed, 개인화 | 별도 query projection, 필요 시 변경 use case 뒤 event와 read model | 변경 모델과 Board-scoped projection만 분리 |
+| 전달 | 알림, WebSocket/SSE 실시간 갱신 | transaction 완료 뒤 durable event consumer | consumer가 없으므로 event/outbox 미구현 |
+| 콘텐츠 형식 | 이미지·첨부, Markdown·rich text, 투표형 글 | media 공개 API, Post-Attachment와 생명주기별 1:1 확장/별도 aggregate | bounded plain text만 구현 |
+| 신뢰·안전 | 신고, 편집 이력, 운영자 숨김·잠금, 제재, spam·rate limit | 작성자 action과 분리된 revision·moderation action·restriction·audit | production 공개 선행 조건으로만 유지 |
+| identity·권한 | 공개 profile 변경, 익명화, badge, board moderator | account 공개 표현 계약과 CommunityActionPolicy | 현재 display name batch 조회와 author action만 구현 |
+| 규모·운영 | cache, counter, archive, partition, 장애 격리 | replaceable read projection, 측정된 query·lock·storage 지표 | bounded cursor와 현재 logging만 구현 |
+
+확장 불변식은 다음과 같습니다.
+
+- Post는 처음부터 Board에 속하며 초기 게시판 수가 늘어도 기존 row를 재분류하지 않습니다.
+- Post와 Comment의 public id와 작성자 reference는 후속 association의 안정된 연결점입니다.
+- 작성자 수정·삭제, 조회 visibility와 운영자 조치는 서로 다른 action과 정책으로 유지합니다.
+- 변경 model은 검색 문서, 인기 점수, 댓글 수 counter와 notification delivery 상태를 소유하지
+  않습니다.
+- 다른 module은 community table·internal package를 읽지 않고, 실제 consumer가 생길 때 만든
+  최소 `community.api` 또는 event 계약을 사용합니다.
+- 첫 durable async consumer 전에는 event/outbox를 만들지 않지만, 모든 변경은 application
+  use case를 통과해 후속 event publication 지점이 흩어지지 않게 합니다.
+- 후속 기능이 요구하는 schema는 nullable 만능 field나 JSONB bag이 아니라 owner가 분명한
+  association·aggregate·read model로 추가합니다.
 
 ## Agent 기술 결정
 
@@ -67,61 +102,113 @@
 - **재검토 조건**: moderation이나 media가 독립 생명주기와 다수 module consumer를 가져 별도
   bounded context가 필요해집니다.
 
-### D2. 작성자 id는 저장하고 표시 이름은 account batch API로 조회
+### D2. 초기부터 존재하는 경량 Board
+
+- **배경**: 게시판 없이 Post만 만들면 게시판·차량별 라운지·접근 범위를 처음 추가할 때 모든
+  기존 글에 분류를 backfill하고 create/list API의 기준 resource를 바꿔야 합니다. 반대로
+  관리 기능 전체를 미리 만들면 현재 core보다 Board lifecycle이 더 커집니다.
+- **검토한 선택지**: Board 없는 단일 feed, Post의 고정 category code, 처음부터 완전한 관리형
+  Board, identity와 Post FK만 가진 경량 Board
+- **선택**: `community_board`에 내부 PK, UUID `public_id`, 변경되지 않는 `code`, 사용자 표시
+  `name`, `display_order`와 감사 시각을 둡니다. 모든 Post는 `board_id NOT NULL` FK로 Board
+  하나를 참조합니다. Board collection은 `(displayOrder ASC, publicId ASC)`로 정렬합니다.
+  현재에는 선택한 초기 Board seed와 목록·상세 조회만 구현하고 create/update/reorder/archive
+  관리 API는 만들지 않습니다. 초기 row의 public id와 code는 migration에 literal 값으로
+  명시해 개발·검증·운영 환경에서 같은 외부 identity를 재현하며 DB UUID 생성 함수에
+  의존하지 않습니다.
+- **선택 근거**: 초기 한 게시판의 구현 비용은 작은 reference row와 FK뿐이지만, 이후 게시판을
+  추가할 때 Post identity·schema·API를 교체하지 않습니다. Code는 운영 seed와 stable business
+  key, public id는 외부 reference, name은 변경 가능한 표시값으로 책임을 분리합니다.
+- **영향**: Post 생성·목록은 `/api/v1/boards/{boardId}/posts`로 Board에 scope됩니다. 초기
+  order는 100 단위로 두어 새 Board를 사이에 넣을 수 있게 하고, 중복 order는 public id로
+  결정적으로 정렬합니다. Post의 Board 이동은 현재 지원하지 않으며, 추후 필요할 때 별도
+  action·권한·감사 정책으로 추가합니다.
+- **배제한 대안**: Board 없는 feed는 미래 backfill을 만들고 category code는 관리 생명주기와
+  차량별 association을 Post enum에 결합합니다. 완전한 관리형 Board는 현재 쓰지 않는 상태·
+  정렬·권한 API를 먼저 구현합니다.
+- **재검토 조건**: Board 생성·재정렬·비활성화, board별 접근 정책이나 차량별 Board가 실제
+  범위가 되면 `status`, optimistic version, 접근 정책 또는 association을 새 migration으로
+  추가하고 기존 `display_order`를 변경하는 Board aggregate로 승격합니다.
+
+### D3. 작성자 id는 저장하고 표시 이름은 account batch API로 조회
 
 - **배경**: JWT에는 display name이 없고 community 목록은 여러 작성자 이름이 필요합니다.
 - **검토한 선택지**: JWT claim 추가, community에 display name snapshot 저장, account table
   직접 join, account 공개 batch lookup
 - **선택**: post/comment에는 `author_account_public_id UUID`만 저장합니다. `account.api`에
   `AccountPublicProfileLookup`과 `AccountPublicProfile(accountPublicId, displayName)`을 추가하고
-  한 slice의 `Set<UUID>`를 한 query로 조회합니다.
+  community의 `AuthorProfileLookupPort` adapter가 한 slice의 `Set<UUID>`를 한 query로
+  조회합니다.
 - **선택 근거**: 이름 변경과 향후 account 공개 정책을 account owner 한 곳에서 반영하면서
   JWT stale data, cross-module table 의존과 N+1을 모두 피합니다.
 - **영향**: account profile batch lookup이 post/comment query의 동기 dependency가 됩니다.
   현재 account는 탈퇴도 row 상태로 보존하므로 기존 author UUID가 사라지지 않습니다.
+  Community query service는 account API DTO에 직접 퍼지지 않고 port 결과만 소비하므로 이후
+  bounded cache나 author read model을 adapter 교체로 비교할 수 있습니다.
 - **배제한 대안**: snapshot은 이름 변경 동기화가 필요하고, direct join·FK는 module 공개
   계약을 우회하며, JWT claim은 token TTL 동안 오래된 이름을 노출합니다.
 - **재검토 조건**: account 물리 삭제·익명화, display name 변경 또는 비동기 read model이
   확정되면 공개 profile 계약의 누락·redaction·cache 정책을 함께 재설계합니다.
 
-### D3. Post와 Comment를 분리한 변경 모델
+### D4. Post와 Comment를 분리한 변경 모델
 
 - **배경**: 댓글 수가 커질 수 있어 Post aggregate가 전체 댓글 collection을 로드하면 변경과
   locking 비용이 커집니다.
-- **검토한 선택지**: Post가 댓글 collection 소유, 규칙 없는 JPA CRUD, Post·Comment 분리
-  domain model
+- **검토한 선택지**: Post가 댓글 collection 소유, Post·Comment 공통 `community_content`
+  상속 table, 규칙 없는 JPA CRUD, Post·Comment 분리 domain model
 - **선택**: `Post`와 `Comment`를 각각 domain 변경 모델로 두고 application use case가 parent
   상태와 transaction을 조정합니다. JPA Entity와 API DTO는 분리합니다.
 - **선택 근거**: 작성자 소유권·삭제·수정 규칙을 Spring 없이 검증하면서 댓글 slice 조회와
   변경이 Post 전체 크기에 비례하지 않습니다.
-- **영향**: comment 생성은 Post lookup/lock port와 Comment store port를 한 use case에서
-  사용합니다. 목록은 별도 read projection입니다.
+- **영향**: Comment 생성은 Post lookup/lock port와 Comment store port를 한 use case에서
+  사용합니다. 목록은 별도 read projection입니다. 현재 소비자가 없는 generic Content
+  interface·table은 만들지 않습니다. 반응처럼 community 내부에서 target FK가 필요한 기능은
+  Post·Comment별 association을 우선하고, moderation처럼 외부 module consumer가 생기면 그때
+  public id 기반 최소 `ContentReference`를 `community.api`에 추가합니다.
 - **배제한 대안**: 댓글 collection aggregate는 무제한 성장하고, JPA CRUD만 사용하면 권한과
-  삭제 규칙이 adapter에 흩어집니다.
-- **재검토 조건**: 댓글 수 제한이나 게시글 단위 원자적 moderation처럼 aggregate 전체
-  consistency가 필요한 규칙이 생깁니다.
+  삭제 규칙이 adapter에 흩어집니다. 공통 content table은 두 row write와 inheritance mapping을
+  모든 변경에 부과하며 아직 공통 persistence lifecycle consumer가 없습니다. FK 없는
+  `(targetType, targetId)` polymorphic table은 DB 참조 무결성을 포기합니다.
+- **재검토 조건**: Post·Comment 외 콘텐츠 유형과 둘 이상 cross-cutting consumer가 같은
+  identity·lifecycle을 실제로 공유해 target별 association 비용이 공통 content registry 비용을
+  넘습니다.
 
-### D4. Resource API와 count 없는 offset slice
+### D5. Board-scoped Resource API와 cursor slice
 
-- **배경**: 첫 일반 커뮤니티는 검색·추천 feed보다 기본 목록과 상세가 목표입니다.
-- **검토한 선택지**: action URI, cursor pagination, 전체 건수 `Page`, resource URI와 count 없는
-  offset `Slice`
-- **선택**: `/api/v1/posts`와 하위 `/comments` resource를 사용하고 page/size 입력을 받는 offset
-  `Slice`를 적용합니다. 외부 정렬 parameter는 열지 않고 server가 post 최신순·comment
-  작성순을 고정합니다.
-- **선택 근거**: 현재 규모와 UI가 확정되지 않은 단계에서 단순하고 검증 가능한 계약이며,
-  내부 PK tie-breaker로 slice 내 정렬을 고정할 수 있습니다. 현재 요구에는 전체 글·댓글
-  건수나 마지막 page 표시가 없으므로 `size + 1`행으로 `hasNext`만 판정해 별도 count query를
-  피합니다.
-- **영향**: post 기본 20·최대 100, comment 기본 50·최대 100입니다. 응답은 page index와
-  `hasNext`를 제공하지만 `totalElements`·`totalPages`를 제공하지 않습니다.
-- **배제한 대안**: action URI는 REST 기준과 어긋나고 cursor는 feed UX·부하 근거 없이 token
-  계약과 방향별 query를 추가합니다. 전체 건수 `Page`는 제품 요구 없이 모든 목록에 count
-  query를 계약화합니다.
-- **재검토 조건**: 깊은 page의 latency·query plan 또는 무한 스크롤 요구가 offset 비용을
-  정당화하지 못하면 `(createdAt, publicId)` cursor로 새 version 또는 호환 확장을 검토합니다.
+- **배경**: 게시판 feed는 새 글이 계속 추가되고 이후 search·popular feed가 별도 query로
+  생길 가능성이 높습니다. Offset response를 public contract로 고정하면 깊은 page 비용과
+  cursor 전환 시 response breaking change가 남습니다.
+- **검토한 선택지**: action URI, 전체 건수 `Page`, count 없는 offset `Slice`, Board-scoped
+  resource URI와 keyset cursor `Slice`
+- **선택**: Board는 `/api/v1/boards`, 게시글 collection은
+  `/api/v1/boards/{boardId}/posts`, 단일 Post와 하위 Comment는 `/api/v1/posts/{postId}`를
+  기준으로 합니다. 목록은 `limit`과 optional opaque `cursor`를 받고, Post는
+  `(createdAt DESC, publicId DESC)`, Comment는 `(createdAt ASC, publicId ASC)` 위치를 cursor에
+  표현합니다. 내부 PK와 임의 sort parameter를 public contract에 넣지 않습니다. Cursor v1은
+  UTF-8 JSON의 `v`, collection `kind`, board/post `scopeId`, `createdAt`, `publicId`를
+  Base64URL without padding으로 인코딩합니다. API 소비자는 이를 해석하지 않는 opaque
+  문자열로 취급합니다.
+- **선택 근거**: public UUID를 tie-breaker로 사용하면 정렬이 안정되고 내부 PK를 노출하지
+  않으면서 첫 구현부터 깊은 offset scan을 피합니다. `limit + 1`행으로 `hasNext`와
+  `nextCursor`만 계산하므로 total count 요구도 만들지 않습니다.
+- **영향**: Post 기본 20·최대 100, Comment 기본 50·최대 100입니다. 첫 요청은 cursor를
+  생략하며 마지막 slice의 `nextCursor`는 null입니다. Cursor의 미지원 version, malformed
+  encoding·JSON·UUID·timestamp, collection kind·path scope 불일치와 필수 값 누락은 `400`으로
+  거부합니다. Token은 접근 권한이 아니고 public 값의 조회 위치일 뿐이므로 서명하지 않으며,
+  요청마다 현재 조회 권한과 resource 노출 여부를 별도로 검사합니다. 새 글 추가가 이미 받은
+  다음 cursor 앞에 생겨도 이어 읽는 구간의 중복을 만들지 않습니다. 이 cursor는 database
+  snapshot을 고정하지 않습니다. 후속 요청은 경계 아래의 현재 visibility를 읽으므로 그 사이
+  visibility에서 제외되거나 물리 삭제된 row는 사라지고, 자리 유지 placeholder는 같은 위치에
+  남습니다. 정렬 key가 변하지 않은 나머지 visible row는 중복·건너뜀 없이 이어집니다.
+- **배제한 대안**: action URI는 REST 기준과 어긋나고 전체 건수 `Page`는 제품 요구 없이 count
+  query를 계약화합니다. Offset `Slice`는 현재 구현은 단순하지만 미래 feed 성장과 API
+  pagination 구조 변경 비용을 남깁니다.
+- **재검토 조건**: 번호 기반 page UX가 확정되면 별도 query endpoint나 count contract를
+  추가하고, 검색·추천 정렬은 기존 cursor 의미를 바꾸지 않고 해당 read model의 독립 cursor를
+  사용합니다. 같은 collection에 새 filter를 추가할 때는 cursor version과 정규화한 filter
+  fingerprint를 함께 검토해 다른 query에서 token이 재사용되지 않게 합니다.
 
-### D5. Plain text와 저장 한계
+### D6. Plain text와 저장 한계
 
 - **배경**: media와 rich text 정책이 없지만 무제한 body는 request·DB·응답 자원 사용을
   통제하지 못합니다.
@@ -155,38 +242,64 @@
   `BTRIM()` 기본값 조합은 supplementary 문자와 Unicode whitespace에서 경계가 달라집니다.
 - **재검토 조건**: 실제 작성 데이터의 길이 분포, Markdown 또는 media 요구가 확인됩니다.
 
-### D6. Security filter와 domain 소유권의 이중 방어
+### D7. 인증, action authorization과 visibility의 분리
 
-- **배경**: URL 보호만으로는 어느 계정이 특정 row를 수정할 수 있는지 판단할 수 없습니다.
-- **검토한 선택지**: Controller role 조건만 사용, DB query에 author 조건만 사용, 공통 인증과
-  application/domain 소유권 검사
-- **선택**: SecurityFilterChain은 session 접근을 막고, Web adapter가 JWT `sub`를 UUID actor로
-  변환하며, domain/application이 저장된 author UUID와 다시 비교합니다.
-- **선택 근거**: 인증 여부와 객체 소유권을 각각 책임 있는 경계에서 방어합니다.
+- **배경**: URL 보호만으로는 어느 계정이 특정 row를 수정할 수 있는지 판단할 수 없고,
+  작성자 삭제와 운영자 숨김을 같은 status·DELETE로 처리하면 감사 이유와 복구 권한이
+  뒤섞입니다.
+- **검토한 선택지**: Controller role 조건만 사용, DB query에 author 조건만 사용, 범용 ACL
+  rule engine 선도입, Security 인증 + module 내부 action policy + 조회 visibility 분리
+- **선택**: SecurityFilterChain은 session 접근을 막고 Web adapter가 JWT `sub`를 UUID actor로
+  변환합니다. Application은 `CommunityActionPolicy`에 `CREATE_POST`, `UPDATE_POST`,
+  `DELETE_POST`, `CREATE_COMMENT`, `UPDATE_COMMENT`, `DELETE_COMMENT`와 필요한 resource 사실을
+  전달합니다. 현재 `CREATE_POST`는 유효한 actor와 visible Board를 요구하고,
+  `CREATE_COMMENT`는 visible 여부와 별개인 `commentable` Post를 요구합니다. `commentable`은
+  author lifecycle이 `ACTIVE`이고 조회 정책상 visible하여 새 댓글을 받을 수 있는 상태입니다.
+  Update/delete action은 저장된 author UUID 일치를 요구합니다. 조회 query는 선택한 작성자
+  삭제 결과와 Board 존재를 visibility predicate로 적용합니다.
+- **선택 근거**: 인증, resource action 권한과 조회 노출을 각 책임 경계에서 검증하면 미래
+  `HIDE`, `RESTORE`, `LOCK`, `MOVE`를 author DELETE 우회가 아니라 별도 action으로 추가할 수
+  있습니다. 현재 필요 없는 동적 permission schema나 rule DSL은 만들지 않습니다.
 - **영향**: 비작성자 수정·삭제는 `403`, parent mismatch와 비노출 row는 `404`입니다.
-  `ROLE_ADMIN`·`ROLE_SUPER_ADMIN` 우회는 만들지 않습니다.
+  `ROLE_ADMIN`·`ROLE_SUPER_ADMIN`이라는 이유만으로 author action을 우회하지 않습니다.
+  Moderation이 생기면 restriction와 audit owner를 별도로 추가하고 query visibility가 author
+  lifecycle, Board policy와 restriction을 조합합니다.
 - **배제한 대안**: Controller-only 검사는 다른 inbound adapter가 생기면 우회되고, author
-  조건 query만 사용하면 미존재와 권한 거부 정책을 명시적으로 test하기 어렵습니다.
-- **재검토 조건**: 관리자 hide·복구, 공동 작성자 또는 세분화 permission 모델이 확정됩니다.
+  조건 query만 사용하면 미존재와 권한 거부 정책을 명시적으로 test하기 어렵습니다. 범용 ACL은
+  아직 존재하지 않는 board role·resource hierarchy와 persistence 비용을 현재 core에 부과합니다.
+- **재검토 조건**: 관리자 hide·복구, board moderator, 공동 작성자 또는 resource별 permission이
+  실제 요구가 되면 action set과 policy input을 확장하고, 규칙이 data-driven이어야 할 때만
+  assignment schema를 도입합니다.
 
-### D7. 낙관적 수정과 댓글 생성-게시글 삭제 직렬화
+### D8. 낙관적 수정과 공유 댓글 생성-배타 게시글 삭제 lock
 
 - **배경**: 같은 콘텐츠의 동시 수정과 댓글 생성 중 parent 삭제가 data loss·중간 상태를
-  만들 수 있습니다.
-- **검토한 선택지**: last-write-wins, 모든 변경 pessimistic lock, `@Version`과 필요한 parent
-  row lock 조합
+  만들 수 있습니다. 모든 Comment 생성에 `FOR UPDATE`를 쓰면 같은 인기 Post의 Comment
+  생성끼리도 직렬화됩니다.
+- **검토한 선택지**: last-write-wins, 모든 변경 pessimistic lock, Comment 생성·Post 삭제 모두
+  `FOR UPDATE`, `@Version`과 `FOR SHARE` create/`FOR UPDATE` delete 조합
 - **선택**: Post·Comment에 version column과 JPA optimistic lock을 사용하고 conflict를
-  `409`로 변환합니다. 댓글 생성은 노출 가능한 Post row를 `FOR UPDATE`로 잠근 뒤 insert합니다.
-- **선택 근거**: 일반 수정은 lock 대기 없이 충돌을 감지하고, parent 삭제와 comment 생성의
-  정확한 race만 짧게 직렬화합니다.
+  `409`로 변환합니다. Comment 생성은 `ACTIVE`이고 `commentable`인 Post row를 PostgreSQL
+  `FOR SHARE`로 읽고 insert하며, Post 삭제는 같은 row를 `FOR UPDATE`로 잠근 뒤 선택한 상태
+  변경 또는 물리 삭제를 실행합니다.
+- **선택 근거**: 일반 수정은 lock 대기 없이 충돌을 감지합니다. `FOR SHARE`끼리는 호환되고
+  `FOR UPDATE`와는 충돌하므로 Comment 생성끼리는 병렬로 진행하고 parent 삭제와의 정확한
+  race만 짧게 직렬화합니다.
 - **영향**: long transaction과 외부 account lookup을 lock 구간에 넣지 않습니다. author
-  표시 조립은 read transaction 밖 또는 read-only 경계에서 수행합니다.
+  표시 조립은 read transaction 밖 또는 read-only 경계에서 수행합니다. Persistence 통합
+  test는 두 Comment 생성의 동시 진행과 create/delete 두 commit 순서의 terminal state를
+  실제 PostgreSQL에서 검증합니다. Delete가 먼저 commit되면 기다리던 create는 Post의
+  non-commentable/부재를 다시 읽어 `404`로 끝나고 insert하지 않습니다. Create가 먼저
+  commit되면 자리 유지·전체 숨김은 Comment row를 보존해 각 visibility를 적용하고, 물리 삭제는
+  같은 transaction에서 cascade로 제거합니다.
 - **배제한 대안**: last-write-wins는 동시 수정 손실을 숨기고 모든 row lock은 읽기·수정
-  contention을 불필요하게 키웁니다.
-- **재검토 조건**: stale client update가 실제 문제로 관찰되면 ETag·`If-Match`와 `412` 계약을
-  추가합니다.
+  contention을 불필요하게 키웁니다. Comment 생성의 `FOR UPDATE`는 hot Post의 독립 insert까지
+  직렬화합니다.
+- **재검토 조건**: lock wait가 실제 병목이면 Post lifecycle coordination을 별도 row/guard로
+  분리하거나 queueing 전략을 비교합니다. stale client update가 실제 문제로 관찰되면 ETag·
+  `If-Match`와 `412` 계약을 추가합니다.
 
-### D8. Additive migration과 exact rollback image 자격
+### D9. Additive migration과 exact rollback image 자격
 
 - **배경**: 새 기능 rollback 때문에 이미 적용된 Flyway migration을 수정하거나 table을
   즉시 drop할 수 없습니다.
@@ -208,104 +321,190 @@
   복구 불가능하게 지웁니다.
 - **재검토 조건**: 기존 table 변경이나 대규모 backfill이 필요한 후속 기능이 생깁니다.
 
+### D10. 변경 core와 후속 read model·event의 단계적 분리
+
+- **배경**: 검색, 인기 feed, 알림과 실시간 전달은 같은 콘텐츠 변경을 소비하지만 각각 조회·
+  재시도·장애 생명주기가 다릅니다. Consumer가 없는데 event/outbox를 먼저 만들면 유지할
+  계약과 실패 surface만 늘어납니다.
+- **검토한 선택지**: 모든 후속 값을 Post aggregate에 저장, 처음부터 event/outbox·검색 문서
+  구축, 실제 consumer가 생길 때 use case 뒤 공개 event와 durable publication 추가
+- **선택**: 현재 변경은 community application use case만 통과하고 목록·상세는 replaceable
+  projection이 담당합니다. 실제 첫 consumer 전에는 `community.api` event, outbox와 message
+  broker를 만들지 않습니다. 검색·알림처럼 durable consumer가 확정되면 use case transaction
+  결과에 public board/post/comment id와 event id·occurredAt을 가진 최소 event를 추가하고,
+  요구 신뢰도에 따라 Spring Modulith event publication 또는 explicit outbox를 비교합니다.
+- **선택 근거**: mutation 진입점과 public identity가 이미 안정돼 있어 event emission을 한
+  경계에 추가할 수 있고, 현재에는 dead infrastructure가 없습니다. Consumer는 community
+  table을 읽지 않고 event 또는 `community.api` 계약으로 own read model을 만듭니다.
+- **영향**: 현재 댓글 수·반응 수·인기 점수는 Post row에 넣지 않습니다. 화면 요구가 생기면
+  실시간 grouped query, transaction counter, eventual read model의 정확성·쓰기 경합·복구를
+  비교한 뒤 owner를 정합니다. Event schema는 내부 Entity snapshot이 아니라 consumer가 필요한
+  최소 공개 사실만 가집니다.
+- **배제한 대안**: Post aggregate의 파생값 누적은 변경 이유와 hot row contention을 키우고,
+  consumer 없는 outbox는 cleanup·재처리·관측 책임을 근거 없이 도입합니다.
+- **재검토 조건**: notification·search·analytics 중 첫 durable consumer, cross-module 후속 작업,
+  또는 동기 query로 충족할 수 없는 측정된 latency가 확정됩니다.
+
 ## 조건부 제품 결정의 기술 영향
 
 ### 조회 공개 범위
 
 | 선택 | Security | OpenAPI·test | Data·운영 영향 |
 | --- | --- | --- | --- |
-| 공개 | 세 `GET` path를 중앙 public operation source에 추가 | GET은 security requirement·401·403이 없고 anonymous test가 성공 | 표시 이름·콘텐츠가 인터넷 공개이며 rollout 전 moderation·rate-limit 재검토 |
+| 공개 | Board·Post·Comment `GET` path를 중앙 public operation source에 추가 | GET은 security requirement·401·403이 없고 anonymous test가 성공 | 표시 이름·콘텐츠가 인터넷 공개이며 rollout 전 moderation·rate-limit 재검토 |
 | 회원 전용 | 기본 `/api/**` 보호 규칙 유지 | GET에도 Bearer security와 401·403 계약 | 미인증 노출은 없지만 가입 전 탐색 불가 |
 
 쓰기는 두 선택 모두 `SESSION_FULL`, `PASSWORD_CHANGE_NOT_REQUIRED`를 요구합니다.
 
 ### 게시판 형태
 
-| 선택 | API | Schema | 구현 영향 |
+Board identity와 Post FK는 세 선택 모두 동일합니다. 선택은 첫 seed와 현재 관리 기능 범위만
+바꿉니다.
+
+| 선택 | 초기 data·API | 공통 Schema | 구현 영향 |
 | --- | --- | --- | --- |
-| 단일 | category request/filter 없음 | category column/table 없음 | 가장 작은 post slice |
-| 고정 3개 | create/update에 `categoryCode`, list filter 추가 | `category_code`와 허용값 constraint | 기존 분류명 변경은 API·migration 변경 |
-| 관리형 | board resource와 `boardId` 필요 | `community_board`와 post FK 필요 | 관리자 CRUD·정렬·비활성화가 별도 선행 기능 |
+| 단일 | `general`/일반/order 100 한 row seed, Board read API | `community_board`, Post `board_id NOT NULL` | 가장 작은 화면, 후속 Board 추가 시 Post backfill 없음 |
+| 고정 3개 | `free`/자유/100, `questions`/질문/200, `information`/정보공유/300 seed | 단일과 동일 | 이름·잘못 선택한 글 이동 정책 필요 |
+| 관리형 | Board read와 관리자 create/update/reorder/archive | 기존 order 변경과 status·version 확장 | 관리자 권한·생명주기가 별도 선행 기능 |
 
 관리형을 선택하면 현재 작업 하나로는 목표가 둘이 되므로 board 관리 기반과 일반 콘텐츠를
 별도 work item으로 분리한 뒤 의존 순서를 다시 검증합니다.
 
+Seed public id도 환경마다 바뀌지 않는 다음 literal을 사용합니다.
+
+| Code | Public UUID |
+| --- | --- |
+| `general` | `77c9c5a7-f0b3-43b5-9828-3568f194f2b7` |
+| `free` | `54be05ef-b451-4865-b124-b7633d04511e` |
+| `questions` | `efefee45-a64a-4840-98fd-7b8f273ed1dc` |
+| `information` | `302683c3-b101-493f-830f-892d59e9f8d2` |
+
 ### 삭제 방식
 
-| 선택 | 노출 동작 | Schema·transaction | 복구·privacy 영향 |
+| 선택 | Post와 Comment API | 반복 DELETE | Schema·index·FK |
 | --- | --- | --- | --- |
-| 자리 유지 | 원문·외부 작성자 표현을 지우고 삭제 placeholder와 다른 댓글 유지 | 삭제 상태·시각, nullable content와 상태별 check. 내부 author UUID는 보존 | 원문은 복구 불가, 대화 구조 유지 |
-| 전체 숨김 | 삭제 post·댓글 API 조회 불가 | soft delete 상태와 hidden filter | application 복구 가능하지만 원문을 계속 저장 |
-| 물리 삭제 | row와 선택된 하위 row가 즉시 사라짐 | FK cascade/restrict와 delete transaction | 복구 불가, 다른 작성자 댓글 삭제 위험 |
+| 자리 유지 | 삭제 Post는 목록·상세 `200` placeholder, 수정·새 Comment 생성은 `404`. 기존 Comment 목록과 active Comment의 작성자 수정·삭제는 유지. 삭제 Comment도 목록 placeholder | 같은 작성자 `204`, 다른 actor `404` | Post·Comment `ACTIVE/AUTHOR_DELETED`, `deleted_at`, nullable content+상태 check, 내부 author 보존, Comment FK `RESTRICT`, 목록 index에 두 상태 포함 |
+| 전체 숨김 | 삭제 Post는 목록에서 제외하고 상세·모든 하위 Comment endpoint `404`. Active Post 아래 개별 삭제 Comment도 목록·변경에서 제외 | 삭제 Post와 active parent 아래 개별 삭제 Comment는 같은 작성자의 반복 DELETE만 `204`. 삭제 Post 아래 Comment와 다른 actor는 `404` | Post·Comment 상태·시각, 원문·내부 author 보존, Comment FK `RESTRICT`, `ACTIVE` partial index와 active parent predicate |
+| 물리 삭제 | Post와 하위 Comment row, 개별 Comment row를 즉시 삭제하고 이후 모든 조회·변경 `404` | 누구에게나 `404` | 삭제 상태 없음, Comment FK `ON DELETE CASCADE`, partial index 없음 |
+
+자리 유지에서 placeholder는 원문·account public id·display name을 노출하지 않습니다. 삭제된
+Post에 새 대화를 늘리는 것은 막지만, 이미 남긴 active Comment 작성자는 자신의 콘텐츠를 계속
+수정·삭제할 수 있습니다. 삭제 placeholder 자체의 PATCH는 `404`입니다. 전체 숨김은 하위
+Comment row를 수정하지 않고 active parent predicate로 함께 숨깁니다. 물리 삭제의 cascade로
+다른 작성자의 Comment도 제거된다는 영향은
+사용자 선택문에 포함하며 구현 중 `RESTRICT`로 바꾸지 않습니다.
 
 ## 목표 API 계약
 
-조회 endpoint의 public/protected 여부와 category field는 사용자 선택에 따라 확정합니다.
+조회 endpoint의 public/protected 여부와 초기 Board seed는 사용자 선택에 따라 확정합니다.
 
 | Method | Path | Request | Success | 권한 |
 | --- | --- | --- | --- | --- |
-| `POST` | `/api/v1/posts` | title, body, 선택 시 categoryCode | `201`, body, `Location` | 인증 쓰기 |
-| `GET` | `/api/v1/posts?page=0&size=20` | query | `200` post slice | 조회 선택 |
+| `GET` | `/api/v1/boards` | - | `200` Board collection | 조회 선택 |
+| `GET` | `/api/v1/boards/{boardId}` | - | `200` Board 상세 | 조회 선택 |
+| `POST` | `/api/v1/boards/{boardId}/posts` | title, body | `201`, body, `Location` | 인증 쓰기 |
+| `GET` | `/api/v1/boards/{boardId}/posts?limit=20&cursor=...` | query | `200` post cursor slice | 조회 선택 |
 | `GET` | `/api/v1/posts/{postId}` | - | `200` detail | 조회 선택 |
-| `PATCH` | `/api/v1/posts/{postId}` | title 또는 body, 선택 시 categoryCode | `200` | 작성자 |
+| `PATCH` | `/api/v1/posts/{postId}` | title 또는 body | `200` | 작성자 |
 | `DELETE` | `/api/v1/posts/{postId}` | - | `204` | 작성자 |
 | `POST` | `/api/v1/posts/{postId}/comments` | body | `201`, body, `Location` | 인증 쓰기 |
-| `GET` | `/api/v1/posts/{postId}/comments?page=0&size=50` | query | `200` comment slice | 조회 선택 |
+| `GET` | `/api/v1/posts/{postId}/comments?limit=50&cursor=...` | query | `200` comment cursor slice | 조회 선택 |
 | `PATCH` | `/api/v1/posts/{postId}/comments/{commentId}` | body | `200` | 작성자 |
 | `DELETE` | `/api/v1/posts/{postId}/comments/{commentId}` | - | `204` | 작성자 |
 
+최초 범위의 Board·Post·Comment 응답은 공개 조회 선택에서도 `Cache-Control: no-store`를
+사용합니다. 현재 display name·작성자 삭제·visibility가 즉시 바뀔 수 있는데 validator와
+무효화 계약은 없기 때문입니다. HTTP cache가 실제 요구가 되면 ETag·재검증과 삭제·moderation
+무효화 경로를 함께 설계하고 이 값을 완화합니다.
+
 ### 응답 표현
 
-`PostSummaryResponse`:
+`BoardResponse`:
 
-- `postId`: UUID
-- `title`: string
-- `author`: `{ accountId, displayName }`
-- 선택 시 `categoryCode`
-- `createdAt`, `updatedAt`: UTC 의미의 ISO-8601 timestamp
+- `boardId`: UUID
+- `code`: stable string
+- `name`: 사용자 표시 이름
+- `displayOrder`: integer
 
-`PostDetailResponse`는 summary field와 `body`를 포함하고 comment 목록은 중첩하지 않습니다.
-댓글은 별도 slice endpoint가 소유합니다.
+`BoardCollectionResponse`는 bare array가 아니라 `{ items: BoardResponse[] }` envelope를
+사용합니다. 현재 endpoint는 화면 navigation에 노출할 seed Board의 bounded collection이며
+total count를 제공하지 않습니다. 이후 차량별 수천 개 Board 탐색이 필요하면 이 endpoint에
+전부 섞지 않고 차량 scope/filter가 명시된 별도 cursor query를 추가합니다.
 
-`CommentResponse`:
+Post 응답은 `state` discriminator를 사용합니다. 공통 field는 `postId`,
+`board: { boardId, code, name, displayOrder }`, `state`, `createdAt`, `updatedAt`입니다.
 
-- `commentId`, `postId`: UUID
-- `body`: string
-- `author`: `{ accountId, displayName }`
-- `createdAt`, `updatedAt`
+- `ActivePostSummaryResponse`: `state="ACTIVE"`, `title`, `author: { accountId, displayName }`
+- `AuthorDeletedPostSummaryResponse`: `state="AUTHOR_DELETED"`,
+  `placeholder="삭제된 게시글입니다."`, `deletedAt`; `title`, `body`, `author`는 **null이 아니라
+  field 자체를 생략**합니다.
+- `ActivePostDetailResponse`: active summary field와 `body`
+- `AuthorDeletedPostDetailResponse`: deleted summary와 같은 field만 사용하고 `body`를
+  추가하지 않습니다.
 
-삭제 자리 유지 선택에서는 삭제 표현이 원문·account id·display name을 노출하지 않고
-`deleted=true`와 삭제 placeholder만 제공합니다. exact nullable schema는 선택 반영 때
-동결합니다.
+Post summary와 detail OpenAPI schema는 자리 유지 선택에서 각각 위 active/deleted variant의
+`oneOf`이며 discriminator property는 `state`입니다. 전체 숨김·물리 삭제 선택에서는 active
+variant만 응답하고 삭제 variant는 선택 반영 단계에서 계약에서 제거합니다. Comment 목록은
+Post detail에 중첩하지 않고 별도 slice endpoint가 소유합니다.
+
+Comment 응답도 `state` discriminator를 사용합니다. 공통 field는 `commentId`, `postId`,
+`state`, `createdAt`, `updatedAt`입니다.
+
+- `ActiveCommentResponse`: `state="ACTIVE"`, `body`,
+  `author: { accountId, displayName }`
+- `AuthorDeletedCommentResponse`: `state="AUTHOR_DELETED"`,
+  `placeholder="삭제된 댓글입니다."`, `deletedAt`; `body`, `author`는 field 자체를 생략합니다.
+
+자리 유지의 Comment OpenAPI schema는 두 variant의 `oneOf`입니다. 전체 숨김·물리 삭제는 active
+variant만 응답합니다. Web·OpenAPI test는 variant별 required/omitted field, discriminator,
+placeholder literal과 삭제 variant의 account·원문 비노출을 고정합니다.
 
 Post와 Comment slice는 다음 field를 갖는 module-local response를 각각 사용합니다.
 
 - `items`
-- `page`, `size`
+- `limit`
 - `hasNext`
+- `nextCursor`: 다음 slice가 없으면 null인 opaque string
 
-조회 query는 `size + 1`행을 읽고 초과 한 행을 응답에서 제거해 `hasNext`를 계산합니다.
+조회 query는 `limit + 1`행을 읽고 초과 한 행을 응답에서 제거해 `hasNext`와 `nextCursor`를
+계산합니다.
 아직 다른 module의 안정된 consumer가 없으므로 범용 `shared` slice DTO를 먼저 만들지 않습니다.
 
 ### Validation과 오류
 
 | 상황 | Status | Code |
 | --- | --- | --- |
-| field 누락·Unicode blank·code point 길이·page 범위·빈 PATCH | `400` | 공통 `INVALID_REQUEST`와 field detail |
+| field 누락·Unicode blank·code point 길이·limit 범위·cursor 형식·빈 PATCH | `400` | 공통 `INVALID_REQUEST`와 field detail |
 | 인증 누락·invalid token | `401` | 기존 공통 Security code |
 | session·password 상태 불충족 또는 비작성자 | `403` | 기존 접근 오류 또는 `COMMUNITY_CONTENT_FORBIDDEN` |
 | post 미존재·비노출 | `404` | `COMMUNITY_POST_NOT_FOUND` |
+| board 미존재·비노출 | `404` | `COMMUNITY_BOARD_NOT_FOUND` |
 | comment 미존재·parent 불일치·비노출 | `404` | `COMMUNITY_COMMENT_NOT_FOUND` |
 | optimistic lock conflict | `409` | `COMMUNITY_CONTENT_CONFLICT` |
 | unsupported content type | `415` | 기존 공통 media type 오류 |
 
-삭제 반복 호출은 선택한 삭제 모델을 고정할 때 exact contract를 정합니다. 자리 유지 추천안은
-같은 작성자의 반복 DELETE를 `204`, 다른 actor와 외부 조회에는 `404`로 처리할 수 있도록
-내부 author UUID를 보존합니다.
+반복 DELETE는 자리 유지·전체 숨김에서 내부 author UUID가 같은 actor에게만 `204`, 다른
+actor에게 `404`입니다. 물리 삭제는 row와 author 근거가 없으므로 누구에게나 `404`입니다.
 
 ## 목표 persistence 계약
 
 사용자 선택 전에도 공통으로 필요한 column은 다음과 같습니다.
+
+### `community_board`
+
+| Column | Type | 의미 |
+| --- | --- | --- |
+| `id` | `BIGINT IDENTITY` | 내부 PK |
+| `public_id` | `UUID` | API 공개 식별자, unique |
+| `code` | `VARCHAR(50)` | 변경되지 않는 seed·business key, unique |
+| `name` | `VARCHAR(80)` | 사용자 표시 이름 |
+| `display_order` | `INTEGER` | 0 이상 navigation 정렬값. 중복 허용, public id로 tie-break |
+| `created_at`, `updated_at` | `TIMESTAMPTZ` | 감사 시각 |
+
+현재 Board는 seed와 조회만 지원하므로 version·status를 미리 넣지 않습니다. 관리 기능이
+생길 때 실제 상태 전이에 맞춰 additive column을 추가하고 기존 `display_order`를 사용합니다.
+선택한 초기 Board는 위 표의 literal `public_id`·`code`와 100 단위 order로 migration에
+삽입하고, 환경별 fixture가 다른 identity·순서를 만들지 않게 합니다.
 
 ### `community_post`
 
@@ -313,12 +512,13 @@ Post와 Comment slice는 다음 field를 갖는 module-local response를 각각 
 | --- | --- | --- |
 | `id` | `BIGINT IDENTITY` | 내부 PK |
 | `public_id` | `UUID` | API 공개 식별자, unique |
+| `board_id` | `BIGINT` | 같은 module `community_board.id` 필수 FK |
 | `author_account_public_id` | `UUID` | JWT `sub`와 비교할 작성자 reference |
 | `title` | `VARCHAR(120)` | 게시글 제목. 삭제 선택에 따라 nullable 여부 확정 |
 | `body` | `TEXT` | 최대 10,000자 plain text. 삭제 선택에 따라 nullable 여부 확정 |
 | `version` | `BIGINT` | optimistic lock |
 | `created_at`, `updated_at` | `TIMESTAMPTZ` | 감사 시각 |
-| 조건부 column | - | category 또는 삭제 상태·시각은 사용자 선택 뒤 추가 |
+| 조건부 column | - | 삭제 상태·시각은 사용자 선택 뒤 추가 |
 
 ### `community_comment`
 
@@ -333,13 +533,23 @@ Post와 Comment slice는 다음 field를 갖는 module-local response를 각각 
 | `created_at`, `updated_at` | `TIMESTAMPTZ` | 감사 시각 |
 | 조건부 column | - | 삭제 상태·시각은 사용자 선택 뒤 추가 |
 
+자리 유지·전체 숨김 선택의 조건부 column은 `lifecycle_state VARCHAR(20) NOT NULL`과
+`deleted_at TIMESTAMPTZ NULL`입니다. 상태 check는 `ACTIVE`, `AUTHOR_DELETED`만 허용하고
+`ACTIVE`일 때 `deleted_at IS NULL`, `AUTHOR_DELETED`일 때 `deleted_at IS NOT NULL`을
+강제합니다. 자리 유지는 author-deleted content를 null로 만들고 전체 숨김은 원문을 유지하는
+별도 content check를 사용합니다. 이 상태는 작성자 lifecycle만 소유하며 후속 moderator
+restriction을 enum 값으로 추가하지 않습니다. 물리 삭제 선택에는 두 column을 만들지 않습니다.
+
 공통 constraint와 index:
 
 - `public_id` unique, 시간 역전 방지와 canonical Unicode White_Space trim·CR 부재·
   `CHAR_LENGTH` code point 길이 check
-- comment `post_id` FK와 `(post_id, created_at ASC, id ASC)` 조회 index
-- post `(created_at DESC, id DESC)` 목록 index
-- 선택한 soft-delete model은 같은 query의 active predicate를 반영한 partial index를 검토
+- post `board_id` FK와 `(board_id, created_at DESC, public_id DESC)` cursor index
+- comment `post_id` FK와 `(post_id, created_at ASC, public_id ASC)` cursor index
+- Board `(display_order ASC, public_id ASC)` index와 `display_order >= 0` check
+- 전체 숨김만 Post·Comment cursor index에 `lifecycle_state = 'ACTIVE'` predicate를 둠.
+  자리 유지는 placeholder를 포함하므로 partial index를 사용하지 않고, 물리 삭제에는 상태
+  predicate가 없음
 - `author_account_public_id`에는 account cross-module FK를 만들지 않음
 
 목록 응답에는 최초 범위에 없는 댓글 수 집계를 넣지 않습니다. 댓글 수가 실제 화면 요구로
@@ -350,12 +560,12 @@ Post와 Comment slice는 다음 field를 갖는 module-local response를 각각 
 
 | Use case | Transaction 경계 | 동시성·실패 처리 |
 | --- | --- | --- |
-| Post 생성 | public id 생성, domain validation, post insert | unique·check 실패 rollback |
+| Post 생성 | Board 존재·허용 확인, public id 생성, domain validation, post insert | Board FK·unique·check 실패 rollback |
 | Post 수정 | post load, author 검사, domain update, save | version conflict 409 |
-| Post 삭제 | post write lock, author 검사, 선택한 삭제 효과 | comment 생성과 순서 직렬화 |
-| Comment 생성 | post `FOR UPDATE` 상태 검사, comment insert | 삭제 완료 post에는 insert 불가 |
-| Comment 수정·삭제 | comment load, parent·author 검사, 상태 변경 | version conflict 409 |
-| 목록·상세 | read-only query와 transaction 밖/bounded account batch 조립 | account lookup N+1 금지 |
+| Post 삭제 | post `FOR UPDATE`, action policy, 자리 유지·전체 숨김 상태 변경 또는 물리 삭제+cascade | comment 생성과 순서 직렬화, 선택별 반복 DELETE 계약 |
+| Comment 생성 | active post `FOR SHARE` 상태 검사, comment insert | 다른 comment 생성과 공유, post 삭제와 충돌 |
+| Comment 수정·삭제 | comment와 parent load, author 검사, 선택별 상태 변경 또는 물리 삭제 | 자리 유지의 active child만 삭제 Post 아래 변경 허용, version conflict 409 |
+| 목록·상세 | cursor read query와 transaction 밖/bounded account batch 조립 | count·account lookup N+1 금지 |
 
 account batch lookup은 community 변경 transaction 안에서 DB row lock을 유지한 채 호출하지
 않습니다. account 공개 profile이 구조적으로 누락된 경우 조용히 임의 이름을 만들지 않고
@@ -381,8 +591,9 @@ community -> shared :: error
 community -X-> account.internal / account table
 ```
 
-- 변경: UseCase → Domain → store/lookup Port → persistence adapter
-- 조회: Controller → application query service → persistence projection → account batch API → DTO
+- 변경: UseCase → CommunityActionPolicy → Domain → store/lookup Port → persistence adapter
+- 조회: Controller → application query service → visibility predicate를 적용한 persistence projection
+  → account batch API → DTO
 - Web Request는 `toCommand()`/`toQuery()`, Response는 `from(...)` 경계 factory를 사용합니다.
 - JPA Entity와 projection은 persistence adapter 밖으로 노출하지 않습니다.
 
@@ -390,35 +601,43 @@ community -X-> account.internal / account table
 
 ### Domain·Application 단위 test
 
+- Board 밖 Post 생성 거부와 Post의 immutable Board reference
 - `U+0000`, 고립 high·low surrogate 거부와 정상 emoji surrogate pair 허용
 - title/body/comment의 CRLF·CR 정규화, ASCII/Unicode White_Space blank와 양끝 trim
 - BMP 문자, 정상 supplementary emoji와 결합 문자의 Unicode code point 최대 길이 경계
-- author 일치 수정·삭제 성공과 비작성자 거부
-- 선택한 삭제 상태 전이와 반복 삭제
+- action policy의 author 일치 수정·삭제 성공, 비작성자 거부와 admin 우회 부재
+- 선택한 삭제 상태 전이, parent 상태별 action과 actor별 반복 DELETE
 - parent post 상태별 comment 생성 허용·거부
 - account batch 결과를 post/comment slice에 누락 없이 조립
 
 ### Web·Security test
 
-- 모든 endpoint 성공 status, body, `Location`
-- request validation, 빈 PATCH, malformed UUID, parent mismatch
+- Board 목록·상세와 모든 Post·Comment endpoint 성공 status, body, `Location`
+- 단일·고정 3개 seed의 `(displayOrder ASC, publicId ASC)` Board collection 순서
+- 선택한 삭제 방식의 Post·Comment 목록·상세·변경 visibility와 placeholder 표현
+- request validation, 빈 PATCH, malformed UUID·cursor, parent mismatch
 - escaped `U+0000`·고립 high/low surrogate의 `400`과 정상 emoji pair 성공
 - 선택한 조회 정책의 anonymous·full session·limited/password-change-required matrix
+- 모든 community 응답의 `Cache-Control: no-store`
 - 비작성자 403, 미존재·비노출 404와 공통 Problem Details
 - OpenAPI 전체 path·response·schema·public/protected 분류
 
 ### PostgreSQL 통합 test
 
 - 최신 Flyway migration 전체 적용과 JPA mapping
-- UUID unique, content check, comment FK와 삭제 선택별 constraint
-- post 최신순·comment 작성순 slice, `size + 1` hasNext와 tie-breaker, 별도 total count 부재
+- Board literal seed·UUID/code unique·display order, Post Board FK, content check, Comment FK와
+  삭제 선택별 `RESTRICT`/`CASCADE`·상태 constraint
+- Board-scoped Post 최신순·Comment 작성순 cursor slice, `limit + 1`, public UUID tie-breaker,
+  고정 dataset의 다음 cursor 중복·누락 부재와 별도 total count 부재
+- collection kind·path scope가 다른 cursor 거부와 동시 추가·삭제 시 D5의 non-snapshot
+  continuation 의미
 - slice당 account batch lookup 1회, query N+1 부재
 - Java canonical normalizer와 PostgreSQL constraint가 CRLF·Unicode whitespace·emoji 경계에서
   같은 값을 허용·거부하는 대조 test
 - HTTP JSON→domain→PostgreSQL 경로가 `U+0000`·고립 surrogate를 저장·치환하지 않고 거부하며
   정상 surrogate pair를 원형대로 저장하는 대조 test
 - optimistic update conflict
-- comment create와 post delete 경합의 terminal state
+- 동시 comment create의 공유 진행과 comment create-post delete 경합의 terminal state
 
 ### 전체 gate
 
@@ -428,7 +647,78 @@ community -X-> account.internal / account table
 - `./gradlew check`
 - push가 별도 승인된 구현에서는 final SHA required CI와 Sonar revision·Quality Gate·Open issues
 
-## 미래 차량 카탈로그 연결과 재작업 경계
+## 후속 기능별 additive 확장 경로
+
+아래는 현재 구현 목록이 아니라 후속 기능이 core를 소비하는 방향입니다. 실제 schema·event·
+module은 해당 기능의 제품 의미와 운영 책임이 확정된 work item에서 결정합니다.
+
+### 게시판 관리, tag와 차량별 라운지
+
+- Board 관리가 필요하면 `status`, optimistic version과 관리자 action을 `community_board`에
+  추가하고 기존 `display_order`를 변경합니다. 기존 seed Board와 Post FK는 유지합니다.
+- Tag는 `community_tag`와 `community_post_tag` association으로 추가하고 Post 본문이나 JSONB에
+  문자열 배열로 넣지 않습니다.
+- 차량별 라운지는 Board를 복제하거나 Post category enum을 늘리기보다, 카탈로그의 안정된
+  public reference가 확정된 뒤 `community_board_vehicle_scope` association을 추가합니다.
+
+### 대댓글, 반응, 북마크와 구독
+
+- 대댓글은 제품이 한 단계 reply인지 임의 깊이 thread인지 결정한 뒤 nullable
+  `parent_comment_id` 또는 별도 relation을 새 migration으로 추가합니다. 기존 평면 Comment는
+  parent가 없는 root로 그대로 유효합니다. 현재 작성순 flat endpoint의 의미를 바꾸지 않고
+  thread 전개 규칙을 가진 별도 query/response를 추가합니다.
+- 반응은 허용 reaction 종류와 취소 의미를 정한 뒤 Post·Comment별 target aggregate와
+  `(target, actor, reaction)` unique를 둡니다. Generic polymorphic FK로 참조 무결성을 포기하지
+  않습니다.
+- 북마크·구독은 actor 소유의 별도 aggregate이며 Post row의 boolean·account 목록으로 넣지
+  않습니다. User별 목록 query와 privacy·삭제 처리를 해당 owner가 소유합니다.
+
+### 검색, 인기·추천과 count
+
+- 여러 Board를 합친 최신 feed는 Post 변경 모델을 합치지 않고 Board visibility를 적용한
+  별도 query projection으로 추가합니다. 인기·추천으로 정렬 의미가 달라지면 전용 endpoint와
+  cursor를 사용합니다.
+- 단순 필터·작은 규모 검색은 PostgreSQL query/index를 먼저 검토하고, 전문 검색·ranking·
+  개인화가 확정되면 D10의 event를 소비하는 별도 read model을 만듭니다.
+- 댓글 수·반응 수는 화면 정확성 요구와 쓰기 경합을 확인하기 전 Post row에 선반영하지
+  않습니다. grouped query, transaction counter, eventual projection을 같은 의미·복구 기준으로
+  비교합니다.
+- 각 read model은 자체 cursor와 rebuild 방법을 소유하며 기존 Post cursor 의미를 바꾸지
+  않습니다.
+
+### 알림과 실시간 전달
+
+- 첫 알림 consumer가 확정되면 `PostCreated`, `CommentCreated` 같은 consumer가 실제로 필요한
+  최소 event만 public 계약으로 추가합니다. Event에는 내부 PK·본문 원문·account 내부 정보를
+  넣지 않습니다.
+- Durable delivery가 필요하면 Spring Modulith publication 또는 explicit outbox의 transaction,
+  retry, idempotency, retention과 replay owner를 함께 결정합니다.
+- WebSocket/SSE는 같은 event의 전달 adapter이며 community 변경 transaction을 network session과
+  묶지 않습니다.
+
+### Media와 rich text
+
+- Media 저장·검사·보존은 별도 lifecycle owner가 공개 attachment reference를 제공하고,
+  community는 Post-Attachment association과 노출 순서만 소유합니다.
+- Markdown·rich text는 content type, sanitization, link·preview와 과거 plain text 호환성이
+  확정된 뒤 새 representation으로 추가합니다. 기존 body 의미를 조용히 바꾸지 않습니다.
+- 투표처럼 Post와 생성·삭제 lifecycle을 공유하는 특수 콘텐츠는 Post public identity를
+  참조하는 1:1 확장 aggregate와 option row로 추가합니다. 독립 lifecycle이면 별도 resource로
+  두며, Post에 유형별 nullable column과 만능 type enum을 누적하지 않습니다.
+
+### 신고, moderation과 제재
+
+- 신고는 신고자·대상·사유·중복·상태를 가진 별도 aggregate입니다. 운영자 숨김·잠금·복구는
+  작성자 삭제와 다른 action, restriction record와 audit를 사용합니다.
+- 편집 이력이 제품·moderation 요구가 되면 application 변경 use case가 public content id를
+  참조하는 append-only revision을 기록합니다. 현재 optimistic `version`을 이력 저장소로
+  오해하거나 원문 snapshot을 Post row에 누적하지 않습니다.
+- Account 제재는 account owner의 상태·role 정책과 협력하고 community table을 직접 수정해
+  account를 제재하지 않습니다.
+- Query visibility는 author lifecycle, Board access와 moderation restriction의 결과를 조합하되
+  원문 보존·운영자 열람·복구 기간은 moderation/privacy work item이 결정합니다.
+
+### 미래 차량 카탈로그 연결과 재작업 경계
 
 이 작업은 차량을 모르는 게시글 identity와 lifecycle만 만듭니다. 이후 차량 카탈로그가
 확정되면 다음처럼 별도 작업으로 연결합니다.
@@ -459,9 +749,25 @@ community -X-> account.internal / account table
 - community 조회 latency, 4xx·5xx와 conflict 비율은 기존 API 완료 event/logging으로
   관찰하되 콘텐츠 원문을 metadata에 추가하지 않습니다.
 
+### 확장 재검토 신호
+
+| 관찰 신호 | 먼저 비교할 확장 |
+| --- | --- |
+| account batch lookup 지연·누락이 community 조회 availability를 지배함 | bounded cache, redacted fallback 계약, author read model |
+| Post row lock wait가 Comment write latency를 지배함 | lifecycle guard 분리, lock 범위 축소, hot Post 전용 처리 |
+| Cursor query plan·p95가 목표를 벗어나거나 table/index가 운영 한계를 넘음 | index 재검증, archive·partition, read replica/read model |
+| 목록에서 댓글·반응 집계가 반복 query 병목이 됨 | grouped query, transaction counter, eventual projection 비교 |
+| 검색·추천·알림 consumer가 확정됨 | D10의 최소 event와 durable publication·rebuild 계약 |
+| community module 변경 이유와 팀 ownership이 moderation·media와 분리됨 | public API를 먼저 고정한 뒤 별도 module 분리 |
+
+수치 임계값은 제품 SLO와 실제 baseline 없이 임의로 만들지 않습니다. 각 후속 work item은
+관찰한 query plan, latency, lock wait, storage와 정확성 요구를 입력으로 임계값과 전환 oracle을
+고정합니다.
+
 ## 관련 문서
 
-- **사용자 결정과 구현 계획**: [016 차량 비연결 일반 커뮤니티](016-general-community.md)
+- **사용자 결정과 구현 계획**:
+  [016 확장 가능한 차량 비연결 일반 커뮤니티 기반](016-general-community.md)
 - **제품 현재 범위**: [100 제품 개요](../../../product/100-product-overview.md),
   [200 기능 범위](../../../product/200-feature-scope.md)
 - **현재 구조**: [200 프로젝트 아키텍처](../../../project/200-current-architecture.md),
@@ -476,4 +782,5 @@ community -X-> account.internal / account table
   [230 RESTful API](../../../architecture/230-rest-api-design.md),
   [230 Spring Data JPA](../../../tech-stack/230-spring-data-jpa.md),
   [240 Flyway](../../../tech-stack/240-flyway.md),
-  [250 PostgreSQL](../../../tech-stack/250-postgresql.md)
+  [250 PostgreSQL](../../../tech-stack/250-postgresql.md),
+  [PostgreSQL 16 explicit locking](https://www.postgresql.org/docs/16/explicit-locking.html)
