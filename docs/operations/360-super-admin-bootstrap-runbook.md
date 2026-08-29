@@ -225,4 +225,4 @@ printf 'VERIFY_EXIT=%s\n' "$?"
 - **전체 구축의 현재 위치**: [100 Staging 단일 node 전체 구축 시나리오](scenarios/100-staging-single-node-bootstrap.md)
 - **Application delivery 전제**: [350 Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md)
 - **계정·인증 정책**: [Account 인증/인가 정책](../domain/110-account-auth-policy.md)
-- **기능 설계**: [010 관리자 계정 기반 설계](../work-items/features/2026/010-admin-account-foundation-design.md)
+- **기능 설계 결정 기록**: [010 관리자 계정 기반 설계](../work-items/features/2026/010-admin-account-foundation-design.md)

@@ -45,7 +45,12 @@ Flyway migration 파일이 DB schema의 source of truth입니다.
 schema를 바꾸는 migration을 추가하면 같은 작업에서 이 문서도 함께 갱신합니다.
 적용된 versioned migration은 수정하지 않고, 변경은 새 migration과 이 reference 갱신으로 반영합니다.
 
-현재 V7·V10에는 이 기준을 위반한 Auth Event taxonomy 직접 수정 이력이 있습니다. 신규 DB의 최종 schema 설명은 이 reference와 일치하지만, 이전 checksum으로 migration을 적용한 지속 DB의 호환성은 확인되지 않았습니다. 영향과 안전한 전환 책임은 [Auth Event Taxonomy 재설계](../../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)와 [Flyway 현재 결함 경계](../../tech-stack/240-flyway.md#현재-알려진-migration-호환성-결함)가 소유합니다.
+현재 V7·V10에는 이 기준을 위반한 Auth Event taxonomy 직접 수정 이력이 있습니다. 신규 DB의
+최종 schema 설명은 이 reference와 일치하지만, 이전 checksum으로 migration을 적용한 지속
+DB의 호환성은 확인되지 않았습니다. 현재 결함 경계와 안전한 전환 기준은
+[240 Flyway](../../tech-stack/240-flyway.md#현재-알려진-migration-호환성-결함)가 소유하며,
+[001 Auth Event Taxonomy 재설계](../../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)는
+영향 확인과 수정 작업 상태를 추적합니다.
 
 ## Migration 목록
 

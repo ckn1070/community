@@ -14,7 +14,7 @@ Done
 - 계정 없음과 password 불일치는 같은 오류 응답을 사용하지만 Argon2 수행 여부가 달라 처리 시간 균일성은 현재 보장하지 않습니다.
 - 관련 application, Security, persistence와 integration test 및 최종 Gradle 검증을 통과했습니다.
 - 전체 완료 여부: 예
-- 남은 책임: 이 작업의 비밀번호 로그인 완료 범위에는 없습니다. 두 HMAC 설정의 동일값 검증은 [Auth secret 분리 검증 누락](../../bugs/2026/002-auth-secret-separation-validation.md), timing 방어는 [인증·복구 요청의 계정 열거 timing 차이](../../bugs/2026/009-authentication-enumeration-timing.md)가 소유합니다.
+- 남은 책임: 이 작업의 비밀번호 로그인 완료 범위에는 없습니다. 두 HMAC 설정의 동일값 검증은 [002 Auth secret 분리 검증 누락](../../bugs/2026/002-auth-secret-separation-validation.md), timing 방어는 [009 인증·복구 요청의 계정 열거 timing 차이](../../bugs/2026/009-authentication-enumeration-timing.md)에서 각각 추적합니다.
 
 ## 범위
 

@@ -124,5 +124,5 @@ Spring Boot 4 지원은 springdoc v3 라인을 기준으로 확인합니다.
 - **web 구현 기반**: [Spring Boot](210-spring-boot.md)
 - **security scheme 기준**: [Spring Security](220-spring-security.md)
 - **DTO·domain 경계**: [경계와 매핑 규칙](../architecture/220-boundary-and-mapping-rules.md)
-- **구현 결과**: [OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)
-- **staging 접근 보호**: [008 Staging Swagger 관리자 접근 보호](../work-items/improvements/2026/008-staging-swagger-admin-access.md)
+- **응답 계약 구현 기록**: [007 OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)
+- **staging 접근 보호 작업 기록**: [008 Staging Swagger 관리자 접근 보호](../work-items/improvements/2026/008-staging-swagger-admin-access.md)

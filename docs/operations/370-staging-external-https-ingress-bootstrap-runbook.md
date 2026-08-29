@@ -1292,7 +1292,7 @@ ALB를 먼저 Console에서 삭제하거나 controller가 남긴 finalizer를 �
 ## 공식 기준과 관련 문서
 
 - **구조와 선택 이유**: [170 AWS Load Balancer ingress](../project/infrastructure/170-aws-load-balancer-ingress.md)
-- **작업 상태와 상세 결정**:
+- **작업 상태와 당시 상세 결정 기록**:
   [014 Staging 외부 HTTPS ingress](../work-items/features/2026/014-staging-external-https-ingress.md),
   [014 상세 설계](../work-items/features/2026/014-staging-external-https-ingress-design.md)
 - **전체 staging 상태**: [100 Staging 단일 node 전체 구축 시나리오](scenarios/100-staging-single-node-bootstrap.md)

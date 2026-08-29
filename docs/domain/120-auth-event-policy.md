@@ -176,8 +176,9 @@ event가 상태 변경과 원자적이라고 일반화하지 않습니다.
 결과를 기록하지 않습니다. Delivery 결과를 장기 보존하려면 생성 이벤트와 다른 taxonomy·
 저장·복구 계약이 필요합니다. 이메일 인증 요청과 비밀번호 재설정 요청은 provider 호출과
 성공 event 저장을 같은 `try`에서 처리해 event 저장 실패를 발송 실패로 오분류할 수 있으며,
-남은 의미 분리는 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이
-소유합니다.
+현재 event 의미는 이 문서가 소유합니다. 남은 구현 결함의 수정 상태와 완료 조건은
+[005 Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)에서
+추적합니다.
 
 ## Metadata 기준
 
@@ -254,4 +255,4 @@ object로 고정합니다. 생성 metadata에는 notification delivery 결과를
 - **현재 데이터 구조**: [Account 인증/인가 데이터 모델](../project/220-account-auth-data-model.md), [물리 schema](../project/schema/100-account-auth.md)
 - **물리 조회 구조**: [Account/Auth schema](../project/schema/100-account-auth.md)
 - **개발 절차**: [로컬 개발 환경](../development/100-local-development.md)
-- **결정·구현 결과**: [Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)
+- **결정·구현 기록**: [001 Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)

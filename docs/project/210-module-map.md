@@ -41,7 +41,9 @@ email verification·invitation·password reset service --> Clock.systemUTC() 직
   현재 Web adapter는 없으며 다음 016 작업 단계에서 추가합니다.
 - `ChangePasswordService`처럼 실제 `Clock` bean을 주입받는 일부 `account` bean은 production의 유일한 provider인 `auth.internal`의 `JwtTokenConfiguration`에 의존합니다. 이메일 인증·관리자 초대·비밀번호 재설정 service는 public constructor에서 `Clock.systemUTC()`를 직접 만들어 이 bean을 우회합니다. 전자는 source import에 드러나지 않는 runtime DI 예외이고, 후자는 공용 시간 조립 경계가 일관되지 않은 예외입니다.
 
-`Clock` provider를 중립적인 조립 경계로 이동하고 이 예외를 제거하는 작업은 [공용 Clock bean의 auth 내부 소유](../work-items/bugs/2026/003-shared-clock-bean-ownership.md)가 소유합니다.
+`Clock` provider를 중립적인 조립 경계로 이동하고 이 예외를 제거하는 수정 상태는
+[003 공용 Clock bean의 auth 내부 소유](../work-items/bugs/2026/003-shared-clock-bean-ownership.md)에서
+추적합니다.
 
 ### 현재 Persistence 예외
 
@@ -57,7 +59,11 @@ account persistence ─┬─> refresh_token <─┬─ auth persistence
 - `auth`의 `AuthRefreshTokenJpaRepository`는 native SQL로 `account` table을 직접 읽어 내부 account id를 public id로 바꿉니다. Java package 의존은 아니지만 `account.api` 협력을 우회하는 물리 DB 의존입니다.
 - 따라서 “`auth`가 refresh token lifecycle을 소유한다”는 논리 책임만으로 단일 물리 writer를 뜻하지 않습니다. 현재는 두 module이 같은 table을 별도 entity·repository로 매핑하는 예외입니다.
 
-이 구조는 모듈 간 협력을 공유 table로 처리하지 않는 일반 기준을 충족하지 않습니다. 단일 persistence owner와 transaction 공개 계약으로 이관하고 `auth`의 `account` table 직접 조회를 제거하거나 명시적인 소유 경계로 바꾸는 후속 범위는 [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가 소유합니다.
+이 구조는 모듈 간 협력을 공유 table로 처리하지 않는 일반 기준을 충족하지 않습니다. 이 문서가
+현재 예외와 목표 경계를 소유하고, 단일 persistence owner·transaction 공개 계약으로의 이관
+후보와 완료 조건은
+[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)에서
+추적합니다.
 
 ## 배치 기준
 
@@ -79,5 +85,5 @@ account persistence ─┬─> refresh_token <─┬─ auth persistence
 - **자동차 카탈로그 업무 경계**: [130 자동차 카탈로그 도메인](../domain/130-car-catalog.md)
 - **자동차 카탈로그 물리 구조**: [110 자동차 카탈로그 Schema Reference](schema/110-car-catalog.md)
 - **제품 범위**: [200 제품 기능 범위](../product/200-feature-scope.md)
-- **미확정 횡단 구조**: [프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
-- **현재 persistence 예외 owner**: [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)
+- **미확정 횡단 구조 후보**: [001 프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
+- **persistence 예외 개선 상태**: [003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)

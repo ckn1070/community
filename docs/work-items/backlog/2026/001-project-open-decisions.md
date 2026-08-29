@@ -13,8 +13,9 @@ Open
 
 신차 탐색·카탈로그·커뮤니티·AI·대리점·관리자·이미지·데이터 출처·중고차·수익화의
 제품/MVP 후보는 [AutoSquare MVP 후보](002-autosquare-mvp-candidate.md)가 단일 owner입니다.
-이 문서는 그 항목을 다시 나열하지 않고, 여러 제품 기능에 공통으로 영향을 주는
-architecture·privacy·운영 결정만 소유합니다.
+이 문서는 그 항목을 다시 나열하지 않고, 여러 제품 기능에 공통으로 영향을 주지만 아직
+확정되지 않은 architecture·privacy·운영 질문과 작업 전환 상태만 추적합니다. 확정한 현재
+기준은 해당 product·domain·project·architecture·tech-stack SOT에 반영합니다.
 
 ## Backlog 항목
 
@@ -36,10 +37,10 @@ architecture·privacy·운영 결정만 소유합니다.
   결정합니다.
 - 예상 traffic·운영 비용과 개인정보 보존 요구는 infrastructure 관측·로그 후보가 구체화될
   때 입력 조건으로 제공합니다.
-- 중앙 수집·보존·검색, infrastructure alert 전달과 on-call 체계는
-  [004 Infrastructure 진화 Backlog](004-infrastructure-evolution.md)가 소유합니다.
-- Auth event의 보존·alert 의미와 로그인 abuse 자동 대응은
-  [003 Account 인증 후속 후보](003-account-auth-follow-up.md)가 소유합니다.
+- 중앙 수집·보존·검색, infrastructure alert 전달과 on-call 체계 후보는
+  [004 Infrastructure 진화 Backlog](004-infrastructure-evolution.md)에서 추적합니다.
+- Auth event의 보존·alert 의미와 로그인 abuse 자동 대응 후보는
+  [003 Account 인증 후속 후보](003-account-auth-follow-up.md)에서 추적합니다.
 
 ## 전환 기준
 

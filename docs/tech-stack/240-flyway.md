@@ -107,7 +107,12 @@ SOT입니다. Reference는 migration에서 파생되며 둘이 충돌하면 migr
 
 Auth Event taxonomy 변경 과정에서 이미 repository에 추가돼 있던 `V7__create_auth_event_table.sql`과 `V10__extend_auth_event_for_email_verification.sql`이 직접 수정됐고 별도 forward migration은 추가되지 않았습니다. 수정본으로 처음 생성한 DB는 현재 taxonomy를 갖지만, 원래 checksum으로 두 version을 적용한 지속 DB는 Flyway validation 실패와 기존 event row 전환 누락 위험이 있습니다.
 
-이 상태에서 `flyway repair`, checksum 수동 변경 또는 기존 migration 재수정을 먼저 수행하지 않습니다. 환경별 `flyway_schema_history` checksum과 기존 `auth_event.event_type` 값 분포를 읽기 전용으로 확인하고, 백업·forward migration·필요한 repair 순서를 검증한 뒤 처리해야 합니다. 현재 상태와 완료 조건은 [Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)가 소유합니다.
+이 상태에서 `flyway repair`, checksum 수동 변경 또는 기존 migration 재수정을 먼저 수행하지
+않습니다. 환경별 `flyway_schema_history` checksum과 기존 `auth_event.event_type` 값 분포를
+읽기 전용으로 확인하고, 백업·forward migration·필요한 repair 순서를 검증한 뒤 처리해야
+합니다. 이 문서가 현재 호환성 결함과 안전한 전환 기준을 소유하고,
+[001 Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)는
+수정 상태와 완료 조건을 추적합니다.
 
 ## Staging 운영 실행 경계
 
@@ -274,4 +279,4 @@ Flyway migration SQL을 만들거나 수정하면 완료 전 아래 검증을 �
 - **persistence 구현**: [Spring Data JPA](230-spring-data-jpa.md)
 - **database 기준**: [PostgreSQL](250-postgresql.md)
 - **migration test**: [테스트 스택](300-testing-stack.md)
-- **현재 호환성 결함 owner**: [Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)
+- **호환성 결함 개선 상태**: [001 Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)

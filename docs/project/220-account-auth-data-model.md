@@ -69,11 +69,21 @@ admin_invitation ── auth_role
 
 위 표는 서로 다른 operation을 한 행에 합치지 않고 실제 변경 경계만 요약합니다. 정상·거부·
 재시도 세부와 API 접근 조건은 반복하지 않습니다. 이메일 인증 요청과 비밀번호 재설정 요청의
-provider 결과·감사 저장 실패 의미 분리는 Proposed
-[Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이
-소유합니다.
+provider 결과와 감사 저장 실패의 현재 의미는
+[120 Auth Event 정책](../domain/120-auth-event-policy.md)이 소유합니다. 확인된 persistence 결함의
+수정 상태는 Proposed
+[005 Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)에서
+추적합니다.
 
-`refresh_token`과 `auth_event`의 이중 writer는 의도된 최종 모듈 계약이 아니라 현재 구현 예외입니다. 로그인·비밀번호 흐름은 `account` adapter가, rotation·logout·reuse 흐름은 `auth` adapter가 같은 table을 서로 다른 JPA type으로 갱신합니다. 또한 `auth` refresh token repository가 native SQL로 `account` table을 직접 읽어 internal id를 public id로 변환합니다. 목표 owner와 transaction·조회 공개 계약을 정해 하나의 물리 persistence 경계로 이관하기 전까지 새 writer나 직접 table read를 추가하지 않습니다. 후속 완료 조건은 [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가 소유합니다.
+`refresh_token`과 `auth_event`의 이중 writer는 의도된 최종 모듈 계약이 아니라 현재 구현
+예외입니다. 로그인·비밀번호 흐름은 `account` adapter가, rotation·logout·reuse 흐름은 `auth`
+adapter가 같은 table을 서로 다른 JPA type으로 갱신합니다. 또한 `auth` refresh token
+repository가 native SQL로 `account` table을 직접 읽어 internal id를 public id로 변환합니다.
+이 문서가 현재 예외와 새 writer·직접 table read 금지 경계를 소유합니다. 목표 owner와
+transaction·조회 공개 계약을 정해 하나의 물리 persistence 경계로 이관하는 후보와 완료
+조건은
+[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)에서
+추적합니다.
 
 ## 구현 Source
 
