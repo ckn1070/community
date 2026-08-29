@@ -10,7 +10,7 @@
 | `account` | 구현됨 | 인증 주체, profile, password credential, role assignment, verification token, admin invitation, auth event |
 | `auth` | 구현됨 | password session, JWT 발급·검증, refresh token lifecycle, logout, Bearer 인증 경계 |
 | `notification` | 구현됨 | 이메일 발송 공개 API, Resend adapter, transactional template, provider 오류 변환 |
-| `catalog` | 기반 구현됨 | 신차 제품·사양·판매 정보의 읽기 전용 경계, 차체·동력 형식·연료·판매 상태 공개 enum과 runtime 시작 전 공개 data 검증. 조회 persistence와 Web API는 아직 미구현입니다. |
+| `catalog` | 조회 기반 구현됨 | 신차 제품·사양·판매 정보의 읽기 전용 경계, 차체·동력 형식·연료·판매 상태 공개 enum과 브랜드·모델 목록·상세 application/persistence. Web API는 아직 미구현입니다. |
 | `shared` | 구현됨 | 여러 module이 공유하는 안정된 공개 계약과 기반 type. `shared.error`가 `ErrorCode`, `CommonErrorCode`, `ApiException`, `FieldErrorDetail` 계약을 소유합니다. |
 | `config` | 구현됨 | Spring MVC, Security, OpenAPI, request id, logging, 공통 예외 처리·HTTP `ProblemDetail` 변환과 애플리케이션 조립 |
 

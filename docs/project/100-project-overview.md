@@ -11,8 +11,8 @@ Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 ac
 동력계통·복수 장치·기술 변형·판매 구성·가격 이력·옵션과 조건별 인증을 담는
 11개 테이블 및 공개 조회 계약으로 구체화한 `In Progress` 작업입니다. 현재 `catalog` 모듈 공개
 enum, Flyway V13~V17의 11개 테이블, 실제 PostgreSQL schema·대표 fixture와
-runtime statement 기반 SELECT-only 권한 검증이 구현됐습니다. 다음 단계인 조회 persistence와
-API는 아직 구현되지 않았습니다. 실제 브랜드·과거
+runtime statement 기반 SELECT-only 권한 검증, 브랜드 목록·모델 page·모델 상세의 읽기 전용
+application/persistence가 구현됐습니다. 공개 Web API는 아직 구현되지 않았습니다. 실제 브랜드·과거
 범위와 production data는
 [017 자동차 카탈로그 초기 데이터 구축](../work-items/features/2026/017-car-catalog-initial-data.md)의
 별도 `Proposed` 작업이며 U2-C를 택하면 discovery 뒤 exact 범위의 2차 사용자 결정이 필요합니다.
@@ -29,6 +29,7 @@ API는 아직 구현되지 않았습니다. 실제 브랜드·과거
 - 최초 최고 관리자 bootstrap
 - 관리자 초대 생성, 수락, 회수
 - 인증·인가 감사 이벤트
+- 신차 카탈로그 schema와 브랜드·모델 목록·상세 조회 application/persistence
 - 공통 API 오류 응답, Security baseline, request id와 structured logging
 
 기능별 결과는 [2026 기능 작업 문서](../work-items/features/2026/000-index.md)에서 확인합니다.

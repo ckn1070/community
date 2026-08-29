@@ -39,13 +39,8 @@
 차량도 조회 가능하게 하며, `/api/v1/car/...` 아래 공개 API와 관계형 DB를 사용하고, schema와
 조회 기능을 실제 초기 데이터 수집보다 먼저 개발해 달라고 요청했습니다. 상세 설계는 이
 요구를 브랜드·모델·세대·모델 연식, 동력계통과 복수 장치, 차체·인승·휠별 기술 변형, 실제
-판매 구성, 적용 시작일별 가격, 유상 옵션과 조건별 인증으로 구체화했습니다. 물리 설계는
-자동차 제품 구조를 표현하는 11개 테이블이며 색상은
-유상 여부와 configuration 관계를 option 행으로 보존하고 표시 전용 기본 품목·보증·안전도·
-media만 제한된 JSONB에 둡니다. 현재 016은 `In Progress`이며 catalog 공개 enum, 11개 테이블의
-Flyway V13~V17, PostgreSQL 제약·대표 fixture와 runtime 실제 statement 기반
-SELECT-only 권한 검증까지 구현됐습니다.
-조회 persistence·공개 API와 production 데이터는 아직 구현되지 않았습니다.
+판매 구성, 적용 시작일별 가격, 유상 옵션과 조건별 인증으로 구체화했습니다. 016의 구현 상태와
+다음 개발 단계는 해당 work item이 소유합니다.
 
 실제 production catalog data는
 [017 자동차 카탈로그 초기 데이터 구축](../work-items/features/2026/017-car-catalog-initial-data.md)이

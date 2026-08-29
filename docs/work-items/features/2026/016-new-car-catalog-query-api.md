@@ -8,11 +8,13 @@ In Progress
 
 catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·129개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
-검증까지 구현했습니다. 아직 조회 persistence, Web API와 실제
-production 데이터는 없습니다.
+검증에 이어 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
+경계까지 구현했습니다. 검색 정규화·literal escape, 같은 configuration filter, 기준일 가격,
+대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제 PostgreSQL로 검증했습니다. 아직
+Web API와 실제 production 데이터는 없습니다.
 
-현재 작업은 schema를 사용하는 조회 persistence와 application 규칙을 구현하는 것입니다. 그
-다음에 Web API, Security와 OpenAPI를 구현합니다. 실제 브랜드 전체 데이터는 기능 구현을
+다음 작업은 조회 유스케이스를 공개하는 Web API, Security와 OpenAPI를 구현하는 것입니다.
+실제 브랜드 전체 데이터는 기능 구현을
 검증한 뒤 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)에서 적재합니다.
 
 ## 달성할 결과
@@ -38,8 +40,8 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 2. 실제 자료 조사 | ICE/HEV·MPV·BEV·FCEV 정보 분류 | 완료 | 공식 자료가 요구하는 관계와 칼럼을 설명함 |
 | 3. DB 설계 | 정확한 11개 테이블, 칼럼, FK·UNIQUE·CHECK·index | 완료 | 상세 설계가 독립 검증을 통과함 |
 | 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·129개 제약·4개 index·7개 동력 graph 공개 전 검증·대표 fixture·실제 권한 검증 통과 |
-| 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **다음 작업** | filter·가격·과거 조회와 SQL 상한 통과 |
-| 6. 공개 API 개발 | Controller·Security·OpenAPI | 후속 | 비회원 세 GET과 오류 계약 통과 |
+| 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **완료** | filter·가격·과거 조회와 목록 2개·상세 5개 SQL 상한, 대표 SQL 실행 계획 검증 통과 |
+| 6. 공개 API 개발 | Controller·Security·OpenAPI | **다음 작업** | 비회원 세 GET과 오류 계약 통과 |
 | 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | 후속 | blocking finding 0건 |
 | 8. 실제 데이터 | 공개 범위 결정, 공식 자료 mapping, data migration | 후속 017 | 선택 범위의 누락 0건 |
 | 9. Git·원격·배포 | commit, 별도 push와 CI·Sonar, 별도 staging 적용 | 조건부 | 각 단계의 명시 권한과 gate 충족 |
