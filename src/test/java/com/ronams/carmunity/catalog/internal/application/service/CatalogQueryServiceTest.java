@@ -1,6 +1,7 @@
 package com.ronams.carmunity.catalog.internal.application.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.ronams.carmunity.catalog.api.SalesStatus;
@@ -8,6 +9,7 @@ import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSumma
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
 import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
+import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDetailQuery;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
 import java.time.Clock;
 import java.time.Instant;
@@ -59,5 +61,16 @@ class CatalogQueryServiceTest {
     CatalogModelPage result = new SearchCatalogModelsService(catalogReadPort).execute(query);
 
     assertThat(result).isSameAs(page);
+  }
+
+  @Test
+  void 모델_상세는_선택_연식과_기준일을_persistence에_전달한다() {
+    UUID modelId = UUID.randomUUID();
+    UUID modelYearId = UUID.randomUUID();
+    GetCatalogModelDetailQuery query =
+        new GetCatalogModelDetailQuery(modelId, modelYearId, LocalDate.of(2026, 8, 29));
+
+    assertThat(new GetCatalogModelDetailService(catalogReadPort).execute(query)).isEmpty();
+    verify(catalogReadPort).findModelDetail(modelId, modelYearId, LocalDate.of(2026, 8, 29));
   }
 }

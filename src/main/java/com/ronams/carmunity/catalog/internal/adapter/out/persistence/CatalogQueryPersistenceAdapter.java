@@ -5,6 +5,7 @@ import com.ronams.carmunity.catalog.api.FuelType;
 import com.ronams.carmunity.catalog.api.PropulsionType;
 import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelSummary;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogPriceBasis;
@@ -18,6 +19,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.RowMapper;
@@ -30,9 +32,12 @@ import org.springframework.stereotype.Component;
 class CatalogQueryPersistenceAdapter implements CatalogReadPort {
 
   private final NamedParameterJdbcTemplate jdbcTemplate;
+  private final CatalogDetailQuery detailQuery;
 
-  CatalogQueryPersistenceAdapter(NamedParameterJdbcTemplate jdbcTemplate) {
+  CatalogQueryPersistenceAdapter(
+      NamedParameterJdbcTemplate jdbcTemplate, CatalogDetailQuery detailQuery) {
     this.jdbcTemplate = jdbcTemplate;
+    this.detailQuery = detailQuery;
   }
 
   /** model year와 configuration이 모두 기준일 판매 중인 공개 graph만 브랜드 수에 포함합니다. */
@@ -59,6 +64,12 @@ class CatalogQueryPersistenceAdapter implements CatalogReadPort {
         jdbcTemplate.query(MODEL_PAGE_SQL, parameters, catalogModelSummaryMapper());
     int totalPages = (int) ((totalElements + query.size() - 1) / query.size());
     return new CatalogModelPage(items, query.page(), query.size(), totalElements, totalPages);
+  }
+
+  @Override
+  public Optional<CatalogModelDetail> findModelDetail(
+      UUID modelId, UUID requestedModelYearId, LocalDate asOf) {
+    return detailQuery.find(modelId, requestedModelYearId, asOf);
   }
 
   private MapSqlParameterSource modelSearchParameters(SearchCatalogModelsQuery query) {

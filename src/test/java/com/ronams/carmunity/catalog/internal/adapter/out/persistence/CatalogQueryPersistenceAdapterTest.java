@@ -9,6 +9,7 @@ import com.ronams.carmunity.catalog.api.FuelType;
 import com.ronams.carmunity.catalog.api.PropulsionType;
 import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
 import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
@@ -176,6 +177,96 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
               assertThat(item.fuelTypes())
                   .containsExactlyInAnyOrder(FuelType.ELECTRICITY, FuelType.GASOLINE);
             });
+  }
+
+  /** 선택 연식의 동력 장치·인증·판매 구성·현재 옵션을 고정된 묶음 조회로 조립합니다. */
+  @Test
+  void loadsCompleteModelDetailForSelectedModelYear() {
+    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "EV6", "EV6", 55_000_000L);
+    long variantId =
+        jdbcTemplate.queryForObject(
+            "SELECT vehicle_variant_id FROM car_configuration WHERE id = ?",
+            Long.class,
+            bev.configurationId());
+    jdbcTemplate.update(
+        "UPDATE car_configuration SET standard_features = '[{\"category\":\"안전\",\"name\":\"충돌방지\",\"description\":null}]', warranties = '[{\"name\":\"배터리\",\"years\":10,\"distanceKm\":200000,\"note\":null}]', safety_ratings = '[{\"organization\":\"KNCAP\",\"rating\":\"1등급\",\"assessedOn\":\"2026-01-02\",\"note\":null}]', media = '[{\"type\":\"IMAGE\",\"url\":\"https://example.com/ev6.jpg\",\"alt\":\"EV6\",\"sortOrder\":0}]' WHERE id = ?",
+        bev.configurationId());
+    jdbcTemplate.update(
+        "INSERT INTO car_certification (vehicle_variant_id, condition_code, condition_name, certification_type, temperature_condition, wheel_size_inch, combined_efficiency, efficiency_unit, combined_range_km) VALUES (?, 'NORMAL-20', '20인치 상온', 'ELECTRIC', 'NORMAL', 20, 4.8, 'KM_PER_KWH', 470)",
+        variantId);
+    jdbcTemplate.update(
+        "INSERT INTO car_configuration_option (configuration_id, code, name, option_type, is_selectable, price_before_tax_benefit, price_after_tax_benefit, included_items, effective_from, display_order) VALUES (?, 'ADAS', '주행 보조', 'PACKAGE', TRUE, 1200000, 1000000, '[\"후측방 충돌방지\"]', '2026-01-01', 1)",
+        bev.configurationId());
+    jdbcTemplate.update(
+        "INSERT INTO car_configuration_option (configuration_id, code, name, option_type, is_selectable, included_items, effective_from, display_order) VALUES (?, 'OLD', '중단 옵션', 'SINGLE', FALSE, '[]', '2026-01-01', 2)",
+        bev.configurationId());
+
+    clearInvocations(namedParameterJdbcTemplate);
+    CatalogModelDetail detail =
+        catalogReadPort
+            .findModelDetail(bev.modelPublicId(), bev.modelYearPublicId(), AS_OF)
+            .orElseThrow();
+
+    assertThat(detail.model().modelId()).isEqualTo(bev.modelPublicId());
+    assertThat(detail.selectedModelYear().modelYearId()).isEqualTo(bev.modelYearPublicId());
+    assertThat(detail.powertrains())
+        .singleElement()
+        .satisfies(
+            powertrain -> {
+              assertThat(powertrain.propulsionType()).isEqualTo(PropulsionType.BEV);
+              assertThat(powertrain.components())
+                  .extracting(CatalogModelDetail.Component::componentType)
+                  .containsExactly("MOTOR", "BATTERY");
+            });
+    assertThat(detail.variants())
+        .singleElement()
+        .satisfies(
+            variant -> {
+              assertThat(variant.certifications())
+                  .singleElement()
+                  .extracting(CatalogModelDetail.Certification::conditionCode)
+                  .isEqualTo("NORMAL-20");
+              assertThat(variant.configurations())
+                  .singleElement()
+                  .satisfies(
+                      configuration -> {
+                        assertThat(configuration.standardFeatures())
+                            .singleElement()
+                            .extracting(CatalogModelDetail.StandardFeature::name)
+                            .isEqualTo("충돌방지");
+                        assertThat(configuration.price().displayPrice()).isEqualTo(55_000_000L);
+                        assertThat(configuration.options())
+                            .singleElement()
+                            .satisfies(
+                                option -> {
+                                  assertThat(option.code()).isEqualTo("ADAS");
+                                  assertThat(option.displayPrice()).isEqualTo(1_000_000L);
+                                  assertThat(option.includedItems()).containsExactly("후측방 충돌방지");
+                                });
+                      });
+            });
+    assertThat(executedCatalogQueryCount()).isEqualTo(5);
+  }
+
+  /** 상세 configuration 상태도 자체 기간뿐 아니라 선택 연식의 종료 경계를 함께 적용합니다. */
+  @Test
+  void appliesModelYearPeriodToDetailConfigurationStatus() {
+    CatalogFixture fixture = createPublishedIceModel("KIA", "기아", "ENDED", "종료 모델", 30_000_000L);
+    jdbcTemplate.update(
+        "UPDATE car_model_year SET sales_ended_on = ? WHERE public_id = ?",
+        AS_OF,
+        fixture.modelYearPublicId());
+
+    CatalogModelDetail detail =
+        catalogReadPort
+            .findModelDetail(fixture.modelPublicId(), fixture.modelYearPublicId(), AS_OF)
+            .orElseThrow();
+
+    assertThat(detail.variants())
+        .flatExtracting(CatalogModelDetail.Variant::configurations)
+        .singleElement()
+        .extracting(CatalogModelDetail.Configuration::salesStatus)
+        .isEqualTo(SalesStatus.DISCONTINUED);
   }
 
   private long executedCatalogQueryCount() {
