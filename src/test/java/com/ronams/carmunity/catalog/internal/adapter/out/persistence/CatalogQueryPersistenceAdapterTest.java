@@ -1,9 +1,18 @@
 package com.ronams.carmunity.catalog.internal.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.mockingDetails;
 
+import com.ronams.carmunity.catalog.api.BodyType;
+import com.ronams.carmunity.catalog.api.FuelType;
+import com.ronams.carmunity.catalog.api.PropulsionType;
+import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
+import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
+import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
 import java.time.LocalDate;
 import java.util.List;
@@ -12,6 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 /** 공개 카탈로그 query adapter가 실제 PostgreSQL의 공개·기준일 계약을 지키는지 검증합니다. */
@@ -23,6 +34,7 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
 
   @Autowired private CatalogReadPort catalogReadPort;
   @Autowired private JdbcTemplate jdbcTemplate;
+  @MockitoSpyBean private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
   /** 기준일에 판매 중인 공개 configuration이 있는 브랜드만 모델 수와 함께 반환합니다. */
   @Test
@@ -45,6 +57,149 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
             org.assertj.core.groups.Tuple.tuple(findBrandPublicId("BETA"), "베타", 1L));
   }
 
+  /** 복합 filter와 기준일 가격을 같은 공개 configuration에 적용하고 모델을 한 번만 반환합니다. */
+  @Test
+  void searchesModelsWithSameConfigurationFiltersAndCurrentPrice() {
+    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "EV6", "EV6 100%_", 55_000_000L);
+    createPublishedIceModel("KIA", "기아", "K5", "K5", 35_000_000L);
+    jdbcTemplate.update(
+        "INSERT INTO car_configuration_price (configuration_id, effective_from, price_before_tax_benefit, price_after_tax_benefit) VALUES (?, '2026-08-01', 54000000, 52000000)",
+        bev.configurationId());
+
+    SearchCatalogModelsQuery query =
+        new SearchCatalogModelsQuery(
+            "  ＥＶ6   100%_  ",
+            bev.brandPublicId(),
+            BodyType.SUV,
+            PropulsionType.BEV,
+            FuelType.ELECTRICITY,
+            50_000_000L,
+            53_000_000L,
+            SalesStatus.ON_SALE,
+            AS_OF,
+            CatalogModelSort.PRICE_ASC,
+            0,
+            20);
+
+    clearInvocations(namedParameterJdbcTemplate);
+    CatalogModelPage page = catalogReadPort.searchModels(query);
+
+    assertThat(page.totalElements()).isOne();
+    assertThat(page.totalPages()).isOne();
+    assertThat(page.items())
+        .singleElement()
+        .satisfies(
+            item -> {
+              assertThat(item.modelId()).isEqualTo(bev.modelPublicId());
+              assertThat(item.representativeModelYearId()).isEqualTo(bev.modelYearPublicId());
+              assertThat(item.bodyTypes()).containsExactly(BodyType.SUV);
+              assertThat(item.propulsionTypes()).containsExactly(PropulsionType.BEV);
+              assertThat(item.fuelTypes()).containsExactly(FuelType.ELECTRICITY);
+              assertThat(item.startPrice()).isEqualTo(52_000_000L);
+              assertThat(item.priceBasis().name()).isEqualTo("AFTER_TAX_BENEFIT");
+              assertThat(item.salesStatus()).isEqualTo(SalesStatus.ON_SALE);
+            });
+    assertThat(executedCatalogQueryCount()).isEqualTo(2);
+    assertThat(modelPageExecutionPlan()).isNotEmpty();
+  }
+
+  /** 서로 다른 공개 configuration의 차체와 동력 형식은 한 모델 안에서도 조합하지 않습니다. */
+  @Test
+  void doesNotMixFiltersAcrossConfigurations() {
+    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "MIXED", "혼합 모델", 55_000_000L);
+    long modelYearId =
+        jdbcTemplate.queryForObject(
+            "SELECT id FROM car_model_year WHERE public_id = ?",
+            Long.class,
+            bev.modelYearPublicId());
+    long icePowertrainId = createIcePowertrain(modelYearId, "MIXED-SECOND");
+    long sedanVariantId = createVariant(modelYearId, icePowertrainId, "MIXED-SECOND");
+    createConfiguration(sedanVariantId, "MIXED-SECOND", true);
+
+    SearchCatalogModelsQuery impossibleCombination =
+        new SearchCatalogModelsQuery(
+            null,
+            bev.brandPublicId(),
+            BodyType.SUV,
+            PropulsionType.ICE,
+            FuelType.GASOLINE,
+            null,
+            null,
+            SalesStatus.ON_SALE,
+            AS_OF,
+            CatalogModelSort.NAME_ASC,
+            0,
+            20);
+
+    assertThat(catalogReadPort.searchModels(impossibleCombination).items()).isEmpty();
+  }
+
+  /** ALL 목록은 같은 연식의 판매 중·예정 configuration을 한 연식으로 합쳐 사양 집합을 보존합니다. */
+  @Test
+  void rollsUpAllConfigurationStatusesWithinRepresentativeModelYear() {
+    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "ALL-STATUS", "전체 상태", 55_000_000L);
+    long modelYearId =
+        jdbcTemplate.queryForObject(
+            "SELECT id FROM car_model_year WHERE public_id = ?",
+            Long.class,
+            bev.modelYearPublicId());
+    long icePowertrainId = createIcePowertrain(modelYearId, "ALL-STATUS-SECOND");
+    long sedanVariantId = createVariant(modelYearId, icePowertrainId, "ALL-STATUS-SECOND");
+    long upcomingConfigurationId = createConfiguration(sedanVariantId, "ALL-STATUS-SECOND", true);
+    jdbcTemplate.update(
+        "UPDATE car_configuration SET sales_started_on = '2026-09-01', sales_ended_on = '2027-01-01' WHERE id = ?",
+        upcomingConfigurationId);
+
+    SearchCatalogModelsQuery allStatuses =
+        new SearchCatalogModelsQuery(
+            null,
+            bev.brandPublicId(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            SalesStatus.ALL,
+            AS_OF,
+            CatalogModelSort.NAME_ASC,
+            0,
+            20);
+
+    assertThat(catalogReadPort.searchModels(allStatuses).items())
+        .singleElement()
+        .satisfies(
+            item -> {
+              assertThat(item.salesStatus()).isEqualTo(SalesStatus.ON_SALE);
+              assertThat(item.bodyTypes()).containsExactlyInAnyOrder(BodyType.SUV, BodyType.SEDAN);
+              assertThat(item.propulsionTypes())
+                  .containsExactlyInAnyOrder(PropulsionType.BEV, PropulsionType.ICE);
+              assertThat(item.fuelTypes())
+                  .containsExactlyInAnyOrder(FuelType.ELECTRICITY, FuelType.GASOLINE);
+            });
+  }
+
+  private long executedCatalogQueryCount() {
+    return mockingDetails(namedParameterJdbcTemplate).getInvocations().stream()
+        .filter(invocation -> invocation.getMethod().getName().startsWith("query"))
+        .map(invocation -> invocation.getArgument(0, String.class))
+        .distinct()
+        .count();
+  }
+
+  private List<String> modelPageExecutionPlan() {
+    org.mockito.invocation.Invocation pageInvocation =
+        mockingDetails(namedParameterJdbcTemplate).getInvocations().stream()
+            .filter(invocation -> invocation.getArguments().length >= 2)
+            .filter(invocation -> invocation.getArgument(0) instanceof String)
+            .filter(invocation -> invocation.getArgument(0, String.class).contains("ROW_NUMBER()"))
+            .findFirst()
+            .orElseThrow();
+    String sql = pageInvocation.getArgument(0, String.class);
+    org.springframework.jdbc.core.namedparam.SqlParameterSource parameters =
+        pageInvocation.getArgument(1);
+    return namedParameterJdbcTemplate.queryForList("EXPLAIN " + sql, parameters, String.class);
+  }
+
   private CatalogFixture createPublishedIceModel(
       String brandCode, String brandName, String modelCode, String modelName, long price) {
     long brandId = findOrCreateBrand(brandCode, brandName);
@@ -58,7 +213,55 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         "INSERT INTO car_configuration_price (configuration_id, effective_from, price_before_tax_benefit) VALUES (?, '2026-01-01', ?)",
         configurationId,
         price);
-    return new CatalogFixture(brandPublicId);
+    return new CatalogFixture(
+        brandPublicId,
+        jdbcTemplate.queryForObject(
+            "SELECT public_id FROM car_model WHERE id = ?", UUID.class, modelId),
+        jdbcTemplate.queryForObject(
+            "SELECT public_id FROM car_model_year WHERE id = ?", UUID.class, modelYearId),
+        configurationId);
+  }
+
+  private CatalogFixture createPublishedBevModel(
+      String brandCode, String brandName, String modelCode, String modelName, long price) {
+    long brandId = findOrCreateBrand(brandCode, brandName);
+    UUID brandPublicId = findBrandPublicId(brandCode);
+    long modelId = createModel(brandId, modelCode, modelName, "ev6 100%_");
+    long modelYearId = createModelYear(modelId, modelCode);
+    long powertrainId =
+        jdbcTemplate.queryForObject(
+            "INSERT INTO car_powertrain (public_id, model_year_id, code, name, propulsion_type, primary_fuel_type, drivetrain_type) VALUES (?, ?, ?, '전기', 'BEV', 'ELECTRICITY', 'RWD') RETURNING id",
+            Long.class,
+            UUID.randomUUID(),
+            modelYearId,
+            modelCode + "-BEV");
+    jdbcTemplate.update(
+        "INSERT INTO car_powertrain_component (powertrain_id, component_type, component_role, name, max_power_kw) VALUES (?, 'MOTOR', 'TRACTION', '모터', 168)",
+        powertrainId);
+    jdbcTemplate.update(
+        "INSERT INTO car_powertrain_component (powertrain_id, component_type, component_role, name, capacity_kwh) VALUES (?, 'BATTERY', 'ENERGY_STORAGE', '배터리', 84)",
+        powertrainId);
+    long variantId =
+        jdbcTemplate.queryForObject(
+            "INSERT INTO car_vehicle_variant (public_id, model_year_id, powertrain_id, code, name, body_type, seating_capacity, length_mm, width_mm, height_mm, wheelbase_mm) VALUES (?, ?, ?, ?, ?, 'SUV', 5, 4700, 1890, 1550, 2900) RETURNING id",
+            Long.class,
+            UUID.randomUUID(),
+            modelYearId,
+            powertrainId,
+            modelCode + "-VARIANT",
+            modelCode + " 변형");
+    long configurationId = createConfiguration(variantId, modelCode, true);
+    jdbcTemplate.update(
+        "INSERT INTO car_configuration_price (configuration_id, effective_from, price_before_tax_benefit) VALUES (?, '2026-01-01', ?)",
+        configurationId,
+        price);
+    return new CatalogFixture(
+        brandPublicId,
+        jdbcTemplate.queryForObject(
+            "SELECT public_id FROM car_model WHERE id = ?", UUID.class, modelId),
+        jdbcTemplate.queryForObject(
+            "SELECT public_id FROM car_model_year WHERE id = ?", UUID.class, modelYearId),
+        configurationId);
   }
 
   private void createUnpublishedModel(String brandCode, String modelCode, String modelName) {
@@ -156,5 +359,6 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         published);
   }
 
-  private record CatalogFixture(UUID brandPublicId) {}
+  private record CatalogFixture(
+      UUID brandPublicId, UUID modelPublicId, UUID modelYearPublicId, long configurationId) {}
 }

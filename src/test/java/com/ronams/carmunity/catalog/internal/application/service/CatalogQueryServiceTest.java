@@ -3,8 +3,12 @@ package com.ronams.carmunity.catalog.internal.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
+import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
+import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,5 +35,29 @@ class CatalogQueryServiceTest {
         new ListCatalogBrandsService(catalogReadPort, clock).execute();
 
     assertThat(result).containsExactly(brand);
+  }
+
+  @Test
+  void 모델_목록은_검증된_query를_persistence에_전달한다() {
+    SearchCatalogModelsQuery query =
+        new SearchCatalogModelsQuery(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            SalesStatus.ON_SALE,
+            LocalDate.of(2026, 8, 29),
+            CatalogModelSort.NAME_ASC,
+            0,
+            20);
+    CatalogModelPage page = new CatalogModelPage(List.of(), 0, 20, 0, 0);
+    when(catalogReadPort.searchModels(query)).thenReturn(page);
+
+    CatalogModelPage result = new SearchCatalogModelsService(catalogReadPort).execute(query);
+
+    assertThat(result).isSameAs(page);
   }
 }
