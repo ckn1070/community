@@ -10,6 +10,10 @@ Proposed
 조회 기능이 구현된 뒤 시작합니다. 현재는 실제 공개할 브랜드 범위와 과거 기간이 정해지지
 않았으며 production data도 없습니다.
 
+현재 자동차 개념과 물리 target은 각각
+[130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)과
+[110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)에서 확인합니다.
+
 016의 schema 개발은 이 결정을 기다리지 않고 먼저 진행합니다. 실제 데이터 작업을 시작할
 때는 아래 U1과 U2를 사용자가 확정해야 합니다.
 
@@ -97,7 +101,7 @@ source를 읽은 뒤 다음 단위로 mapping 표를 작성합니다.
 typed column에 해당하는 값을 JSONB로 우회하지 않습니다. 예를 들어 EV 배터리 kWh·Ah·V는
 component 칼럼, 카니발 휠·카메라별 연비는 certification 행, K5 트림 가격은 price 행에
 mapping합니다. 원문에 있으나 현재 schema에 넣을 수 없는 반복 핵심값이 발견되면 data를 버리거나
-EAV로 우회하지 않고 016 schema 보완을 먼저 엽니다.
+EAV로 우회하지 않고 schema 변경 작업을 먼저 엽니다.
 
 ### 주요 제원 정규화 규칙
 
@@ -208,7 +212,9 @@ inventory와 mapping의 실제 규모를 본 뒤 다음 중 가장 단순한 방
 
 ## 전환·권한 경계
 
-- 016은 schema와 API, 017은 production data migration을 소유합니다.
+- 016은 schema·API 구현 작업의 상태와 결과를 추적하고, 017은 production data의 조사·검수·
+  migration 작업을 추적합니다. 현재 schema 자체는
+  [110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)가 소유합니다.
 - 외부 데이터 공급 계약, custom 도구 도입, push와 staging 적용은 각각 별도 권한이 필요합니다.
 - 권리가 확인되지 않은 media는 URL을 공개 data로 넣지 않습니다.
 - 선택 범위의 공식 자료가 확보되지 않으면 임의 추정하지 않고 범위 축소 또는 공식 공급자
@@ -217,7 +223,9 @@ inventory와 mapping의 실제 규모를 본 뒤 다음 중 가장 단순한 방
 ## 관련 문서
 
 - **선행 schema·API**: [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)
-- **물리 DB 설계**: [016 신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md)
+- **현재 업무 개념**: [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)
+- **물리 DB 구조와 설계 이유**: [110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)
+- **과거 DB 설계 결정**: [016 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)
 - **제품 범위**: [200 제품 기능 범위](../../../product/200-feature-scope.md)
 - **DB 변경**: [240 Flyway](../../../tech-stack/240-flyway.md),
   [250 PostgreSQL](../../../tech-stack/250-postgresql.md)

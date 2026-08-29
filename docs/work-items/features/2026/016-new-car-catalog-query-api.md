@@ -4,7 +4,7 @@
 
 In Progress
 
-## 현재 위치와 다음 작업
+## 결과
 
 catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·133개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
@@ -13,11 +13,35 @@ index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
 대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제 PostgreSQL로 검증했습니다. 아직
 Web API와 실제 production 데이터는 없습니다.
 
-다음 작업은 조회 유스케이스를 공개하는 Web API, Security와 OpenAPI를 구현하는 것입니다.
-실제 브랜드 전체 데이터는 기능 구현을
-검증한 뒤 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)에서 적재합니다.
+미완료 결과는 세 공개 GET의 Controller·DTO·validation, Security allow-list, RFC 9457 오류
+응답과 OpenAPI 계약입니다. 실제 production 데이터 적재는 이 작업의 미완료가 아니라
+[017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)의 범위입니다. 현재
+차단 사유는 없습니다.
 
-## 달성할 결과
+현재 업무 개념은 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md), 구현된 관계형
+구조와 조회 경로는
+[110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)가 소유합니다.
+
+## 남은 책임과 다음 작업
+
+다음 실행자는 현재 application 조회 결과를 소비하는 Web adapter를 구현합니다.
+
+1. 세 공개 GET의 Controller와 request·response DTO를 추가합니다.
+2. 입력 validation, RFC 9457의 400·404 오류와 Security의 401·403·405 회귀 계약을 연결합니다.
+3. OpenAPI schema와 실제 JSON nullability를 대조합니다.
+4. 전체 `check`, 영구 문서 최종 동기화와 독립 구현 검증을 통과시킵니다.
+
+DB 구조나 업무 개념을 바꿔야 한다면 먼저 해당 영구 문서를 갱신하고 별도 설계 변경으로
+다룹니다. 현재 사용자에게 필요한 결정은 없습니다.
+
+## 착수 당시 계획 기록
+
+아래 내용은 016 착수 당시 사용한 목표·계약·수용 기준·개발 순서입니다. 현재 업무 개념,
+물리 schema와 구현 상태의 SOT가 아니며, 현재 계약은 위 영구 문서와 실제 source를 따릅니다.
+미구현 Web API의 목표 계약과 migration 분리 판단은
+[016 신차 카탈로그 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)에 보존합니다.
+
+### 달성할 결과
 
 로그인하지 않은 사용자가 자동차 브랜드, 모델 목록과 모델 상세를 조회할 수 있는 관계형
 schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니라 공개된 과거 세대·연식을 같은
@@ -32,7 +56,7 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 
 첫 구현은 실제 production data 대신 대표 fixture로 schema와 조회를 검증합니다.
 
-## 전체 개발 흐름
+### 전체 개발 흐름
 
 | 단계 | 만드는 결과 | 현재 상태 | 다음 단계 조건 |
 | --- | --- | --- | --- |
@@ -46,7 +70,7 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 8. 실제 데이터 | 공개 범위 결정, 공식 자료 mapping, data migration | 후속 017 | 선택 범위의 누락 0건 |
 | 9. Git·원격·배포 | commit, 별도 push와 CI·Sonar, 별도 staging 적용 | 조건부 | 각 단계의 명시 권한과 gate 충족 |
 
-## 포함 범위
+### 포함 범위
 
 - 대한민국 시장의 일반 개인 구매 차량을 우선하는 schema
 - 브랜드→모델→세대→연식→기술 변형→판매 구성 관계
@@ -62,7 +86,7 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 - 검색어·브랜드·차체·동력 형식·연료·가격·판매 상태·기준일·정렬·page filter
 - 대표 K5형 ICE/HEV, 카니발형 MPV, EV6형 BEV, 넥쏘형 FCEV test fixture
 
-## 제외 범위
+### 제외 범위
 
 - production 전체 차량 데이터와 자료 입력 도구
 - 관리자 등록·수정·삭제 API와 crawler
@@ -73,18 +97,21 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 - 모든 사실의 bitemporal 정정 이력과 field별 source assertion
 - 실제 병목 근거가 없는 cache·검색엔진
 
-## DB 계약
+### DB 계약
 
-상세 칼럼과 제약은 [신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md)가
-소유합니다. 구현 대상은 그 설계에 정의된 자동차 제품 구조 11개 테이블입니다. 기존 7개
-초안의 핵심 분류를 유지하면서 모델 연식, 기술 변형, 가격 이력과 선택 품목을 보완했습니다.
+구현된 상세 칼럼·제약·index·조회 경로와 현재 분리 이유는
+[110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)가 소유합니다.
+현재 구조는 자동차 제품·기술·판매 정보를 11개 테이블로 표현합니다. 기존 7개 초안의 핵심
+분류를 유지하면서 모델 연식, 기술 변형, 가격 이력과 선택 품목을 보완했습니다.
 공식 자료와 DB 값의 대응은 017 초기 데이터 작업의
 version-controlled mapping에서 관리하며 runtime schema에 source 테이블이나 FK를 두지
 않습니다. fact마다 identity/version/source 테이블을 추가하는 157개 구조는 구현 대상이 아닙니다.
+이 선택의 대안·trade-off는 [016 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)에
+보존합니다.
 
-## 공개 API 계약
+### 공개 API 계약
 
-### 주소와 입력
+#### 주소와 입력
 
 | 요청 | 선택 입력 | 기본값·제약 |
 | --- | --- | --- |
@@ -111,7 +138,7 @@ version-controlled mapping에서 관리하며 runtime schema에 source 테이블
 - `FuelType`: `GASOLINE`, `DIESEL`, `LPG`, `ELECTRICITY`, `HYDROGEN`, `OTHER`
 - `SalesStatus`: `UPCOMING`, `ON_SALE`, `DISCONTINUED`, `ALL`
 
-### 공통 표현
+#### 공통 표현
 
 - 금액은 정수 원 단위이고 `currencyCode=KRW`를 함께 반환합니다.
 - 종료일은 exclusive인 `salesEndedOn`으로 반환합니다.
@@ -120,7 +147,7 @@ version-controlled mapping에서 관리하며 runtime schema에 source 테이블
 - 날짜는 `YYYY-MM-DD`, UUID는 표준 문자열입니다.
 - page 응답은 `items`, `page`, `size`, `totalElements`, `totalPages`를 가집니다.
 
-### `GET /api/v1/car/brands`
+#### `GET /api/v1/car/brands`
 
 200 응답의 각 항목은 다음 값을 가집니다.
 
@@ -132,7 +159,7 @@ version-controlled mapping에서 관리하며 runtime schema에 source 테이블
 | `countryCode` | 불가 | 브랜드 국가 code |
 | `onSaleModelCount` | 불가 | 공개 configuration이 있고 기준일 판매 중인 모델 수 |
 
-### `GET /api/v1/car/models`
+#### `GET /api/v1/car/models`
 
 각 page item은 다음 값을 가집니다.
 
@@ -169,7 +196,7 @@ filter와 최솟값에서 제외하고, 모델의 모든 구성에 가격이 없
 `modelYear`, `editionName`은 대표 연식의 값입니다. 따라서 판매 중 연식과 예정 연식이 함께
 있을 때 `ALL`도 판매 중 연식을 대표로 반환합니다.
 
-### `GET /api/v1/car/models/{carModelId}`
+#### `GET /api/v1/car/models/{carModelId}`
 
 상세 응답은 다음 묶음으로 구성합니다.
 
@@ -195,7 +222,7 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 `is_selectable=true`인 항목만 반환합니다. 선택 불가 전환 뒤에는 과거 행을 함께 반환하지 않으며,
 가격이 바뀌면 같은 code의 새 effective 행으로 조회 결과를 교체합니다.
 
-### 상태 계산
+#### 상태 계산
 
 - `asOf < sales_started_on`: `UPCOMING`
 - `sales_started_on <= asOf`이고 `sales_ended_on IS NULL OR asOf < sales_ended_on`: `ON_SALE`
@@ -203,7 +230,7 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 
 모델 연식과 configuration의 기간을 함께 만족하는 경우만 판매 중으로 봅니다.
 
-### 오류
+#### 오류
 
 기존 RFC 9457 `ProblemDetail` 형식을 사용합니다.
 
@@ -214,9 +241,9 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 | 비회원의 쓰기 method, 다른 보호 API | 기존 Security 계약의 401·403·405 |
 | schema 모순이나 예상하지 못한 서버 오류 | 500 |
 
-## 수용 기준
+### 수용 기준
 
-### DB와 자료 표현
+#### DB와 자료 표현
 
 - migration 적용 후 실제 PostgreSQL에 설계의 11개 테이블만 생성됩니다.
 - 모든 명시 FK, UNIQUE, CHECK와 index가 이름까지 검증됩니다.
@@ -239,7 +266,7 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 - 옵션 가격·선택 상태 변경도 `effective_from`이 다른 행으로 보존되고 code별 가장 최근 한 행만
   기준일 상세에 반환합니다.
 
-### 조회와 API
+#### 조회와 API
 
 - 세 공개 GET만 비회원에게 허용하고 같은 주소의 쓰기 method는 공개하지 않습니다.
 - 검색·모든 단일/조합 filter가 같은 판매 구성 기준으로 동작합니다.
@@ -251,9 +278,9 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 - 내부 id가 응답에 노출되지 않고 OpenAPI와 실제 JSON nullability가 일치합니다.
 - 대표 fixture 성공은 production catalog 데이터 완료로 보고하지 않습니다.
 
-## 개발 계획
+### 개발 계획
 
-### 작업 1. catalog 계약과 대표 fixture를 정의합니다
+#### 작업 1. catalog 계약과 대표 fixture를 정의합니다
 
 - `catalog` module 경계와 공개 enum·UUID·날짜·가격 type을 만듭니다.
 - K5형 ICE/HEV, 카니발형 MPV, EV6형 BEV, 넥쏘형 FCEV fixture를 정의합니다.
@@ -261,7 +288,7 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 
 완료 결과는 schema 구현이 만족해야 할 자동화된 입력·실패 계약입니다.
 
-### 작업 2. V13~V17에 카탈로그 테이블을 구현합니다
+#### 작업 2. V13~V17에 카탈로그 테이블을 구현합니다
 
 - 현재 최신 V12 다음에서 브랜드부터 인증까지 11개 테이블을 FK 의존 순서의 5개
   migration으로 만듭니다.
@@ -285,7 +312,7 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 
 완료 결과는 빈 DB에서 한 번에 적용되고 `ddl-auto=validate`가 통과하는 schema입니다.
 
-### 작업 3. PostgreSQL schema·fixture test를 닫습니다
+#### 작업 3. PostgreSQL schema·fixture test를 닫습니다
 
 - Testcontainers PostgreSQL에서 migration과 모든 positive/negative 제약을 검증합니다.
 - migration process test의 runtime 연결로 11개 table별 SELECT 성공과 DML·TRUNCATE 실패,
@@ -297,7 +324,7 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 
 완료 결과는 문서가 아니라 실제 DB가 자동차 구조를 강제한다는 증거입니다.
 
-### 작업 4. 조회 persistence와 application 규칙을 구현합니다
+#### 작업 4. 조회 persistence와 application 규칙을 구현합니다
 
 - 브랜드 목록, 모델 page와 모델 상세를 projection·묶음 조회로 구현합니다.
 - 검색 정규화·escape, 같은 구성 filter, 현재 가격과 대표 연식 선택을 application에 둡니다.
@@ -307,7 +334,7 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 
 완료 결과는 JPA entity나 내부 id를 노출하지 않는 조회 결과입니다.
 
-### 작업 5. Web·Security·OpenAPI를 구현합니다
+#### 작업 5. Web·Security·OpenAPI를 구현합니다
 
 - 세 GET Controller, request validation과 response DTO를 만듭니다.
 - GET method만 anonymous allow-list에 추가합니다.
@@ -315,7 +342,7 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 
 완료 결과는 비회원이 문서화된 계약으로 조회할 수 있는 API입니다.
 
-### 작업 6. 전체 검증과 영구 문서를 갱신합니다
+#### 작업 6. 전체 검증과 영구 문서를 갱신합니다
 
 - 좁은 테스트 뒤 `./gradlew check --no-daemon --rerun-tasks --console=plain`을 실행합니다.
 - 실제 migration을 기준으로 domain, module map, schema reference, Security·Flyway·OpenAPI 문서를
@@ -324,13 +351,13 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 
 완료 결과는 코드·DB·테스트·영구 문서가 같은 11개 테이블과 API를 설명하는 상태입니다.
 
-### 작업 7. 실제 초기 데이터 작업으로 인계합니다
+#### 작업 7. 실제 초기 데이터 작업으로 인계합니다
 
 - 016에서 최초 브랜드와 과거 기간을 확정합니다.
 - 공식 가격표·catalog·제원·인증 자료의 원문 값을 11개 테이블의 칼럼에 mapping합니다.
 - 선택한 범위의 누락을 검수한 뒤 별도 data migration으로 적용합니다.
 
-## 전환·복구·배포 경계
+### 전환·복구·배포 경계
 
 - schema migration과 production data migration을 분리합니다.
 - 적용된 Flyway 파일은 수정하지 않고 정정은 다음 migration에서 수행합니다.
@@ -340,21 +367,24 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
   별도 설계합니다.
 - 계획 checkpoint, 구현 commit, push와 staging 배포는 각각 별도 권한을 사용합니다.
 
-## 구현 후 갱신할 영구 문서
+## 영구 문서 반영 상태
 
-| 문서 | 반영할 실제 결과 |
+| 문서 | 현재 반영 상태 |
 | --- | --- |
-| `docs/domain/130-car-catalog.md`와 router | 모델·세대·연식·변형·판매 구성·가격 의미 |
-| `docs/project/210-module-map.md` | 구현된 `catalog` module과 의존 |
-| `docs/project/schema/110-car-catalog.md`와 router | 11개 테이블의 실제 column·constraint·index |
-| `docs/tech-stack/220-spring-security.md` | 세 공개 GET allow-list |
-| `docs/tech-stack/240-flyway.md` | catalog migration과 SELECT-only 권한 |
-| `docs/tech-stack/260-openapi.md` | 공개 조회·오류 schema |
-| `docs/product/200-feature-scope.md`, `docs/project/100-project-overview.md` | 구현 완료와 실제 data 미적재 상태 |
+| `docs/domain/130-car-catalog.md`와 router | 모델·세대·연식·변형·판매 구성·가격 의미 반영 |
+| `docs/project/210-module-map.md` | 구현된 `catalog` module과 의존 반영 |
+| `docs/project/schema/110-car-catalog.md`와 router | 11개 테이블의 실제 column·constraint·index와 분리 이유 반영 |
+| `docs/tech-stack/220-spring-security.md` | 미반영; Web API 단계에서 세 공개 GET allow-list와 함께 갱신 |
+| `docs/tech-stack/240-flyway.md` | catalog migration과 SELECT-only 권한 반영 |
+| `docs/tech-stack/260-openapi.md` | 미반영; Web API 단계에서 공개 조회·오류 schema와 함께 갱신 |
+| `docs/product/200-feature-scope.md` | 현재 사용자 기능 범위와 production data 경계 반영 |
+| `docs/project/100-project-overview.md` | 현재 구현 단계와 실제 data 미적재 상태 반영 |
 
 ## 관련 문서
 
-- **물리 DB 상세**: [016 신차 카탈로그 조회 기능 DB 설계](016-new-car-catalog-query-api-design.md)
+- **현재 업무 개념**: [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)
+- **물리 DB 상세와 조회 경로**: [110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)
+- **DB 설계 결정 근거**: [016 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)
 - **후속 production data**: [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)
 - **제품 방향**: [200 제품 기능 범위](../../../product/200-feature-scope.md)
 - **현재 코드 구조**: [210 모듈 지도](../../../project/210-module-map.md)
