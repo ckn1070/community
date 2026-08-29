@@ -171,6 +171,12 @@ payload에 포함해 이 충돌을 해소하지 않습니다.
 6. subject의 각 의미 구절과 staged hunk를 양방향으로 대조합니다. `A와 B`, `A·B`,
    `A 및 B`처럼 독립 결과를 병렬 나열해야 하면 확정된 결과 단위로 돌아갑니다.
 
+Commit의 결과는 그 commit 직후의 tree입니다. Rewrite 시작 전에 이미 결함으로 확정된
+상태를 중간 commit에서 다시 만든 뒤 후속 commit으로 고치는 순서는, 최종 tree가 옳고
+각 subject가 서로 달라도 유효한 결과 분리가 아닙니다. 후속 요구가 새로 생겼거나
+호환성·backfill처럼 중간 상태 자체가 유효한 독립 배포 결과라는 source가 없다면, 해당
+수정은 최초로 그 결과를 소유하는 replacement commit에 포함합니다.
+
 message는 최근 repository 이력을 대조한 Conventional Commit 형식을 사용합니다. type과
 선택적 scope는 표준 식별자를 유지하고, subject는 한국어 명사구로 작성합니다. `검토`,
 `확인`, `검증` 같은 일시적 활동은 그 규칙이나 도구 자체가 영속적으로 바뀐 경우가
@@ -262,16 +268,36 @@ history에서 commit 흔적을 제거하되 최종 tree를 유지하는 history-
 절차를 사용합니다.
 
 1. 대상 branch의 시작 SHA, 재생 base, 제거 대상과 유지할 commit 순서를 고정합니다.
-2. 기존 dirty worktree를 건드리지 않고 임시 detached worktree에서 base부터 유지할
+2. Rewrite 시작 전에 확정된 요구·결함과 현재 final artifact에서 다음 manifest를
+   고정합니다.
+
+   ```text
+   제거할 결함·보존할 결과
+   → 그 결과를 처음 도입할 replacement commit
+   → final path·hunk·tree에서의 관찰값
+   → 뒤 commit이 제공하는 독립 결과 또는 앞 commit의 보상 여부
+   ```
+
+   `기존 내용을 먼저 그대로 재생`하는 작업 순서나 원본 commit의 파일 묶음을 결과
+   경계로 사용하지 않습니다. Rewrite 전에 이미 final 값과 결함이 알려졌다면 최초 owner
+   commit이 곧바로 final 값을 도입해야 합니다.
+3. 기존 dirty worktree를 건드리지 않고 임시 detached worktree에서 base부터 유지할
    commit만 순서대로 재생합니다.
-3. candidate의 parent·patch 순서와 최종 tree가 요구 결과와 같고, history-only 작업이면
-   재작성 전 최종 tree와도 같은지 확인합니다.
-4. target branch ref와 remote ref가 조사 때와 같은지 다시 읽습니다.
-5. 현재 branch ref가 시작 SHA일 때만 `git update-ref <ref> <candidate> <start-sha>`의
+4. Candidate를 최종 tree뿐 아니라 각 first-parent prefix에서 검증합니다. Rewrite 전에
+   알려진 요구가 적용되는 prefix가 그 요구를 만족하는지 확인하고, 뒤 commit이 앞
+   commit의 알려진 결함만 제거한다면 이를 독립 결과가 아닌 보상 commit으로 분류합니다.
+   보상 commit이 하나라도 남으면 ref를 바꾸지 않고 candidate를 폐기해 2번 manifest부터
+   다시 구성합니다. 새 요구, 유효한 호환성 구간이나 backfill처럼 중간 tree 자체의
+   consumer·복구 경계가 source로 증명된 경우만 후속 commit으로 유지합니다.
+5. Candidate의 parent·patch 순서와 최종 tree가 요구 결과와 같고, history-only 작업이면
+   재작성 전 최종 tree와도 같은지 확인합니다. 최종 tree 동일성은 4번 prefix 검증을
+   대신하지 않습니다.
+6. target branch ref와 remote ref가 조사 때와 같은지 다시 읽습니다.
+7. 현재 branch ref가 시작 SHA일 때만 `git update-ref <ref> <candidate> <start-sha>`의
    compare-and-swap으로 교체합니다.
-6. 대상 commit이 branch log와 branch를 가리키는 local ref에서 사라지고, 유지 commit,
+8. 대상 commit이 branch log와 branch를 가리키는 local ref에서 사라지고, 유지 commit,
    최종 tree, 기존 dirty·index와 remote ref가 보존됐는지 확인합니다.
-7. 임시 worktree가 clean하고 candidate가 target ref에 도달 가능한 뒤 표준 worktree
+9. 임시 worktree가 clean하고 candidate가 target ref에 도달 가능한 뒤 표준 worktree
    remove로 정리합니다.
 
 이 저장소의 history 복구에는 `git revert`를 사용하지 않습니다. `reset --hard`, 자동
