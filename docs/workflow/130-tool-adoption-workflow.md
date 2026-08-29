@@ -77,6 +77,13 @@ custom blocking verifier나 hook은 다음 조건을 **모두** 만족해야 합
 - 다른 표준 gate의 성공 여부를 문자열로 복제한 판정
 - 정확한 source 없이 추정한 caller·owner·failure boundary
 
+서비스 기동, build, 배포 또는 운영 진입을 새로 중단시키는 custom hard gate는 내부 구현
+방식만 바꾸는 기술 선택이 아니라 가용성과 운영 실패 경계를 바꿉니다. 독립 authoritative
+source가 그 경계를 유일하게 강제하지 않으면 Agent는 위 필수조건을 모두 심사한 뒤에도
+대안·추천까지만 제시하고, 사용자가 exact 실행 시점과 차단 결과를 긍정적으로 선택하기 전에는
+선택된 설계·계획·구현으로 기록하거나 writer에 넘기지 않습니다. Proposed 문서에 후보로
+비교하는 것은 가능하지만 현재 적용되는 gate처럼 서술하지 않습니다.
+
 ## 순효과 평가
 
 다음 비용을 실행 시간과 별도로 계산합니다.
