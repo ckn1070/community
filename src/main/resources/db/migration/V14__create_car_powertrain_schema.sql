@@ -28,7 +28,7 @@ CREATE TABLE car_powertrain (
 
     CONSTRAINT uk_car_powertrain_public_id UNIQUE (public_id),
     CONSTRAINT uk_car_powertrain_model_year_code UNIQUE (model_year_id, code),
-    -- variant의 복합 FK가 powertrain과 model year의 소속 일치를 DB에서 강제할 때 사용합니다.
+    -- id는 PK라서 이미 유일하지만, PostgreSQL은 복합 FK가 참조하는 열 조합에도 UNIQUE를 요구합니다.
     CONSTRAINT uk_car_powertrain_model_year_id UNIQUE (model_year_id, id),
 
     CONSTRAINT fk_car_powertrain_model_year FOREIGN KEY (model_year_id) REFERENCES car_model_year (id) ON DELETE RESTRICT,
