@@ -12,6 +12,7 @@ Flyway migration 파일이 source of truth이고, 이 문서 그룹은 여러 mi
 ## 현재 문서
 
 - [100-account-auth.md](100-account-auth.md): account/auth 관련 table, column, constraint, index, check value, seed data의 현재 최종 상태입니다.
+- [110-car-catalog.md](110-car-catalog.md): 자동차 제품 계층·동력 장치·판매 구성·가격·옵션·인증 11개 테이블의 현재 최종 상태입니다.
 
 ## 작성 기준
 
@@ -23,5 +24,6 @@ Flyway migration 파일이 source of truth이고, 이 문서 그룹은 여러 mi
 ## 관련 문서
 
 - **상위 프로젝트 router**: [프로젝트 문서 목차](../000-index.md)
-- **논리 데이터 모델**: [Account 인증/인가 데이터 모델](../220-account-auth-data-model.md)
+- **논리 데이터 모델**: [Account 인증/인가 데이터 모델](../220-account-auth-data-model.md),
+  [신차 카탈로그 DB 설계](../../work-items/features/2026/015-new-car-catalog-query-api-design.md)
 - **migration 기준**: [Flyway](../../tech-stack/240-flyway.md)

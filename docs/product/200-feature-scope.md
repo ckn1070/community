@@ -29,10 +29,33 @@
 
 상세 결과는 [2026 기능 작업 문서](../work-items/features/2026/000-index.md)를 확인합니다.
 
-## 아직 작업으로 확정되지 않은 영역
+## 설계 검토와 미확정 영역
 
-자동차 카탈로그와 커뮤니티 상세 기능, 신고·제재 정책, media 보관 정책, 중고차 확장 방식은 backlog 상태입니다.
-이 항목은 영구 도메인 규칙이나 project module 결정으로 미리 승격하지 않습니다.
+자동차 카탈로그는
+[015 신차 카탈로그 schema·조회 API](../work-items/features/2026/015-new-car-catalog-query-api.md)에서
+로그인 없는 읽기 전용 조회, 모델 기준 목록과 검색어·브랜드·차체·동력 방식·연료·가격대·
+판매 상태·기준일·정렬의 선택
+입력을 기능 범위로 유지하고 있습니다. 사용자는 주요 자동차 정보를 폭넓게 보존하고 과거
+차량도 조회 가능하게 하며, `/api/v1/car/...` 아래 공개 API와 관계형 DB를 사용하고, schema와
+조회 기능을 실제 초기 데이터 수집보다 먼저 개발해 달라고 요청했습니다. 상세 설계는 이
+요구를 브랜드·모델·세대·모델 연식, 동력계통과 복수 장치, 차체·인승·휠별 기술 변형, 실제
+판매 구성, 적용 시작일별 가격, 유상 옵션과 조건별 인증으로 구체화했습니다. 물리 설계는
+자동차 제품 구조를 표현하는 11개 테이블이며 색상은
+유상 여부와 configuration 관계를 option 행으로 보존하고 표시 전용 기본 품목·보증·안전도·
+media만 제한된 JSONB에 둡니다. 현재 015는 `In Progress`이며 catalog 공개 enum, 11개 테이블의
+Flyway V13, 공개 전 data 검증, PostgreSQL 제약·대표 fixture와 runtime 실제 statement 기반
+SELECT-only 권한 검증까지 구현됐습니다.
+조회 persistence·공개 API와 production 데이터는 아직 구현되지 않았습니다.
+
+실제 production catalog data는
+[016 자동차 카탈로그 초기 데이터 구축](../work-items/features/2026/016-car-catalog-initial-data.md)이
+소유합니다. 최초 브랜드·시장 범위 U1과 과거 기간 U2는 이 후속 작업의 제품 결정이며, U2-C는
+discovery 뒤 exact 기간을 다시 확정해야 합니다. 이 범위 트랙은 015의 schema·조회 API 개발을
+막지 않습니다. 016은 아직 개발 전이므로 설계 문서의 production data 목표를 현재 구현 사실로
+다루지 않습니다.
+
+커뮤니티 상세 기능, 신고·제재 정책, media 보관 정책과 중고차 확장 방식은 backlog 상태입니다.
+AutoSquare MVP 후보는 Carmunity 적용 여부가 미확정인 별도 제품 후보로 유지합니다.
 
 ## 관련 문서
 

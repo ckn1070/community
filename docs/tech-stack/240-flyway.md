@@ -52,6 +52,28 @@ V3__add_post_status.sql
 - description은 영문 소문자와 underscore를 사용합니다.
 - 한 migration은 하나의 명확한 목적을 가집니다.
 
+`feature schema 생성`처럼 module 전체 이름만 같은 것은 하나의 migration 목적이 아닙니다.
+신규 migration의 파일 경계를 정하기 전에는 현재 migration corpus 전체의 목적·경계·예외를
+읽고, 일부 파일만으로 저장소 관례를 확정하지 않습니다.
+
+Migration 경계는 table 수가 아니라 배포·복구 단위로 정합니다. 신규 schema에는 먼저
+`기능 전체 1개`, `table별`, `의존성과 lifecycle이 같은 응집 group`을 비교하고 다음 기준을
+적용합니다.
+
+- 같은 release에서 함께 도입되고, 중간 schema를 application이 소비하지 않으며, 실패 시
+  같은 transaction·재시도·복구 경계를 가지는 table과 constraint·index는 한 migration으로
+  묶을 수 있습니다.
+- application 호환성 구간, 배포 순서, backfill·lock 위험, transaction 가능 여부,
+  실패 재시도나 rollback 책임이 다르면 migration을 분리합니다.
+- table이 서로 다른 행 의미를 갖거나 미래에 독립적으로 변경될 수 있다는 사실만으로 초기
+  migration을 분리하지 않습니다. 적용된 schema의 후속 변경은 새 versioned migration으로
+  이력을 남깁니다.
+- 선택한 경계가 이름만으로 분명하지 않으면 design에 함께 배포·복구해야 하는 이유를
+  기록하고 migration test에서 적용 순서와 최종 schema를 검증합니다.
+
+따라서 module 전체를 근거 없이 한 파일에 모으는 방식과 table마다 기계적으로 나누는 방식
+모두 기본값으로 두지 않습니다.
+
 ## 작성 기준
 
 - DDL은 명시적으로 작성합니다.
@@ -76,7 +98,8 @@ Schema reference 문서는 source of truth가 아니라, 여러 migration을 적
 - reference와 migration이 충돌하면 migration을 기준으로 보고, reference를 수정합니다.
 - 아직 reference가 없는 schema 영역에서 반복 조회가 필요해지면 `project` 문서 그룹에 새 schema reference를 추가합니다.
 
-현재 account/auth schema reference는 [../project/schema/100-account-auth.md](../project/schema/100-account-auth.md)를 기준으로 합니다.
+현재 reference는 [account/auth](../project/schema/100-account-auth.md)와
+[자동차 카탈로그](../project/schema/110-car-catalog.md)로 나눕니다.
 
 ## 현재 알려진 Migration 호환성 결함
 
@@ -122,8 +145,10 @@ PreSync Job은 자동 retry를 하지 않지만 Git sync 재시도 때 다시 �
 ## Database role과 rollback
 
 `carmunity_migrator`는 schema DDL과 Flyway history를 소유하고,
-`carmunity_runtime`은 schema `USAGE`, application table의 DML과 sequence 사용 권한만
-가집니다. Runtime role은 table 생성·변경·삭제와 role 관리를 할 수 없고
+`carmunity_runtime`은 schema `USAGE`와 application 조회 권한을 가집니다. account/auth 등
+runtime writer table에는 DML과 identity sequence `USAGE`를 추가로 가지며, 자동차 catalog
+11개 table에는 `SELECT`만 가지고 해당 identity sequence 권한은 없습니다. Runtime role은
+table 생성·변경·삭제와 role 관리를 할 수 없고
 `flyway_schema_history`도 읽지 않습니다. 새 migration 성공 뒤 `afterMigrate` callback이 현재
 application table·sequence 권한을 다시 동기화하므로 이후 replica가 늘어도 runtime Pod는 같은
 최소 권한 identity만 공유합니다.
@@ -135,8 +160,9 @@ Runtime DML을 migrator의 default privilege로 미리 부여하지 않습니다
 history나 일부 object만 남은 순간에도 runtime 접근을 열지 않고, `migrate()`가 성공한 뒤의
 `afterMigrate` callback만 현재 application object를 공개합니다. Role bootstrap은 두 login
 role과 schema 권한만 최초 생성하며 기존 object ACL·Flyway history를 자동 인수하거나
-감사하지 않습니다. Callback은 현재 table의 DML과 identity sequence `USAGE`만 runtime에
-부여하고 `flyway_schema_history` 권한을 회수합니다. `afterMigrateApplied`가 아니라
+감사하지 않습니다. Callback은 먼저 현재 table의 DML과 identity sequence `USAGE`를 동기화한
+뒤 catalog 11개 table의 mutation 권한과 catalog identity sequence 권한을 exact object 이름으로
+회수하고, `flyway_schema_history` 권한도 회수합니다. `afterMigrateApplied`가 아니라
 `afterMigrate`를 사용하므로 callback 실패를 복구한 다음 full sync에서 migration 0건이어도
 권한 단계를 다시 실행합니다.
 
@@ -241,7 +267,8 @@ Flyway migration SQL을 만들거나 수정하면 완료 전 아래 검증을 �
 
 ## 관련 문서
 
-- **현재 물리 schema**: [Account 인증/인가 Schema Reference](../project/schema/100-account-auth.md)
+- **현재 물리 schema**: [Account 인증/인가](../project/schema/100-account-auth.md),
+  [자동차 카탈로그](../project/schema/110-car-catalog.md)
 - **persistence 구현**: [Spring Data JPA](230-spring-data-jpa.md)
 - **database 기준**: [PostgreSQL](250-postgresql.md)
 - **migration test**: [테스트 스택](300-testing-stack.md)
