@@ -12,9 +12,19 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 
 ## 1. 입력과 snapshot
 
-`AGENTS.md`, 관련 workflow·router, 최초 요청과 확정 변경, work item·design, 관련 source를 읽는다. 계획이 문서·SOT·router를 만들거나 바꾸면 `docs/100-documentation-guide.md`와 `docs/workflow/150-documentation-workflow.md`도 읽는다. 최초 목적과 사용자 선택을 복원할 authoritative input이 없으면 계획 문구로 추측하지 않고 판정 불가로 끝낸다. 후보 계획, 후보가 갱신한 SOT·router와 이전 verifier 결론은 사용자 선택 source가 아니다.
+`AGENTS.md`, 관련 workflow·router, 최초 요청과 확정 변경, work item·design, 관련 source와
+[작업 문서 생명주기](../../../docs/work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)를
+읽는다. 계획이 문서·SOT·router를 만들거나 바꾸면 `docs/100-documentation-guide.md`와
+`docs/workflow/150-documentation-workflow.md`도 읽는다. 최초 목적과 사용자 선택을 복원할
+authoritative input이 없으면 계획 문구로 추측하지 않고 판정 불가로 끝낸다. 후보 계획,
+후보가 갱신한 SOT·router와 이전 verifier 결론은 사용자 선택 source가 아니다.
 
 `git status --short --branch`, 계획 문서와 핵심 source 상태를 확인한다. 검증 중 계획이나 판단 근거가 바뀌면 기존 결론을 재사용하지 않는다.
+
+후보의 `상태`와 `계획 단계`를 먼저 고정하고 lifecycle에서 허용된 artifact·section과 현재
+closure만 감사 범위로 연다. 선행 단계가 닫히기 전에 생성된 dependent 다음 단계 문서·
+section·후보 상세는 내용 품질과 무관한 필수 결함이다. 다음 단계에서만 필요한 검토 축은
+현재 후보의 누락으로 판정하지 않고 `해당 없음`으로 닫는다.
 
 ## 2. 최초 목적 계약
 
@@ -24,6 +34,8 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 | --- | --- | --- | --- | --- | --- | --- |
 
 정방향으로 모든 목적이 결정·작업·검증·문서에 연결되는지, 역방향으로 모든 추가 작업과 도구가 목적에 정당화되는지 확인한다.
+결과 정의·해결 설계 단계에서는 아직 허용되지 않은 구현 작업·검증 열을 `해당 없음`으로 두며,
+후보가 그 값을 미리 채웠으면 추적성 근거가 아니라 stage-ahead 결함으로 분류한다.
 
 결과를 바꾸는 각 결정은 후보를 읽기 전에 원문과 독립 source에서 다음 중 하나로 분류한다.
 
@@ -55,11 +67,12 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 - 유지보수·소유권
 - 문서·SOT·router·용어
 
-구현 준비도는 계획의 `Planned` 표기나 열린 결정을 올바르게 표시했다는 사실만으로 통과시키지
-않는다. 작업 실행 workflow의 `설계 준비도와 구현 입장`을 기준으로 관련 설계 표면, 사용자
-소유 결정, Agent 기술 계약, 독립 검증과 실제 상태 인계를 각각 대조한다. `Proposed` 후보는
-계획 품질을 통과할 수 있어도 구현 준비도는 통과할 수 없으며, 구현 후보를 현재·결정 직후의
-실행 단위로 투영하면 설계 인계의 필수 결함이다.
+구현 준비도와 `Planned` 자격은 `실행 계획` 또는 `계획 완료` 후보에서만 감사한다. 그때도
+계획의 `Planned` 표기나 열린 결정을 올바르게 표시했다는 사실만으로 통과시키지 않는다.
+작업 실행 workflow의 `설계 준비도와 구현 입장`을 기준으로 관련 설계 표면, 사용자 소유
+결정, Agent 기술 계약, 독립 검증과 실제 상태 인계를 각각 대조한다. 결과 정의·해결 설계
+후보는 현재 단계 품질을 통과할 수 있지만 구현 준비도와 `Planned` 자격은 없으며, 구현
+후보를 현재·결정 직후의 실행 단위로 투영하면 stage-ahead 필수 결함이다.
 
 구현 순서의 필수 선행 edge마다 `producer의 exact 결과 → 그 결과가 없으면 처음 시작하거나
 완료할 수 없는 exact consumer 단계`를 계획과 독립 source에서 복원한다. 계획 번호,
@@ -104,8 +117,9 @@ Agent 소유 기술 결정은 source·대안·trade-off·재검토 조건과 독
 
 선택적 개선은 통과를 막지 않는다. coverage JSON과 이를 검사하는 custom verifier는 만들지 않는다. 검증의 독립성은 최초 목적에서 다시 시작하고 source·공식 근거를 직접 읽는 방식으로 확보한다.
 
-`통과`는 현재 artifact가 자신의 상태 계약을 충족한다는 뜻이다. 열린 사용자 결정이 정확히
-표시된 `Proposed` 계획도 통과할 수 있지만 `Planned` 자격은 없다. `Planned` 자격은 모든
+`통과`는 현재 artifact가 자신의 단계·상태 계약을 충족한다는 뜻이다. 열린 사용자 결정이
+정확히 표시된 결과 정의 후보도 현재 단계 감사를 통과할 수 있지만 그 단계 closure나
+`Planned` 자격은 없다. `Planned` 자격은 실행 계획 또는 계획 완료 후보에서 모든
 사용자 소유 값의 사용자 선택 또는 독립 source 제약, Agent 소유 기술 결정의 근거·대안·
 trade-off와 계획 품질 통과가 함께 있을 때만 별도로 반환한다. Verifier verdict 자체는 사용자
 선택이나 상태 승격 권한이 아니다.

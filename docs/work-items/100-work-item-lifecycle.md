@@ -20,7 +20,7 @@
 | 상태 | 의미 |
 | --- | --- |
 | Open | 아직 실행 작업으로 전환되지 않은 backlog 후보 |
-| Proposed | 목표·범위와 결정을 제안 중 |
+| Proposed | 결과 정의·해결 설계·실행 계획 중 현재 계획 단계의 결과를 작성·검토 중 |
 | Planned | 사용자 소유 값과 Agent 소유 기술 결정이 각 권위 계약으로 닫힌 구현 가능한 계획이 검증됨 |
 | In Progress | 확정된 범위를 실행 중 |
 | Blocked | 공통 blocker gate가 확정한 입력·권한·외부 상태를 기다리는 문서 상태 |
@@ -53,6 +53,128 @@ Agent 소유 기술 결정은 source·대안·trade-off와 독립 검증으로 �
   `Planned`로 투영합니다. 계획 작성·상세화·검증·commit·push 요청과 verifier verdict는
   사용자 선택을 대신하지 않으며, 기술 결정을 사용자 선택으로 바꾸지도 않습니다.
 
+## 계획 단계와 최소 artifact
+
+이 절은 Feature·Bug·Improvement·Spike의 계획 단계, 단계별 artifact 수와 각 artifact의
+책임, 단계 closure와 rollback을 유일하게 소유합니다. 작업 실행 workflow는 권한·상태와
+채팅 순서를, 설계 workflow는 설계 방법을, 계획 writer와 verifier는 이 계약의 작성·감사만
+소유합니다.
+
+계획은 다음 순서로만 진행합니다.
+
+```text
+Proposed/결과 정의
+→ Proposed/해결 설계
+→ Proposed/실행 계획
+→ Planned/계획 완료
+```
+
+선행 단계 closure가 다음 결과를 바꿀 수 있으면 선행 단계를 닫기 전에 dependent 다음
+단계의 문서·section·후보 상세를 만들지 않습니다. 현재 단계에서 필요한 artifact는
+최소화하되, 허용된 artifact에는 그 단계의 결과와 closure 근거를 빠짐없이 둡니다.
+
+### 적용과 전환
+
+- `계획 단계` field는 `Proposed`와 `Planned` Plan 구조에만 둡니다.
+- 이 계약 도입 뒤 새로 생성하거나 다시 여는 work item과 계획 내용을 실질적으로 바꾸는
+  모든 Feature·Bug·Improvement·Spike는 변경 전에 이 구조로 전환합니다.
+- 계약 도입 전에 존재한 다음 아홉 Proposed Bug는 이번 전환과 독립된 legacy snapshot으로
+  유지합니다. 각 문서의 다음 plan-content mutation 전에 현재 source에서 결과 정의부터
+  다시 판정하고 `계획 단계`와 현재-stage-only 구조로 이관합니다.
+  - `bugs/2026/001-notification-provider-exception-logging.md`
+  - `bugs/2026/002-auth-secret-separation-validation.md`
+  - `bugs/2026/003-shared-clock-bean-ownership.md`
+  - `bugs/2026/004-api-exception-5xx-logging.md`
+  - `bugs/2026/005-notification-audit-result-separation.md`
+  - `bugs/2026/006-bootstrap-next-action-message.md`
+  - `bugs/2026/007-spring-mvc-exception-classification.md`
+  - `bugs/2026/008-notification-template-clock.md`
+  - `bugs/2026/009-authentication-enumeration-timing.md`
+- `In Progress`, `Done`, `Closed`에서는 계획 단계 field를 제거하고 해당 상태 구조만
+  사용합니다. 계획 중 `Blocked` 전환은 아래 차단 계약을 사용합니다.
+
+### 결과 정의
+
+`Proposed/결과 정의`에는 work item 본문 하나만 존재합니다. `-design`과 구현·수정·실험
+계획 문서를 만들지 않습니다. 유형별로 다음 결과만 소유합니다.
+
+| 유형 | 결과 정의가 소유하는 내용 |
+| --- | --- |
+| Feature | 제품 결과, 범위·제외 범위, 사용자에게 보이는 요구사항·수용 기준, 사용자 결정 |
+| Bug | 기대·실제 동작, 재현·영향, 수정 결과를 바꿀 수 있는 원인 경계, 수정 수용 기준 |
+| Improvement | 현재 문제, 목표 결과, 범위·제외 범위, 품질 수용 기준 |
+| Spike | 답할 질문, 조사 범위·제한 시간, 성공·중단 기준, 남길 지식 |
+
+API, schema, module, transaction, 해결 대안과 기술 목표 계약, 구현·수정·실험 방법, task와
+test 상세는 이 단계에 두지 않습니다. 결과 정의 권위 안의 제품 동작·범위·수용 값이 정확히
+확정되거나 명시적으로 유예되고 요구사항과 수용 기준이 정렬되며 활성 사용자 결정이 0개일
+때만 닫힙니다. 기술 해결 값은 이 closure 입력이 아니라 해결 설계에서 닫습니다. 다만 원인
+경계가 수정 결과나 범위를 바꾸는 Bug는 그 원인 경계가 확인되기 전까지 결과 정의를 닫지
+않습니다.
+
+활성 사용자 결정은 기본 `0..n`입니다. 사용자가 결정을 한 번에 하나씩 진행하라고 명시한
+작업은 본문의 활성 결정 카드를 `0..1`로 제한합니다. 전체 설계 표면 inventory와 채팅에서
+다음 카드를 여는 순서는 저장소에 보존하지 않으며 작업 실행 workflow가 소유합니다.
+
+### 해결 설계
+
+`Proposed/해결 설계`는 결과 정의 closure 뒤에만 엽니다. 본문은 닫힌 결과 정의와 현재
+결정 색인·정확한 source 관계를 유지합니다. 다음 조건을 모두 만족할 때만 같은 번호의
+`-design`을 추가합니다.
+
+1. 설계 workflow가 적용되는 중대한 설계 표면입니다.
+2. 장기 복원할 결정 이유나 목표 계약이 있습니다.
+3. 문서 정보 구조 가이드의 새 문서 분리 기준을 만족합니다.
+
+`-design`은 결정 질문, 대안, 선택, 이유, trade-off, 재검토 조건과 목표 계약만 소유합니다.
+task, 실행 순서와 test 실행은 소유하지 않습니다. 국소적이고 쉽게 되돌릴 수 있는 기술
+선택은 실행 계획에서 정확한 source 관계와 선택으로 기록하고, 일회성 Spike 실험 방법도
+실행 계획에 둡니다.
+
+`-design`을 만들지 않으려면 새 장기 기술 계약이 없고 모든 구현 영향 값이 기존 SOT나
+현재 source로 유일하게 닫혀야 합니다. 이 경우 본문은 그 정확한 source 관계만 연결합니다.
+모든 적용 설계 표면이 결정 또는 근거 있는 해당 없음이고, 활성 사용자 결정이 0개이며,
+새 장기 계약마다 canonical owner가 하나일 때 해결 설계가 닫힙니다.
+
+### 실행 계획과 계획 완료
+
+`Proposed/실행 계획`은 해결 설계 closure 뒤에만 엽니다. 새 문서를 만들지 않고 work item
+본문에 구현·수정·실험 결과 단위, 실제 의존 관계, 검증, 전환·복구·처분과 영구 SOT 책임을
+추가합니다. `-design`은 task·순서·test 실행을 소유하지 않습니다.
+
+모든 요구가 `-design`의 목표 계약 또는 정확한 기존 SOT, 실행 단위, 검증과 문서 책임으로
+이어지고 독립 계획 검증을 통과할 때 실행 계획이 닫힙니다. 그 뒤에만 상태를 `Planned`,
+계획 단계를 `계획 완료`로 투영합니다. `Planned` 본문은 완성된 Plan 구조를, `-design`은
+장기 결정과 목표 계약만 유지합니다.
+
+### planning-Blocked
+
+계획 중 실제 blocker로 `Blocked`가 되면 Plan 구조를 현재 Status 구조로 바꾸고 일반
+`계획 단계` field를 제거합니다. 대신 다음 재개 계약을 한 곳에 보존합니다.
+
+- `차단 전 계획 단계`: 결과 정의, 해결 설계, 실행 계획 또는 계획 완료
+- `재개할 계획 단계와 closure 조건`: blocker 해제 뒤 돌아갈 정확한 단계와 다시 확인할 조건
+- `재개 입력`: 차단 직전까지 유효한 현재-stage 결과·확정값의 압축, 정확한 blocker 또는
+  필요한 입력·결정 카드, source와 허용된 design 관계
+
+다음 단계 상세를 재개 입력에 추가하지 않습니다. 차단 해제 때 작업 실행 workflow가 blocker와
+상위 결과의 유효성을 다시 확인한 뒤 정확한 재개 단계의 Plan 구조로 복원합니다. 상위 결과가
+무효화됐으면 기록한 단계보다 앞선 원인 단계로 rollback합니다.
+
+### rollback
+
+- 결과 정의가 바뀌면 항상 `Proposed/결과 정의`로 돌아가 실행 계획을 제거하고 같은 번호의
+  `-design` 전체를 filesystem과 router의 active topology에서 삭제합니다. 이전 결정은 Git에서만
+  복원합니다. 새 결과 정의가 닫힌 뒤 이전 결정을 새 결과와 source에 다시 대조하고, 현재도
+  유효하며 `-design` 생성 조건을 다시 만족하는 결정만 새 후보 문서로 작성할 수 있습니다.
+- 해결 설계가 바뀌면 `Proposed/해결 설계`로 돌아가 본문의 실행 계획을 제거하고 영향을 받은
+  design 결정을 제거하거나 다시 엽니다.
+- 실행 계획만 검증에 실패하면 `Proposed/실행 계획`으로 돌아가 유효한 결과 정의와 해결
+  설계를 유지하고 계획만 보완합니다.
+- `Planned`도 무효화 원인이 생긴 단계로 같은 방식으로 내려갑니다. stale downstream 상세는
+  active 문서에 남기지 않고 Git으로만 복원합니다.
+- `In Progress`와 `Done`의 상위 결과 무효화·재개 판정은 작업 실행 workflow가 소유합니다.
+
 ## 본문의 단일 책임
 
 작업 본문은 현재 상태의 진입점이며 상태에 맞는 하나의 구조만 사용합니다.
@@ -70,12 +192,15 @@ Agent 소유 기술 결정은 source·대안·trade-off와 독립 검증으로 �
 
 ### Proposed·Planned: Plan 구조
 
-1. 상태
-2. 달성할 결과, 범위와 제외 범위
-3. 요구사항과 관찰 가능한 수용 기준
-4. 확정 결정과 남은 결정
-5. 의존 관계가 드러나는 의미 단위 계획
-6. 검증·전환·복구와 영구 SOT 대상
+1. 상태와 계획 단계
+2. 현재 단계까지 닫힌 결과와 source 관계
+3. 현재 단계에서 허용된 내용
+4. 현재 단계의 남은 결정·공백과 closure 조건
+5. 관련 문서와 canonical owner
+
+`실행 계획`과 `계획 완료`에서만 의미 단위 계획, 검증·전환·복구와 영구 SOT 책임을
+추가합니다. 구체 section은 이 문서의 `계획 단계와 최소 artifact`를 따르며 template의 빈
+heading이나 과거 work item 구조를 다음 단계 상세의 생성 근거로 사용하지 않습니다.
 
 ### In Progress·Blocked: 현재 Status 구조
 
@@ -136,7 +261,7 @@ Work item 번호는 현재 `category/creation-year` 디렉터리 안의 읽기 �
 
 ## Design
 
-`-design`은 장기적으로 복원해야 할 결정과 목표 계약을 소유합니다.
+`-design`은 해결 설계 단계에서 생성 조건을 통과한 장기 결정과 목표 계약만 소유합니다.
 
 - 결정 질문과 배경
 - 검토한 선택지
@@ -144,7 +269,8 @@ Work item 번호는 현재 `category/creation-year` 디렉터리 안의 읽기 �
 - 영향, 배제 대안과 재검토 조건
 - API·데이터·transaction·보안·운영 등 확정 목표 계약
 
-작업이 `Planned`일 때 필요한 구현·검증 계획을 임시로 포함할 수 있습니다. `Done` 전환 시 현재 SOT와 Git으로 대체된 계획·파일 목록·실행 결과는 제거하고 고유 결정만 남깁니다.
+구현·검증 task, 실행 순서와 test 실행 기록은 포함하지 않습니다. `Done` 전환 시 현재 SOT와
+Git으로 대체된 파일 목록·실행 결과는 제거하고 고유 결정만 남깁니다.
 
 ## History
 
@@ -160,7 +286,10 @@ History는 기본 산출물이 아닙니다. Git으로 복원할 수 없고 이�
 
 ## 결정과 계획
 
-긴 결정은 design에 두고 본문에는 결론과 링크만 둡니다. 남은 결정은 현재 작업을 실제로 막는 항목만 포함하며 추천, 영향과 결정 뒤 열리는 작업을 연결합니다.
+별도 보존 조건을 충족한 장기 결정은 design에 두고 본문에는 결론과 관계 link만 둡니다.
+그 밖의 현재 단계 결정은 본문이 소유합니다. 남은 결정은 현재 단계 closure에 필요한 항목만
+포함하며 추천, 영향과 응답 형식을 연결합니다. 다음 단계의 작업 후보는 현재 결정 카드에
+붙이지 않습니다.
 
 계획의 각 작업은 다음을 답합니다.
 
@@ -178,7 +307,8 @@ History는 기본 산출물이 아닙니다. Git으로 복원할 수 없고 이�
 canonical owner가 상태 변경을 결정한 뒤에만 다음 문서 작업을 수행합니다.
 
 1. 결정된 상태, 결과와 근거 owner를 확인합니다.
-2. 상단 `상태`와 해당 상태의 본문 구조를 함께 바꿉니다.
+2. Plan 구조이면 상단 `상태`·`계획 단계`와 허용 artifact를, 그 밖의 상태이면 상단 `상태`와
+   해당 상태의 본문 구조를 함께 바꿉니다.
 3. 본문·design·history와 영구 SOT의 현재성·중복·관계를 동기화합니다.
 4. category·연도 router의 상태와 요약을 실제 본문에 맞춥니다.
 5. 이전 상태의 계획·진행 기록을 제거하고 관련 문서 전체와 링크를 다시 확인합니다.

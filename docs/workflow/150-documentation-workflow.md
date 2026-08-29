@@ -142,6 +142,9 @@ field, enum과 표준 식별자처럼 구현·검증에서 exact 값이 필요�
 11. 사용자 검토용 Plan·Decision·Design은 heading만 읽어도 질문의 일상어 뜻을 알 수 있는지,
     첫 화면만 읽어도 선택할 값·차이·영향을 설명할 수 있는지 대조합니다. 미정의 용어가
     이 의미를 대신 운반하면 구조 gate를 통과하지 않습니다.
+12. Work item은 [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)에서
+    현재 단계, 허용 artifact와 선행 closure를 확인합니다. 선행 결과에 따라 달라지는 다음
+    단계 문서·section·후보 상세가 있으면 exact write target에서 제외합니다.
 
 시스템 설명과 운영 절차가 함께 있는 corpus를 신설·개편할 때는 exact write target을
 고정하기 전에 다음 세션 매트릭스를 실제 문서 section 단위까지 작성합니다.
@@ -386,6 +389,9 @@ Markdown topology는 다음 깊이로 직접 확인합니다.
   의도하지 않은 빈 디렉터리를 확인합니다.
 - 전체·특정 집합 적용 주장은 변경하지 않은 artifact까지 대조했거나 적용 제외와 남은
   이관 범위를 분명히 합니다.
+- Proposed·Planned work item은 현재 `계획 단계`, 허용 artifact 수와 section, 선행 closure를
+  lifecycle에 다시 대조합니다. 다음 단계 상세나 목적이 겹치는 owner가 하나라도 남으면
+  문장 완성도와 무관하게 실패합니다.
 - 새 numbered document link 또는 현재 작업에서 target·anchor·표시 이름 중 하나를
   실질적으로 수정한 numbered document link는 대상 파일의 세 자리 번호와 책임을 함께
   표시합니다. 번호가 없는 artifact에는 임의 번호를 만들지 않고, 건드리지 않은 기존

@@ -20,15 +20,16 @@
 
 ## 읽는 방법
 
-1. Open backlog는 상단 `목적` 또는 `배경`, Proposed·Planned는 상단 `달성할 결과`, In Progress·Blocked·Done은 상단 `결과`, Closed backlog는 상단 처분 `결과`에서 현재 상태와 새 owner를 확인합니다.
-2. 범위와 확정 결정 색인을 확인합니다.
-3. 상세 근거가 필요할 때만 같은 번호의 `-design`을 읽습니다.
+1. Open backlog는 상단 `목적` 또는 `배경`, Proposed·Planned는 `상태`와 `계획 단계`, In Progress·Blocked·Done은 상단 `결과`, Closed backlog는 상단 처분 `결과`에서 현재 위치와 새 owner를 확인합니다.
+2. Proposed·Planned는 현재 계획 단계에 허용된 본문만 읽고, 다음 단계 section을 현재 결과로 추정하지 않습니다.
+3. 해결 설계 이후 본문이 연결한 경우에만 같은 번호의 `-design`을 읽습니다.
 4. 과거 실패 증거가 필요할 때만 선택형 `-history`를 읽습니다.
 5. 실제 운영 명령은 연결된 operations runbook을 사용합니다.
 
 ## 작성 기준
 
 - 상태, 결과, 범위, 결정, 검증을 대화 없이 복원할 수 있어야 합니다.
+- Proposed·Planned는 [작업 문서 생명주기](100-work-item-lifecycle.md#계획-단계와-최소-artifact)의 현재 단계 artifact만 만들고 선행 closure 전에 다음 단계 상세를 쓰지 않습니다.
 - `In Progress`·`Blocked`·`Done`과 `Closed`는 상단 `결과` 한 곳만 현재 상태를 소유합니다.
 - 기술적 결정은 근거를 보존하고 실행 날짜·dirty 상태·반복 commit 기록은 Git으로 돌립니다.
 - 현재 기준으로 남길 내용은 완료 시 적절한 영구 SOT에 승격합니다.

@@ -117,8 +117,9 @@ Workflow는 위 상세 규칙을 다시 설명하지 않습니다.
 설계 결과는 목적에 맞게 분리합니다.
 
 - 현재 사실과 반복 규칙: 책임 SOT
-- 결정 이유와 목표 계약: work item `-design`
-- 구현 순서와 검증: Plan 구조의 work item
+- 결정 이유와 목표 계약: [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#해결-설계)의
+  조건을 통과한 work item `-design`
+- 구현 순서와 검증: 해결 설계 closure 뒤 Plan 구조의 work item
 - 실제 실행 명령: workflow 또는 operations runbook
 - 현재 사용자에게 필요한 결정·상태: 목적별 채팅 보고
 
@@ -133,6 +134,10 @@ Workflow는 위 상세 규칙을 다시 설명하지 않습니다.
 - 실패·보안·데이터·운영·전환과 검증 책임이 명확합니다.
 - 문서 유형과 canonical owner가 확정됐습니다.
 
+이 목록은 work item의 계획 단계를 열거나 rollback하는 계약이 아닙니다. 현재 단계와 artifact
+수는 작업 문서 생명주기에서 판정하며, 결과 정의가 닫히기 전에는 이 workflow의 설계 표면
+inventory를 `-design`이나 구현 계획으로 보존하지 않습니다.
+
 미충족 설계 표면은 정확한 결정·근거·환경 공백과 영향을 설계 결과에 남깁니다. 그 결과가 후속 구현을 실제로 막는지와 재개 조건은 작업 실행 workflow가 판정합니다.
 
 ## 관련 문서
@@ -142,3 +147,4 @@ Workflow는 위 상세 규칙을 다시 설명하지 않습니다.
 - **도구 결정**: [도구 도입 워크플로우](130-tool-adoption-workflow.md)
 - **개발 실행**: [개발 작업 워크플로우](200-development-workflow.md)
 - **문서 구조**: [문서화 워크플로우](150-documentation-workflow.md)
+- **계획 단계와 artifact**: [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)

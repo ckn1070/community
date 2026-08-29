@@ -1,5 +1,5 @@
 # dev-plan 스킬의 UI 표시와 기본 호출 문구를 정의합니다.
 interface:
   display_name: "개발 계획"
-  short_description: "설계 표면과 선택 카드를 근거 있는 계획 문서로 정리"
-  default_prompt: "Use $dev-plan to create an evidence-backed plan, ask immediately for unresolved product or operational judgments, and close Agent-owned technical decisions from repository sources and independent verification without attributing them to the user."
+  short_description: "현재 계획 단계의 결정과 artifact만 근거 있게 작성"
+  default_prompt: "Use $dev-plan to write only the current plan stage and its allowed artifacts, resolve user-owned decisions in the requested cadence, and do not create dependent design or execution details before the prior stage closes."
