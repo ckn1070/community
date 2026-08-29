@@ -224,10 +224,12 @@ requirement와 어긋난 의도하지 않은 결함이고 patch가 그 결함을
 사실만으로 `fix`를 선택하지 않습니다. 반대로 기존 값이 원래 계약과 어긋났다는 source가
 있으면 같은 파일·값 변경도 `fix`가 될 수 있습니다.
 
-첫 Git mutation 전에 예정 subject와 함께 `변경 전 의도 → 변경 뒤 결과 → 선택 type`을
-대조합니다. 하나의 관계로 type이 결정되지 않으면 `fix`를 기본값으로 사용하지 않고 결과
-분류로 돌아갑니다. Commit 뒤 full patch를 읽을 때도 subject뿐 아니라 type이 이 관계와
-일치하는지 다시 확인합니다.
+첫 Git mutation 전에 각 예정 subject와 `변경 전 의도 → 변경 뒤 결과 → 선택 type`을
+사용자 commentary에 함께 투영합니다. 이 관계는 원래 요구와 변경 전 authoritative source에
+연결해야 하며, 파일 종류·patch의 보안 효과·추가·삭제 같은 겉모양으로 채우지 않습니다.
+하나의 관계로 type이 결정되지 않으면 `fix`를 기본값으로 사용하지 않고 결과 분류로
+돌아갑니다. Commit 뒤 full patch를 읽을 때도 subject뿐 아니라 type이 이 관계와 일치하는지
+다시 확인합니다.
 
 ## 4. Exact stage와 local commit
 

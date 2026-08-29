@@ -59,9 +59,11 @@ prefix를 먼저 찾으며, 각 prefix의 source·compile·직접 test 결과 �
 
 이 증거를 만든 뒤 예정 commit 순서를 사용자 commentary에 투영한다. 각 항목은 예정
 subject, 원래 요구에서 동결한 하나의 결과, exact path·hunk와 필수 dependency, 적용된
-specialist 검증과 같은 `R/G/C/P` identity를 포함한다. 결과 경계는 이름으로 선언하지 않고 다음 consumer, 실패 뒤
-재시작 지점, retry·복구 방법과 독립 revert 가능성을 대조한다. 하나라도 다르면 불가분
-dependency가 증명되지 않는 한 별도 결과로 투영한다.
+specialist 검증과 같은 `R/G/C/P` identity를 포함한다. 또한 커밋 workflow가 요구하는
+`변경 전 의도 → 변경 뒤 결과 → 선택 type`을 원래 요구·변경 전 source에 연결해 같은 항목에
+표시한다. 결과 경계는 이름으로 선언하지 않고 다음 consumer, 실패 뒤 재시작 지점,
+retry·복구 방법과 독립 revert 가능성을 대조한다. 하나라도 다르면 불가분 dependency가
+증명되지 않는 한 별도 결과로 투영한다.
 
 이 투영이 없거나 상위 목적 이름으로 서로 다른 경계를 합치거나, 한 subject가 독립적인
 병렬 결과를 나열하거나, 그 commit만 revert했을 때 다른 결과의 코드·test·문서가 함께
@@ -78,7 +80,8 @@ projection이다. 투영 자체를 source-backed 결과 단위 gate의 실행 �
 2. 확정된 결과 단위·dependency 순서에서 commit patch와 subject를 만든다.
 3. exact path만 stage하고 cached full patch·whitespace·제외 dirty를 확인한다.
 4. Conventional Commit을 만든다.
-5. commit object, parent, tree, full patch와 status를 표준 Git source에서 확인한다.
+5. commit object, parent, tree, full patch와 status를 표준 Git source에서 확인하고, 실제
+   type이 mutation 전에 투영한 변경 전 의도·변경 뒤 결과와 일치하는지 다시 판정한다.
 6. 모든 대상 commit 뒤 fixed base부터 cumulative diff와 `E/K/X/D` closure를 확인한다.
 
 workflow의 명령과 금지를 그대로 실행하며 broad add, `commit -a`, `--no-verify`, stash,
