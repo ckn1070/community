@@ -8,10 +8,11 @@ In Progress
 
 catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·133개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
-검증에 이어 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
+검증에 이어 jOOQ 기반 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
 경계, 세 공개 GET Web adapter까지 구현했습니다. 검색 정규화·literal escape, 같은
 configuration filter, 기준일 가격, 대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제
-PostgreSQL로 검증했습니다. 첫 진입 무필터 모델 page, 선택 filter, 목록에서 상세로 이어지는
+PostgreSQL로 검증했습니다. Flyway V13~V17에서 build-time schema model을 생성하며, 첫 진입
+무필터 모델 page, 선택 filter, 목록에서 상세로 이어지는
 대표 연식, RFC 9457 오류, GET 전용 anonymous allow-list와 OpenAPI 3.1 nullability 계약도
 자동 검증합니다. 실제 production 데이터는 아직 없습니다.
 
@@ -109,8 +110,8 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 공식 자료와 DB 값의 대응은 017 초기 데이터 작업의
 version-controlled mapping에서 관리하며 runtime schema에 source 테이블이나 FK를 두지
 않습니다. fact마다 identity/version/source 테이블을 추가하는 157개 구조는 구현 대상이 아닙니다.
-이 선택의 대안·trade-off는 [016 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)에
-보존합니다.
+DB 구조와 조회 기술 선택의 대안·trade-off는
+[016 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md)에 보존합니다.
 
 ### 공개 API 계약
 

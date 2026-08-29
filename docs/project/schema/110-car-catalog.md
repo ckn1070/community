@@ -194,6 +194,11 @@ identity sequence 사용은 거부합니다.
 
 ## 조회 경로
 
+카탈로그 조회 adapter는 jOOQ를 사용합니다. Flyway V13~V17에서 build-time schema model을
+생성하고, PostgreSQL 전용 복합 SQL은 검증된 SQL 형태를 유지한 채 jOOQ가 parameter binding,
+실행과 record 변환을 담당합니다. 적용 범위와 raw SQL·DSL 경계는
+[jOOQ 사용 가이드](../../tech-stack/235-jooq.md)가 소유합니다.
+
 ### 브랜드 목록
 
 기준일에 공개된 판매 중 configuration이 하나 이상 있는 브랜드만 반환합니다. 모델 연식과
@@ -254,3 +259,4 @@ transaction 안에서 같은 기준일의 가격·옵션과 연식을 읽습니�
 - **작업 상태와 공개 조회 API**: [016 신차 카탈로그 schema·조회 API](../../work-items/features/2026/016-new-car-catalog-query-api.md)
 - **결정 근거**: [016 DB 설계 결정 기록](../../work-items/features/2026/016-new-car-catalog-query-api-design.md)
 - **migration 운영 기준**: [240 Flyway](../../tech-stack/240-flyway.md)
+- **조회 구현 기준**: [235 jOOQ](../../tech-stack/235-jooq.md)

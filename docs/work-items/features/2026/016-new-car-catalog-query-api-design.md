@@ -33,6 +33,76 @@ index·조회 경로와 현재 설계 이유는
 - 과거 차량 조회에 필요하지 않은 모든 정정 시점의 이중 시간축, fact마다 별도 identity/version,
   field마다 source 테이블을 만들지 않습니다.
 
+## 조회 기술 선택 결정
+
+### 배경과 평가 기준
+
+최초 구현은 별도 비교 기록 없이 `NamedParameterJdbcTemplate`을 브랜드 목록부터 사용했고,
+모델 목록과 상세가 같은 실행 방식을 이어받았습니다. Raw SQL이 필요하다는 사실은 SQL 실행
+기술을 결정하지 않으므로 다음 기준으로 후보를 다시 비교했습니다.
+
+1. CTE, lateral join, window function, array aggregate와 JSONB를 사용하는 PostgreSQL SQL을
+   손실 없이 표현합니다.
+2. 목록 두 SQL과 상세 다섯 SQL의 실행 상한 및 실제 실행 계획을 관찰할 수 있습니다.
+3. 11개 table·column 변경을 application compile 이전에 가능한 범위까지 감지합니다.
+4. 평면 목록과 중첩 상세 read model의 변환 위치가 명확하고 persistence type이 application
+   port를 넘지 않습니다.
+5. Spring transaction에 참여하며 reactive stack이나 별도 runtime을 강제하지 않습니다.
+6. 새 dependency, 설정, 생성물과 학습 비용보다 장기 변경 비용 감소가 커야 합니다.
+
+### 후보 전체 비교
+
+| 계열·후보 | 이 조회에서의 장점 | 비용·한계 | 판정 |
+| --- | --- | --- | --- |
+| plain JDBC | dependency가 없고 실행 경로가 직접적임 | connection·binding·예외·행 변환을 모두 직접 소유함 | Spring 사용 project에서 선택 이점 없음 |
+| Spring JDBC `JdbcTemplate`·`NamedParameterJdbcTemplate`·`JdbcClient` | 기존 dependency, SQL과 query 수가 명시적임 | schema type 검사가 없고 상세 graph의 행 변환·조립을 Java가 전부 소유함 | 새 도구 금지 시 fallback |
+| Spring Data JPA native projection | 기존 persistence 관례와 transaction을 유지하고 평면 projection이 간단함 | 복합 SQL은 결국 문자열이며 nested graph와 여러 결과 병합은 별도 mapping이 필요함 | 브랜드 같은 평면 조회에는 가능하지만 전체 read side의 공통 해법은 아님 |
+| `EntityManager`·Hibernate native query | JPA 실행 경로에서 tuple·result mapping을 세밀하게 제어함 | provider API와 mapping 선언이 늘고 schema type 안정성은 얻지 못함 | 제외 |
+| MyBatis | SQL과 `resultMap`, `association`, `collection`, type handler로 수동 builder 일부를 선언화함 | XML·mapper라는 두 번째 source와 type handler를 운영하고 다섯 조회의 최종 결합은 남음 | raw SQL·mapping 최소화가 최우선이면 2순위 |
+| jOOQ + code generation | PostgreSQL 표현력, 통일된 query·record API, 생성 schema model, 실행 listener와 Spring transaction 통합을 함께 제공함 | dependency와 build-time generation이 추가되고 raw SQL 문자열은 자동 type 검사되지 않음 | **선택** |
+| QueryDSL SQL | 생성 schema type과 Java DSL을 제공함 | Spring Boot 자동 구성과 PostgreSQL record mapping·관측 통합을 별도로 구성해야 함 | jOOQ보다 추가 접착 코드가 많아 제외 |
+| Jdbi | SQL Object·row mapper·reducer가 Spring JDBC보다 간결할 수 있음 | schema code generation이 없고 project의 별도 persistence convention이 됨 | 제외 |
+| Spring Data JDBC | 단순 aggregate 저장 모델과 repository가 간결함 | 이 조회는 aggregate CRUD가 아니라 여러 관계를 접는 read projection이어서 별도 SQL·조립이 남음 | 목적 불일치 |
+| R2DBC | non-blocking DB I/O를 제공함 | 현재 전체 stack이 MVC·JDBC transaction이며 reactive 전환 비용이 조회 한 곳의 이점보다 큼 | 목적 불일치 |
+| DB view·materialized view·function | 반복 SQL을 DB에 집중하거나 precompute할 수 있음 | 배포·권한·refresh lifecycle이 추가되고 현재 병목 증거가 없음 | 측정된 병목이 생길 때 재검토 |
+
+### 선택과 장점
+
+카탈로그 read side만 jOOQ 3.19.37을 사용하고 account·authentication의 변경 persistence는
+Spring Data JPA를 유지합니다. Flyway V13~V17을 `DDLDatabase` 입력으로 사용해 compile 전에
+schema model을 생성하며 generated source는 `build/` 아래에 두고 commit하지 않습니다.
+
+이 선택으로 얻는 구체적 장점은 다음과 같습니다.
+
+- Flyway catalog DDL이 code generation에서 해석되지 않거나 생성 type이 compile되지 않는
+  상태를 build에서 차단합니다.
+- SQL 실행과 결과를 jOOQ `DSLContext`·`Record` 한 API로 통일해 JDBC `ResultSet`과 checked
+  exception을 query adapter 밖으로 제거합니다.
+- jOOQ 실행 경계에서 query 수와 SQL을 관찰해 기존 목록 2개·상세 5개 상한과 `EXPLAIN` 검사를
+  유지합니다.
+- JPA entity graph나 lazy loading을 만들지 않아 read model이 변경 aggregate에 결합되지
+  않습니다.
+- 향후 단순 query는 생성 table·field 기반 DSL로, 중첩 graph는 `MULTISET`으로 이동할 수 있는
+  경로가 생깁니다.
+
+현재 PostgreSQL 전용 복합 SQL은 이미 실제 실행 계획과 결과가 검증되어 있으므로 도입과
+동시에 전부 DSL로 번역하지 않습니다. Spring의 named-parameter parser를 catalog 내부 실행
+경계에서 재사용하고 jOOQ가 positional binding, 실행과 record mapping을 담당해 SQL 형태를
+유지합니다. 따라서 현재 code generation은 catalog schema 입력의
+유효성을 검증하지만 raw SQL 문자열의 모든 column rename을 compile-time에 잡는다고 과장하지
+않습니다. 이 한계와 DSL 전환 조건은 [jOOQ 사용 가이드](../../../tech-stack/235-jooq.md)가
+소유합니다.
+
+### 비용과 재검토 조건
+
+- `compileJava` 전에 code generation이 실행되므로 build 시간이 늘어납니다. catalog migration
+  수가 커져 증분 build 비용이 문제가 되면 generation cache와 task input을 측정해 조정합니다.
+- 전체 migration V1~V17이 아니라 catalog owner인 V13~V17만 생성 입력입니다. 다른 schema를
+  query하기 시작하면 해당 owner migration을 명시적으로 추가합니다.
+- raw SQL column drift가 실제 결함으로 반복되면 해당 query를 생성 field 기반 DSL로 옮깁니다.
+- 중첩 graph의 수동 조립 비용이 병목으로 측정되면 jOOQ `MULTISET`, MyBatis `resultMap`, 현재
+  고정 묶음 query를 실행 계획·전송량·변경 비용으로 다시 비교합니다.
+
 ## 결정 당시 대표 자료 검토
 
 대표 자료는 특정 차량의 값을 seed로 확정하기 위해서가 아니라, schema가 실제 정보 형태를

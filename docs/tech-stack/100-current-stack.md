@@ -23,6 +23,7 @@
 | Spring Security | stateless API 보안 |
 | OAuth2 Resource Server | Bearer JWT 검증 |
 | Spring Data JPA | persistence adapter |
+| jOOQ 3.19.37 | catalog 복합 조회 실행, record mapping과 Flyway 기반 schema code generation |
 | Flyway | PostgreSQL schema migration |
 | Spring Modulith 2.1.0 | module boundary model과 test 검증 |
 | springdoc-openapi 3.0.2 | 로컬 API 문서 |
@@ -35,7 +36,7 @@
 
 - PostgreSQL JDBC driver
 - PostgreSQL용 Flyway database module
-- Flyway V1~V12 account/auth schema
+- Flyway V1~V17 account/auth·catalog schema
 
 ## Test
 
@@ -59,5 +60,6 @@
 - **application framework**: [Spring Boot](210-spring-boot.md)
 - **인증·인가 구현**: [Spring Security](220-spring-security.md)
 - **영속성 구현**: [Spring Data JPA](230-spring-data-jpa.md)
+- **catalog 조회 구현**: [jOOQ](235-jooq.md)
 - **test 기준**: [테스트 스택](300-testing-stack.md)
 - **quality gate**: [코드 품질 도구](310-code-quality-tools.md)
