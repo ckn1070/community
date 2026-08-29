@@ -11,7 +11,6 @@ import com.ronams.carmunity.catalog.internal.application.model.CatalogModelSumma
 import com.ronams.carmunity.catalog.internal.application.model.CatalogPriceBasis;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
-import java.sql.Array;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -22,46 +21,49 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 /** 공개 catalog 조회를 projection SQL로 수행해 내부 DB id와 JPA entity를 경계 밖으로 내보내지 않습니다. */
 @Component
 class CatalogQueryPersistenceAdapter implements CatalogReadPort {
 
-  private final NamedParameterJdbcTemplate jdbcTemplate;
+  private final CatalogJooqQuery jooqQuery;
   private final CatalogDetailQuery detailQuery;
 
-  CatalogQueryPersistenceAdapter(
-      NamedParameterJdbcTemplate jdbcTemplate, CatalogDetailQuery detailQuery) {
-    this.jdbcTemplate = jdbcTemplate;
+  CatalogQueryPersistenceAdapter(CatalogJooqQuery jooqQuery, CatalogDetailQuery detailQuery) {
+    this.jooqQuery = jooqQuery;
     this.detailQuery = detailQuery;
   }
 
   /** model year와 configuration이 모두 기준일 판매 중인 공개 graph만 브랜드 수에 포함합니다. */
   @Override
   public List<CatalogBrandSummary> listBrands(LocalDate asOf) {
-    return jdbcTemplate.query(
-        BRAND_LIST_SQL,
-        Map.of("asOf", asOf),
-        (resultSet, rowNumber) ->
-            new CatalogBrandSummary(
-                resultSet.getObject("brand_id", java.util.UUID.class),
-                resultSet.getString("name"),
-                resultSet.getString("name_en"),
-                resultSet.getString("country_code"),
-                resultSet.getLong("on_sale_model_count")));
+    return jooqQuery.fetch(BRAND_LIST_SQL, Map.of("asOf", asOf)).stream()
+        .map(
+            record ->
+                mapRecord(
+                    () ->
+                        new CatalogBrandSummary(
+                            record.getObject("brand_id", UUID.class),
+                            record.getString("name"),
+                            record.getString("name_en"),
+                            record.getString("country_code"),
+                            record.getLong("on_sale_model_count"))))
+        .toList();
   }
 
   /** 목록 content와 전체 model 수를 각각 한 query로 읽어 결과 행 수에 비례하는 SQL을 만들지 않습니다. */
   @Override
   public CatalogModelPage searchModels(SearchCatalogModelsQuery query) {
-    MapSqlParameterSource parameters = modelSearchParameters(query);
-    long totalElements = jdbcTemplate.queryForObject(MODEL_COUNT_SQL, parameters, Long.class);
+    Map<String, Object> parameters = modelSearchParameters(query);
+    long totalElements =
+        mapRecord(
+            () ->
+                jooqQuery.fetch(MODEL_COUNT_SQL, parameters).getFirst().getLong("total_elements"));
     List<CatalogModelSummary> items =
-        jdbcTemplate.query(MODEL_PAGE_SQL, parameters, catalogModelSummaryMapper());
+        jooqQuery.fetch(MODEL_PAGE_SQL, parameters).stream()
+            .map(record -> mapRecord(() -> catalogModelSummary(record)))
+            .toList();
     int totalPages = (int) ((totalElements + query.size() - 1) / query.size());
     return new CatalogModelPage(items, query.page(), query.size(), totalElements, totalPages);
   }
@@ -72,62 +74,73 @@ class CatalogQueryPersistenceAdapter implements CatalogReadPort {
     return detailQuery.find(modelId, requestedModelYearId, asOf);
   }
 
-  private MapSqlParameterSource modelSearchParameters(SearchCatalogModelsQuery query) {
-    return new MapSqlParameterSource()
-        .addValue("searchPattern", query.likePattern())
-        .addValue("brandId", query.brandId())
-        .addValue("bodyType", enumName(query.bodyType()))
-        .addValue("propulsionType", enumName(query.propulsionType()))
-        .addValue("fuelType", enumName(query.fuelType()))
-        .addValue("minPrice", query.minPrice())
-        .addValue("maxPrice", query.maxPrice())
-        .addValue("salesStatus", query.salesStatus().name())
-        .addValue("asOf", query.asOf())
-        .addValue("sort", query.sort().name())
-        .addValue("limit", query.size())
-        .addValue("offset", query.offset());
+  private Map<String, Object> modelSearchParameters(SearchCatalogModelsQuery query) {
+    Map<String, Object> parameters = new java.util.LinkedHashMap<>();
+    parameters.put("searchPattern", query.likePattern());
+    parameters.put("brandId", query.brandId());
+    parameters.put("bodyType", enumName(query.bodyType()));
+    parameters.put("propulsionType", enumName(query.propulsionType()));
+    parameters.put("fuelType", enumName(query.fuelType()));
+    parameters.put("minPrice", query.minPrice());
+    parameters.put("maxPrice", query.maxPrice());
+    parameters.put("salesStatus", query.salesStatus().name());
+    parameters.put("asOf", query.asOf());
+    parameters.put("sort", query.sort().name());
+    parameters.put("limit", query.size());
+    parameters.put("offset", query.offset());
+    return parameters;
   }
 
   private String enumName(Enum<?> value) {
     return value == null ? null : value.name();
   }
 
-  private RowMapper<CatalogModelSummary> catalogModelSummaryMapper() {
-    return (resultSet, rowNumber) -> {
-      Long startPrice = resultSet.getObject("start_price", Long.class);
-      String priceBasis = resultSet.getString("price_basis");
-      return new CatalogModelSummary(
-          resultSet.getObject("model_id", UUID.class),
-          resultSet.getObject("brand_id", UUID.class),
-          resultSet.getString("brand_name"),
-          resultSet.getString("model_name"),
-          resultSet.getString("model_name_en"),
-          resultSet.getObject("representative_model_year_id", UUID.class),
-          resultSet.getInt("model_year"),
-          resultSet.getString("edition_name"),
-          enumSet(resultSet.getArray("body_types"), BodyType.class),
-          enumSet(resultSet.getArray("propulsion_types"), PropulsionType.class),
-          enumSet(resultSet.getArray("fuel_types"), FuelType.class),
-          SalesStatus.valueOf(resultSet.getString("sales_status")),
-          resultSet.getObject("released_on", LocalDate.class),
-          startPrice,
-          priceBasis == null ? null : CatalogPriceBasis.valueOf(priceBasis),
-          startPrice == null ? null : "KRW");
-    };
+  private CatalogModelSummary catalogModelSummary(CatalogJooqQuery.CatalogRecord record)
+      throws SQLException {
+    Long startPrice = record.getObject("start_price", Long.class);
+    String priceBasis = record.getString("price_basis");
+    return new CatalogModelSummary(
+        record.getObject("model_id", UUID.class),
+        record.getObject("brand_id", UUID.class),
+        record.getString("brand_name"),
+        record.getString("model_name"),
+        record.getString("model_name_en"),
+        record.getObject("representative_model_year_id", UUID.class),
+        record.getInt("model_year"),
+        record.getString("edition_name"),
+        enumSet(record.getObject("body_types", Object[].class), BodyType.class),
+        enumSet(record.getObject("propulsion_types", Object[].class), PropulsionType.class),
+        enumSet(record.getObject("fuel_types", Object[].class), FuelType.class),
+        SalesStatus.valueOf(record.getString("sales_status")),
+        record.getObject("released_on", LocalDate.class),
+        startPrice,
+        priceBasis == null ? null : CatalogPriceBasis.valueOf(priceBasis),
+        startPrice == null ? null : "KRW");
   }
 
-  private <E extends Enum<E>> Set<E> enumSet(Array sqlArray, Class<E> enumType)
-      throws SQLException {
-    if (sqlArray == null) {
+  private <E extends Enum<E>> Set<E> enumSet(Object[] values, Class<E> enumType) {
+    if (values == null) {
       return Set.of();
     }
-    Object[] values = (Object[]) sqlArray.getArray();
     LinkedHashSet<E> result = new LinkedHashSet<>();
     Arrays.stream(values)
         .map(Object::toString)
         .map(value -> Enum.valueOf(enumType, value))
         .forEach(result::add);
     return Collections.unmodifiableSet(result);
+  }
+
+  private <T> T mapRecord(SqlRecordSupplier<T> supplier) {
+    try {
+      return supplier.get();
+    } catch (SQLException exception) {
+      throw new IllegalStateException("catalog projection을 읽을 수 없습니다.", exception);
+    }
+  }
+
+  @FunctionalInterface
+  private interface SqlRecordSupplier<T> {
+    T get() throws SQLException;
   }
 
   private static final String BRAND_LIST_SQL =
@@ -225,7 +238,8 @@ class CatalogQueryPersistenceAdapter implements CatalogReadPort {
       """;
 
   private static final String MODEL_COUNT_SQL =
-      MODEL_ELIGIBLE_CTE + "SELECT COUNT(DISTINCT model_internal_id) FROM eligible";
+      MODEL_ELIGIBLE_CTE
+          + "SELECT COUNT(DISTINCT model_internal_id) AS total_elements FROM eligible";
 
   private static final String MODEL_PAGE_SQL =
       MODEL_ELIGIBLE_CTE

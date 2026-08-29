@@ -4,6 +4,7 @@ import com.ronams.carmunity.catalog.api.BodyType;
 import com.ronams.carmunity.catalog.api.FuelType;
 import com.ronams.carmunity.catalog.api.PropulsionType;
 import com.ronams.carmunity.catalog.api.SalesStatus;
+import com.ronams.carmunity.catalog.internal.adapter.out.persistence.CatalogJooqQuery.CatalogRecord;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Certification;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Component;
@@ -22,7 +23,6 @@ import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetai
 import com.ronams.carmunity.catalog.internal.application.model.CatalogPriceBasis;
 import com.ronams.carmunity.catalog.internal.application.service.CatalogModelYearSelector;
 import java.math.BigDecimal;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -42,18 +40,16 @@ final class CatalogDetailQuery {
 
   private static final JsonMapper JSON = JsonMapper.builder().build();
 
-  private final NamedParameterJdbcTemplate jdbcTemplate;
+  private final CatalogJooqQuery jooqQuery;
   private final CatalogModelYearSelector modelYearSelector;
 
-  CatalogDetailQuery(
-      NamedParameterJdbcTemplate jdbcTemplate, CatalogModelYearSelector modelYearSelector) {
-    this.jdbcTemplate = jdbcTemplate;
+  CatalogDetailQuery(CatalogJooqQuery jooqQuery, CatalogModelYearSelector modelYearSelector) {
+    this.jooqQuery = jooqQuery;
     this.modelYearSelector = modelYearSelector;
   }
 
   Optional<CatalogModelDetail> find(UUID modelId, UUID requestedModelYearId, LocalDate asOf) {
-    MapSqlParameterSource modelParameters =
-        new MapSqlParameterSource().addValue("modelId", modelId).addValue("asOf", asOf);
+    Map<String, Object> modelParameters = Map.of("modelId", modelId, "asOf", asOf);
     Optional<Model> model = findModel(modelParameters);
     if (model.isEmpty()) {
       return Optional.empty();
@@ -73,10 +69,8 @@ final class CatalogDetailQuery {
             .mapToLong(YearSnapshot::internalId)
             .findFirst()
             .orElseThrow();
-    MapSqlParameterSource yearParameters =
-        new MapSqlParameterSource()
-            .addValue("modelYearInternalId", selectedModelYearInternalId)
-            .addValue("asOf", asOf);
+    Map<String, Object> yearParameters =
+        Map.of("modelYearInternalId", selectedModelYearInternalId, "asOf", asOf);
 
     List<Powertrain> powertrains = findPowertrains(yearParameters);
     Map<Long, List<Configuration>> configurations = findConfigurations(yearParameters);
@@ -102,108 +96,105 @@ final class CatalogDetailQuery {
             variants));
   }
 
-  private Optional<Model> findModel(MapSqlParameterSource parameters) {
-    return jdbcTemplate.query(
-        MODEL_SQL,
-        parameters,
-        resultSet -> {
-          if (!resultSet.next()) {
-            return Optional.empty();
-          }
-          return Optional.of(
-              new Model(
-                  resultSet.getObject("model_id", UUID.class),
-                  resultSet.getObject("brand_id", UUID.class),
-                  resultSet.getString("brand_name"),
-                  resultSet.getString("brand_name_en"),
-                  resultSet.getString("model_name"),
-                  resultSet.getString("model_name_en"),
-                  resultSet.getString("summary")));
-        });
+  private Optional<Model> findModel(Map<String, ?> parameters) {
+    return jooqQuery.fetch(MODEL_SQL, parameters).stream()
+        .findFirst()
+        .map(
+            resultSet ->
+                readRecord(
+                    () ->
+                        new Model(
+                            resultSet.getObject("model_id", UUID.class),
+                            resultSet.getObject("brand_id", UUID.class),
+                            resultSet.getString("brand_name"),
+                            resultSet.getString("brand_name_en"),
+                            resultSet.getString("model_name"),
+                            resultSet.getString("model_name_en"),
+                            resultSet.getString("summary"))));
   }
 
-  private List<YearSnapshot> findYears(MapSqlParameterSource parameters) {
-    return jdbcTemplate.query(
-        YEARS_SQL,
-        parameters,
-        (resultSet, rowNumber) ->
-            new YearSnapshot(
-                resultSet.getLong("model_year_internal_id"),
-                new Generation(
-                    resultSet.getObject("generation_id", UUID.class),
-                    resultSet.getString("generation_name"),
-                    resultSet.getString("change_type")),
-                new ModelYear(
-                    resultSet.getObject("model_year_id", UUID.class),
-                    resultSet.getInt("model_year"),
-                    resultSet.getString("edition_name"),
-                    resultSet.getObject("released_on", LocalDate.class),
-                    resultSet.getObject("sales_started_on", LocalDate.class),
-                    resultSet.getObject("sales_ended_on", LocalDate.class),
-                    SalesStatus.valueOf(resultSet.getString("sales_status")))));
+  private List<YearSnapshot> findYears(Map<String, ?> parameters) {
+    return jooqQuery.fetch(YEARS_SQL, parameters).stream()
+        .map(
+            resultSet ->
+                readRecord(
+                    () ->
+                        new YearSnapshot(
+                            resultSet.getLong("model_year_internal_id"),
+                            new Generation(
+                                resultSet.getObject("generation_id", UUID.class),
+                                resultSet.getString("generation_name"),
+                                resultSet.getString("change_type")),
+                            new ModelYear(
+                                resultSet.getObject("model_year_id", UUID.class),
+                                resultSet.getInt("model_year"),
+                                resultSet.getString("edition_name"),
+                                resultSet.getObject("released_on", LocalDate.class),
+                                resultSet.getObject("sales_started_on", LocalDate.class),
+                                resultSet.getObject("sales_ended_on", LocalDate.class),
+                                SalesStatus.valueOf(resultSet.getString("sales_status"))))))
+        .toList();
   }
 
-  private List<Powertrain> findPowertrains(MapSqlParameterSource parameters) {
-    LinkedHashMap<UUID, PowertrainBuilder> builders =
-        jdbcTemplate.query(
-            POWERTRAINS_SQL,
-            parameters,
-            resultSet -> {
-              LinkedHashMap<UUID, PowertrainBuilder> items = new LinkedHashMap<>();
-              while (resultSet.next()) {
-                UUID powertrainId = resultSet.getObject("powertrain_id", UUID.class);
-                PowertrainBuilder builder =
-                    items.computeIfAbsent(
-                        powertrainId, ignored -> new PowertrainBuilder(resultSet));
-                builder.addComponent(resultSet);
-              }
-              return items;
-            });
+  private List<Powertrain> findPowertrains(Map<String, ?> parameters) {
+    LinkedHashMap<UUID, PowertrainBuilder> builders = new LinkedHashMap<>();
+    jooqQuery
+        .fetch(POWERTRAINS_SQL, parameters)
+        .forEach(
+            resultSet ->
+                readRecord(
+                    () -> {
+                      UUID powertrainId = resultSet.getObject("powertrain_id", UUID.class);
+                      PowertrainBuilder builder =
+                          builders.computeIfAbsent(
+                              powertrainId, ignored -> new PowertrainBuilder(resultSet));
+                      builder.addComponent(resultSet);
+                      return null;
+                    }));
     return builders.values().stream().map(PowertrainBuilder::build).toList();
   }
 
   private List<Variant> findVariants(
-      MapSqlParameterSource parameters, Map<Long, List<Configuration>> configurations) {
-    LinkedHashMap<Long, VariantBuilder> builders =
-        jdbcTemplate.query(
-            VARIANTS_SQL,
-            parameters,
-            resultSet -> {
-              LinkedHashMap<Long, VariantBuilder> items = new LinkedHashMap<>();
-              while (resultSet.next()) {
-                long internalId = resultSet.getLong("variant_internal_id");
-                VariantBuilder builder =
-                    items.computeIfAbsent(internalId, ignored -> new VariantBuilder(resultSet));
-                builder.addCertification(resultSet);
-              }
-              return items;
-            });
+      Map<String, ?> parameters, Map<Long, List<Configuration>> configurations) {
+    LinkedHashMap<Long, VariantBuilder> builders = new LinkedHashMap<>();
+    jooqQuery
+        .fetch(VARIANTS_SQL, parameters)
+        .forEach(
+            resultSet ->
+                readRecord(
+                    () -> {
+                      long internalId = resultSet.getLong("variant_internal_id");
+                      VariantBuilder builder =
+                          builders.computeIfAbsent(
+                              internalId, ignored -> new VariantBuilder(resultSet));
+                      builder.addCertification(resultSet);
+                      return null;
+                    }));
     return builders.entrySet().stream()
         .map(
             entry -> entry.getValue().build(configurations.getOrDefault(entry.getKey(), List.of())))
         .toList();
   }
 
-  private Map<Long, List<Configuration>> findConfigurations(MapSqlParameterSource parameters) {
+  private Map<Long, List<Configuration>> findConfigurations(Map<String, ?> parameters) {
     LinkedHashMap<Long, LinkedHashMap<UUID, ConfigurationBuilder>> byVariant =
-        jdbcTemplate.query(
-            CONFIGURATIONS_SQL,
-            parameters,
-            resultSet -> {
-              LinkedHashMap<Long, LinkedHashMap<UUID, ConfigurationBuilder>> variants =
-                  new LinkedHashMap<>();
-              while (resultSet.next()) {
-                long variantId = resultSet.getLong("variant_internal_id");
-                UUID configurationId = resultSet.getObject("configuration_id", UUID.class);
-                ConfigurationBuilder builder =
-                    variants
-                        .computeIfAbsent(variantId, ignored -> new LinkedHashMap<>())
-                        .computeIfAbsent(
-                            configurationId, ignored -> new ConfigurationBuilder(resultSet));
-                builder.addOption(resultSet);
-              }
-              return variants;
-            });
+        new LinkedHashMap<>();
+    jooqQuery
+        .fetch(CONFIGURATIONS_SQL, parameters)
+        .forEach(
+            resultSet ->
+                readRecord(
+                    () -> {
+                      long variantId = resultSet.getLong("variant_internal_id");
+                      UUID configurationId = resultSet.getObject("configuration_id", UUID.class);
+                      ConfigurationBuilder builder =
+                          byVariant
+                              .computeIfAbsent(variantId, ignored -> new LinkedHashMap<>())
+                              .computeIfAbsent(
+                                  configurationId, ignored -> new ConfigurationBuilder(resultSet));
+                      builder.addOption(resultSet);
+                      return null;
+                    }));
     LinkedHashMap<Long, List<Configuration>> result = new LinkedHashMap<>();
     byVariant.forEach(
         (variantId, builders) ->
@@ -212,11 +203,11 @@ final class CatalogDetailQuery {
     return result;
   }
 
-  private static Integer integer(ResultSet resultSet, String column) throws SQLException {
+  private static Integer integer(CatalogRecord resultSet, String column) throws SQLException {
     return resultSet.getObject(column, Integer.class);
   }
 
-  private static BigDecimal decimal(ResultSet resultSet, String column) throws SQLException {
+  private static BigDecimal decimal(CatalogRecord resultSet, String column) throws SQLException {
     return resultSet.getBigDecimal(column);
   }
 
@@ -300,6 +291,19 @@ final class CatalogDetailQuery {
     return value == null ? null : LocalDate.parse(value);
   }
 
+  private static <T> T readRecord(SqlRecordSupplier<T> supplier) {
+    try {
+      return supplier.get();
+    } catch (SQLException exception) {
+      throw new IllegalStateException("catalog 상세 projection을 읽을 수 없습니다.", exception);
+    }
+  }
+
+  @FunctionalInterface
+  private interface SqlRecordSupplier<T> {
+    T get() throws SQLException;
+  }
+
   private record YearSnapshot(long internalId, Generation generation, ModelYear modelYear) {}
 
   private static final class PowertrainBuilder {
@@ -330,7 +334,7 @@ final class CatalogDetailQuery {
     private final BigDecimal fastChargePowerKw;
     private final List<Component> components = new ArrayList<>();
 
-    private PowertrainBuilder(ResultSet resultSet) {
+    private PowertrainBuilder(CatalogRecord resultSet) {
       try {
         powertrainId = resultSet.getObject("powertrain_id", UUID.class);
         name = resultSet.getString("powertrain_name");
@@ -362,7 +366,7 @@ final class CatalogDetailQuery {
       }
     }
 
-    private void addComponent(ResultSet resultSet) throws SQLException {
+    private void addComponent(CatalogRecord resultSet) throws SQLException {
       if (resultSet.getString("component_type") == null) {
         return;
       }
@@ -461,7 +465,7 @@ final class CatalogDetailQuery {
     private final String rearBrake;
     private final List<Certification> certifications = new ArrayList<>();
 
-    private VariantBuilder(ResultSet resultSet) {
+    private VariantBuilder(CatalogRecord resultSet) {
       try {
         variantId = resultSet.getObject("variant_id", UUID.class);
         powertrainId = resultSet.getObject("powertrain_id", UUID.class);
@@ -498,7 +502,7 @@ final class CatalogDetailQuery {
       }
     }
 
-    private void addCertification(ResultSet resultSet) throws SQLException {
+    private void addCertification(CatalogRecord resultSet) throws SQLException {
       if (resultSet.getString("condition_code") == null) {
         return;
       }
@@ -576,7 +580,7 @@ final class CatalogDetailQuery {
     private final Price price;
     private final List<Option> options = new ArrayList<>();
 
-    private ConfigurationBuilder(ResultSet resultSet) {
+    private ConfigurationBuilder(CatalogRecord resultSet) {
       try {
         configurationId = resultSet.getObject("configuration_id", UUID.class);
         trimName = resultSet.getString("trim_name");
@@ -610,7 +614,7 @@ final class CatalogDetailQuery {
       }
     }
 
-    private void addOption(ResultSet resultSet) throws SQLException {
+    private void addOption(CatalogRecord resultSet) throws SQLException {
       String code = resultSet.getString("option_code");
       if (code == null) {
         return;

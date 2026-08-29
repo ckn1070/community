@@ -35,7 +35,8 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
 
   @Autowired private CatalogReadPort catalogReadPort;
   @Autowired private JdbcTemplate jdbcTemplate;
-  @MockitoSpyBean private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+  @Autowired private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+  @MockitoSpyBean private CatalogJooqQuery catalogJooqQuery;
 
   /** 기준일에 판매 중인 공개 configuration이 있는 브랜드만 모델 수와 함께 반환합니다. */
   @Test
@@ -82,7 +83,7 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
             0,
             20);
 
-    clearInvocations(namedParameterJdbcTemplate);
+    clearInvocations(catalogJooqQuery);
     CatalogModelPage page = catalogReadPort.searchModels(query);
 
     assertThat(page.totalElements()).isOne();
@@ -201,7 +202,7 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         "INSERT INTO car_configuration_option (configuration_id, code, name, option_type, is_selectable, included_items, effective_from, display_order) VALUES (?, 'OLD', '중단 옵션', 'SINGLE', FALSE, '[]', '2026-01-01', 2)",
         bev.configurationId());
 
-    clearInvocations(namedParameterJdbcTemplate);
+    clearInvocations(catalogJooqQuery);
     CatalogModelDetail detail =
         catalogReadPort
             .findModelDetail(bev.modelPublicId(), bev.modelYearPublicId(), AS_OF)
@@ -289,25 +290,27 @@ class CatalogQueryPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
   }
 
   private long executedCatalogQueryCount() {
-    return mockingDetails(namedParameterJdbcTemplate).getInvocations().stream()
-        .filter(invocation -> invocation.getMethod().getName().startsWith("query"))
+    return mockingDetails(catalogJooqQuery).getInvocations().stream()
+        .filter(invocation -> invocation.getMethod().getName().equals("fetch"))
         .map(invocation -> invocation.getArgument(0, String.class))
-        .distinct()
         .count();
   }
 
   private List<String> modelPageExecutionPlan() {
     org.mockito.invocation.Invocation pageInvocation =
-        mockingDetails(namedParameterJdbcTemplate).getInvocations().stream()
+        mockingDetails(catalogJooqQuery).getInvocations().stream()
             .filter(invocation -> invocation.getArguments().length >= 2)
             .filter(invocation -> invocation.getArgument(0) instanceof String)
             .filter(invocation -> invocation.getArgument(0, String.class).contains("ROW_NUMBER()"))
             .findFirst()
             .orElseThrow();
     String sql = pageInvocation.getArgument(0, String.class);
-    org.springframework.jdbc.core.namedparam.SqlParameterSource parameters =
-        pageInvocation.getArgument(1);
-    return namedParameterJdbcTemplate.queryForList("EXPLAIN " + sql, parameters, String.class);
+    @SuppressWarnings("unchecked")
+    java.util.Map<String, ?> parameters = pageInvocation.getArgument(1);
+    return namedParameterJdbcTemplate.queryForList(
+        "EXPLAIN " + sql,
+        new org.springframework.jdbc.core.namedparam.MapSqlParameterSource(parameters),
+        String.class);
   }
 
   private CatalogFixture createPublishedIceModel(
