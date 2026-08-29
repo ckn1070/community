@@ -13,6 +13,7 @@ import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.ErrorCode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -90,6 +92,32 @@ class ApiExceptionHandlerTest {
         .andExpect(jsonPath("$.status").value(415))
         .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"))
         .andExpect(jsonPath("$.instance").value("/test/errors/validation"));
+  }
+
+  /** path variable의 UUID 변환 실패는 controller 호출 전 client 입력 오류로 분류해야 합니다. */
+  @Test
+  void returnsInvalidRequestForPathVariableTypeMismatch() throws Exception {
+    mockMvc
+        .perform(get("/test/errors/resources/not-a-uuid"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.code").value("INVALID_REQUEST"))
+        .andExpect(jsonPath("$.instance").value("/test/errors/resources/not-a-uuid"));
+  }
+
+  /** 존재하는 GET resource에 다른 method를 사용하면 server 오류가 아니라 405로 분류해야 합니다. */
+  @Test
+  void returnsMethodNotAllowedForUnsupportedMethod() throws Exception {
+    mockMvc
+        .perform(post("/test/errors/resources/0f3445fd-5f22-4f74-9a9d-1ff0c68a924a"))
+        .andExpect(status().isMethodNotAllowed())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+        .andExpect(jsonPath("$.status").value(405))
+        .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"))
+        .andExpect(
+            jsonPath("$.instance")
+                .value("/test/errors/resources/0f3445fd-5f22-4f74-9a9d-1ff0c68a924a"));
   }
 
   /** 업무 경계에서 던진 ApiException은 각 ErrorCode의 status/code/detail을 그대로 응답해야 합니다. */
@@ -157,6 +185,11 @@ class ApiExceptionHandlerTest {
     @GetMapping("/test/errors/unexpected")
     void unexpected() {
       throw new IllegalStateException("database-password-secret");
+    }
+
+    @GetMapping("/test/errors/resources/{resourceId}")
+    UUID resource(@PathVariable UUID resourceId) {
+      return resourceId;
     }
   }
 

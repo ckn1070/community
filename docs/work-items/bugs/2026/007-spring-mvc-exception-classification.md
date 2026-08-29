@@ -15,9 +15,11 @@ path variable type 불일치는 `400`, 존재하지 않는 route는 `404`, 지�
 ## 실제 동작과 근거
 
 - 관리자 초대 endpoint의 `invitationId`는 UUID로 직접 binding됩니다.
-- `ApiExceptionHandler`는 `MethodArgumentTypeMismatchException`, `NoResourceFoundException`과 `HttpRequestMethodNotSupportedException`을 전용 처리하지 않습니다.
-- 이 예외들은 generic `Exception` handler에서 `500 INTERNAL_ERROR`로 변환될 수 있습니다.
-- 현재 controller test는 request body validation을 확인하지만 malformed UUID와 unsupported method 계약은 고정하지 않습니다.
+- `ApiExceptionHandler`는 `MethodArgumentTypeMismatchException`을 `400 INVALID_REQUEST`,
+  `HttpRequestMethodNotSupportedException`을 `405 METHOD_NOT_ALLOWED`로 전용 처리합니다.
+- 카탈로그와 공통 MVC test가 malformed UUID·enum·날짜와 unsupported method 계약을 고정합니다.
+- `NoResourceFoundException` 전용 처리는 아직 없어 존재하지 않는 route가 generic
+  `500 INTERNAL_ERROR`로 변환될 수 있습니다.
 
 ## 영향
 
@@ -26,8 +28,9 @@ path variable type 불일치는 `400`, 존재하지 않는 route는 `404`, 지�
 ## 수정 계획
 
 1. Spring MVC가 controller 전에 발생시키는 framework exception을 전수 조사하고 400·404·405·415 owner를 확정합니다.
-2. path type mismatch, unknown route와 unsupported method를 공통 Problem Details로 변환합니다.
-3. malformed UUID, unknown route, unsupported method와 실제 generic exception을 각각 Web MVC test로 고정합니다.
+2. 완료된 path type mismatch와 unsupported method 분류를 유지하면서 unknown route를 공통
+   `404` Problem Details로 변환합니다.
+3. unknown route와 실제 generic exception을 각각 Web MVC test로 고정합니다.
 4. 4xx는 기본 ERROR stack trace를 남기지 않고 5xx만 공통 logging 계약을 따르는지 확인합니다.
 
 ## 완료 조건
