@@ -119,6 +119,22 @@ version-controlled mapping에서 관리하며 runtime schema에 source 테이블
 | `GET /api/v1/car/models` | `q`, `brandId`, `bodyType`, `propulsionType`, `fuelType`, `minPrice`, `maxPrice`, `salesStatus`, `asOf`, `sort`, `page`, `size` | `salesStatus=ON_SALE`, `asOf=Asia/Seoul 현재 날짜`, `sort=NAME_ASC`, `page=0`, `size=20`, 최대 100 |
 | `GET /api/v1/car/models/{carModelId}` | `modelYearId`, `asOf` | 연식 생략 시 공개 configuration이 있는 판매 중 최신 연식, 없으면 가장 최근 연식 |
 
+#### 초기 조회와 목록·상세 연결
+
+- 카탈로그 첫 진입은 filter가 없는 유효한 모델 목록 조회입니다. Web client는 사용자 입력을
+  기다리지 않고 `GET /api/v1/car/models`를 호출하며, 서버가 위 기본값으로 판매 중 모델 첫
+  page를 반환합니다. 모든 filter를 해제한 경우에도 같은 기본 조회로 돌아갑니다.
+- `GET /api/v1/car/brands`는 브랜드 선택지와 판매 중 모델 수를 만들고,
+  `GET /api/v1/car/models`는 실제 모델 card를 만듭니다. 두 요청은 서로의 결과를 입력으로
+  사용하지 않으므로 첫 진입에서 독립적으로 호출할 수 있습니다.
+- 기본 모델 목록은 인기·추천 순위를 만들지 않습니다. `NAME_ASC`로 정렬한 전체 판매 중 모델의
+  첫 page이며, 각 card의 `representativeModelYearId`는 그 모델을 표시할 대표 연식이지 추천
+  모델 여부가 아닙니다.
+- 목록에서 상세로 이동할 때 client는 card의 `modelId`를 path로 사용합니다. 목록에서 표시한
+  exact 연식과 기준일을 유지해야 하면 `representativeModelYearId`를 `modelYearId`로, 목록에
+  명시적으로 사용한 `asOf`를 상세에도 전달합니다. 두 값을 생략하면 상세 API가 호출 시점의
+  기본 기준일과 대표 연식을 다시 선택합니다.
+
 공통 입력 규칙은 다음과 같습니다.
 
 - `minPrice`, `maxPrice`는 0 이상 int64이고 `minPrice <= maxPrice`입니다.
