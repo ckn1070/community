@@ -1,6 +1,6 @@
 # 2026 기능 작업 문서 목록
 
-현재 등록된 2026 기능 중 Refresh Token 재발급과 관리자 초대/수락은 완료 당시 목표 미충족이 발견돼 다시 열렸습니다. 완료 뒤 독립 후속 결함만 별도 Bug가 소유합니다. 각 문서의 유효 범위는 `Proposed`·`Planned`이면 상태 아래 `달성할 결과`, 그 밖의 실행·완료 상태이면 `결과`에서 확인합니다.
+현재 등록된 2026 기능 중 Refresh Token 재발급과 관리자 초대/수락은 완료 당시 목표 미충족이 발견돼 다시 열렸습니다. 완료 뒤 독립 후속 결함만 별도 Bug가 소유합니다. 각 문서의 유효 범위는 `Proposed`·`Planned`이면 `상태`·`계획 단계`와 `달성할 결과`, 그 밖의 실행·완료 상태이면 `결과`에서 확인합니다.
 
 | 번호 | 상태 | 작업 문서 | 상세 설계 | 현재 요약 |
 | --- | --- | --- | --- | --- |
@@ -19,4 +19,4 @@
 | 013 | Done | [013 Staging application GitOps delivery](013-autoscaling-safe-application-delivery.md) | - | Repository와 live 기술 delivery 완료, 기능 qualification은 선택 runbook으로 분리 |
 | 014 | Done | [014 Staging 외부 HTTPS ingress](014-staging-external-https-ingress.md) | [014 설계](014-staging-external-https-ingress-design.md) | LBC·ALB·ACM·Cloudflare DNS-only 외부 경로 구축 완료 |
 | 015 | Done | [015 API 운영 추적성](015-api-operational-traceability.md) | - | 정상·거부·실패 API 완료 이벤트와 고객 상관관계 자동화 |
-| 016 | Planned | [016 확장 가능한 차량 비연결 일반 커뮤니티 기반](016-general-community.md) | [016 확장 설계](016-general-community-design.md) | 공개 조회·자유게시판 한 개·Post 비노출/Comment 삭제 표시를 검증한 확장 계획 |
+| 016 | Proposed | [016 차량 비연결 일반 커뮤니티](016-general-community.md) | - | 콘텐츠 계층 결정 중 |
