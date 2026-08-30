@@ -2,7 +2,7 @@ package com.ronams.carmunity.catalog.internal.application.service;
 
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
 import com.ronams.carmunity.catalog.internal.application.port.in.GetCatalogModelDetailUseCase;
-import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelDetailReadPort;
 import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDetailQuery;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -14,12 +14,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class GetCatalogModelDetailService implements GetCatalogModelDetailUseCase {
 
-  private final CatalogReadPort catalogReadPort;
+  private final CatalogModelDetailReadPort catalogModelDetailReadPort;
 
   @Override
   @Transactional(readOnly = true)
   public Optional<CatalogModelDetail> execute(GetCatalogModelDetailQuery query) {
-    return catalogReadPort.findModelDetail(
+    return catalogModelDetailReadPort.find(
         query.modelId(), query.requestedModelYearId(), query.asOf());
   }
 }

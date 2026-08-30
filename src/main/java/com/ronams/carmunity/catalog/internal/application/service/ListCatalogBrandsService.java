@@ -2,7 +2,7 @@ package com.ronams.carmunity.catalog.internal.application.service;
 
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
 import com.ronams.carmunity.catalog.internal.application.port.in.ListCatalogBrandsUseCase;
-import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogBrandReadPort;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -17,24 +17,24 @@ public class ListCatalogBrandsService implements ListCatalogBrandsUseCase {
 
   private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
 
-  private final CatalogReadPort catalogReadPort;
+  private final CatalogBrandReadPort catalogBrandReadPort;
   private final Clock clock;
 
   /** 운영에서는 UTC 기준 Clock을 사용하고 서울 날짜 변환은 application 경계에서 수행합니다. */
   @Autowired
-  public ListCatalogBrandsService(CatalogReadPort catalogReadPort) {
-    this(catalogReadPort, Clock.systemUTC());
+  public ListCatalogBrandsService(CatalogBrandReadPort catalogBrandReadPort) {
+    this(catalogBrandReadPort, Clock.systemUTC());
   }
 
   /** 테스트가 날짜 경계를 통제할 수 있도록 Clock을 교체하는 생성자입니다. */
-  ListCatalogBrandsService(CatalogReadPort catalogReadPort, Clock clock) {
-    this.catalogReadPort = catalogReadPort;
+  ListCatalogBrandsService(CatalogBrandReadPort catalogBrandReadPort, Clock clock) {
+    this.catalogBrandReadPort = catalogBrandReadPort;
     this.clock = clock;
   }
 
   @Override
   @Transactional(readOnly = true)
   public List<CatalogBrandSummary> execute() {
-    return catalogReadPort.listBrands(LocalDate.ofInstant(clock.instant(), SEOUL));
+    return catalogBrandReadPort.list(LocalDate.ofInstant(clock.instant(), SEOUL));
   }
 }

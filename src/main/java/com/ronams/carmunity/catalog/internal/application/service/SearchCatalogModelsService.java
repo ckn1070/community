@@ -2,7 +2,7 @@ package com.ronams.carmunity.catalog.internal.application.service;
 
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.port.in.SearchCatalogModelsUseCase;
-import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelSearchPort;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,11 +13,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SearchCatalogModelsService implements SearchCatalogModelsUseCase {
 
-  private final CatalogReadPort catalogReadPort;
+  private final CatalogModelSearchPort catalogModelSearchPort;
 
   @Override
   @Transactional(readOnly = true)
   public CatalogModelPage execute(SearchCatalogModelsQuery query) {
-    return catalogReadPort.searchModels(query);
+    return catalogModelSearchPort.search(query);
   }
 }

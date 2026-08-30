@@ -7,7 +7,9 @@ import static org.mockito.Mockito.when;
 import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
-import com.ronams.carmunity.catalog.internal.application.port.out.CatalogReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogBrandReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelDetailReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelSearchPort;
 import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
 import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDetailQuery;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
@@ -25,16 +27,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CatalogQueryServiceTest {
 
-  @Mock private CatalogReadPort catalogReadPort;
+  @Mock private CatalogBrandReadPort catalogBrandReadPort;
+  @Mock private CatalogModelSearchPort catalogModelSearchPort;
+  @Mock private CatalogModelDetailReadPort catalogModelDetailReadPort;
 
   @Test
   void 브랜드_목록은_서울_현재_날짜를_기준으로_조회한다() {
     Clock clock = Clock.fixed(Instant.parse("2026-08-28T15:30:00Z"), ZoneOffset.UTC);
     CatalogBrandSummary brand = new CatalogBrandSummary(UUID.randomUUID(), "기아", "Kia", "KR", 2);
-    when(catalogReadPort.listBrands(LocalDate.of(2026, 8, 29))).thenReturn(List.of(brand));
+    when(catalogBrandReadPort.list(LocalDate.of(2026, 8, 29))).thenReturn(List.of(brand));
 
     List<CatalogBrandSummary> result =
-        new ListCatalogBrandsService(catalogReadPort, clock).execute();
+        new ListCatalogBrandsService(catalogBrandReadPort, clock).execute();
 
     assertThat(result).containsExactly(brand);
   }
@@ -56,9 +60,9 @@ class CatalogQueryServiceTest {
             0,
             20);
     CatalogModelPage page = new CatalogModelPage(List.of(), 0, 20, 0, 0);
-    when(catalogReadPort.searchModels(query)).thenReturn(page);
+    when(catalogModelSearchPort.search(query)).thenReturn(page);
 
-    CatalogModelPage result = new SearchCatalogModelsService(catalogReadPort).execute(query);
+    CatalogModelPage result = new SearchCatalogModelsService(catalogModelSearchPort).execute(query);
 
     assertThat(result).isSameAs(page);
   }
@@ -70,7 +74,8 @@ class CatalogQueryServiceTest {
     GetCatalogModelDetailQuery query =
         new GetCatalogModelDetailQuery(modelId, modelYearId, LocalDate.of(2026, 8, 29));
 
-    assertThat(new GetCatalogModelDetailService(catalogReadPort).execute(query)).isEmpty();
-    verify(catalogReadPort).findModelDetail(modelId, modelYearId, LocalDate.of(2026, 8, 29));
+    assertThat(new GetCatalogModelDetailService(catalogModelDetailReadPort).execute(query))
+        .isEmpty();
+    verify(catalogModelDetailReadPort).find(modelId, modelYearId, LocalDate.of(2026, 8, 29));
   }
 }
