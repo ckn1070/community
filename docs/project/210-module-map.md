@@ -38,6 +38,8 @@ email verification·invitation·password reset service --> Clock.systemUTC() 직
 - `catalog`는 다른 module의 내부 상태를 쓰지 않습니다. 공개 package는 검색 입력에 사용하는
   차체·동력·연료·판매 상태 enum만 제공하고, 조회 use case·read model·port는
   `internal.application`, projection SQL은 `internal.adapter.out.persistence`에 둡니다.
+  jOOQ 구현은 `internal.adapter.out.persistence.jooq`에서 조회 능력별 adapter와 상세 조립·JSON
+  변환 책임으로 분리합니다.
   `internal.adapter.in.web.publicapi`는 세 공개 GET의 request·response mapping을 소유하고
   공통 `ProblemDetail` 변환을 위해 `shared :: error` 공개 계약만 사용합니다.
 - `ChangePasswordService`처럼 실제 `Clock` bean을 주입받는 일부 `account` bean은 production의 유일한 provider인 `auth.internal`의 `JwtTokenConfiguration`에 의존합니다. 이메일 인증·관리자 초대·비밀번호 재설정 service는 public constructor에서 `Clock.systemUTC()`를 직접 만들어 이 bean을 우회합니다. 전자는 source import에 드러나지 않는 runtime DI 예외이고, 후자는 공용 시간 조립 경계가 일관되지 않은 예외입니다.

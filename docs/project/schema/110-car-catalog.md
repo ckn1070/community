@@ -195,8 +195,9 @@ identity sequence 사용은 거부합니다.
 ## 조회 경로
 
 카탈로그 조회 adapter는 jOOQ를 사용합니다. Flyway V13~V17에서 build-time schema model을
-생성하고, PostgreSQL 전용 복합 SQL은 검증된 SQL 형태를 유지한 채 jOOQ가 parameter binding,
-실행과 record 변환을 담당합니다. 적용 범위와 raw SQL·DSL 경계는
+생성하고 브랜드, 모델 검색의 기반 관계, 상세의 모델·연식 조회는 generated table·field DSL로
+구성합니다. CTE 논리 column 집계와 상세 wide projection의 PostgreSQL SQL은 검증된 형태를
+유지한 채 jOOQ가 parameter binding, 실행과 record 변환을 담당합니다. 적용 범위와 raw SQL·DSL 경계는
 [jOOQ 사용 가이드](../../tech-stack/235-jooq.md)가 소유합니다.
 
 ### 브랜드 목록
@@ -226,8 +227,9 @@ brand → model → generation → model_year
 
 모델·세대·연식을 먼저 읽고 선택 연식의 powertrain/component, variant/certification,
 configuration/price/option을 고정된 묶음 query로 읽습니다. 현재 persistence는 상세를 최대
-다섯 query로 조립하며, 결과 행 수에 따라 SQL 수가 증가하지 않습니다. 한 read-only
-transaction 안에서 같은 기준일의 가격·옵션과 연식을 읽습니다.
+다섯 query로 읽고 전용 assembler가 graph 중복을 제거하며, 결과 행 수에 따라 SQL 수가
+증가하지 않습니다. JSONB 변환도 query 실행과 분리합니다. 한 read-only transaction 안에서
+같은 기준일의 가격·옵션과 연식을 읽습니다.
 
 ## JSONB 승격 기준
 

@@ -23,7 +23,7 @@
 | Spring Security | stateless API 보안 |
 | OAuth2 Resource Server | Bearer JWT 검증 |
 | Spring Data JPA | persistence adapter |
-| jOOQ 3.19.37 | catalog 복합 조회 실행, record mapping과 Flyway 기반 schema code generation |
+| jOOQ 3.19.32 | catalog 복합 조회 실행, record mapping과 Flyway 기반 schema code generation |
 | Flyway | PostgreSQL schema migration |
 | Spring Modulith 2.1.0 | module boundary model과 test 검증 |
 | springdoc-openapi 3.0.2 | 로컬 API 문서 |

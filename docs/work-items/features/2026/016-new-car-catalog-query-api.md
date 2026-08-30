@@ -16,11 +16,17 @@ PostgreSQL로 검증했습니다. Flyway V13~V17에서 build-time schema model�
 대표 연식, RFC 9457 오류, GET 전용 anonymous allow-list와 OpenAPI 3.1 nullability 계약도
 자동 검증합니다. 실제 production 데이터는 아직 없습니다.
 
-로컬 구현과 전체 검증은 완료됐습니다. push가 요청되지 않아 final SHA의 required CI와 Sonar
-revision·Quality Gate·Open issues gate는 아직 확인하지 않았습니다. 실제 production 데이터
-적재는 이 작업의 미완료가 아니라
+조회 기술 선택 뒤의 구조 검토에서 확인한 하나의 `CatalogReadPort`, 하나의 대형 persistence
+adapter, 단순 jOOQ 실행 wrapper와 생성 schema model을 소비하지 않는 raw SQL 경로를
+정리했습니다. 조회 소비자별 Port·Adapter, 상세 graph assembler·JSON converter,
+`DSLContext` 직접 사용과 생성 table·field 기반 query construction으로 책임을 분리했고,
+조립기 직접 테스트와 실제 PostgreSQL 통합 테스트를 포함한 전체 `check` 및 독립 구현 검증을
+통과했습니다. 조회 구현 후보군과 현재 jOOQ 선택 근거·재검토 조건도 일반 아키텍처 SOT와 이
+작업의 결정 기록에 남겼습니다. 실제 production 데이터 적재는 이 작업의 미완료가 아니라
 [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md)의 범위입니다. 현재
-로컬 작업의 차단 사유는 없습니다.
+로컬 구현·문서 검증은 완료됐고, 별도 권한이 필요한 push와 final SHA의 remote CI·Sonar는
+실행하지 않아 전체 원격 gate는 미확인입니다. Commit 여부와 exact SHA는 이 문서에 복제하지
+않고 Git 이력에서 확인합니다.
 
 현재 업무 개념은 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md), 구현된 관계형
 구조와 조회 경로는
@@ -70,9 +76,9 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·133개 제약·4개 index·대표 fixture·실제 권한 검증 통과 |
 | 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **완료** | filter·가격·과거 조회와 목록 2개·상세 5개 SQL 상한, 대표 SQL 실행 계획 검증 통과 |
 | 6. 공개 API 개발 | Controller·Security·OpenAPI | **완료** | 비회원 세 GET과 오류 계약 통과 |
-| 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | **로컬 완료** | blocking finding 0건 |
+| 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | **완료** | 351개 test·Spring Modulith·ArchUnit·JaCoCo·Spotless와 독립 검증 통과 |
 | 8. 실제 데이터 | 공개 범위 결정, 공식 자료 mapping, data migration | 후속 017 | 선택 범위의 누락 0건 |
-| 9. Git·원격·배포 | commit, 별도 push와 CI·Sonar, 별도 staging 적용 | 조건부 | 각 단계의 명시 권한과 gate 충족 |
+| 9. Git·원격·배포 | commit, 별도 push와 CI·Sonar, 별도 staging 적용 | **remote 미수행** | 각 효과의 명시 권한과 Git 이력으로 local 상태를 확인하고, push 시 final SHA의 CI·Sonar 확인 |
 
 ### 포함 범위
 
@@ -399,6 +405,8 @@ PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
 | `docs/tech-stack/260-openapi.md` | 공개 조회·오류·OpenAPI 3.1 nullability 계약 반영 |
 | `docs/product/200-feature-scope.md` | 현재 사용자 기능 범위와 production data 경계 반영 |
 | `docs/project/100-project-overview.md` | 현재 구현 단계와 실제 data 미적재 상태 반영 |
+| `docs/architecture/200-hexagonal-architecture.md` | 소비자·계약·변경 축에 따른 Port·Adapter·assembler 분리 기준 반영 |
+| `docs/tech-stack/235-jooq.md` | 생성 model 소비, `DSLContext` 직접 사용과 실제 실행 관측 기준 반영 |
 
 ## 관련 문서
 

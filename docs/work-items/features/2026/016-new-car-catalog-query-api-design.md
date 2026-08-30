@@ -65,10 +65,12 @@ index·조회 경로와 현재 설계 이유는
 | Spring Data JDBC | 단순 aggregate 저장 모델과 repository가 간결함 | 이 조회는 aggregate CRUD가 아니라 여러 관계를 접는 read projection이어서 별도 SQL·조립이 남음 | 목적 불일치 |
 | R2DBC | non-blocking DB I/O를 제공함 | 현재 전체 stack이 MVC·JDBC transaction이며 reactive 전환 비용이 조회 한 곳의 이점보다 큼 | 목적 불일치 |
 | DB view·materialized view·function | 반복 SQL을 DB에 집중하거나 precompute할 수 있음 | 배포·권한·refresh lifecycle이 추가되고 현재 병목 증거가 없음 | 측정된 병목이 생길 때 재검토 |
+| 검색엔진·cache·비정규화 read model | 검색·정렬을 독립 확장하고 반복 조회 latency를 낮추며 source DB 부하를 분리할 수 있음 | 현재 11개 table의 기준일 가격·판매 상태와 공개 여부를 별도 저장소에 동기화해야 하고 지연·누락·재처리·전체 재구축·source DB와의 일관성 검증 책임이 추가됨 | 실제 PostgreSQL 계획·latency·부하가 목표를 벗어나거나 전문 검색 요구가 생기기 전에는 제외하고, 발생 시 동기화 허용 지연·복구 시간·재구축 절차를 먼저 결정해 재검토 |
 
 ### 선택과 장점
 
-카탈로그 read side만 jOOQ 3.19.37을 사용하고 account·authentication의 변경 persistence는
+카탈로그 read side만 Spring Boot 4.0.6이 관리하는 jOOQ 3.19.32를 사용하고
+account·authentication의 변경 persistence는
 Spring Data JPA를 유지합니다. Flyway V13~V17을 `DDLDatabase` 입력으로 사용해 compile 전에
 schema model을 생성하며 generated source는 `build/` 아래에 두고 commit하지 않습니다.
 
@@ -85,13 +87,33 @@ schema model을 생성하며 generated source는 `build/` 아래에 두고 commi
 - 향후 단순 query는 생성 table·field 기반 DSL로, 중첩 graph는 `MULTISET`으로 이동할 수 있는
   경로가 생깁니다.
 
-현재 PostgreSQL 전용 복합 SQL은 이미 실제 실행 계획과 결과가 검증되어 있으므로 도입과
-동시에 전부 DSL로 번역하지 않습니다. Spring의 named-parameter parser를 catalog 내부 실행
-경계에서 재사용하고 jOOQ가 positional binding, 실행과 record mapping을 담당해 SQL 형태를
-유지합니다. 따라서 현재 code generation은 catalog schema 입력의
-유효성을 검증하지만 raw SQL 문자열의 모든 column rename을 compile-time에 잡는다고 과장하지
-않습니다. 이 한계와 DSL 전환 조건은 [jOOQ 사용 가이드](../../../tech-stack/235-jooq.md)가
-소유합니다.
+PostgreSQL 전용 복합 SQL을 모두 한 번에 DSL로 번역하지 않습니다. 브랜드와 상세의 모델·연식,
+모델 검색에서 실제 table을 join하고 filter하는 `catalog_rows`는 generated field DSL로
+전환했습니다. 검증된 CTE 집계·window와 상세의 세 wide child projection은 SQL 형태를 유지하고
+jOOQ가 binding·실행·record mapping을 담당합니다. 따라서 raw SQL에 남은 column rename까지
+compile-time에 잡는다고 과장하지 않습니다. 정확한 보호 범위와 전환 조건은
+[235 jOOQ 사용 가이드](../../../tech-stack/235-jooq.md)가 소유합니다.
+
+### 조회 구조 분리 결정
+
+조회 실행 기술과 application 경계를 별개의 질문으로 비교했습니다. 세 조회를 한
+`CatalogReadPort`에 두면 각 service가 사용하지 않는 두 능력에도 의존하고, 하나의 adapter가
+브랜드 집계·모델 검색·상세 graph라는 서로 다른 변경 축과 성능 계약을 함께 소유합니다. 반대로
+SQL 하나마다 Port와 Adapter를 만들면 상세 한 use case를 완성하는 다섯 query의 transaction과
+조립 책임이 흩어집니다.
+
+따라서 독립 consumer와 계약이 있는 브랜드 목록, 모델 검색, 모델 상세를 각각
+`CatalogBrandReadPort`, `CatalogModelSearchPort`, `CatalogModelDetailReadPort`로 분리하고 각
+Port를 jOOQ adapter 하나가 구현합니다. 상세 adapter는 다섯 query를 한 transaction 안에서
+조정하되, 결과 graph 중복 제거는 `CatalogModelDetailAssembler`, JSONB 변환은
+`CatalogJsonConverter`에 맡깁니다. 이 경계는 interface 개수나 SQL 개수가 아니라 consumer,
+변경 이유와 독립 검증 가능성으로 정했습니다.
+
+`CatalogJooqQuery`처럼 `DSLContext.fetch`를 전달만 하는 wrapper는 제거했습니다. Query 수는
+wrapper 호출이 아니라 jOOQ execute listener에서 실제 statement를 관찰합니다. 공통 binding,
+예외 변환이나 관측 정책이 adapter마다 달라지는 문제가 생기기 전에는 새 실행 wrapper를 만들지
+않습니다. 일반 재사용 기준은 [200 헥사고날 아키텍처 적용 원칙](../../../architecture/200-hexagonal-architecture.md),
+현재 jOOQ 경계는 [235 jOOQ 사용 가이드](../../../tech-stack/235-jooq.md)가 소유합니다.
 
 ### 비용과 재검토 조건
 
@@ -102,6 +124,10 @@ schema model을 생성하며 generated source는 `build/` 아래에 두고 commi
 - raw SQL column drift가 실제 결함으로 반복되면 해당 query를 생성 field 기반 DSL로 옮깁니다.
 - 중첩 graph의 수동 조립 비용이 병목으로 측정되면 jOOQ `MULTISET`, MyBatis `resultMap`, 현재
   고정 묶음 query를 실행 계획·전송량·변경 비용으로 다시 비교합니다.
+- PostgreSQL 검색 latency·DB 부하가 운영 목표를 벗어나거나 형태소·오타 허용·연관도 같은 전문
+  검색 요구가 생기면 검색엔진·cache·비정규화 read model을 재검토합니다. 이때 허용 가능한
+  동기화 지연, 실패 event 재처리, 전체 재구축 시간과 source DB 대조 방법을 수용 기준에 먼저
+  포함합니다.
 
 ## 결정 당시 대표 자료 검토
 
