@@ -2,4 +2,4 @@
 interface:
   display_name: "개발 계획"
   short_description: "현재 계획 단계의 결정과 artifact만 근거 있게 작성"
-  default_prompt: "Use $dev-plan to write only the current plan stage and its allowed artifacts, resolve user-owned decisions in the requested cadence, and do not create dependent design or execution details before the prior stage closes."
+  default_prompt: "Use $dev-plan to write only the current plan stage and its allowed artifacts, collect every currently answerable user-owned decision into one stage decision block, and do not create dependent design or execution details before the prior stage closes."
