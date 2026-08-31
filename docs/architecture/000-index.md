@@ -15,7 +15,8 @@
 | 상황 | 문서 |
 | --- | --- |
 | 구조 대안과 tradeoff 비교 | [100-architecture-principles.md](100-architecture-principles.md) |
-| DDD, Bounded Context, Modular Monolith 개념 확인 | [110-architecture-concepts.md](110-architecture-concepts.md) |
+| DDD와 다른 아키텍처 개념 비교 | [110 아키텍처 개념 구분](110-architecture-concepts.md) |
+| DDD의 전략·전술 개념과 적용 판정 | [120 DDD 개념과 적용 기준](120-domain-driven-design.md) |
 | Port와 Adapter 적용 | [200-hexagonal-architecture.md](200-hexagonal-architecture.md) |
 | Spring Boot package와 module 구조 | [210-spring-boot-module-structure.md](210-spring-boot-module-structure.md) |
 | DTO, Domain, Entity, Port 매핑과 이름 | [220-boundary-and-mapping-rules.md](220-boundary-and-mapping-rules.md) |

@@ -41,5 +41,5 @@ architecture·privacy·운영 결정은
 
 - **현재 구현 상태**: [프로젝트 문서](../project/000-index.md)
 - **제품 목표·범위**: [제품 문서](../product/000-index.md)
-- **용어 경계**: [아키텍처 개념](../architecture/110-architecture-concepts.md)
+- **DDD와 Bounded Context 기준**: [120 DDD 개념과 적용 기준](../architecture/120-domain-driven-design.md)
 - **변경 계획·결과**: [작업 문서](../work-items/000-index.md)

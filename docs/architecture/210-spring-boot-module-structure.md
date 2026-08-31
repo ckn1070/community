@@ -68,6 +68,8 @@ Spring Boot 메인 애플리케이션 클래스는 루트 패키지에 둡니다
 ```
 
 모듈 이름은 기술 계층이 아니라 업무 의미를 나타내야 합니다.
+업무 의미에서 Bounded Context 후보를 식별하는 기준은
+[120 DDD 개념과 적용 기준](120-domain-driven-design.md#전략적-ddd)을 따릅니다.
 실제 모듈 이름은 `docs/project`와 `docs/domain`에서 관리합니다.
 
 ## `api`와 `internal`
@@ -191,7 +193,9 @@ HTTP Controller는 외부 사용자에게 API를 제공하지만 코드 의존�
 - 모듈 간 협력은 공개 interface, 공개 DTO, 이벤트 계약으로 제한합니다.
 - DB 테이블을 공유하는 방식으로 모듈 협력을 처리하지 않습니다.
 
-현재 `account`와 `auth`가 `refresh_token`·`auth_event`를 서로 다른 JPA mapping으로 함께 쓰는 구현은 이 기준의 알려진 예외이지 권장 패턴이 아닙니다. 현재 사실과 제거 owner는 [모듈 지도의 Persistence 예외](../project/210-module-map.md#현재-persistence-예외)에서 확인합니다.
+현재 프로젝트가 이 일반 기준을 충족하는지와 알려진 예외는 이 문서가 반복해서 소유하지
+않고 [210 모듈 지도의 Persistence 예외](../project/210-module-map.md#현재-persistence-예외)에서
+확인합니다.
 
 ## 자동 검증 기준
 
@@ -286,7 +290,9 @@ adapter.in.web
 
 ## 관련 문서
 
-- **용어·구조 원칙**: [아키텍처 개념](110-architecture-concepts.md), [헥사고날 아키텍처](200-hexagonal-architecture.md)
+- **개념 비교**: [110 아키텍처 개념 구분](110-architecture-concepts.md)
+- **DDD 경계 기준**: [120 DDD 개념과 적용 기준](120-domain-driven-design.md)
+- **모듈 내부 구조**: [200 헥사고날 아키텍처](200-hexagonal-architecture.md)
 - **경계 변환 규칙**: [경계와 매핑 규칙](220-boundary-and-mapping-rules.md)
 - **현재 프로젝트 적용**: [현재 프로젝트 아키텍처](../project/200-current-architecture.md)
 - **기술 사용 기준**: [Spring Boot](../tech-stack/210-spring-boot.md)
