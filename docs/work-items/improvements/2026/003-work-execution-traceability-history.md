@@ -926,7 +926,8 @@ Agent 결정으로 받아들이는 공백을 공통 목표 보존 identity로 �
 먼저 제시할 별도 목표 변경으로 돌립니다. 기존 exact 계약이 없는 도메인 소유권·모듈 경계·
 데이터 생명주기·공개 계약 변경은 검증된 `Planned` checkpoint가 production mutation의
 committed parent에 먼저 존재해야 합니다. Develop, plan·development verifier와 Git adapter가
-같은 identity와 Git 순서를 소비합니다.
+같은 목표 보존 identity를 소비하되, plan verifier는 checkpoint 필요를 판정하고 development
+verifier와 Git adapter는 실제 Git 순서를 확인합니다.
 
 Root 제거 반사실에서 현재 DDD 사건의 분할안은 `refresh token lifecycle 단일 owner` 성공
 조건을 약화하므로 구현 후보에서 탈락합니다. `auth`로 end-to-end ownership을 옮기는 안과

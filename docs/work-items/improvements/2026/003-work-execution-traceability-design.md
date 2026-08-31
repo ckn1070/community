@@ -1321,8 +1321,9 @@ trade-off로 선택했고, production 변경 뒤 작성한 design·test·현재 
 - 계획이 승인된 구현의 불가피한 선행 dependency이면 exact 계획·필수 router의 local commit만
   상시 예외로 허용합니다. 이 예외는 production mutation·다른 dirty·push 권한을 만들지
   않습니다.
-- Plan·development verifier와 Git adapter는 같은 목표 보존 identity와 checkpoint ancestry를
-  각 phase에서 다시 소비합니다. Candidate가 만든 test·SOT·문서는 원래 목표 source가 아닙니다.
+- Plan verifier는 목표 보존과 checkpoint 생성 필요를, post-commit development verifier와
+  Git adapter는 실제 checkpoint ancestry를 각 phase에서 다시 소비합니다. Candidate가 만든
+  test·SOT·문서는 원래 목표 source가 아닙니다.
 
 ### 대안과 trade-off
 
