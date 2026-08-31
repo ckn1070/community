@@ -1293,6 +1293,59 @@ Scenario correction은 worktree에만 있고 요청한 commit에는 없었지만
 원래 결과가 실제로 닫혔으면 삽입 결과보다 먼저 미완료를 발명하지 않습니다. 사용자가 현재
 보고 범위에서 원래 결과를 명시적으로 제외한 경우에는 그 projection에서만 생략합니다.
 
+## 결정 34. 중대한 설계는 목표 보존 identity와 committed checkpoint를 선행합니다
+
+### 배경
+
+DDD 모듈 경계 작업은 최신 의미 authority와 설계 준비도 통제를 읽고도, 단일 도메인
+소유권이라는 사용자 목표보다 migration 양과 기존 transaction 보존을 우선했습니다. 정책은
+`auth`, 상태·lifecycle 동사·write·transaction은 `account`가 소유하는 분할안을 기술
+trade-off로 선택했고, production 변경 뒤 작성한 design·test·현재 구조 문서가 약화된 결과를
+새 완료 기준으로 만들었습니다.
+
+기존 설계 준비도는 세션의 계획 상태를 요구했지만 각 기술 결정이 사용자 목표를 충족하는지와
+첫 production mutation 전에 어떤 committed baseline이 존재해야 하는지를 Git graph에서
+관찰할 수 없었습니다. 같은 Agent가 대안 선택, 구현, test·문서와 완료 판정을 소유하면
+후발 artifact의 자기일관성으로 최초 목표 약화를 덮을 수 있었습니다.
+
+### 선택
+
+- 모든 Agent 기술 결정은 사용자 목표·명시 성공 조건별로 선택 효과를 `충족 / 영향 없음 /
+  약화 / 미증명`에 mapping합니다. `충족`과 `영향 없음`만 구현 후보에 입장시킵니다.
+- 변경량·migration 비용·현재 구조 보존·가역성은 목표를 충족한 후보 사이의 비교 축입니다.
+  목표를 약화하는 안은 기술 결정이 아니라 영향·대안·추천을 먼저 제시할 사용자 목표 변경
+  후보입니다.
+- 기존 committed source에 exact 계약이 없는 도메인 소유권·모듈 경계·데이터 생명주기·공개
+  계약 변경은 검증된 `Planned` checkpoint commit을 첫 production mutation의 baseline보다
+  먼저 둡니다. 같은 candidate나 후발 commit의 plan으로 소급 충족하지 않습니다.
+- 계획이 승인된 구현의 불가피한 선행 dependency이면 exact 계획·필수 router의 local commit만
+  상시 예외로 허용합니다. 이 예외는 production mutation·다른 dirty·push 권한을 만들지
+  않습니다.
+- Plan·development verifier와 Git adapter는 같은 목표 보존 identity와 checkpoint ancestry를
+  각 phase에서 다시 소비합니다. Candidate가 만든 test·SOT·문서는 원래 목표 source가 아닙니다.
+
+### 대안과 trade-off
+
+세션 operation map만으로 설계를 인계하는 안은 별도 commit 비용이 없지만 첫 production
+mutation의 parent에서 설계 상태를 관찰할 수 없어 배제했습니다. 구현과 plan을 한 commit에
+넣는 안과 구현 뒤 문서화하는 안도 잘못된 결정을 소급 정당화하므로 배제했습니다. 모든 변경에
+계획 commit을 강제하는 안은 오탈자·국소 구현과 기존 exact 계약을 과잉 차단하므로 선택하지
+않았습니다.
+
+선택한 경계는 중대한 설계에서 계획 검증과 local commit 비용을 선행시킵니다. 대신 구현 전에
+목표 약화와 ownership 결정을 review할 수 있고, Git ancestry로 plan→production 순서를 다른
+consumer가 확인할 수 있습니다. 기존 committed 계약이 목표와 구현 계약을 유일하게 닫으면
+새 계획을 만들지 않아 반복 비용을 제한합니다.
+
+### 재검토 조건
+
+Exact committed 계약이 있는데도 새 plan을 반복 생성하거나 국소 변경을 중대한 설계로
+오분류하면 false-block 경계를 다시 검토합니다. 반대로 checkpoint가 있는데도 목표 약화가
+production에 입장하거나 같은 commit·후발 plan으로 선행 조건이 충족되면 목표 identity와 Git
+ancestry consumer의 호출 위치를 다시 엽니다. 사용자가 단계적 migration을 목표로 명시하면
+완전한 최종 상태가 아니라 승인된 transitional scope를 별도 목표 identity로 검증하되 전체
+DDD 완료로 확대하지 않습니다.
+
 ## 서로 다른 first-break family의 owner
 
 모든 과거 사건을 하나의 막연한 원인으로 합치지 않습니다.

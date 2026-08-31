@@ -46,6 +46,14 @@ local commit 개수는 이 대조를 대신하지 않는다. Test 통과나 후�
 대조가 없거나, 적용할 specialist 검토가 commit 뒤로 남아 있으면 미검증 후보로 관련
 owner에 반환한다. 이 skill에서 공통 discovery·closure 횟수를 다시 정의하지 않는다.
 
+설계 workflow가 적용된 candidate는 작업 실행 workflow의 목표 보존 identity와 설계 준비도
+인계를 별도로 확인합니다. 목표 약화·미증명 항목이 있거나 필수 계획 검증이 없으면 stage하지
+않습니다. 기존 committed 계약이 없던 도메인 소유권·모듈 경계·데이터 생명주기·공개 계약을
+바꾸는 production patch라면 검증된 `Planned` checkpoint commit이 fixed-base `HEAD` 자체에
+포함되고 첫 production commit보다 선행하는지 Git ancestry로 확인합니다. Checkpoint가
+fixed base 자체인 경우도 유효하며, 같은 staged candidate나 뒤 commit의 plan·design은 선행
+설계나 원래 목표 source로 인정하지 않고 `$dev-plan`으로 반환합니다.
+
 ## 3. Local Git orchestration
 
 operation map에 stage·commit이 있으면 커밋 workflow를 순서대로 실행한다.

@@ -38,6 +38,16 @@ Dependency closure와 보안·복구 상세 감사를 시작하기 전에 후보
 mutation 전의 원래 결과·제약·oracle과 독립 authoritative source로 역추적한다. 같은 작업에서
 후보가 만든 test·README·SOT·work item은 구현 evidence이지 요구 source가 아니다.
 
+원래 목표·성공 조건마다 후보 효과를 `충족 / 영향 없음 / 약화 / 미증명`으로 분류합니다.
+후보가 migration 비용·최소 변경·현재 구조 보존을 위해 목표를 약화했는데 사용자가 그 목표
+변경을 선택하지 않았다면 필수 실패입니다. 후보와 함께 만든 design·test·문서가 약화된 상태를
+일관되게 설명해도 원래 목적을 대체하지 않습니다.
+
+기존 committed 계약이 없던 도메인 소유권·모듈 경계·데이터 생명주기·공개 계약 변경은 첫
+production mutation의 baseline에 검증된 `Planned` checkpoint가 있었는지 Git parent와 work item
+상태에서 확인합니다. 같은 candidate나 뒤 commit의 plan으로 소급한 구현은 설계 준비도 실패로
+반환합니다.
+
 연결되지 않은 exact 감사·정규화·hardening·자동화가 있으면 그 효과의 내부 결함을 상세히
 열거해 더 완성하도록 만들지 않는다. `미승인 후보 효과` 하나로 묶어 실제 효과·부재한
 admission source·원래 결과에 미치는 영향·효과 전체 제거라는 닫는 조건만 반환하고, 승인된

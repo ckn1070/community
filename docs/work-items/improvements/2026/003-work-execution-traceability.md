@@ -69,6 +69,10 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
   gate를 소비합니다. 사용자 선택, source 제약, Agent 책임인 기술 추천, 프로젝트 외부 판단이
   필요한 열린 사용자 결정과 미증명을 분리합니다. 열린 값을 질문 전에 확정하거나 반영을
   약속하지 않되, API·schema 같은 기술 추천을 근거 없이 사용자 선택으로 넘기지도 않습니다.
+- Agent 기술 결정은 사용자 목표·성공 조건별로 선택 효과를 대조해 모두 충족하거나 영향이
+  없을 때만 입장됩니다. 목표를 약화하는 최소 변경·migration 절감안은 목표 변경 대안으로
+  돌리고, 기존 계약이 없는 중대한 설계는 검증된 `Planned` checkpoint를 production
+  mutation보다 앞선 committed baseline에 둡니다.
 
 상세한 선택·대안·재검토 조건은
 [003 작업 실행 추적성 설계](003-work-execution-traceability-design.md), Git만으로 복원하기
@@ -137,6 +141,13 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
   강화하고, 같은 권위 계약을 소비하는 설계 workflow·work item lifecycle·`dev-plan`·
   `verify-plan`을 동기화합니다. 모델링된 행동 검증과 이번 evaluator·runner invocation 외의
   미래 plan writer 호출은 계속 미검증입니다.
+- DDD 모듈 경계 작업은 최신 main에서 시작했는데도, 단일 도메인 소유권이라는 목적을
+  migration 최소화보다 낮은 우선순위로 두고 정책·저장·transaction owner를 분할했습니다.
+  설계 checkpoint와 독립 계획 검증보다 production commit이 먼저였고, 후보가 만든 문서와
+  구조 test가 약화된 목표를 완료로 다시 정의했습니다. 현재 통제는 목표 보존 identity와
+  committed plan 선행 조건을 공통 workflow·설계·개발·검증·Git에 연결하지만, 이후 실제
+  architecture 작업에서 이 identity가 첫 mutation 전에 소비되는지는 후속 live evidence로
+  확인해야 합니다.
 
 ## 남은 책임과 재개 조건
 

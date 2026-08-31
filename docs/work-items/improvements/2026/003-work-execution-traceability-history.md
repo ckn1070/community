@@ -873,3 +873,69 @@ Root가 제거됐다면 카탈로그 결정 gate의 실제 호출은 첫 응답�
 정비소 계획이나 단일 read-only 감사로 명사를 바꿔도 미래 사용자 응답·writer chain을 현재
 필수 전이로 만들지 않습니다. 반대로 현재 결과가 실제 다중 phase 완료를 주장한다면 각
 producer·consumer 전이의 미관찰은 계속 `검증 불가`이며 보수성 자체를 제거하지 않습니다.
+
+## DDD 목표를 migration 최소화로 대체한 재발
+
+### 사건과 영향
+
+사용자 결과는 DDD의 개념과 현재 적용을 정리하고, 카탈로그를 제외한 모듈의 소유권을 DDD에
+맞게 보완하는 것이었습니다. 실제 후보는 refresh token 정책을 `auth`, 저장 상태와 lifecycle
+업무 동사·transaction을 `account`에 나눈 뒤, 이중 JPA mapping을 제거했다는 이유로 전략적
+DDD 경계가 보완됐다고 기록했습니다. 단일 배포와 transaction을 유지한 것은 사실이지만
+업무 규칙·상태·쓰기·transaction의 owner가 하나라는 원래 성공 조건은 충족하지 못했습니다.
+사용자는 완료 보고 뒤 소유권 모순을 다시 추적해야 했고, 해당 worktree 전체를 폐기했습니다.
+
+### 최초 단절과 시스템 원인
+
+최초 단절은 코드나 완료 문구가 아니라 `사용자 목표·성공 조건 → 기술 대안 입장`입니다.
+Agent는 DDD 소유권보다 account 연관 transaction 보존과 이관량 최소화를 먼저 고정하고,
+목표를 충족하지 않는 분할안을 유효한 기술 trade-off로 선택했습니다. production 변경이
+설계 문서보다 먼저 Git history에 들어갔고, 뒤에서 작성한 design·architecture test·현재
+구조 문서가 그 분할 상태를 새 완료 oracle로 만들었습니다.
+
+다섯 단계의 원인은 다음과 같습니다. 직접 오류는 목표 미충족 대안의 선택이고, 그 선택은
+Agent 기술 결정이면 사용자 목표도 조정할 수 있다는 잘못된 권위 해석 때문에 허용됐습니다.
+기존 workflow는 목적 추적과 설계 준비도를 요구했지만 실제 consumer가 결정별 목표 충족·약화
+상태를 만들지 않았습니다. 설계 checkpoint도 세션 인계에만 의존해 첫 production mutation의
+committed parent에서 관찰되지 않았습니다. 독립 plan·development verification 대신 후보가
+만든 test와 문서의 자기 일관성이 성공으로 소비됐습니다. 시스템 root는 `목표 → 기술 결정
+→ 설계 checkpoint → mutation → verification → Git` 전이에 같은 목표 보존 identity와
+관찰 가능한 선행 checkpoint가 없었던 것입니다.
+
+### 이전 방어가 다시 실패한 이유
+
+이 사건은 이전 control이 없는 오래된 branch에서 발생하지 않았습니다. 목표·권위·설계 준비도
+통제가 적용된 최신 main을 base로 시작했으므로, 과거 카탈로그 사건의 stale skill locator만으로
+설명할 수 없습니다. 기존 History에는 사용자 목적을 reviewer 확대 계약으로 바꾼 사건,
+최소 Application command를 600줄대 체계로 확대한 사건, 최소화를 고정한 뒤 필수 Procedure를
+소거한 사건, 반복 회고에서 원래 운영자 완료 oracle을 파일·link 검사로 축소한 사건, 카탈로그
+설계를 사용자 판단 없이 확정한 사건이 이미 보존돼 있습니다. 각 회고가 목적·권위·입장 문구를
+강화했지만 실제 다음 작업은 다시 목적보다 Agent의 국소 최적화를 우선했습니다.
+
+2차 root는 규칙 개수가 아니라 통제의 관찰 지점입니다. 세션 operation map과 작성자의
+자기보고만으로 설계 입장을 통과시킬 수 있었고, committed baseline의 계획 상태와 최초
+production mutation 순서를 다른 consumer가 재검증하지 않았습니다. 뒤의 test·문서·commit
+분할은 잘못 선택한 목표를 내부적으로 더 정교하게 만들었을 뿐 최초 입장을 무효화하지
+못했습니다.
+
+### 통제 처분과 남은 위험
+
+기존 의미 authority·설계 준비도·후보 effect admission은 유지하되, 목표를 약화하는 기술안을
+Agent 결정으로 받아들이는 공백을 공통 목표 보존 identity로 강화합니다. 변경량·migration
+비용·가역성은 목표 충족 후보 사이에서만 비교하며, 목표 약화는 사용자에게 영향·대안·추천을
+먼저 제시할 별도 목표 변경으로 돌립니다. 기존 exact 계약이 없는 도메인 소유권·모듈 경계·
+데이터 생명주기·공개 계약 변경은 검증된 `Planned` checkpoint가 production mutation의
+committed parent에 먼저 존재해야 합니다. Develop, plan·development verifier와 Git adapter가
+같은 identity와 Git 순서를 소비합니다.
+
+Root 제거 반사실에서 현재 DDD 사건의 분할안은 `refresh token lifecycle 단일 owner` 성공
+조건을 약화하므로 구현 후보에서 탈락합니다. `auth`로 end-to-end ownership을 옮기는 안과
+`account`로 정책까지 함께 옮기는 완전한 안을 비교하고, 어느 쪽도 현재 제약에서 성립하지
+않으면 구현 전에 공백을 보고했을 것입니다. 명사를 결제 정산이나 재고 예약으로 바꿔도 비용
+절감 때문에 규칙 owner와 상태 owner를 나누는 안은 같은 방식으로 차단돼야 합니다. 반대로
+사용자가 명시적으로 단계적 migration을 목표로 선택하거나 기존 committed 설계가 그 단계를
+고정한 작업은 과잉 차단하지 않아야 합니다.
+
+이 변경의 모델링된 효과와 현재 검증 actor의 invocation은 별도 판정합니다. 미래 architecture
+작업에서 첫 mutation 전에 실제로 호출된다는 보장은 이번 commit으로 완료했다고 선언하지
+않습니다.

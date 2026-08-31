@@ -49,6 +49,7 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 ```text
 상위 결과 → 이번 라운드의 concrete 결과·완료 oracle
 → 활성 결정과 source → 포함·제외·복귀점
+→ 목표·성공 조건 → 선택한 기술 결정·후보 효과 → 충족·영향 없음과 독립 근거
 → raw batch 항목별 문장 기능·요청 효과·positive 권한 source 또는 미확정 사유
 → 모든 항목의 처분이 닫힌 batch admission
 → 예정 artifact별 관찰 효과·실행 방식·blocking 여부·전문 owner 처분
@@ -69,6 +70,15 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 있지만 세 번째를 증명하지 않는다. 현재 구조를 대상으로 만든 test도 그 구조가 정확히
 연결됨을 증명할 뿐 구조 자체의 필수성을 증명하지 않는다. 세 번째가 현재 source와 동결
 결정에서 유일하게 닫히지 않으면 writer가 구조를 선택하지 않고 설계·계획 owner로 돌린다.
+
+선택한 기술안이 사용자 목표 하나라도 약화하거나 그 영향을 증명하지 못하면 변경량·migration
+비용·현재 구조 보존을 근거로 writer에게 넘기지 않습니다. 목표를 충족하는 대안과의 차이를
+설계 owner에 반환하고, 목표·범위 변경이 필요할 때에만 사용자 결정 라운드를 엽니다.
+
+기존 committed source에 exact 계약이 없는 도메인 소유권·모듈 경계·데이터 생명주기·공개
+계약 변경은 `$dev-plan`의 검증된 `Planned` checkpoint commit과 목표 보존 identity를 현재
+`HEAD`에서 복원한 뒤에만 첫 production mutation을 시작합니다. 같은 개발 candidate가 새로
+만든 plan·design은 이 선행 조건이나 원래 목표 source가 아닙니다.
 
 원래 요구와 authoritative source로 이 계약을 유한하게 채우지 못하면 개발을 시작하지 않고
 Bootstrap 또는 실제 결정 owner로 돌아간다. 라운드 계약의 field 의미, 새 발견·차단 판정,
