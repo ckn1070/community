@@ -144,6 +144,25 @@ Proposed
 알림 저장·중복 방지, 숨김과 대화 보존, API·schema·module·transaction·조회 방식은 제품
 결과를 바꾸지 않는 기술 해결 값이므로 현재 해결 설계에서 닫습니다.
 
+## 해결 설계
+
+[016 해결 설계](016-general-community-design.md)는 현재 제품 결과를 다음 장기 계약으로
+연결합니다.
+
+- `community`, `media`, `moderation`의 생명주기별 소유권과 기존 `account`·`notification`
+  공개 계약을 통한 단방향 협력
+- 공통 콘텐츠 root와 versioned typed post block, direct parent와 top-level root를 함께
+  보존하는 대화 구조
+- 작성자 삭제와 관리자 숨김의 독립 사실, reaction·report·inbox의 DB 무결성과 원자적
+  transaction
+- Account 표시 이름 batch 조회와 notification inbox 저장의 자기 알림 제외·중복 방지
+- Private S3 staging/serving 분리, workload 전용 OIDC 임시 자격증명, application-authorized
+  image stream과 DB job 기반 검증·재인코딩·미사용/삭제 object 정리
+- Resource API, opaque cursor read model, additive Flyway, fail-close 공개 전환·rollback과
+  구체적인 후속 확장 방식
+
+활성 사용자 결정은 없습니다. 다음 계획 단계는 실행 계획이며 현재에는 열지 않았습니다.
+
 ## 1단 답글을 선택한 근거
 
 특정 댓글에 직접 응답하는 경험은 첫 범위에 포함하되, 무제한 중첩으로 생기는 가독성과 운영
@@ -203,4 +222,5 @@ Proposed
 - **현재 account 정책**: [100 Account](../../../domain/100-account.md),
   [110 Account 인증·인가 정책](../../../domain/110-account-auth-policy.md)
 - **현재 module 상태**: [210 모듈 지도](../../../project/210-module-map.md)
+- **현재 해결 설계**: [016 일반 커뮤니티 해결 설계](016-general-community-design.md)
 - **계획 단계와 artifact 기준**: [100 작업 문서 생명주기](../../100-work-item-lifecycle.md#계획-단계와-최소-artifact)
