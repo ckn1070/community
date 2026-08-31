@@ -12,7 +12,8 @@ source 조사, 권리 판정, 원문→column mapping과 입력 방식 대안을
 확보했습니다. 이후 외부 연락 제외를 제조사 공개 원본 제외로 확대했던 해석을 교정하고, 기아
 공식 가격표·카탈로그·현재 웹 snapshot을 production source로 포함했습니다. 그 결과 첫 K5
 configuration 1건, 기본품목 69건, 독립 선택 가능한 옵션 2건과 완성 인증 1건을 V18 입력으로
-만들었으며 017은 차종별 확장 중입니다.
+만들었습니다. 이 K5 단위는 계약 검증 표본으로 종료하며, 후속 확장은 전체 판매 모델
+inventory를 먼저 고정한 뒤 구조화 입력과 release batch migration으로 수행합니다.
 
 ## source별 현재 조사 결과
 
@@ -142,32 +143,32 @@ source에만** 적용됩니다. 기아 공식 원본을 결합한 K5 2027 mappin
 오류로 끝나야 합니다. Variant key는 실제 schema의 identity column 조합으로 만들며 임의
 `<CONDITION_SUFFIX>`를 덧붙이지 않습니다.
 
-## 입력 방식 대안과 첫 단위 결정 증거
+## 입력 방식 결정과 migration 경계
 
-runtime crawler·관리자 import는 현재 범위가 아닙니다. 전체 확대 전에 같은 대표 4모델 입력과
-동일한 기대 DB 상태를 대상으로 아래 세 대안을 비교합니다.
+runtime crawler·관리자 import는 현재 범위가 아닙니다. V18에서 수동 SQL이 한 configuration에도
+제품 계층·가격·옵션·인증과 stable UUID를 반복 작성해야 한다는 점을 확인했습니다. 아직 적용하지
+않은 V18은 외부 executable을 추가하지 않고 SQL 내부 선언적 seed table과 deterministic UUID
+표현식으로 기아 22개 차종을 한 번에 변환합니다. 차량별 SQL 복제는 사용하지 않습니다.
 
 | 대안 | 장점 | 비용·위험 | 채택 조건 |
 | --- | --- | --- | --- |
-| 검토된 수동 Flyway SQL | 새 도구가 없고 작은 범위에서 diff가 직접 보임 | 반복·오기·stable UUID·coverage 누락 위험 | 실제 전체 예상 규모가 작고 표본 수동 오류가 없으며 검토 비용이 가장 낮음 |
+| 검토된 수동 Flyway SQL | 새 도구가 없고 작은 범위에서 diff가 직접 보임 | 반복·오기·stable UUID·coverage 누락 위험 | V18 계약 검증 표본에만 사용하고 후속 전체 확대에는 사용하지 않음 |
 | 구조화 입력 + 기존 Gradle·Java 보조 | schema 검증과 결정적 변환을 재사용할 수 있음 | build 코드 경계와 입력 형식 유지 책임 | 기존 기능만으로 required validation·determinism을 충족하고 새 custom tool이 불필요함 |
-| 구조화 입력 + repository generator | 반복 mapping·검증·SQL 생성 자동화 | 도구 자체 테스트·owner·업그레이드·폐기 비용 | 표본에서 반복 가능한 수동 오류와 규모가 확인되고 기존 기능으로 닫히지 않음 |
+| SQL 내부 선언적 seed table | 별도 runtime 없이 Flyway가 같은 transaction에서 관계를 생성 | SQL review 비용과 source field 수동 대조 | 미적용 V18의 Kia batch에 채택. 모델 coverage를 PostgreSQL test로 고정 |
 
-대안별로 representative inventory·mapping 행 수, 생성 SQL line·byte 수, 사람이 발견한 오류 수,
-동일 입력 2회 output diff, validation false positive/negative, compile·실행 시간, PostgreSQL 적용
-시간·lock과 rollback 비용을 기록합니다. 새 generator나 `check` hard gate가 우세하면
-[130 도구 도입 워크플로우](../../../workflow/130-tool-adoption-workflow.md)의 기존 기능 대조,
-구현·운영 owner, 실패·우회·제거 경로를 제시하고 사용자 선택을 받은 뒤에만 채택합니다.
+generator는 representative inventory·mapping 행 수, 생성 SQL line·byte 수, 동일 입력 2회 output
+diff, validation false positive/negative, 실행 시간과 PostgreSQL 적용 시간·lock을 기록합니다.
+구현·운영 owner, 실패·우회·제거 경로는
+[130 도구 도입 워크플로우](../../../workflow/130-tool-adoption-workflow.md)에 따라 고정합니다.
 
-첫 완결 단위의 migration은 구현 직전 다음 미사용 번호 `V18`을 확인해 배정했습니다. 한 모델의
-제품 계층·가격·옵션·인증을 함께 검토·rollback할 수 있도록 단일 data migration으로 묶었습니다.
-후속 모델의 파일 분할은 실제 SQL 크기와 적용 시간·review 경계를 기준으로 다시 판정합니다.
+첫 완결 단위의 migration은 구현 직전 다음 미사용 번호 `V18`을 확인해 배정했습니다. 이 migration은
+적용 전이므로 K5 표본을 보존한 채 기아 현재 판매 22개 차종 전체를 같은 파일의 제조사 batch로
+확장했습니다. 후속 현대 migration도 같은 공식 inventory snapshot과 source revision을 공유하는
+제조사 release batch로 만들며 차량 identity 자체를 파일 경계로 사용하지 않습니다.
 
-현재 대표 후보 CSV는 새 repository 도구를 도입하지 않고 macOS 기본 Ruby 2.6의 표준 CSV
-parser로 1회 생성했습니다. 이 선택은 최종 입력 방식이나 generator 채택이 아니라, quoted CSV를
-손상 없이 필터링하고 원문 행 번호를 붙이기 위한 qualification 수단입니다. 연간 갱신 빈도와
-다음 revision의 반복 오류가 확인되기 전에는 repository script나 `check` hard gate를 만들지
-않습니다.
+현재 대표 후보 CSV를 만든 macOS 기본 Ruby 2.6 parser는 qualification용 일회성 수단으로만
+남깁니다. 후속 generator는 repository가 소유하고 입력 schema, 결정적 출력, 오류·삭제 경로와
+검증 명령을 함께 제공합니다.
 
 ## 2026-08-31 계획 변경
 
@@ -178,8 +179,11 @@ parser로 1회 생성했습니다. 이 선택은 최종 입력 방식이나 gene
 | 취득 방식 | file/API 미확정 | 파일은 로그인 없이 가능하고 API는 활용신청·서비스 키가 필요해 file download 선택 | 외부 가입·신청·credential 없이 exact CSV 확보 |
 | 가공 범위 | 대표 mapping 전 미정 | 현대·기아 K5·카니발·EV6·넥쏘 후보 168행에 provenance와 blocker만 추가 | identity·필수 schema field가 닫힐 때까지 migration 입력으로 사용하지 않음 |
 | 외부 연락 범위 | 제조사·유료 source 조건 확인 후보가 있었음 | 메일·전화·문의·활용신청만 제외하고 로그인 없이 공개된 제조사 페이지·PDF는 production source로 사용 | source 공백 때문에 적재를 중단하지 않고 공개 원본을 계속 탐색·보관 |
-| 공개 source coverage | KEA 단일 source에서 게시 가능 configuration·완성 인증 모두 0건 | 기아 공식 원본을 결합해 K5 configuration·인증 각 1건을 완성 | 작은 수직 단위를 먼저 검증하고 차종별 직렬 확장 |
-| 입력 방식 | 대표 4모델 전체 비교 뒤 선택 | 첫 K5는 검토 가능한 V18 수동 Flyway SQL 사용 | 반복 오류·규모가 확인될 때 generator를 재평가 |
+| 공개 source coverage | KEA 단일 source에서 게시 가능 configuration·완성 인증 모두 0건 | 기아 공식 원본을 결합해 K5 configuration·인증 각 1건을 완성 | K5는 표본으로 종료하고 전체 inventory를 배치로 수집·검증 |
+| 입력 방식 | 대표 4모델 전체 비교 뒤 선택 | V18은 수동 SQL 표본, 후속 전체 범위는 구조화 입력+generator | 수동 SQL을 차량별로 복제하지 않음 |
+| migration 분할 | 모델별 수직 단위를 차례로 추가 | 같은 inventory snapshot·source revision의 검증된 release batch로 생성 | SQL 크기·적용 시간·review 임계치만 분할 근거로 사용 |
+| V18 처리 | K5 표본을 유지하고 새 번호부터 batch 추가 | migration 미적용이라는 사용자 확인에 따라 V18을 Kia 22개 차종 batch로 직접 교체 | K5 상세 행은 보존하고 나머지 21개 차종의 대표 게시 구성을 같은 transaction에 추가 |
+| generator 도입 | 별도 repository generator를 후속 표준으로 도입 | Kia batch는 SQL 내부 선언적 seed table과 PostgreSQL constraint/test로 필요한 결정성을 충족 | 새 executable의 owner·유지비 없이 모델별 migration 복제를 제거하며, 필요성이 다시 확인될 때 도입을 재평가 |
 
 상세 실행 기록은 외부 데이터 저장소의 `changes/2026-08-31-initial-storage.md`, exact source와
 checksum·권리는 `manifests/kea-efficiency-file-dataset-2026-04-24.yaml`이 소유합니다.
@@ -190,10 +194,14 @@ checksum·권리는 `manifests/kea-efficiency-file-dataset-2026-04-24.yaml`이 �
 2. 첫 K5 configuration의 필수 제품·판매·가격·옵션·인증 mapping과 V18을 완성했습니다.
 3. EV 온도 조건, 가격 적용일과 넥쏘 주행거리·연료용량은 현재 `BLOCKED`입니다.
 4. KEA 단일 source coverage 0건과 K5 공식 원본 결합 결과 1건을 분리해 기록했습니다.
-5. K5의 PostgreSQL·API 검증을 닫은 뒤 카니발부터 같은 형식으로 확장합니다.
-6. 확정한 contract·task·failure/rollback 기준으로 `$verify-plan` 독립 검증을 통과합니다.
+5. 현대·기아 전체 판매 모델 inventory와 source URL 집합을 먼저 고정하고 원본 취득을 제조사
+   snapshot 배치로 수행합니다.
+6. 구조화 입력과 generator로 첫 다차종 release batch를 만들고 PostgreSQL·API coverage를
+   배치 단위로 검증합니다.
+7. 확정한 contract·task·failure/rollback 기준으로 `$verify-plan` 독립 검증을 통과합니다.
 
-후속 모델은 각 대표 단위의 원본·mapping·migration·조회 검증이 닫힌 뒤 다음 단위로 넘어갑니다.
+후속 원본과 mapping은 모델 사이에 직렬 선행조건을 두지 않고 inventory 전체에서 축적합니다.
+게시 migration과 조회 검증만 동결된 release batch 단위로 직렬화합니다.
 
 ## 관련 문서
 

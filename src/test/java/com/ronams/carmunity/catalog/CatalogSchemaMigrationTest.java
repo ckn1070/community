@@ -147,6 +147,55 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         .containsExactly("CLUSTER-PACK-12-3:1300000", "PANORAMA-SUNROOF:1090000");
   }
 
+  /** 2026-08-31 기아 공식 판매 목록에서 상용·특장차를 제외한 22개 차종을 한 배치로 게시합니다. */
+  @Test
+  void seedsEveryCurrentKiaPassengerModelInOneMigrationBatch() {
+    List<String> modelCodes =
+        jdbcTemplate.queryForList(
+            """
+            SELECT DISTINCT model.code
+            FROM car_configuration configuration
+            JOIN car_vehicle_variant variant ON variant.id = configuration.vehicle_variant_id
+            JOIN car_model_year model_year ON model_year.id = variant.model_year_id
+            JOIN car_generation generation ON generation.id = model_year.generation_id
+            JOIN car_model model ON model.id = generation.model_id
+            JOIN car_brand brand ON brand.id = model.brand_id
+            JOIN car_configuration_price price ON price.configuration_id = configuration.id
+            WHERE brand.code = 'KIA'
+              AND configuration.is_published
+              AND configuration.sales_started_on <= DATE '2026-08-31'
+              AND (configuration.sales_ended_on IS NULL
+                   OR configuration.sales_ended_on > DATE '2026-08-31')
+            ORDER BY model.code
+            """,
+            String.class);
+
+    assertThat(modelCodes)
+        .containsExactly(
+            "CARNIVAL",
+            "CARNIVAL-HI-LIMOUSINE",
+            "EV3",
+            "EV3-GT",
+            "EV4",
+            "EV4-GT",
+            "EV5",
+            "EV5-GT",
+            "EV6",
+            "EV6-GT",
+            "EV9",
+            "EV9-GT",
+            "K5",
+            "K8",
+            "K9",
+            "MORNING",
+            "NIRO",
+            "RAY",
+            "RAY-EV",
+            "SELTOS",
+            "SORENTO",
+            "SPORTAGE");
+  }
+
   /** 설계가 이름으로 고정한 133개 constraint와 조회 index 네 개를 빠짐없이 생성합니다. */
   @Test
   void createsExactNamedConstraintsAndQueryIndexes() {

@@ -9,8 +9,10 @@ In Progress
 이 작업은 [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)가 로컬에서
 구현·검증한 11개 database table과 조회 기능을 입력 계약으로 사용합니다. 첫 공개 범위는
 현대자동차·기아의 대한민국 일반 개인 구매용 현재 판매 승용·SUV·MPV이며, 이미지 파일과
-외부 이미지 URL은 모두 제외합니다. 2026-08-31 기준 첫 적재 단위인 The 2027 K5 2.0 가솔린
-스마트 셀렉션의 versioned data migration을 작성하고 있습니다.
+외부 이미지 URL은 모두 제외합니다. 2026-08-31 기준 The 2027 K5 2.0 가솔린 스마트 셀렉션으로
+적재 계약을 검증한 뒤, 아직 적용하지 않은 V18을 기아 현재 판매 22개 차종의 단일 배치로
+교체했습니다. 차량별 migration을 만들지 않고 같은 inventory snapshot과 source revision을
+공유하는 제조사 배치로 수집·가공·적재합니다.
 
 현재 자동차 개념과 물리 target은 각각
 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)과
@@ -54,9 +56,9 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | 2. 최초 공개 범위 결정 | 완료 | 현대·기아 현재 모델과 이미지 제외 범위를 고정했습니다. |
 | 3. 확보 계획·provenance 계약 | 완료 | source 적격성, mapping, coverage와 권리 상태 기록 계약을 남겼습니다. |
 | 4. 공개 source 사전 조사 | 완료 | 대표 4모델의 현재 판매 여부와 공개된 가격·제원·인증 정보, 제조사·공공·유료 후보의 권리 공백을 확인했습니다. |
-| 5. exact source qualification | 완료 | KEA 원본과 기아 K5 공식 가격표·카탈로그·웹 snapshot을 확보하고 source별 checksum과 column provenance를 기록했습니다. |
-| 6. 입력 방식·계획 확정 | 완료 | 전체 확대 전 첫 완결 단위는 검토 가능한 수동 Flyway SQL로 적재하고, 반복 오류·규모가 확인될 때 generator를 재평가합니다. |
-| 7. 전체 데이터 작성 | **현재** | V18에 K5 게시 configuration 1건·가격 1건·독립 선택 가능 옵션 2건·기본품목 69건·완성 인증 1건을 만들고 PostgreSQL·조회 검증 뒤 차종별로 확장합니다. |
+| 5. exact source qualification | 완료 | KEA 원본과 기아 공식 현재 판매 목록·가격표·카탈로그 44개를 확보하고 source별 checksum과 provenance를 기록했습니다. |
+| 6. 입력 방식·계획 확정 | 완료 | 미적용 V18 안의 선언적 batch table로 stable UUID와 FK 순서를 결정적으로 생성하고 차량별 migration을 만들지 않습니다. |
+| 7. 전체 데이터 작성 | **현재** | 기아 22개 차종의 게시 가능한 대표 판매 구성을 V18에 적재·검증했습니다. 다음 제조사 배치는 현대입니다. |
 | 8. 결과 검증·영구 문서 반영 | 후속 | 원문↔DB↔API 누락 0건, 정정 경로, 전체 check와 `$verify-dev`를 닫고 SOT·runbook을 동기화합니다. |
 | 9. Git·환경 적용 | 후속 | 검증된 exact path를 local commit합니다. push·staging·production은 각각 별도 권한이 있을 때만 수행합니다. |
 
@@ -64,14 +66,14 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 0건 결과는 source 조합의 한계 진단이며 전체 작업 중단 조건이 아닙니다. 공개된 기아 가격표·
 카탈로그·웹페이지를 production source에 포함해 K5 2027 2.0 가솔린 16인치 스마트 셀렉션의
 제품 계층부터 가격·옵션·인증까지 완성했습니다. 외부 연락은 하지 않으며, 공개 source를 같은
-manifest·checksum·column mapping 계약으로 차종별 확장합니다.
+manifest·checksum·column mapping 계약으로 제조사·snapshot 배치별 확장합니다.
 
 ### 즉시 다음 실행 단위
 
-- K5 V18 migration의 PostgreSQL·공개 조회 결과와 provenance를 검증합니다.
-- 같은 source 구조로 카니발의 가격표·카탈로그·현재 페이지 원본을 저장하고 첫 configuration을
-  추가합니다.
-- 대표 단위마다 원본→정규화 CSV→migration→API를 닫은 뒤 다음 차종으로 넘어갑니다.
+- 기아 V18과 공식 inventory 22개 차종의 양방향 coverage 및 공개 조회를 최종 검증하고
+  Kia 결과를 local commit합니다.
+- 그 성공 뒤 현대 공식 현재 판매 목록과 가격표·카탈로그 원본을 일괄 확보하고 같은 제조사
+  batch 구조의 다음 Flyway migration을 작성·검증·local commit합니다.
 
 ## 확정 범위와 결정
 
@@ -93,8 +95,9 @@ manifest·checksum·column mapping 계약으로 차종별 확장합니다.
   판매·연식·조건 식별 필드가 부족하므로 이 source만으로 DB 인증 행을 만들 수 없습니다.
 - 202개 column을 **KEA 단일 source**와 대조한 coverage에서는 게시 가능한 configuration과
   완성 certification이 모두 0건이었고, 기아 공개 원본을 결합한 K5 수직 단위는 각각 1건입니다.
-- 첫 수직 단위는 검토된 수동 Flyway SQL로 확정했습니다. 다음 revision에서 반복 오류·규모가
-  확인되면 `구조화 입력+generator`로 전환할지 다시 비교합니다.
+- 첫 수직 단위였던 미적용 V18은 사용자 결정에 따라 기아 전체 제조사 배치로 교체했습니다.
+  SQL 내부의 선언적 seed table을 구조화 입력으로 사용하고 차량 identity를 Flyway 파일 경계로
+  사용하지 않습니다.
 
 상세 근거, representative observation, rights matrix와 대안·전환 조건은
 [017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md)에서
@@ -111,8 +114,9 @@ manifest·checksum·column mapping 계약으로 차종별 확장합니다.
 - `normalized/qualification/`의 모든 행은 source ID·revision·원문 위치를 포함합니다.
 - `changes/`는 계획과 달라진 source·경로·필드·권리·변환 결정을 소유합니다.
 
-현재 저장된 원본은 KEA `2026-04-24` CSV와 기아 K5 2027의 가격표·카탈로그 PDF, 가격·제원,
-출시·세대·인승·구동방식 HTML snapshot입니다. K5 source manifest는
+현재 저장된 원본은 KEA `2026-04-24` CSV와 기아 현재 판매 22개 차종의 가격표·카탈로그
+PDF 44개 및 공식 판매 목록 HTML snapshot입니다. 전체 Kia batch manifest는
+`manifests/kia-current-catalog-2026-08-31.yaml`, K5 상세 source manifest는
 `manifests/kia-k5-2027-2026-08-31.yaml`, 실제 V18
 입력의 column provenance는 `normalized/kia/k5/2027/initial-catalog.csv`가 소유합니다. 기존
 `public-source-column-coverage-2026-08-31.csv`는 KEA 단일 source 진단 결과로 보존합니다.
@@ -125,10 +129,11 @@ source 후보 발견
 → 허용된 방법으로 exact revision을 임시 확보
 → source identity·recipe·확인 시각·checksum·권리 근거를 manifest에 기록
 → 원문 위치·값·단위·조건 → 정확한 table.column mapping 작성
-→ 대표 표본으로 identity·누락·단위·중복·재실행·revision 변경 검증
-→ 실제 규모와 실패 증거로 입력 방식 결정
-→ 전체 inventory와 권리 승인된 정형 입력 작성
-→ 검토 가능한 versioned Flyway migration 작성
+→ 전체 inventory snapshot과 source document URL 집합 고정
+→ inventory 전체 원본을 제조사·revision 배치로 취득
+→ identity·누락·단위·중복·재실행·revision 변경을 배치 검증
+→ 권리 승인된 구조화 입력 작성
+→ 결정적 generator로 release batch Flyway migration 작성
 → fresh DB와 직전 schema upgrade 검증
 → inventory↔DB↔공개 API 양방향 대조
 → 별도 권한을 받은 환경에 동일 migration 적용
@@ -204,17 +209,20 @@ V13~V17의 202개 column을 KEA 단일 source와 대조한 결과는 게시 가�
 기아 공식 공개 원본을 결합한 첫 K5 mapping에서는 게시 configuration 1건과 완성 인증 1건을
 확보했습니다. 이 대표 단위를 PostgreSQL과 공개 조회로 검증한 뒤 동일 계약을 확장합니다.
 
-### 작업 3. 입력 방식을 확정합니다
+### 작업 3. 구조화 입력과 generator 계약을 확정합니다
 
-- 대표 inventory count, mapping 행 수, 예상 전체 행 수·SQL 크기와 수동 오류를 측정합니다.
-- 수동 Flyway SQL, 기존 Gradle·Java 기능을 사용한 보조 변환, repository generator를 같은
-  시작·종료 상태에서 비교합니다.
-- custom tool이나 `check` 차단이 필요하면 도구 도입 gate와 사용자 선택을 별도로 통과합니다.
-- 단일 migration의 예상 적용 시간·lock·복구 비용을 측정하고 분할 threshold를 고정합니다.
+- V18의 수동 작성 결과를 입력·출력 표본으로 삼아 stable UUID, FK 순서, enum·단위, provenance
+  누락과 coverage를 검증하는 구조화 입력 계약을 고정합니다.
+- repository generator는 같은 입력에서 byte-identical SQL을 만들고, 누락·중복·알 수 없는
+  enum·권리 미승인 행을 오류로 종료해야 합니다.
+- migration은 차량별이 아니라 같은 공식 inventory snapshot과 source revision을 함께 검증한
+  release batch로 만듭니다. 적용 시간·SQL 크기·review 부담이 임계치를 넘을 때만 차량군 또는
+  크기 기준으로 나누며, 모델 하나라는 이유로 파일을 나누지 않습니다.
 
 ### 작업 4. 전체 inventory·mapping과 data migration을 작성합니다
 
-- 모델 목록부터 연식별 가격·catalog·제원·인증 source를 등록합니다.
+- 현대·기아의 범위 안 전체 모델 목록부터 연식별 가격·catalog·제원·인증 source를 batch
+  inventory에 등록합니다.
 - 선택한 입력 방식으로 dependency 순서의 결정적 SQL을 만듭니다.
 - 같은 입력 재실행, fresh DB와 현재 V17 DB upgrade에서 같은 결과를 검증합니다.
 
@@ -237,8 +245,8 @@ V13~V17의 202개 column을 KEA 단일 source와 대조한 결과는 게시 가�
 ## 전환 gate
 
 - 첫 완결 단위의 원본·mapping·입력 방식이 고정되면 구현을 시작하고 `In Progress`로 전환합니다.
-- 각 차종은 원본·provenance·migration·PostgreSQL·공개 조회 검증을 모두 닫은 뒤 다음 차종으로
-  확장합니다.
+- 원본·provenance는 inventory 전체에서 축적하고, migration·PostgreSQL·공개 조회는 동결된
+  release batch 단위로 닫습니다. 한 차종 완료를 다음 차종 수집의 선행조건으로 두지 않습니다.
 - 권리 허락이 거절되면 임의 축약·추정하지 않고 공식 공급자 조합 또는 제품 범위 변경을
   사용자 결정으로 다시 엽니다.
 
