@@ -58,7 +58,7 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | 4. 공개 source 사전 조사 | 완료 | 대표 4모델의 현재 판매 여부와 공개된 가격·제원·인증 정보, 제조사·공공·유료 후보의 권리 공백을 확인했습니다. |
 | 5. exact source qualification | 완료 | KEA 원본과 기아 공식 현재 판매 목록·가격표·카탈로그 44개를 확보하고 source별 checksum과 provenance를 기록했습니다. |
 | 6. 입력 방식·계획 확정 | 완료 | 미적용 V18 안의 선언적 batch table로 stable UUID와 FK 순서를 결정적으로 생성하고 차량별 migration을 만들지 않습니다. |
-| 7. 전체 데이터 작성 | **현재** | 기아 22개 차종의 게시 가능한 대표 판매 구성을 V18에 적재·검증했습니다. 다음 제조사 배치는 현대입니다. |
+| 7. 전체 데이터 작성 | **현재** | 기아 22개 차종을 V18, 현대 31개 차종을 V19의 게시 가능한 대표 판매 구성으로 적재·검증했습니다. 다음은 각 모델의 나머지 파워트레인·트림·옵션·인증 확대입니다. |
 | 8. 결과 검증·영구 문서 반영 | 후속 | 원문↔DB↔API 누락 0건, 정정 경로, 전체 check와 `$verify-dev`를 닫고 SOT·runbook을 동기화합니다. |
 | 9. Git·환경 적용 | 후속 | 검증된 exact path를 local commit합니다. push·staging·production은 각각 별도 권한이 있을 때만 수행합니다. |
 
@@ -70,10 +70,10 @@ manifest·checksum·column mapping 계약으로 제조사·snapshot 배치별 �
 
 ### 즉시 다음 실행 단위
 
-- 기아 V18과 공식 inventory 22개 차종의 양방향 coverage 및 공개 조회를 최종 검증하고
-  Kia 결과를 local commit합니다.
-- 그 성공 뒤 현대 공식 현재 판매 목록과 가격표·카탈로그 원본을 일괄 확보하고 같은 제조사
-  batch 구조의 다음 Flyway migration을 작성·검증·local commit합니다.
+- 기아 22개와 현대 31개 모델 coverage 위에서 각 공식 가격표의 나머지 일반 개인 판매
+  파워트레인·트림·선택 품목을 구조화하고 누락 0건을 검증합니다.
+- 제조사 카탈로그와 KEA source를 결합해 variant별 필수 제원·인증 조건을 채우고 공개 상세
+  조회의 원문↔DB 양방향 coverage를 닫습니다.
 
 ## 확정 범위와 결정
 
@@ -114,12 +114,14 @@ manifest·checksum·column mapping 계약으로 제조사·snapshot 배치별 �
 - `normalized/qualification/`의 모든 행은 source ID·revision·원문 위치를 포함합니다.
 - `changes/`는 계획과 달라진 source·경로·필드·권리·변환 결정을 소유합니다.
 
-현재 저장된 원본은 KEA `2026-04-24` CSV와 기아 현재 판매 22개 차종의 가격표·카탈로그
-PDF 44개 및 공식 판매 목록 HTML snapshot입니다. 전체 Kia batch manifest는
+현재 저장된 원본은 KEA `2026-04-24` CSV, 기아 22개 차종의 PDF 44개, 현대 31개 차종의
+PDF 62개와 두 제조사의 공식 판매 목록 snapshot입니다. Kia batch manifest는
 `manifests/kia-current-catalog-2026-08-31.yaml`, K5 상세 source manifest는
 `manifests/kia-k5-2027-2026-08-31.yaml`, 실제 V18
 입력의 column provenance는 `normalized/kia/k5/2027/initial-catalog.csv`가 소유합니다. 기존
 `public-source-column-coverage-2026-08-31.csv`는 KEA 단일 source 진단 결과로 보존합니다.
+현대 batch는 `manifests/hyundai-current-catalog-2026-08-31.yaml`과
+`normalized/inventory/hyundai-current-models-2026-08-31.csv`가 소유합니다.
 
 ## 가져오는 흐름
 

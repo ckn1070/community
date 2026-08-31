@@ -196,6 +196,36 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             "SPORTAGE");
   }
 
+  /** 2026-08-31 현대 공식 판매 목록에서 상용·특장·전용 운송 모델을 제외한 31개 차종을 게시합니다. */
+  @Test
+  void seedsEveryCurrentHyundaiPassengerModelInOneMigrationBatch() {
+    List<String> modelCodes =
+        jdbcTemplate.queryForList(
+            """
+            SELECT DISTINCT model.code
+            FROM car_configuration configuration
+            JOIN car_vehicle_variant variant ON variant.id = configuration.vehicle_variant_id
+            JOIN car_model_year model_year ON model_year.id = variant.model_year_id
+            JOIN car_generation generation ON generation.id = model_year.generation_id
+            JOIN car_model model ON model.id = generation.model_id
+            JOIN car_brand brand ON brand.id = model.brand_id
+            JOIN car_configuration_price price ON price.configuration_id = configuration.id
+            WHERE brand.code = 'HYUNDAI'
+              AND configuration.is_published
+              AND configuration.sales_started_on <= DATE '2026-08-31'
+              AND (configuration.sales_ended_on IS NULL
+                   OR configuration.sales_ended_on > DATE '2026-08-31')
+            ORDER BY model.code
+            """,
+            String.class);
+
+    assertThat(modelCodes)
+        .containsExactly(
+            "CE03", "CE05", "CN26", "DN23", "DN24", "FN01", "FN02", "FX03", "FX04", "GN11", "GN12",
+            "HE02", "ME02", "MX07", "MX08", "NE08", "NE09", "NX17", "NX18", "QX07", "SX17", "SX19",
+            "SX20", "US30", "US31", "US33", "US34", "US39", "US40", "US41", "US46");
+  }
+
   /** 설계가 이름으로 고정한 133개 constraint와 조회 index 네 개를 빠짐없이 생성합니다. */
   @Test
   void createsExactNamedConstraintsAndQueryIndexes() {

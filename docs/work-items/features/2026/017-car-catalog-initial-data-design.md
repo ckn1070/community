@@ -184,6 +184,8 @@ diff, validation false positive/negative, 실행 시간과 PostgreSQL 적용 시
 | migration 분할 | 모델별 수직 단위를 차례로 추가 | 같은 inventory snapshot·source revision의 검증된 release batch로 생성 | SQL 크기·적용 시간·review 임계치만 분할 근거로 사용 |
 | V18 처리 | K5 표본을 유지하고 새 번호부터 batch 추가 | migration 미적용이라는 사용자 확인에 따라 V18을 Kia 22개 차종 batch로 직접 교체 | K5 상세 행은 보존하고 나머지 21개 차종의 대표 게시 구성을 같은 transaction에 추가 |
 | generator 도입 | 별도 repository generator를 후속 표준으로 도입 | Kia batch는 SQL 내부 선언적 seed table과 PostgreSQL constraint/test로 필요한 결정성을 충족 | 새 executable의 owner·유지비 없이 모델별 migration 복제를 제거하며, 필요성이 다시 확인될 때 도입을 재평가 |
+| 제조사 실행 순서 | 현대·기아 원본을 함께 모은 뒤 게시 batch 결정 | 사용자 결정에 따라 Kia 22개 V18을 검증·commit한 뒤 현대 31개 V19를 작성 | 앞 제조사 PostgreSQL 검증을 다음 제조사 mutation의 gate로 사용하고 두 결과를 별도 commit으로 보존 |
+| 현대 inventory revision | 2026년 7월 검색 snapshot 후보 | 실제 렌더링 페이지와 공식 상품 API는 2026년 8월 25일 갱신본 | 화면 노출 36개 중 킨더·ST1·포터 Electric 5개를 제외하고 31개를 현재 범위로 고정 |
 
 상세 실행 기록은 외부 데이터 저장소의 `changes/2026-08-31-initial-storage.md`, exact source와
 checksum·권리는 `manifests/kea-efficiency-file-dataset-2026-04-24.yaml`이 소유합니다.
