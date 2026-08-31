@@ -87,6 +87,66 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             "create car certification");
   }
 
+  /** 공식 기아 원본에서 정규화한 첫 K5 판매 구성이 전체 제품·가격·인증 관계로 적재됩니다. */
+  @Test
+  void seedsFirstPublishedK5CatalogConfiguration() {
+    Map<String, Object> seededK5 =
+        jdbcTemplate.queryForMap(
+            """
+            SELECT brand.name_ko AS brand_name,
+                   model.name_ko AS model_name,
+                   model_year.model_year,
+                   powertrain.name AS powertrain_name,
+                   variant.name AS variant_name,
+                   configuration.trim_name,
+                   configuration.sales_started_on,
+                   jsonb_array_length(configuration.standard_features) AS standard_feature_count,
+                   price.price_before_tax_benefit,
+                   certification.combined_efficiency,
+                   certification.city_efficiency,
+                   certification.highway_efficiency,
+                   certification.co2_g_per_km
+            FROM car_configuration configuration
+            JOIN car_vehicle_variant variant ON variant.id = configuration.vehicle_variant_id
+            JOIN car_powertrain powertrain ON powertrain.id = variant.powertrain_id
+            JOIN car_model_year model_year ON model_year.id = variant.model_year_id
+            JOIN car_generation generation ON generation.id = model_year.generation_id
+            JOIN car_model model ON model.id = generation.model_id
+            JOIN car_brand brand ON brand.id = model.brand_id
+            JOIN car_configuration_price price ON price.configuration_id = configuration.id
+            JOIN car_certification certification ON certification.vehicle_variant_id = variant.id
+            WHERE configuration.public_id = '7d836d76-88a1-5d9f-9da8-f7eb22c8c179'
+              AND configuration.is_published
+            """);
+
+    assertThat(seededK5)
+        .containsEntry("brand_name", "기아")
+        .containsEntry("model_name", "K5")
+        .containsEntry("model_year", 2027)
+        .containsEntry("powertrain_name", "스마트스트림 G2.0 가솔린")
+        .containsEntry("variant_name", "2.0 가솔린 16인치")
+        .containsEntry("trim_name", "스마트 셀렉션")
+        .containsEntry("sales_started_on", java.sql.Date.valueOf("2026-07-02"))
+        .containsEntry("standard_feature_count", 69)
+        .containsEntry("price_before_tax_benefit", 27_630_000L);
+    assertThat(seededK5.get("combined_efficiency").toString()).isEqualTo("12.600");
+    assertThat(seededK5.get("city_efficiency").toString()).isEqualTo("11.200");
+    assertThat(seededK5.get("highway_efficiency").toString()).isEqualTo("14.700");
+    assertThat(seededK5.get("co2_g_per_km").toString()).isEqualTo("132.00");
+
+    assertThat(
+            jdbcTemplate.queryForList(
+                """
+                SELECT option_row.code || ':' || option_row.price_before_tax_benefit
+                FROM car_configuration_option option_row
+                JOIN car_configuration configuration ON configuration.id = option_row.configuration_id
+                WHERE configuration.public_id = '7d836d76-88a1-5d9f-9da8-f7eb22c8c179'
+                ORDER BY option_row.display_order
+                """,
+                String.class))
+        .containsExactly("CLUSTER-PACK-12-3:1300000", "PANORAMA-SUNROOF:1090000");
+  }
+
   /** 설계가 이름으로 고정한 133개 constraint와 조회 index 네 개를 빠짐없이 생성합니다. */
   @Test
   void createsExactNamedConstraintsAndQueryIndexes() {

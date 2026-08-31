@@ -65,14 +65,17 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
             CatalogBrandSummary::onSaleModelCount)
         .containsExactly(
             org.assertj.core.groups.Tuple.tuple(published.brandPublicId(), "알파", 1L),
-            org.assertj.core.groups.Tuple.tuple(findBrandPublicId("BETA"), "베타", 1L));
+            org.assertj.core.groups.Tuple.tuple(findBrandPublicId("BETA"), "베타", 1L),
+            org.assertj.core.groups.Tuple.tuple(
+                UUID.fromString("d43787ba-f8d6-5b47-8d99-28da57b4c810"), "기아", 1L));
   }
 
   /** 복합 filter와 기준일 가격을 같은 공개 configuration에 적용하고 모델을 한 번만 반환합니다. */
   @Test
   void searchesModelsWithSameConfigurationFiltersAndCurrentPrice() {
-    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "EV6", "EV6 100%_", 55_000_000L);
-    createPublishedIceModel("KIA", "기아", "K5", "K5", 35_000_000L);
+    CatalogFixture bev =
+        createPublishedBevModel("KIA-TEST", "기아 테스트", "EV6", "EV6 100%_", 55_000_000L);
+    createPublishedIceModel("KIA-TEST", "기아 테스트", "K5", "K5", 35_000_000L);
     jdbcTemplate.update(
         "INSERT INTO car_configuration_price (configuration_id, effective_from, price_before_tax_benefit, price_after_tax_benefit) VALUES (?, '2026-08-01', 54000000, 52000000)",
         bev.configurationId());
@@ -117,7 +120,8 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
   /** 서로 다른 공개 configuration의 차체와 동력 형식은 한 모델 안에서도 조합하지 않습니다. */
   @Test
   void doesNotMixFiltersAcrossConfigurations() {
-    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "MIXED", "혼합 모델", 55_000_000L);
+    CatalogFixture bev =
+        createPublishedBevModel("KIA-TEST", "기아 테스트", "MIXED", "혼합 모델", 55_000_000L);
     long modelYearId =
         jdbcTemplate.queryForObject(
             "SELECT id FROM car_model_year WHERE public_id = ?",
@@ -148,7 +152,8 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
   /** ALL 목록은 같은 연식의 판매 중·예정 configuration을 한 연식으로 합쳐 사양 집합을 보존합니다. */
   @Test
   void rollsUpAllConfigurationStatusesWithinRepresentativeModelYear() {
-    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "ALL-STATUS", "전체 상태", 55_000_000L);
+    CatalogFixture bev =
+        createPublishedBevModel("KIA-TEST", "기아 테스트", "ALL-STATUS", "전체 상태", 55_000_000L);
     long modelYearId =
         jdbcTemplate.queryForObject(
             "SELECT id FROM car_model_year WHERE public_id = ?",
@@ -189,10 +194,65 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
             });
   }
 
+  /** V18의 K5 실제 데이터가 공개 상세 조회에서 가격·옵션·인증까지 함께 노출됩니다. */
+  @Test
+  void readsSeededK5ThroughPublicCatalogPort() {
+    CatalogModelDetail detail =
+        catalogModelDetailReadPort
+            .find(
+                UUID.fromString("68ad71d8-fae9-54fb-8835-9b202d5e5eed"),
+                UUID.fromString("9f90d6bf-d830-52e0-a377-53b08f110e71"),
+                AS_OF)
+            .orElseThrow();
+
+    assertThat(detail.model().name()).isEqualTo("K5");
+    assertThat(detail.selectedModelYear().modelYear()).isEqualTo(2027);
+    assertThat(detail.powertrains())
+        .singleElement()
+        .satisfies(
+            powertrain -> {
+              assertThat(powertrain.name()).isEqualTo("스마트스트림 G2.0 가솔린");
+              assertThat(powertrain.components())
+                  .singleElement()
+                  .extracting(CatalogModelDetail.Component::displacementCc)
+                  .isEqualTo(1999);
+            });
+    assertThat(detail.variants())
+        .singleElement()
+        .satisfies(
+            variant -> {
+              assertThat(variant.certifications())
+                  .singleElement()
+                  .satisfies(
+                      certification -> {
+                        assertThat(certification.combinedEfficiency())
+                            .isEqualByComparingTo("12.600");
+                        assertThat(certification.co2GPerKm()).isEqualByComparingTo("132.00");
+                      });
+              assertThat(variant.configurations())
+                  .singleElement()
+                  .satisfies(
+                      configuration -> {
+                        assertThat(configuration.trimName()).isEqualTo("스마트 셀렉션");
+                        assertThat(configuration.price().displayPrice()).isEqualTo(27_630_000L);
+                        assertThat(configuration.standardFeatures()).hasSize(69);
+                        assertThat(configuration.standardFeatures())
+                            .extracting(CatalogModelDetail.StandardFeature::name)
+                            .contains(
+                                "스마트스트림 G2.0 엔진",
+                                "9에어백(운전석/동승석 어드밴스드, 운전석 무릎, 전복감지 커튼, 앞좌석/뒷좌석 사이드)",
+                                "C타입 USB 단자(데이터/충전 전환형)");
+                        assertThat(configuration.options())
+                            .extracting(CatalogModelDetail.Option::code)
+                            .containsExactly("CLUSTER-PACK-12-3", "PANORAMA-SUNROOF");
+                      });
+            });
+  }
+
   /** 선택 연식의 동력 장치·인증·판매 구성·현재 옵션을 고정된 묶음 조회로 조립합니다. */
   @Test
   void loadsCompleteModelDetailForSelectedModelYear() {
-    CatalogFixture bev = createPublishedBevModel("KIA", "기아", "EV6", "EV6", 55_000_000L);
+    CatalogFixture bev = createPublishedBevModel("KIA-TEST", "기아 테스트", "EV6", "EV6", 55_000_000L);
     long variantId =
         jdbcTemplate.queryForObject(
             "SELECT vehicle_variant_id FROM car_configuration WHERE id = ?",
@@ -280,7 +340,8 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
   /** 상세 configuration 상태도 자체 기간뿐 아니라 선택 연식의 종료 경계를 함께 적용합니다. */
   @Test
   void appliesModelYearPeriodToDetailConfigurationStatus() {
-    CatalogFixture fixture = createPublishedIceModel("KIA", "기아", "ENDED", "종료 모델", 30_000_000L);
+    CatalogFixture fixture =
+        createPublishedIceModel("KIA-TEST", "기아 테스트", "ENDED", "종료 모델", 30_000_000L);
     jdbcTemplate.update(
         "UPDATE car_model_year SET sales_ended_on = ? WHERE public_id = ?",
         AS_OF,
