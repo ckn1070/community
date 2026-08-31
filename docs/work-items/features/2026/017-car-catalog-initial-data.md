@@ -2,14 +2,15 @@
 
 ## 상태
 
-Proposed
+In Progress
 
 ## 현재 위치와 선행 작업
 
 이 작업은 [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)가 로컬에서
 구현·검증한 11개 database table과 조회 기능을 입력 계약으로 사용합니다. 첫 공개 범위는
 현대자동차·기아의 대한민국 일반 개인 구매용 현재 판매 승용·SUV·MPV이며, 이미지 파일과
-외부 이미지 URL은 모두 제외합니다. 운영 데이터는 아직 없습니다.
+외부 이미지 URL은 모두 제외합니다. 2026-08-31 기준 첫 적재 단위인 The 2027 K5 2.0 가솔린
+스마트 셀렉션의 versioned data migration을 작성하고 있습니다.
 
 현재 자동차 개념과 물리 target은 각각
 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)과
@@ -23,7 +24,7 @@ Source 사전 조사·권리 비교·입력 방식 후보는
 
 ## 달성할 결과
 
-확정한 범위에서 사용·가공·저장·외부 공개 권리가 확인된 공식 자료를 source manifest와
+확정한 범위에서 공개 접근 가능한 공식 자료를 source manifest와
 원문→`table.column` mapping으로 고정하고, 016 schema에 맞는 정형 입력으로 변환합니다.
 모든 적재 값은 exact source revision·수집 방식·원문 위치·변환 규칙으로 역추적할 수 있어야
 합니다. 선택 범위의 공식 목록과 DB 행을 양방향 대조해 누락 0건을 확인한 뒤 versioned Flyway
@@ -35,8 +36,8 @@ data migration으로 적용합니다.
 ## 제외 범위
 
 - runtime crawler, scheduler, 관리자 입력 API·CMS와 application writer 권한
-- 사용·보관·재배포 권리가 확인되지 않은 원문 파일, 이미지와 실제 값
-- 공개 이용 조건만으로 확정할 수 없는 제조사·유료 source
+- 원본 파일의 애플리케이션 재배포와 이미지 파일·외부 이미지 URL
+- 메일·전화·문의·활용신청처럼 외부 상대방의 응답이나 credential 발급이 필요한 취득 경로
 - push와 staging·production 적용
 - 상용·특장차, 렌터카 전용·장애인 전용 판매 구성, 재고·대리점·보조금·중고차
 - 차량번호·VIN과 사용자 소유 차량 조회
@@ -51,31 +52,26 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | --- | --- | --- |
 | 1. 016 database·조회 API | 완료 | 로컬에서 검증된 11개 table과 공개 조회 계약을 017의 입력으로 사용합니다. |
 | 2. 최초 공개 범위 결정 | 완료 | 현대·기아 현재 모델과 이미지 제외 범위를 고정했습니다. |
-| 3. 확보 계획·provenance 계약 | 완료 | source 적격성, mapping, coverage와 권한 경계를 검증된 `Proposed` checkpoint로 남겼습니다. |
+| 3. 확보 계획·provenance 계약 | 완료 | source 적격성, mapping, coverage와 권리 상태 기록 계약을 남겼습니다. |
 | 4. 공개 source 사전 조사 | 완료 | 대표 4모델의 현재 판매 여부와 공개된 가격·제원·인증 정보, 제조사·공공·유료 후보의 권리 공백을 확인했습니다. |
-| 5. exact source qualification | **현재** | 한국에너지공단 원본·checksum·동일 bytes 재취득과 대표 후보 168행을 확보하고, K5·카니발·넥쏘 22개 값을 column에 mapping했습니다. EV6 최신 행과 record 필수값은 `BLOCKED`입니다. |
-| 6. 입력 방식·계획 확정 | 후속 | 공개 이용 조건이 확인된 source만으로 가능한 범위를 재산정하고, 실제 mapping 규모와 오류를 근거로 수동 Flyway SQL과 구조화 입력+generator를 비교한 뒤 `$verify-plan`을 통과합니다. |
-| 7. 전체 데이터 작성 | 후속 | 전체 inventory·mapping·정형 입력과 versioned data migration을 만듭니다. |
+| 5. exact source qualification | 완료 | KEA 원본과 기아 K5 공식 가격표·카탈로그·웹 snapshot을 확보하고 source별 checksum과 column provenance를 기록했습니다. |
+| 6. 입력 방식·계획 확정 | 완료 | 전체 확대 전 첫 완결 단위는 검토 가능한 수동 Flyway SQL로 적재하고, 반복 오류·규모가 확인될 때 generator를 재평가합니다. |
+| 7. 전체 데이터 작성 | **현재** | V18에 K5 게시 configuration 1건·가격 1건·독립 선택 가능 옵션 2건·기본품목 69건·완성 인증 1건을 만들고 PostgreSQL·조회 검증 뒤 차종별로 확장합니다. |
 | 8. 결과 검증·영구 문서 반영 | 후속 | 원문↔DB↔API 누락 0건, 정정 경로, 전체 check와 `$verify-dev`를 닫고 SOT·runbook을 동기화합니다. |
 | 9. Git·환경 적용 | 후속 | 검증된 exact path를 local commit합니다. push·staging·production은 각각 별도 권한이 있을 때만 수행합니다. |
 
-현재 단계는 **미완성**입니다. K5 원문 2991행, 카니발 621행, 넥쏘 1957행은 제조사 현재
-제원의 공통 효율값과 일치해 승인된 KEA 값 22개를 schema column에 mapping했습니다. EV6는
-`2026-04-24` 원본에 현재 2027 제원과 일치하는 행이 없습니다. 네 record 모두 model year·
-vehicle variant identity와 schema 필수값이 남아 실제 값을 Git·DB·API에 넣지 않습니다.
-제조사·유료 source는 production 후보에서 제외하며, 공개 이용 조건이 확인된 공공 source만으로
-해결되지 않는 필드는 추정하거나 외부 확인으로 보완하지 않고 범위 또는 schema 결정으로
-되돌립니다.
+현재 단계는 **미완성**이지만 데이터 적재는 시작했습니다. KEA 단일 source만 대조했을 때의
+0건 결과는 source 조합의 한계 진단이며 전체 작업 중단 조건이 아닙니다. 공개된 기아 가격표·
+카탈로그·웹페이지를 production source에 포함해 K5 2027 2.0 가솔린 16인치 스마트 셀렉션의
+제품 계층부터 가격·옵션·인증까지 완성했습니다. 외부 연락은 하지 않으며, 공개 source를 같은
+manifest·checksum·column mapping 계약으로 차종별 확장합니다.
 
 ### 즉시 다음 실행 단위
 
-- **실행자**: Codex가 저장된 한국에너지공단 file dataset과 공개 metadata만 사용합니다.
-- **입력**: file dataset `15083023`의 exact revision·manifest와 대표 mapping입니다.
-- **첫 결과**: 공개 source만으로 채울 수 있는 column, 채울 수 없는 필드와 그로 인해 줄여야 할
-  최초 적재 범위를 분리한 coverage 표입니다.
-- **관찰 결과**: 각 값은 승인된 source ID·revision·원문 위치·변환 규칙에 연결되고, 남은 값은
-  `BLOCKED` 또는 범위 제외로 명시돼야 합니다.
-- **최초 consumer**: 입력 방식 비교와 최초 Flyway data migration 계획이 이 coverage를 사용합니다.
+- K5 V18 migration의 PostgreSQL·공개 조회 결과와 provenance를 검증합니다.
+- 같은 source 구조로 카니발의 가격표·카탈로그·현재 페이지 원본을 저장하고 첫 configuration을
+  추가합니다.
+- 대표 단위마다 원본→정규화 CSV→migration→API를 닫은 뒤 다음 차종으로 넘어갑니다.
 
 ## 확정 범위와 결정
 
@@ -84,19 +80,21 @@ vehicle variant identity와 schema 필수값이 남아 실제 값을 Git·DB·AP
 | 브랜드·차종 | 현대자동차·기아의 국내 일반 개인 구매 승용·SUV·MPV | 다른 브랜드와 상용·특장·전용 판매 구성은 source·권리·identity·coverage를 새로 검증한 증분 작업으로 확장합니다. |
 | 기간 | qualification 시작일에 판매 중인 현재 모델 연식 | 단종 모델·이전 세대는 현재 범위의 수집·정정 경로를 닫은 뒤 별도 Flyway 증분으로 추가합니다. |
 | 이미지 | 이미지 파일과 외부 이미지 URL을 모두 제외 | 복제·가공·배포 권리와 보관·삭제 정책이 별도 승인될 때만 다시 엽니다. |
-| source 제한 | 공개 이용 조건이 확인된 공공 source만 production 후보로 사용 | 제조사·유료 source가 필요해지면 현재 작업을 확대하지 않고 별도 범위 결정으로 다시 엽니다. |
+| source 제한 | 로그인 없이 공개된 제조사 공식 페이지·PDF와 공공 source 사용 | 메일·전화·문의·활용신청·유료 계약은 제외하고, 새 source는 원본·URL·revision·checksum을 먼저 남깁니다. |
 | provenance | 모든 적재 값에 exact source·수집 방식·변환 규칙·revision을 연결 | 연결되지 않은 값은 게시하지 않으며 정정·확장에도 같은 계약을 적용합니다. |
 
 ## source와 입력 결정의 현재 결론
 
 - 기술 후보 조합은 제조사 공식 목록·가격표·catalog와 한국에너지공단 인증자료입니다.
-- 현대·기아 공개 자료는 정확성 대조 위치로만 남기며 production source에서는 제외합니다.
+- 현대·기아 공개 페이지·가격표·catalog는 제품·판매·제원·인증의 production source로 사용하고
+  원본 snapshot과 추출 사실의 provenance를 보존합니다.
 - 한국에너지공단 file dataset `15083023`의 `2026-04-24` revision은 공공데이터포털의
   `이용허락범위 제한 없음` 근거로 취득·보관·가공 가능한 source로 승인했습니다. 다만 현재
   판매·연식·조건 식별 필드가 부족하므로 이 source만으로 DB 인증 행을 만들 수 없습니다.
-- 입력 방식은 아직 선택하지 않습니다. 대표 4모델의 실제 inventory 행 수·mapping 복잡도·수동
-  SQL 오류와 재실행 결과를 얻은 뒤 `검토된 수동 Flyway SQL`과 `구조화 입력+generator`를
-  비교합니다.
+- 202개 column을 **KEA 단일 source**와 대조한 coverage에서는 게시 가능한 configuration과
+  완성 certification이 모두 0건이었고, 기아 공개 원본을 결합한 K5 수직 단위는 각각 1건입니다.
+- 첫 수직 단위는 검토된 수동 Flyway SQL로 확정했습니다. 다음 revision에서 반복 오류·규모가
+  확인되면 `구조화 입력+generator`로 전환할지 다시 비교합니다.
 
 상세 근거, representative observation, rights matrix와 대안·전환 조건은
 [017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md)에서
@@ -113,9 +111,11 @@ vehicle variant identity와 schema 필수값이 남아 실제 값을 Git·DB·AP
 - `normalized/qualification/`의 모든 행은 source ID·revision·원문 위치를 포함합니다.
 - `changes/`는 계획과 달라진 source·경로·필드·권리·변환 결정을 소유합니다.
 
-현재 저장된 원본은 `kea-efficiency-file-dataset/2026-04-24` 한 건입니다. 제조사 원본은
-production source 범위 밖이므로 저장하지 않습니다. 대표 column mapping은
-`normalized/qualification/representative-column-mapping-2026-08-31.csv`에 있습니다.
+현재 저장된 원본은 KEA `2026-04-24` CSV와 기아 K5 2027의 가격표·카탈로그 PDF, 가격·제원,
+출시·세대·인승·구동방식 HTML snapshot입니다. K5 source manifest는
+`manifests/kia-k5-2027-2026-08-31.yaml`, 실제 V18
+입력의 column provenance는 `normalized/kia/k5/2027/initial-catalog.csv`가 소유합니다. 기존
+`public-source-column-coverage-2026-08-31.csv`는 KEA 단일 source 진단 결과로 보존합니다.
 
 ## 가져오는 흐름
 
@@ -195,10 +195,14 @@ source 후보 발견
 ### 작업 2. 공개 source coverage를 확정합니다
 
 - 한국에너지공단 exact dataset의 이용허락·식별자·EV 조건을 공개 metadata와 원본으로 확인합니다.
-- 제조사·유료 source의 값이 필요한 field는 production mapping에서 제외하고 coverage 공백으로
-  기록합니다.
-- 공개 source만으로 현재 완료 조건을 충족하지 못하면 최초 적재 범위 축소 또는 schema 변경을
-  별도 결정으로 올립니다.
+- 공개 제조사 source의 값은 exact snapshot·원문 위치·변환 규칙을 연결해 production mapping에
+  사용합니다. 외부 연락이나 유료 계약이 필요한 값은 coverage 공백으로 유지합니다.
+- 한 source만으로 완료 조건을 충족하지 못하면 공개 제조사·공공 source를 조합하고, 그래도
+  필수값이 없을 때만 범위 축소 또는 schema 변경을 별도 결정으로 올립니다.
+
+V13~V17의 202개 column을 KEA 단일 source와 대조한 결과는 게시 가능한 configuration 0건이었지만,
+기아 공식 공개 원본을 결합한 첫 K5 mapping에서는 게시 configuration 1건과 완성 인증 1건을
+확보했습니다. 이 대표 단위를 PostgreSQL과 공개 조회로 검증한 뒤 동일 계약을 확장합니다.
 
 ### 작업 3. 입력 방식을 확정합니다
 
@@ -232,10 +236,9 @@ source 후보 발견
 
 ## 전환 gate
 
-- 대표 4모델 qualification과 입력 방식 결정 전에는 `Proposed`를 유지합니다.
-- 권리·인증 조건·입력 방식·migration 분할 기준이 닫히고 `$verify-plan`을 통과해야
-  `Planned`로 전환합니다.
-- 전체 inventory와 data migration 구현을 시작할 때 `In Progress`로 전환합니다.
+- 첫 완결 단위의 원본·mapping·입력 방식이 고정되면 구현을 시작하고 `In Progress`로 전환합니다.
+- 각 차종은 원본·provenance·migration·PostgreSQL·공개 조회 검증을 모두 닫은 뒤 다음 차종으로
+  확장합니다.
 - 권리 허락이 거절되면 임의 축약·추정하지 않고 공식 공급자 조합 또는 제품 범위 변경을
   사용자 결정으로 다시 엽니다.
 

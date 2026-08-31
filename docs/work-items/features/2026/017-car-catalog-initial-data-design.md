@@ -9,9 +9,10 @@ source 조사, 권리 판정, 원문→column mapping과 입력 방식 대안을
 
 2026-08-31 공개 원문 사전 조사에서는 K5·카니발·EV6·넥쏘의 현재 판매 여부와 일부 대표값을
 확인했고, 한국에너지공단 file dataset의 exact source bytes·checksum과 대표 후보 168행을
-확보했습니다. 제조사 source의 외부 공개 권리, 전체 필드 mapping과 재실행 결과는 아직
-확보하지 않았으므로 실제 DB 값은 계속 **qualification 후보**입니다. 입력 도구와 migration
-번호도 선택하지 않았으며 017은 `Proposed`입니다.
+확보했습니다. 이후 외부 연락 제외를 제조사 공개 원본 제외로 확대했던 해석을 교정하고, 기아
+공식 가격표·카탈로그·현재 웹 snapshot을 production source로 포함했습니다. 그 결과 첫 K5
+configuration 1건, 기본품목 69건, 독립 선택 가능한 옵션 2건과 완성 인증 1건을 V18 입력으로
+만들었으며 017은 차종별 확장 중입니다.
 
 ## source별 현재 조사 결과
 
@@ -26,8 +27,7 @@ source 조사, 권리 판정, 원문→column mapping과 입력 방식 대안을
 | `hyundai-nexo-2026-price-pdf` | 넥쏘 가격·옵션·인증값 | [공식 가격표 PDF](https://www.hyundai.com/contents/repn-car/catalog/the-all-new-nexo_price.pdf) | exact bytes·checksum·가격 적용일 의미 미확정 |
 | `hyundai-nexo-current-catalog-pdf` | 넥쏘 제원 | [공식 영문 catalog PDF](https://www.hyundai.com/content/dam/hyundai/kr/ko/data/vehicles/catalog/en/nexo-catalog-eng.pdf) | 현재 국내 판매본과 revision 일치 검증 필요 |
 | `hyundai-nexo-heritage-web` | 넥쏘 연료 저장 제원 대조 | [2025 NEXO Heritage](https://www.hyundai.com/kr/ko/brand/brandstory/heritage/2025-nexo-fc) | 현재 판매 제원 source로 사용할 수 있는지 미확정 |
-| `kia-k5-2027-price-web` | 2027 K5 가격·구성 | [가격 페이지](https://www.kia.com/kr/vehicles/k5/price/private) | 2026-08-01 기준일과 `effective_from` 관계 미확정 |
-| `kia-k5-2027-spec-web` | K5 제원·인증 | [제원 페이지](https://www.kia.com/kr/vehicles/k5/specification) | exact snapshot·rights 미확정 |
+| `kia-k5-official` | 2027 K5 가격·구성·제원·인증 | [가격 페이지](https://www.kia.com/kr/vehicles/k5/price/private), [제원 페이지](https://www.kia.com/kr/vehicles/k5/specification), 공식 가격표·카탈로그 PDF | 2026-08-31 snapshot·checksum·column mapping과 V18 입력 확보 |
 | `kia-carnival-2027-price-web` | 2027 카니발 가격·구성 | [가격 페이지](https://www.kia.com/kr/vehicles/carnival/price) | 2026-08-27 기준일과 `effective_from` 관계 미확정 |
 | `kia-carnival-2027-spec-web` | 카니발 제원·인증 | [제원 페이지](https://www.kia.com/kr/vehicles/carnival/specification) | exact snapshot·rights 미확정 |
 | `kia-ev6-2027-price-web` | 2027 EV6 가격·구성 | [가격 페이지](https://www.kia.com/kr/vehicles/ev6/price) | 2026-08-03 기준일과 `effective_from` 관계 미확정 |
@@ -35,10 +35,11 @@ source 조사, 권리 판정, 원문→column mapping과 입력 방식 대안을
 | `kea-efficiency-file-dataset` | 정부 신고 인증값 대조 | [공공데이터포털 자동차 표시연비 자료](https://www.data.go.kr/data/15083023/fileData.do), revision `2026-04-24`, SHA-256 `5d4853ce9cbd61589003fdb3386ff3d7c3afd0bf1c38bcb4ed2698d5c9482dce` | 현재 판매·model year·powertrain·CO₂·휠·카메라·EV 온도 조건 필드 없음 |
 | `kea-efficiency-open-api` | 최신 신차·CO₂ 보완 후보 | [자동차 표시연비 목록 조회 서비스](https://www.data.go.kr/data/15139827/openapi.do) | 이용허락은 제한 없음이지만 활용신청·service key가 필요하고 exact response field·revision 미확보 |
 
-현대 사이트의 [저작권 안내](https://www.hyundai.com/kr/ko/copyright)는 권리 유보를 표시합니다.
-기아 페이지 footer도 권리를 유보하지만 공개 열람이 사실 추출·저장·외부 API 공개 허락을
-뜻하지는 않습니다. 그러므로 제조사 공개 source는 정확성 조사에만 사용하고 production 값으로
-승인하지 않습니다. 한국에너지공단 `15083023` file dataset은 해당 상세 페이지가
+제조사 원본 파일 자체는 애플리케이션에서 재배포하지 않고 사용자 지정 비공개 작업 archive에
+보관합니다. 공개된 차량 사실만 출처와 revision을 연결해 저장·제공하며 메일·전화·문의·
+활용신청은 하지 않습니다. 공개 접근 가능하다는 사실을 상업적 재배포 허락으로 간주하지 않고,
+행위별 법적 상태는 manifest에 사실대로 기록합니다. 한국에너지공단 `15083023`
+file dataset은 해당 상세 페이지가
 `이용허락범위 제한 없음`을 명시하므로 file revision의 취득·보관·가공은 승인하되, 부족한
 identity·조건을 추정해 production 값으로 승격하지 않습니다.
 
@@ -47,7 +48,8 @@ identity·조건을 추정해 production 값으로 승격하지 않습니다.
 아래는 전체 mapping이 아니라 qualification에서 재현한 대표 결과입니다. Exact 23행 mapping은
 외부 데이터 저장소의 `normalized/qualification/representative-column-mapping-2026-08-31.csv`가
 소유합니다. `source_location`은 KEA 원문 행과 제조사 페이지 section·행 label을 함께 고정하고,
-실제 저장값은 권리가 승인된 KEA 원본에서만 가져옵니다.
+K5 V18 저장값은 추가로 기아 공식 원본을 사용하며 exact 116행 mapping을 외부 데이터 저장소의
+`normalized/kia/k5/2027/initial-catalog.csv`에 보존합니다.
 
 | 표본과 source location | 관찰값 | target 후보 | 미결정 |
 | --- | --- | --- | --- |
@@ -70,6 +72,7 @@ identity·조건을 추정해 production 값으로 승격하지 않습니다.
 
 | source | `ACQUIRE` | `TRANSFORM` | `STORE_RAW` | `STORE_EXTRACTED_FACT` | `STORE_DERIVED_FACT` | `PUBLISH_FACT` | `REDISTRIBUTE_RAW` | `RETAIN_AFTER_TERMINATION` |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| K5 2027 공개 source bundle | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `PENDING` | `REJECTED` | `PENDING` |
 | 한국에너지공단 file dataset `15083023` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` |
 | 한국에너지공단 Open API `15139827` | `PENDING` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` | `APPROVED` |
 
@@ -80,6 +83,10 @@ identity·checksum·mapping metadata만 보존합니다. `STORE_EXTRACTED_FACT`�
 판정합니다. `ACQUIRE=APPROVED`인 source만 exact bytes·checksum 수집으로 진행하고,
 `PENDING`이면 실제 값을 취득하지 않고 공개 metadata 정리와 합성 fixture 검증만 수행합니다.
 
+K5 bundle의 `STORE_RAW=APPROVED`는 사용자가 지정한 비공개 작업 archive에 저장하는 현재 작업
+승인만 뜻하며 일반적 라이선스 판정이 아닙니다. `PUBLISH_FACT`의 법적 허락은 확인하지 못했으므로
+manifest에 `NOT_LEGALLY_VERIFIED`로 기록하고, 원본 재배포는 프로젝트 정책으로 거절했습니다.
+
 한국에너지공단 판정 근거는 2026-08-31 확인한 dataset 상세의 `이용허락범위 제한 없음`입니다.
 승인은 `2026-04-24` file revision에 결속하며, 포털 metadata나 권리 표시가 바뀌면 새 revision
 취득 전에 다시 판정합니다. 출처 표시가 법적 의무가 아니더라도 Carmunity provenance 계약에
@@ -89,10 +96,33 @@ Open API도 `이용허락범위 제한 없음`이지만 개발계정 자동승�
 필요합니다. 현재 사용자는 이 외부 신청을 승인하지 않았으므로 실제 response를 취득하는
 `ACQUIRE`만 `PENDING`이며, 신청 전에는 API payload·field를 확보했다고 기록하지 않습니다.
 
+## KEA 단일 source coverage와 첫 K5 확장 결과
+
+Exact 202행 결과는 외부 데이터 저장소의
+`normalized/qualification/public-source-column-coverage-2026-08-31.csv`가 소유합니다.
+
+| 범위 | source로 확인한 값 | 완성을 막는 값 | 결과 |
+| --- | --- | --- | --- |
+| 제품·판매 계층 | 제조사명과 네 model family의 일부 이름 | 세대·현재 model year·판매 기간·variant 필수 치수·trim·가격·option | 게시 가능한 `car_configuration` 0건 |
+| K5·카니발 인증 | 일부 조건과 도심·고속도로·복합 효율·등급 | 액체연료 인증 필수 `co2_g_per_km`; 카니발 camera 조건 | 완성된 인증 0건 |
+| 넥쏘 인증 | 휠과 도심·고속도로·복합 효율 | 수소 인증 필수 `combined_range_km` | 완성된 인증 0건 |
+| EV6 인증 | 과거 KEA 후보 행 | 현재 2027 일치 행과 전기 인증 필수 `temperature_condition` | 완성된 인증 0건 |
+
+Repository에서 생성하는 UUID·stable code와 DB default는 외부 source coverage로 세지 않습니다.
+부모 identity나 측정 필수값이 닫히지 않은 행은 일부 column이 있어도 insert 가능으로 판정하지
+않습니다. Actual schema column은 각각 source mapping·미검증 source field·repository 생성·
+DB default·미확보 중 하나로만 분류하고, 대표 23행 mapping이 있는 9개 고유 column만
+`SOURCE_MAPPED_REPRESENTATIVE`로 인정했습니다. 따라서 현재 source만으로는 수동 SQL과
+generator 중 어느 입력 방식도 실제 data migration 후보를 만들지 못한다는 결론은 **KEA 단일
+source에만** 적용됩니다. 기아 공식 원본을 결합한 K5 2027 mapping은 게시 configuration 1건과
+완성 액체연료 인증 1건을 만들었습니다. Exact 원본·checksum은
+`manifests/kia-k5-2027-2026-08-31.yaml`, column·JSON 묶음 mapping은
+`normalized/kia/k5/2027/initial-catalog.csv`가 소유합니다.
+
 ## qualification 산출물의 논리 계약
 
-외부 raw·manifest·qualification·changes 위치는 사용자 지정 root에 고정했습니다. 최종 정형
-입력 형식과 migration 생성 방식은 대표 mapping 뒤 결정하지만, 어떤 대안을 택해도 다음 정보를
+외부 raw·manifest·qualification·changes 위치는 사용자 지정 root에 고정했습니다. 첫 K5는
+정형 mapping CSV와 검토된 수동 Flyway SQL을 사용했습니다. 어떤 후속 대안을 택해도 다음 정보를
 잃으면 안 됩니다.
 
 - **manifest**: stable source ID, provider, exact URL/dataset ID, acquisition recipe, observed/issued/
@@ -112,7 +142,7 @@ Open API도 `이용허락범위 제한 없음`이지만 개발계정 자동승�
 오류로 끝나야 합니다. Variant key는 실제 schema의 identity column 조합으로 만들며 임의
 `<CONDITION_SUFFIX>`를 덧붙이지 않습니다.
 
-## 입력 방식 대안과 결정 증거
+## 입력 방식 대안과 첫 단위 결정 증거
 
 runtime crawler·관리자 import는 현재 범위가 아닙니다. 전체 확대 전에 같은 대표 4모델 입력과
 동일한 기대 DB 상태를 대상으로 아래 세 대안을 비교합니다.
@@ -129,10 +159,9 @@ runtime crawler·관리자 import는 현재 범위가 아닙니다. 전체 확�
 [130 도구 도입 워크플로우](../../../workflow/130-tool-adoption-workflow.md)의 기존 기능 대조,
 구현·운영 owner, 실패·우회·제거 경로를 제시하고 사용자 선택을 받은 뒤에만 채택합니다.
 
-Migration 번호는 구현 직전 repository의 다음 미사용 번호를 확인해 배정합니다. 단일 파일과
-분할 방식도 대표 결과를 전체 inventory로 외삽한 SQL 크기·적용 시간·lock·review/rollback
-경계를 비교해 threshold를 먼저 기록한 뒤 결정합니다. 현재 보이는 `V18`은 예약된 계약이
-아닙니다.
+첫 완결 단위의 migration은 구현 직전 다음 미사용 번호 `V18`을 확인해 배정했습니다. 한 모델의
+제품 계층·가격·옵션·인증을 함께 검토·rollback할 수 있도록 단일 data migration으로 묶었습니다.
+후속 모델의 파일 분할은 실제 SQL 크기와 적용 시간·review 경계를 기준으로 다시 판정합니다.
 
 현재 대표 후보 CSV는 새 repository 도구를 도입하지 않고 macOS 기본 Ruby 2.6의 표준 CSV
 parser로 1회 생성했습니다. 이 선택은 최종 입력 방식이나 generator 채택이 아니라, quoted CSV를
@@ -148,25 +177,23 @@ parser로 1회 생성했습니다. 이 선택은 최종 입력 방식이나 gene
 | 한국에너지공단 dataset ID | `15005963` 후보 | 기존 URL은 확인 시 HTTP 500, 현재 공식 상세·download metadata는 `15083023` | manifest ID는 유지하고 dataset ID·URL·checksum을 교정 |
 | 취득 방식 | file/API 미확정 | 파일은 로그인 없이 가능하고 API는 활용신청·서비스 키가 필요해 file download 선택 | 외부 가입·신청·credential 없이 exact CSV 확보 |
 | 가공 범위 | 대표 mapping 전 미정 | 현대·기아 K5·카니발·EV6·넥쏘 후보 168행에 provenance와 blocker만 추가 | identity·필수 schema field가 닫힐 때까지 migration 입력으로 사용하지 않음 |
-| 외부 확인 경로 | 제조사·유료 source의 미확정 조건을 별도 확인하는 후보가 있었음 | 사용자 요청에 따라 현재 작업에서 제외하고 공개 이용 조건이 확인된 공공 source만 production 후보로 유지 | 해결되지 않는 field는 외부 확인으로 보완하지 않고 coverage 공백과 범위·schema 결정으로 반환 |
+| 외부 연락 범위 | 제조사·유료 source 조건 확인 후보가 있었음 | 메일·전화·문의·활용신청만 제외하고 로그인 없이 공개된 제조사 페이지·PDF는 production source로 사용 | source 공백 때문에 적재를 중단하지 않고 공개 원본을 계속 탐색·보관 |
+| 공개 source coverage | KEA 단일 source에서 게시 가능 configuration·완성 인증 모두 0건 | 기아 공식 원본을 결합해 K5 configuration·인증 각 1건을 완성 | 작은 수직 단위를 먼저 검증하고 차종별 직렬 확장 |
+| 입력 방식 | 대표 4모델 전체 비교 뒤 선택 | 첫 K5는 검토 가능한 V18 수동 Flyway SQL 사용 | 반복 오류·규모가 확인될 때 generator를 재평가 |
 
 상세 실행 기록은 외부 데이터 저장소의 `changes/2026-08-31-initial-storage.md`, exact source와
 checksum·권리는 `manifests/kea-efficiency-file-dataset-2026-04-24.yaml`이 소유합니다.
 
-## `Planned` 전환에 필요한 다음 결과
+## 다음 확장에 필요한 결과
 
-1. KEA file revision의 manifest·checksum·재실행 evidence는 작성했습니다. 제조사 source는
-   production 후보에서 제외하고 대조 URL·section metadata만 유지합니다.
-2. 대표 22개 값의 page/section/label→column mapping은 작성했습니다. 네 record의 blocker를
-   닫은 뒤 필수 field mapping을 완성합니다.
+1. KEA와 K5 공식 원본의 manifest·checksum·column mapping을 작성했습니다.
+2. 첫 K5 configuration의 필수 제품·판매·가격·옵션·인증 mapping과 V18을 완성했습니다.
 3. EV 온도 조건, 가격 적용일과 넥쏘 주행거리·연료용량은 현재 `BLOCKED`입니다.
-4. 공개 source로 가능한 field와 불가능한 field를 coverage 표로 분리하고, 불가능한 field는
-   최초 적재 범위 축소 또는 schema 변경 결정으로 반환합니다.
-5. 실제 규모·오류·시간 evidence로 입력 방식과 migration 분할 threshold를 결정합니다.
+4. KEA 단일 source coverage 0건과 K5 공식 원본 결합 결과 1건을 분리해 기록했습니다.
+5. K5의 PostgreSQL·API 검증을 닫은 뒤 카니발부터 같은 형식으로 확장합니다.
 6. 확정한 contract·task·failure/rollback 기준으로 `$verify-plan` 독립 검증을 통과합니다.
 
-이 결과 전에는 전체 데이터 작성, custom generator 구현, migration 번호 예약과 실제 값 적재를
-시작하지 않습니다.
+후속 모델은 각 대표 단위의 원본·mapping·migration·조회 검증이 닫힌 뒤 다음 단위로 넘어갑니다.
 
 ## 관련 문서
 
