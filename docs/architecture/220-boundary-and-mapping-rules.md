@@ -134,7 +134,7 @@ DTO 경계에서는 이동 방향이 이름에 드러나야 합니다.
 | --- | --- | --- |
 | `from(source)` | 하나의 source model, raw value, 외부 표현을 현재 타입으로 변환합니다. | `EmailAddress.from(rawEmail)`, `MemberResponse.from(result)` |
 | `of(values...)` | 이미 검증되거나 의미가 분명한 여러 값을 조립합니다. | `PageRange.of(start, size)` |
-| 의미 있는 factory 이름 | 고정된 업무 의미나 기본값을 숨기지 않고 드러냅니다. | `AuthEventJpaEntity.signUpSuccess(accountId)` |
+| 의미 있는 factory 이름 | 고정된 업무 의미나 기본값을 숨기지 않고 드러냅니다. | `AccountSecurityAuditRecords.signUpSuccess(accountPublicId, occurredAt)` |
 
 의미 있는 factory 이름은 `of`보다 길어도 허용합니다.
 예를 들어 특정 이벤트 타입과 성공 결과를 함께 고정하는 factory는 `of(accountId)`보다 `signUpSuccess(accountId)`가 낫습니다.

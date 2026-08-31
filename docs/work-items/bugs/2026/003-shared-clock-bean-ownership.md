@@ -2,7 +2,7 @@
 
 ## 상태
 
-Proposed
+Done
 
 ## 달성할 결과
 
@@ -12,11 +12,11 @@ Proposed
 
 `account`와 `auth`가 공용 UTC 시간 기준을 주입받되 어느 module도 다른 module의 internal configuration bean 존재에 의존하거나 production constructor에서 `Clock.systemUTC()`를 직접 만들지 않습니다. test는 같은 공개 조립 지점을 대체합니다.
 
-## 실제 동작과 근거
+## 완료 결과
 
-- `ChangePasswordService`처럼 Lombok이 public constructor를 만드는 일부 bean은 production의 유일한 `Clock @Bean`인 `auth.internal.adapter.out.security.JwtTokenConfiguration`을 실제로 소비합니다.
-- 이메일 인증, 관리자 초대와 비밀번호 재설정 service는 public `@Autowired` constructor에서 `Clock.systemUTC()`를 직접 만들고 package-private test constructor에서만 `Clock`을 받습니다.
-- 따라서 현재 문제는 `auth.internal` bean을 소비하는 cross-module runtime DI edge와 공용 bean을 우회하는 service-local 시간 생성이 함께 존재한다는 것입니다.
+- `config.TimeConfiguration`이 유일한 production `Clock.systemUTC()` provider입니다.
+- account/auth/securityaudit consumer는 constructor로 같은 bean을 주입받습니다.
+- `DddOwnershipSourceTest`와 context test가 provider 위치와 실제 조립을 검증합니다.
 
 ## 영향
 
@@ -41,6 +41,6 @@ Proposed
 
 - **현재 구조와 예외**: [모듈 지도](../../../project/210-module-map.md)
 - **일반 조립 기준**: [Spring Boot 모듈 구조](../../../architecture/210-spring-boot-module-structure.md)
-- **현재 provider source**: `JwtTokenConfiguration`
+- **현재 provider source**: `config.TimeConfiguration`
 - **현재 account consumer source**: `ChangePasswordService`, `RequestMemberEmailVerificationService`, `ConfirmMemberEmailVerificationService`, `InviteAdminService`, `AcceptAdminInvitationService`, `RevokeAdminInvitationService`, `RequestPasswordResetService`, `ConfirmPasswordResetService`
 - **관련 기능**: [인증 토큰 기반](../../features/2026/006-auth-token-foundation.md), [관리자 계정 기반](../../features/2026/010-admin-account-foundation.md), [이메일 인증](../../features/2026/008-member-email-verification.md), [다시 연 관리자 초대](../../features/2026/011-admin-invitations.md), [비밀번호 재설정](../../features/2026/012-account-password-reset.md)

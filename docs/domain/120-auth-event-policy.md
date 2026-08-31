@@ -152,6 +152,10 @@ schema에 허용되어도 저장 경로가 없는 reason code는 운영 대시�
 보존해야 하는 일부 event는 별도 `REQUIRES_NEW` transaction을 사용합니다. 따라서 모든
 event가 상태 변경과 원자적이라고 일반화하지 않습니다.
 
+물리 저장은 `securityaudit`만 수행합니다. `SecurityAuditAppender`는 caller transaction에
+참여해 실패를 전파하고, `IndependentSecurityAuditAppender`는 `REQUIRES_NEW`로 기록한 뒤
+저장 실패를 `FAILED` 결과와 구조화 로그로 분리합니다.
+
 | 흐름 | transaction 기준 | rollback 기준 |
 | --- | --- | --- |
 | 일반 회원 자체 가입 | account, profile, password credential, role assignment, `ACCOUNT_SIGN_UP` 이벤트를 함께 저장합니다. | 하나라도 실패하면 전체 가입 저장이 rollback됩니다. |
@@ -174,10 +178,9 @@ event가 상태 변경과 원자적이라고 일반화하지 않습니다.
 
 관리자 초대 생성 이벤트는 초대 생성 사실만 소유하며 commit 이후 notification delivery
 결과를 기록하지 않습니다. Delivery 결과를 장기 보존하려면 생성 이벤트와 다른 taxonomy·
-저장·복구 계약이 필요합니다. 이메일 인증 요청과 비밀번호 재설정 요청은 provider 호출과
-성공 event 저장을 같은 `try`에서 처리해 event 저장 실패를 발송 실패로 오분류할 수 있으며,
-남은 의미 분리는 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이
-소유합니다.
+저장·복구 계약이 필요합니다. 이메일 인증 요청과 비밀번호 재설정 요청의 독립 append는
+저장 실패를 `FAILED`로 반환하므로 provider 결과를 바꾸지 않습니다. Audit gap 판정과 복구는
+[Security Audit 장애 복구](../operations/550-security-audit-failure-recovery-runbook.md)가 소유합니다.
 
 ## Metadata 기준
 
@@ -200,7 +203,7 @@ metadata는 항상 JSON object여야 하며 event별 허용 key만 사용합니�
 | `ADMIN_INVITATION_CREATED` | `previousInvitationRevoked` | 기존 open 초대 회수 여부 |
 | `ADMIN_INVITATION_ACCEPTED` | `invitationPublicId` | 초대 public id |
 | `ADMIN_INVITATION_ACCEPTED` | `roleCode` | `ROLE_ADMIN` |
-| `ADMIN_INVITATION_ACCEPTED` | `invitedByAccountId` | 초대 생성 account 내부 id |
+| `ADMIN_INVITATION_ACCEPTED` | `invitedByAccountPublicId` | 초대 생성 account public id |
 | `ADMIN_INVITATION_REVOKED` | `invitationPublicId` | 초대 public id |
 | `ADMIN_INVITATION_REVOKED` | `targetEmailHash` | 대상 email SHA-256 hash |
 | `ADMIN_INVITATION_REVOKED` | `reasonCode` | `ADMIN_REVOKED` |
@@ -208,7 +211,8 @@ metadata는 항상 JSON object여야 하며 event별 허용 key만 사용합니�
 이메일 인증과 비밀번호 재설정 이벤트의 현재 metadata는 `{}`입니다.
 provider message id, recipient email, raw token, token hash는 현재 감사 metadata에 저장하지 않습니다.
 
-`ADMIN_INVITATION_ACCEPTED.invitedByAccountId`는 수락으로 생성된 account가 event의 대상이고 초대 생성자가 별도 actor인 현재 schema에서 actor를 결속하기 위한 명시적 예외입니다. 운영 DB 내부 감사 조회에서만 사용하고 API 응답·application log로 노출하지 않습니다. 새 metadata key에 account 내부 id를 허용하는 일반 선례로 사용하지 않으며, auth event에 별도 actor FK 또는 actor public id를 도입하면 이 예외를 제거할지 재검토합니다.
+`ADMIN_INVITATION_ACCEPTED.invitedByAccountPublicId`는 수락으로 생성된 account가 event의
+대상이고 초대 생성자가 별도 actor인 흐름을 내부 DB id 없이 결속합니다.
 
 metadata에 새 key를 추가할 때는 다음 기준을 모두 만족해야 합니다.
 

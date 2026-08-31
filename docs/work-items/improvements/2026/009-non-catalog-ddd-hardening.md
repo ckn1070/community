@@ -2,15 +2,25 @@
 
 ## 상태
 
-Planned
+Done
 
-## 달성할 결과
+## 결과
 
-카탈로그를 제외한 현재 module의 업무 언어·상태·persistence writer가 하나의 소유 경계와
-일치합니다. `account`는 계정 생명주기, `auth`는 인증 session, `securityaudit`는 감사
-record를 각각 소유하고, 기술 module에는 근거 없는 전술 패턴을 추가하지 않습니다.
+카탈로그를 제외한 현재 module의 업무 언어·상태·persistence writer를 목표 소유 경계에
+맞춰 구현했습니다. `auth`는 refresh session, `securityaudit`는 `auth_event`,
+`account`는 credential·verification/reset·invitation을 소유하며 구조 test와 PostgreSQL
+통합 test가 이 경계를 검증합니다.
 
-구현 뒤에는 다음 질문에 코드·test·문서가 같은 답을 줘야 합니다.
+Public-id schema는 V13·V14 expand와 application 전환까지 완료했습니다. 구 `account_id`와
+compatibility trigger 제거는 rollback 관찰 뒤 별도 contract migration으로 남겼으며 현재
+완료 범위에 포함하지 않습니다.
+
+최종 검증은 Docker daemon 준비 확인 뒤
+`./gradlew check --no-daemon --rerun-tasks --console=plain`으로 수행했고 모든 task가
+통과했습니다. 독립 구현 검증은 단일 writer·transaction·public-id 전환·Domain 전이·Clock
+경계를, 독립 문서 검증은 owner·router·local link·현재 source 대조를 확인했습니다.
+
+최종 구현 뒤에는 다음 질문에 코드·test·문서가 같은 답을 줘야 합니다.
 
 - account 상태·credential·verification/reset·invitation을 누가 바꾸는가: `account`
 - refresh session을 누가 issue·rotate·revoke하는가: `auth`
@@ -18,15 +28,14 @@ record를 각각 소유하고, 기술 module에는 근거 없는 전술 패턴�
 - 이메일 전송 실패가 account 상태를 직접 바꾸는가: 아니요. `notification`은 전달만 합니다.
 - `shared`·`config`가 업무 규칙을 소유하는가: 아니요.
 
-## 현재 문제
+## 해결 결과
 
-- 전략적 DDD는 업무 module과 공개 계약까지 적용됐지만 Bounded Context·Context Map이
-  확정되지 않았고 `refresh_token`·`auth_event`가 공동 writer 상태입니다.
-- 전술적 DDD는 Account 생성과 값 불변식에는 적용됐지만 로그인, session, verification,
-  reset, invitation 규칙이 application service와 persistence에 분산돼 있습니다.
-- `auth` repository가 `account` table을 native SQL로 직접 읽습니다.
-- `notification`·`shared`·`config`는 현재 기술 경계이므로 전술 모델이 없는 것이 결함이
-  아니지만, 이 판정이 자동 test로 보호되지는 않습니다.
+- `refresh_token`은 `auth`, `auth_event`는 `securityaudit`만 매핑·기록합니다.
+- `auth`의 `account` table 직접 read와 account의 refresh writer를 제거했습니다.
+- `PasswordCredential`, `RefreshSession`, verification/reset challenge와 `AdminInvitation`이
+  lifecycle 판단·허용 전이·terminal 재전이 금지를 framework 없이 표현합니다.
+- `CredentialChanged` 동기 event가 credential 변경과 session 폐기의 보안 원자성을 유지합니다.
+- `config`가 유일한 UTC Clock provider이고 구조 source test가 현재 경계를 보호합니다.
 
 현재 근거 전체는 [200 현재 프로젝트 아키텍처](../../../project/200-current-architecture.md)의
 9개 lifecycle coverage와 [상세 설계](009-non-catalog-ddd-hardening-design.md)가 소유합니다.
@@ -88,7 +97,7 @@ Agent 기술 결정이며 [상세 설계](009-non-catalog-ddd-hardening-design.m
 
 근거와 배제 대안은 [009 상세 설계](009-non-catalog-ddd-hardening-design.md)를 기준으로 합니다.
 
-## 의미 단위 계획
+## 남은 구현
 
 ### 작업 1. 목표 Context 계약과 실패 test 고정
 

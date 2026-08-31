@@ -336,12 +336,7 @@ WHERE email_normalized = lower(btrim(:'qualification_email'))
 
 SELECT event_type, result, count(*)
 FROM auth_event
-WHERE account_id = (
-    SELECT id
-    FROM account
-    WHERE email_normalized = lower(btrim(:'qualification_email'))
-      AND public_id = :'qualification_member_id'::uuid
-)
+WHERE account_public_id = :'qualification_member_id'::uuid
   AND event_type IN (
       'ACCOUNT_SIGN_UP',
       'EMAIL_VERIFICATION_REQUEST',
@@ -384,13 +379,14 @@ BEGIN;
 
 CREATE TEMP TABLE qualification_cleanup_target (
     id BIGINT PRIMARY KEY,
+    public_id UUID NOT NULL,
     email_normalized VARCHAR(254) NOT NULL,
     status VARCHAR(20) NOT NULL,
     expect_active BOOLEAN NOT NULL
 ) ON COMMIT DROP;
 
-INSERT INTO qualification_cleanup_target (id, email_normalized, status, expect_active)
-SELECT id, email_normalized, status, :'qualification_expect_active'::boolean
+INSERT INTO qualification_cleanup_target (id, public_id, email_normalized, status, expect_active)
+SELECT id, public_id, email_normalized, status, :'qualification_expect_active'::boolean
 FROM account
 WHERE email_normalized = lower(btrim(:'qualification_email'))
   AND public_id = :'qualification_member_id'::uuid
@@ -399,6 +395,7 @@ FOR UPDATE;
 DO $cleanup$
 DECLARE
     target_id BIGINT;
+    target_public_id UUID;
     target_email_normalized VARCHAR(254);
     target_status VARCHAR(20);
     expect_active BOOLEAN;
@@ -409,10 +406,11 @@ BEGIN
     END IF;
 
     SELECT cleanup_target.id,
+           cleanup_target.public_id,
            cleanup_target.email_normalized,
            cleanup_target.status,
            cleanup_target.expect_active
-    INTO target_id, target_email_normalized, target_status, expect_active
+    INTO target_id, target_public_id, target_email_normalized, target_status, expect_active
     FROM qualification_cleanup_target AS cleanup_target;
 
     IF target_status NOT IN ('PENDING', 'ACTIVE') THEN
@@ -461,7 +459,7 @@ BEGIN
         RAISE EXCEPTION 'qualification target is referenced by another role assignment';
     END IF;
 
-    IF EXISTS (SELECT 1 FROM refresh_token WHERE account_id = target_id) THEN
+    IF EXISTS (SELECT 1 FROM refresh_token WHERE account_public_id = target_public_id) THEN
         RAISE EXCEPTION 'qualification target has refresh tokens';
     END IF;
 
@@ -481,7 +479,7 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM auth_event
-        WHERE account_id = target_id
+        WHERE account_public_id = target_public_id
           AND event_type NOT IN (
               'ACCOUNT_SIGN_UP',
               'EMAIL_VERIFICATION_REQUEST',
@@ -501,7 +499,7 @@ BEGIN
         WHERE NOT EXISTS (
             SELECT 1
             FROM auth_event event
-            WHERE event.account_id = target_id
+            WHERE event.account_public_id = target_public_id
               AND event.event_type = required.event_type
               AND event.result = 'SUCCESS'
         )
@@ -522,13 +520,13 @@ BEGIN
 
     DELETE FROM account_verification_token WHERE account_id = target_id;
 
-    DELETE FROM refresh_token WHERE account_id = target_id;
+    DELETE FROM refresh_token WHERE account_public_id = target_public_id;
     GET DIAGNOSTICS affected_rows = ROW_COUNT;
     IF affected_rows <> 0 THEN
         RAISE EXCEPTION 'unexpected refresh token delete count: %', affected_rows;
     END IF;
 
-    DELETE FROM auth_event WHERE account_id = target_id;
+    DELETE FROM auth_event WHERE account_public_id = target_public_id;
 
     DELETE FROM account_role_assignment WHERE account_id = target_id;
     GET DIAGNOSTICS affected_rows = ROW_COUNT;

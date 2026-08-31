@@ -2,7 +2,7 @@
 
 ## 상태
 
-Proposed
+Done
 
 ## 달성할 결과
 
@@ -21,21 +21,19 @@ Feature 011이 소유합니다.
   성공/실패를 장기 보존하려면 생성 사실과 다른 delivery 결과로 설계합니다.
 - 어느 흐름에서도 성공 의미의 event 저장 실패를 provider 실패로 다시 분류하지 않습니다. 감사 저장 실패는 별도 진단·재시도·복구 계약으로 처리합니다.
 
-## 실제 동작과 근거
+## 완료 결과
 
-- 이메일 인증 요청과 비밀번호 재설정 요청 service는 notification `send`와 성공 event 저장을
-  같은 `try`에 둡니다.
-- 성공 event 저장이 실패하면 `catch`가 실행돼 실패 event 저장을 다시 시도합니다.
-- 두 번째 저장이 성공하면 실제 delivery 성공이 `FAILURE`로 기록되고, 다시 실패하면 event가 누락됩니다.
+- 이메일 인증·비밀번호 재설정 요청은 provider 결과를 독립 append 계약에 전달합니다.
+- `IndependentSecurityAuditAppender`는 저장 예외를 `FAILED`로 바꾸므로 provider 성공을
+  실패 event로 다시 분류하지 않습니다.
+- append 실패는 구조화 로그로 관찰하고 source 유무에 따른 복구는 550 runbook이 소유합니다.
 - 관리자 초대는 invitation과 `ADMIN_INVITATION_CREATED`를 같은 transaction에 저장하고
   commit 이후 notification만 호출합니다. Provider 실패는 생성 event를 다시 쓰거나
   `notificationResult` metadata를 만들지 않습니다.
 
 ## 영향
 
-남은 두 요청 흐름에서는 운영자가 실제 발송 성공을 실패로 판단할 수 있고, provider 재발송
-또는 사용자 지원에서 중복 notification을 만들 수 있습니다. event 저장 장애가 notification
-provider 장애 통계로 오염됩니다.
+감사 저장 장애는 notification provider 결과와 분리되며 audit gap 신호로만 분류됩니다.
 
 ## 수정 계획
 
@@ -63,4 +61,5 @@ provider 장애 통계로 오염됩니다.
 - **현재 event 의미와 gap**: [Auth Event 정책](../../../domain/120-auth-event-policy.md)
 - **관리자 초대 내구성 경계**: [다시 연 관리자 초대/수락](../../features/2026/011-admin-invitations.md)
 - **현재 실행 source**: `RequestMemberEmailVerificationService`, `RequestPasswordResetService`, `InviteAdminService`
+- **감사 누락 복구**: [Security Audit 장애 복구](../../../operations/550-security-audit-failure-recovery-runbook.md)
 - **관련 기능**: [이메일 인증](../../features/2026/008-member-email-verification.md), [다시 연 관리자 초대](../../features/2026/011-admin-invitations.md), [비밀번호 재설정](../../features/2026/012-account-password-reset.md)

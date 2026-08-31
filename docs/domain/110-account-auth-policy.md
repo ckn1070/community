@@ -40,6 +40,21 @@
 - 비밀번호 변경 전 계정은 로그인은 가능하지만 `PUT /api/v1/auth/password` 외 인증이 필요한 일반·관리자 보호 API 접근은 차단합니다. `permitAll` public endpoint는 별도입니다.
 - Refresh token 재발급 시에는 token claim을 신뢰하지 않고 DB의 최신 account 상태, role, 비밀번호 변경 필요 여부를 다시 조회합니다.
 
+## 업무 모델과 소유권
+
+- `account`의 `PasswordCredential`이 password hash 변경과
+  `password_change_required = false` 전이를 함께 표현합니다.
+- `EmailVerificationChallenge`와 `PasswordResetChallenge`가 cooldown·만료·소비·회수와
+  terminal 재전이 금지를 표현합니다.
+- `AdminInvitation`이 수락·회수·만료 상태와 terminal 재전이 금지를 표현합니다.
+- `auth`의 `RefreshSession`이 issue·rotation·logout·reuse 후보와 만료 전이를 표현하고,
+  `auth` persistence만 `refresh_token`을 변경합니다.
+- 비밀번호 변경·재설정이 성공하면 `account`가 `CredentialChanged`를 동기 발행하고,
+  `auth` listener가 같은 transaction에서 active refresh session을 폐기합니다.
+
+Application service는 입력 검증과 transaction 순서를 조율하고, JPA Entity는 Domain Model이
+허용한 결과를 table에 매핑합니다. `securityaudit`는 이 결과의 감사 record를 단독 저장합니다.
+
 ## 인증 조건 요약
 
 | 조건                       | 값                  | 부여 시점                        | 주요 효과                                |
@@ -184,7 +199,9 @@ Spring Security의 기본 `SCOPE_` prefix 변환은 사용하지 않습니다.
 요청 email에 해당하는 account가 없거나, 이미 활성화됐거나, cooldown 중이어도 public 응답은 접수 성공 형태를 유지합니다.
 이메일 인증 완료 API도 public이지만 raw token이 인증 수단이므로 token 형식, 만료, 소비/폐기 상태를 검증한 뒤에만 account를 활성화합니다.
 비밀번호 재설정 요청 API도 public이며, `ACTIVE`와 `PENDING` account만 내부적으로 reset token을 발급합니다.
-비밀번호 재설정 완료는 사용자가 선택한 새 password hash를 저장하면서 `password_change_required = false`로 만들고 활성 refresh token을 폐기합니다. `PENDING` account를 `ACTIVE`로 전환하지 않습니다.
+비밀번호 재설정 완료는 `PasswordCredential`이 사용자가 선택한 새 password hash와
+`password_change_required = false` 결과를 만들고 `CredentialChanged`로 활성 refresh session을
+폐기합니다. `PENDING` account를 `ACTIVE`로 전환하지 않습니다.
 
 현재 동일 공개 응답은 직접적인 계정 존재 노출만 막습니다. 부적격 요청은 조기에 반환하고 적격 요청은 token 저장과 동기 notification까지 수행하므로 timing side channel은 남아 있습니다.
 
@@ -221,7 +238,9 @@ Staging Swagger Form Login은 같은 email·password 검증과 account 상태 �
 refresh token은 발급·저장하지 않습니다. 성공 시 실패 횟수, `last_login_at`과
 `PASSWORD_LOGIN` 성공 감사 이벤트만 갱신합니다.
 
-Refresh token 재발급은 저장된 refresh token을 검증한 뒤 DB에서 account 상태, role, `password_change_required`를 다시 조회합니다.
+Refresh token 재발급은 `auth`가 저장한 `RefreshSession`을 검증한 뒤 `account::api` 공개 조회로
+최신 account 상태, role, `password_change_required`를 다시 확인합니다. `auth`는 `account`
+table을 직접 조회하지 않습니다.
 
 | 조건 | 재발급 결과 |
 | --- | --- |

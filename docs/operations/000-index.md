@@ -102,6 +102,7 @@ Super Admin 운영 준비를, `370`은 외부 HTTPS 공개를 소유합니다.
 | 최초 연결 뒤 GitHub App private key rotation | [Argo CD repository credential 교체](520-argocd-repository-credential-rotation-runbook.md) |
 | 최초 설정 뒤 Sonar 분석 token rotation | [Sonar token 교체](530-sonar-token-rotation-runbook.md) |
 | 최초 bootstrap 뒤 notification credential 변경 | [Application notification credential 변경](540-application-notification-credential-runbook.md) |
+| Security Audit 독립 append 실패의 누락 범위·복구 가능성 판정 | [Security Audit 장애 복구](550-security-audit-failure-recovery-runbook.md) |
 
 ## Platform 진단
 

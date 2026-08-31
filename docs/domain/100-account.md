@@ -150,6 +150,9 @@ password를 새로 정하는 일반 회원 가입, 관리자 초대 수락, 초�
 
 ## Refresh Token
 
+Refresh token은 인증 주체인 account가 아니라 `auth`의 `RefreshSession` 생명주기입니다.
+이 절은 account 상태·credential 변경과의 협력 정책만 설명하며 물리 writer는 `auth` 하나입니다.
+
 JWT access token은 짧게 만료시키고 DB에 저장하지 않습니다.
 refresh token은 원문을 저장하지 않고 해시만 저장합니다.
 비밀번호 로그인 성공 시 refresh token 원문은 API 응답으로 한 번만 전달하고, 서버에는 SHA-256 hash와 `family_id`, 발급/만료 시각만 저장합니다.
@@ -186,9 +189,9 @@ refresh token 재발급 시점에는 account 상태와 role을 다시 조회합�
 
 비밀번호 재설정 token도 같은 저장 생명주기를 사용하지만 목적과 완료 효과는 분리합니다. 요청은 `ACTIVE`·`PENDING` account에만 내부적으로 token을 발급하고, 완료는 token 소비, 새 password hash 저장, `password_change_required = false`, 활성 refresh token 폐기를 하나의 transaction으로 처리합니다. `PENDING` account를 `ACTIVE`로 전환하지 않습니다. TTL, cooldown과 공개 API의 enumeration 방지 계약은 [Account 인증/인가 정책](110-account-auth-policy.md)이 소유합니다.
 
-## Auth Event
+## Security Audit
 
-`auth_event`는 보안과 운영 추적을 위한 최소 감사 로그입니다.
+`auth_event`는 `securityaudit`가 단독 저장하는 보안과 운영 추적용 최소 감사 로그입니다.
 회원 자체 가입의 `ACCOUNT_SIGN_UP/SUCCESS` 감사 레코드는 `AccountRegisteredEvent` domain event를 persistence adapter가 저장 형식으로 매핑한 결과입니다.
 
 현재 event type은 인증/인가 흐름 이름만 담고, 성공/실패는 `result`, 세부 원인은 `reason_code`로 분리합니다.
@@ -211,7 +214,9 @@ refresh token 재발급 시점에는 account 상태와 role을 다시 조회합�
 
 이벤트별 생성 조건, `result`, `reason_code`, `metadata`, transaction 경계는 [120-auth-event-policy.md](120-auth-event-policy.md)를 기준으로 합니다.
 
-로그인 실패처럼 account를 특정하지 못하는 경우 `account_id`는 null일 수 있습니다.
+로그인 실패처럼 account를 특정하지 못하는 경우 `account_public_id`는 null일 수 있습니다.
+현재 expand 기간에는 compatibility를 위해 `account_id`도 유지하지만 application 계약에는
+노출하지 않습니다.
 이 경우 `identifier_hash`를 사용해 원문 이메일을 남기지 않고 실패 시도를 추적합니다.
 `identifier_hash`는 JWT secret과 다른 HMAC-SHA256 secret으로 계산해야 합니다. 현재 application은 각 secret의 최소 길이만 검증하고 두 값의 동일 여부는 거부하지 않으므로, 이 분리를 강제하는 후속 수정은 [Auth secret 분리 검증 누락](../work-items/bugs/2026/002-auth-secret-separation-validation.md)이 소유합니다.
 원문 email, password, access token, refresh token은 auth event metadata에 남기지 않습니다.

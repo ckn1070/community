@@ -7,8 +7,9 @@
 
 | 모듈 | 상태 | 책임 |
 | --- | --- | --- |
-| `account` | 구현됨 | 인증 주체, profile, password credential, role assignment, verification token, admin invitation, auth event |
+| `account` | 구현됨 | 인증 주체, profile, password credential, role assignment, verification challenge, admin invitation |
 | `auth` | 구현됨 | password session, JWT 발급·검증, refresh token lifecycle, logout, Bearer 인증 경계 |
+| `securityaudit` | 구현됨 | 인증·인가 보안 감사 append 계약과 `auth_event` 단일 persistence writer |
 | `notification` | 구현됨 | 이메일 발송 공개 API, Resend adapter, transactional template, provider 오류 변환 |
 | `shared` | 구현됨 | 여러 module이 공유하는 안정된 공개 계약과 기반 type. `shared.error`가 `ErrorCode`, `CommonErrorCode`, `ApiException`, `FieldErrorDetail` 계약을 소유합니다. |
 | `config` | 구현됨 | Spring MVC, Security, OpenAPI, request id, logging, 공통 예외 처리·HTTP `ProblemDetail` 변환과 애플리케이션 조립 |
@@ -25,42 +26,40 @@
 auth -> account :: api
 auth -X-> account.internal
 
+account/auth -> securityaudit :: api
+account/auth -X-> securityaudit.internal
+
 account -> notification :: api
 account -X-> notification.internal
 
-ChangePasswordService 등 --(Spring DI: java.time.Clock)--> auth.internal JwtTokenConfiguration
-email verification·invitation·password reset service --> Clock.systemUTC() 직접 생성
+account --(CredentialChanged 동기 event)--> auth session 폐기
+config TimeConfiguration --(Spring DI)--> account/auth/securityaudit Clock consumer
 ```
 
-- `auth`는 account의 인증 subject와 저장 경계를 공개 계약으로 사용합니다.
+- `auth`는 account의 인증 subject와 로그인 계측 경계를 공개 계약으로 사용합니다.
 - `account`는 account 상태, email verification·password reset token과 admin invitation의
-  생명주기를 소유하고 이메일 전달은 notification에 위임합니다. Refresh token의
-  rotation·reuse·logout 조율은 `auth`가 맡지만 현재 물리 writer는 아래 예외처럼
-  `account`와 `auth`에 나뉘어 있습니다.
+  생명주기를 소유하고 이메일 전달은 notification에 위임합니다.
+- `auth`는 최초 발급, rotation·reuse·logout과 credential 변경에 따른 폐기를 포함한
+  refresh session 전체 생명주기와 `refresh_token` 단일 writer를 소유합니다.
+- `securityaudit`는 caller transaction 참여와 `REQUIRES_NEW` 독립 보존 계약을 분리하고
+  `auth_event`의 유일한 JPA mapping·writer를 소유합니다.
 - `notification`은 account 상태와 token lifecycle을 소유하지 않습니다.
-- `ChangePasswordService`처럼 실제 `Clock` bean을 주입받는 일부 `account` bean은 production의 유일한 provider인 `auth.internal`의 `JwtTokenConfiguration`에 의존합니다. 이메일 인증·관리자 초대·비밀번호 재설정 service는 public constructor에서 `Clock.systemUTC()`를 직접 만들어 이 bean을 우회합니다. 전자는 source import에 드러나지 않는 runtime DI 예외이고, 후자는 공용 시간 조립 경계가 일관되지 않은 예외입니다.
+- 공용 UTC `Clock`은 `config.TimeConfiguration`만 생성하고 업무 module은 주입받습니다.
 
-`Clock` provider를 중립적인 조립 경계로 이동하고 이 예외를 제거하는 작업은 [공용 Clock bean의 auth 내부 소유](../work-items/bugs/2026/003-shared-clock-bean-ownership.md)가 소유합니다.
-
-### 현재 Persistence 예외
-
-Java package 의존은 위 공개 계약을 지키지만 물리 persistence는 아직 같은 경계를 이루지 못합니다.
+### Persistence 소유권과 전환 상태
 
 ```text
-account persistence ─┬─> refresh_token <─┬─ auth persistence
-                     └─> auth_event    <─┘
+account persistence       ──> account 계열 table
+auth persistence          ──> refresh_token
+securityaudit persistence ──> auth_event
 ```
 
-- `account`의 `RefreshTokenJpaEntity`·`AuthEventJpaEntity` 계열은 로그인, 비밀번호 변경·재설정과 account 감사 흐름에서 두 table을 씁니다.
-- `auth`의 `AuthRefreshTokenJpaEntity`·`AuthTokenEventJpaEntity` 계열은 rotation, logout, reuse detection과 account 상태 거부에서 같은 두 table을 씁니다.
-- `auth`의 `AuthRefreshTokenJpaRepository`는 native SQL로 `account` table을 직접 읽어 내부 account id를 public id로 바꿉니다. Java package 의존은 아니지만 `account.api` 협력을 우회하는 물리 DB 의존입니다.
-- 따라서 “`auth`가 refresh token lifecycle을 소유한다”는 논리 책임만으로 단일 물리 writer를 뜻하지 않습니다. 현재는 두 module이 같은 table을 별도 entity·repository로 매핑하는 예외입니다.
-
-이 구조는 모듈 간 협력을 공유 table로 처리하지 않는 일반 기준을 충족하지 않습니다. 단일
-persistence owner와 transaction 공개 계약으로 이관하고 `auth`의 `account` table 직접 조회를
-제거하거나 명시적인 소유 경계로 바꾸는 후속 정리 작업은
-[009 비카탈로그 DDD 보완](../work-items/improvements/2026/009-non-catalog-ddd-hardening.md)가
-소유합니다. 현재 예외 자체의 canonical owner는 이 절입니다.
+- `DddOwnershipSourceTest`가 `auth_event`·`refresh_token`의 단일 mapping과 `auth`의
+  `account` table 직접 read 금지를 검증합니다.
+- V13·V14 expand migration은 기존 `account_id`와 새 `account_public_id`를 양방향 trigger로
+  동기화하고 불일치를 거부합니다. Application writer는 public id만 사용합니다.
+- 구 `account_id` column·FK·trigger 제거는 이전 application rollback이 필요 없다는 운영 관찰
+  뒤 별도 contract migration으로 수행합니다. 현재 expand 상태를 최종 contract처럼 쓰지 않습니다.
 
 각 module의 전략적·전술적 DDD 적용 판정과 현재 Context 후보 관계는
 [200 현재 프로젝트 아키텍처](200-current-architecture.md#현재-ddd-적용-판정)가
