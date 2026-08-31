@@ -65,6 +65,40 @@ grouping·subtype과 계획을 투영하면 이미 실질 효과입니다. 이 �
 read 자체는 실질 효과가 아니며, source가 실제로 접근 불가능할 때만 추측하지 않고 그
 blocker를 반환합니다.
 
+### 현재 메시지 입장 상태
+
+Bootstrap은 source discovery를 끝내는 데서 멈추지 않고, 현재 generation의 각 독립 결과
+batch에 다음 상태 중 하나를 산출합니다. 이 상태가 첫 실질 commentary·답변, specialist·plan
+선택, worker·reviewer 위임, 상태 변경 tool 호출과 mutation이 함께 소비할 admission
+identity입니다.
+
+| 상태 | 조건 | 허용 효과 |
+| --- | --- | --- |
+| `ANSWER_ONLY` | batch의 모든 원자가 질문·설명·검토처럼 읽기 전용임 | 질문을 직접 닫는 답변과 필요한 read-only 근거 조사 |
+| `EXECUTE` | 모든 상태 변경 원자에 현재 generation의 positive source가 있고 같은 batch에 미확정 질문·비교·우려·선택이 없음 | exact 승인 범위의 specialist·계획·위임·review·mutation |
+| `DISCUSS_THEN_REEVALUATE` | 실행 원자와 같은 결과를 결정하는 질문·비교·우려·미확정 선택이 함께 있음 | 질문·미확정 차원의 직접 답변과 논의만 허용; batch의 상태 변경은 금지 |
+
+상태를 산출하기 전에는 위 source read 최소 안내와 Bootstrap source discovery만 허용합니다.
+그 전에 실행 범위·결정·계획·전문가·완료를 투영한 commentary나 답변이 나왔다면 그 약속은
+invalid입니다. 뒤늦게 source를 읽어 이를 보정하거나 이미 선택한 primary path의 입력으로
+사용하지 않고, 약속과 그 후손을 폐기한 뒤 현재 원문에서 입장 상태를 처음부터 다시
+산출합니다.
+
+`DISCUSS_THEN_REEVALUATE`는 논의가 끝났다는 Agent 판단으로 `EXECUTE`가 되지 않습니다.
+사용자가 미확정 원자를 선택·제외·취소하고 필요한 실행 효과를 긍정적으로 요청한 새
+generation에서 상태를 다시 산출합니다. Dependency·write set·완료 oracle이 다른 독립
+결과 batch에는 각각 별도 상태를 부여하므로 한 batch의 논의가 독립 실행을 전역 차단하지
+않습니다.
+
+두 원자가 독립인지는 artifact·specialist·write set이나 즉시 완료 oracle의 차이만으로
+판정하지 않습니다. 현재 문장이나 직접 선행 문맥에서 질문·비교·우려가 실행 원자의 방식,
+규모, 빈도, 입력 집합이나 결과를 문제 삼으면 둘은 같은 상위 결과를 결정하는 batch입니다.
+질문에 어떤 답을 하더라도 실행 원자의 의미·수용 기준·후속 효과가 달라지지 않고, 사용자가
+둘을 별도 결과로 제시한 경우에만 독립 batch로 분리합니다. 명시적 제외·취소는 해당 원자의
+처분을 닫으므로 남은 승인 효과를 불필요하게 차단하지 않습니다. Consumer는 상태가 없거나
+generation·batch identity가 다르면 권한을 추론하거나 일부 승인 원자로 빈 값을 보정하지
+않고 Bootstrap으로 반환합니다.
+
 ### 직접 판정 책임
 
 현재 Agent는 Bootstrap에서 복원한 사용자 원문을 기준으로 대상, 문장 기능, 결과,
@@ -142,7 +176,7 @@ coverage를 모든 항목에 대해 완성합니다. 새 사용자 메시지마�
 ```text
 raw 항목 identity → 현재 generation의 exact span → 문장 기능 → 요청 효과
 → 같은 generation에 있는 상태 변경 권한의 positive source 또는 미확정·읽기 전용 사유
-→ batch admission 상태
+→ 현재 메시지 입장 상태와 generation·batch identity
 ```
 
 같은 batch에 질문·비교·우려·미확정 선택처럼 상태 변경 권한이 없는 항목이 하나라도 있으면

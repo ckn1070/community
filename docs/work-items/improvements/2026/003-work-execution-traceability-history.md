@@ -454,6 +454,47 @@ Root 제거 반사실에서 두 승인과 한 질문을 받은 즉시 세 번째
 실제로 소비한다는 보장은 후속 live invocation에서만 확인할 수 있습니다. 사건 대상 ingress
 artifact의 복구·삭제와 원래 ALB 작업 재개는 이 회고 권한에 포함되지 않습니다.
 
+## Flyway 수정 승인과 데이터 축적 질문을 합쳐 다시 실행한 사건
+
+### 사건과 영향
+
+사용자는 차량별 Flyway를 만들지 않는 구조로 수정하라고 요청하면서, 차량 데이터를 실제로
+한 대씩 늘릴 것인지 질문했습니다. Agent는 파일 경계 수정과 데이터 축적 단위 질문을 하나의
+승인으로 압축했습니다. 질문에 먼저 답하지 않고 구조화 입력과 generator를 새 결정으로
+기록했으며, 외부 원본 archive에 변경 기록과 현대·기아 inventory HTML까지 추가했습니다.
+
+### 이전 방어의 실제 생애주기와 2차 원인
+
+앞선 ingress 사건 뒤 raw 항목별 권한 coverage, 질문이 남은 batch 전체 중단과 develop writer
+입장 금지가 canonical workflow와 skill에 반영돼 있었습니다. 질문의 첫 명제를 원문으로
+역대조하는 통제도 후속 보강됐습니다. 현재 target도 이 통제들을 포함했으므로 stale source나
+규칙 부재로 설명할 수 없습니다.
+
+이번 최초 단절은 `현재 generation → 첫 실질 commentary`입니다. Agent가 Bootstrap의 원자별
+판정을 산출하기 전에 두 항목을 함께 반영하겠다고 약속했고, 뒤늦게 workflow를 읽은 뒤에도
+그 약속과 후손 계획을 폐기하지 않았습니다. 기존 방어는 writer 입장의 raw coverage와 모델링
+효과를 강화했지만, 실제 첫 실질 projection이 같은 admission identity를 선행 소비하고 후발
+source read가 선행 약속을 무효화하는 경계까지 관찰하지 못했습니다. 규칙의 추가 여부가
+아니라 `현재 원문 → 입장 판정 → 첫 projection → 모든 효과 consumer`의 invocation이 끊긴
+것이 재발을 허용한 2차 시스템 원인입니다.
+
+### 통제 처분과 남은 위험
+
+- 기존 원자화, 질문 직접 답변, 인접 권한 전파 금지와 batch 전체 중단은 유지합니다.
+- Workflow/100의 raw coverage를 generation·batch별 현재 메시지 입장 상태로 승격하고, 첫
+  실질 commentary·답변부터 specialist·tool·writer까지 같은 identity를 소비하게 합니다.
+- 입장 상태보다 먼저 나온 실질 약속은 후발 Bootstrap으로 보정하지 않고 그 후손과 함께
+  폐기합니다.
+- 제품별 Flyway·수집 규칙, 항목 수 제한, 외부 dispatcher나 새 verifier는 추가하지 않습니다.
+
+Root가 제거됐다면 파일 경계 수정 승인과 데이터 축적 단위 질문을 분리하고, 한 대씩 늘릴
+계획이 확정된 적 없다는 직접 답을 먼저 반환했을 것입니다. 이 generation에서는 문서·외부
+archive를 바꾸지 않고 새 선택이나 실행 요청을 기다렸어야 합니다. Tenant 설정 파일과 고객
+확보 단위로 명사를 바꿔도 같으며, 사용자가 파일 경계 수정과 전체 inventory 수집을 모두
+명시하면 추가 승인 없이 실행해야 합니다. 현재 모델링 검증은 통제 후보의 의미 효과만
+증명하며, 미래 actor의 실제 invocation은 후속 live 증거가 있어야 완료로 판정할 수 있습니다.
+사건 artifact 복구와 중단된 카탈로그 작업 재개는 이 회고 권한에 포함되지 않습니다.
+
 ## 한 번짜리 Application command를 600줄대 운영 체계로 확대한 사건
 
 ### 사건과 영향

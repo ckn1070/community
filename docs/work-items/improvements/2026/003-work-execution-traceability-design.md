@@ -1136,6 +1136,13 @@ consumer가 불필요하게 막히면 inventory·대표 oracle과 false-block �
 
 - 현재 Agent는 복합 batch의 각 raw 항목에 `문장 기능·요청 효과·positive 권한 source 또는
   미확정 사유`를 연결하고, 첫 계획·위임·review·mutation 전에 coverage를 완성합니다.
+- 이 coverage는 현재 generation·batch identity와 결속한 입장 상태로 산출하며, source read
+  최소 안내 외의 첫 실질 commentary·답변과 모든 downstream consumer가 같은 상태를
+  소비합니다. 상태보다 먼저 나온 실행 약속은 후발 Bootstrap으로 보정하지 않고 폐기합니다.
+- Artifact·specialist·write set이나 즉시 완료 oracle이 다르다는 이유만으로 원자를 독립
+  batch로 분리하지 않습니다. 질문이 실행 원자의 방식·규모·빈도·입력 집합·결과를 문제
+  삼으면 같은 상위 결과를 결정하는 batch이며, 질문의 답이 실행 의미에 영향을 주지 않고
+  사용자가 별도 결과로 제시한 경우에만 독립으로 분리합니다.
 - 질문·비교·우려·미확정 선택이 하나라도 남으면 승인된 항목만 부분 실행하지 않습니다.
   Batch를 멈추고 미확정 이유와 선택 차원을 설명한 뒤, 사용자가 선택·제외·취소해 논의를
   닫은 새 generation에서만 실행합니다.

@@ -7,9 +7,11 @@
 ## 시작
 
 1. 이 파일과 [문서 목차](docs/000-index.md)를 읽습니다.
-2. 새 사용자 메시지마다 첫 commentary를 포함한 답변·도구 호출·review·mutation 전에
-   작업 실행 워크플로우의 Bootstrap으로 다시 진입합니다. Bootstrap 판정 전에는 과거
-   작업이나 pending 효과의 재개·정리·조사·검증을 약속하거나 시작하지 않습니다.
+2. 새 사용자 메시지마다 source read만 알리는 최소 안내 외의 첫 commentary·답변·도구
+   호출·review·mutation 전에 작업 실행 워크플로우의 현재 메시지 입장 상태를 산출합니다.
+   이 상태 전에는 과거 작업이나 pending 효과의 재개·정리·조사·검증을 약속하거나 시작하지
+   않습니다. Bootstrap보다 먼저 나온 실질 약속은 폐기하고 입장 상태의 근거로 사용하지
+   않습니다.
 3. 사용자가 사용할 수 있는 skill을 이름·tag·link로 명시하면, 첫 실질 답변·판단·계획
    전에 해당 `SKILL.md` 전체와 필수 공통 owner를 읽습니다. 그 전 안내는 읽을 source와
    source read가 선행한다는 사실만 말하며 specialist·mode·효과·terminal을 확정하지
