@@ -3,11 +3,11 @@ package com.ronams.carmunity.auth.internal.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.ronams.carmunity.auth.internal.application.command.LogoutCommand;
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRejectionReason;
 import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenHashPort;
 import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenLifecycleStorePort;
 import com.ronams.carmunity.auth.internal.application.result.IssuedRefreshToken;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -28,7 +28,7 @@ class LogoutServiceTest {
       UUID.fromString("0f3445fd-5f22-4f74-9a9d-1ff0c68a924a");
   private static final UUID TOKEN_FAMILY_ID =
       UUID.fromString("6e74f192-9256-4569-8579-6b8f557d9cb1");
-  private static final RefreshTokenRecord ACTIVE_REFRESH_TOKEN =
+  private static final RefreshSession ACTIVE_REFRESH_TOKEN =
       refreshToken(NOW.plusSeconds(3600), null, null, null);
 
   private FakeRefreshTokenHashPort hashPort;
@@ -101,11 +101,10 @@ class LogoutServiceTest {
     assertThat(lifecycleStorePort.reusedToken).isNull();
   }
 
-  private static RefreshTokenRecord refreshToken(
+  private static RefreshSession refreshToken(
       Instant expiresAt, Instant revokedAt, String revokedReason, Long replacedByTokenId) {
-    return new RefreshTokenRecord(
+    return new RefreshSession(
         1L,
-        10L,
         ACCOUNT_PUBLIC_ID,
         TOKEN_FAMILY_ID,
         NOW.minusSeconds(60),
@@ -134,41 +133,47 @@ class LogoutServiceTest {
   private static class FakeRefreshTokenLifecycleStorePort
       implements RefreshTokenLifecycleStorePort {
 
-    private RefreshTokenRecord storedToken;
+    private RefreshSession storedToken;
     private String lookupHash;
-    private RefreshTokenRecord logoutToken;
+    private RefreshSession logoutToken;
     private Instant loggedOutAt;
-    private RefreshTokenRecord rotatedToken;
-    private RefreshTokenRecord reusedToken;
-    private RefreshTokenRecord rejectedAccountToken;
+    private RefreshSession rotatedToken;
+    private RefreshSession reusedToken;
+    private RefreshSession rejectedAccountToken;
 
     @Override
-    public Optional<RefreshTokenRecord> findByHashForUpdate(String tokenHash) {
+    public Optional<RefreshSession> findByHashForUpdate(String tokenHash) {
       lookupHash = tokenHash;
       return Optional.ofNullable(storedToken);
     }
 
     @Override
+    public void issue(UUID accountPublicId, IssuedRefreshToken refreshToken) {}
+
+    @Override
     public void rotate(
-        RefreshTokenRecord currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt) {
+        RefreshSession currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt) {
       rotatedToken = currentToken;
     }
 
     @Override
-    public void revokeFamilyForReuse(RefreshTokenRecord reusedToken, Instant detectedAt) {
+    public void revokeFamilyForReuse(RefreshSession reusedToken, Instant detectedAt) {
       this.reusedToken = reusedToken;
     }
 
     @Override
     public void revokeFamilyForRejectedAccount(
-        RefreshTokenRecord currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt) {
+        RefreshSession currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt) {
       rejectedAccountToken = currentToken;
     }
 
     @Override
-    public void revokeForLogout(RefreshTokenRecord currentToken, Instant loggedOutAt) {
+    public void revokeForLogout(RefreshSession currentToken, Instant loggedOutAt) {
       logoutToken = currentToken;
       this.loggedOutAt = loggedOutAt;
     }
+
+    @Override
+    public void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt) {}
   }
 }

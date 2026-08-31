@@ -1,7 +1,7 @@
 package com.ronams.carmunity.auth.internal.adapter.out.persistence;
 
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.result.IssuedRefreshToken;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -34,8 +34,8 @@ class AuthRefreshTokenJpaEntity {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "account_id", nullable = false)
-  private Long accountId;
+  @Column(name = "account_public_id", nullable = false)
+  private UUID accountPublicId;
 
   @Column(
       name = "token_hash",
@@ -68,8 +68,8 @@ class AuthRefreshTokenJpaEntity {
   private Long replacedByTokenId;
 
   private AuthRefreshTokenJpaEntity(
-      Long accountId, String tokenHash, UUID familyId, Instant issuedAt, Instant expiresAt) {
-    this.accountId = accountId;
+      UUID accountPublicId, String tokenHash, UUID familyId, Instant issuedAt, Instant expiresAt) {
+    this.accountPublicId = accountPublicId;
     this.tokenHash = tokenHash;
     this.familyId = familyId;
     this.issuedAt = issuedAt;
@@ -81,15 +81,21 @@ class AuthRefreshTokenJpaEntity {
    *
    * <p>원문 token은 클라이언트에게 한 번만 전달하고, 저장소에는 hash와 lifecycle metadata만 남깁니다.
    */
-  static AuthRefreshTokenJpaEntity issue(Long accountId, UUID familyId, IssuedRefreshToken token) {
+  static AuthRefreshTokenJpaEntity issue(
+      UUID accountPublicId, UUID familyId, IssuedRefreshToken token) {
+    RefreshSession session =
+        RefreshSession.issue(accountPublicId, familyId, token.issuedAt(), token.expiresAt());
     return new AuthRefreshTokenJpaEntity(
-        accountId, token.hash(), familyId, token.issuedAt(), token.expiresAt());
+        session.accountPublicId(),
+        token.hash(),
+        session.familyId(),
+        session.issuedAt(),
+        session.expiresAt());
   }
 
-  RefreshTokenRecord toRecord(UUID accountPublicId) {
-    return new RefreshTokenRecord(
+  RefreshSession toDomain() {
+    return new RefreshSession(
         id,
-        accountId,
         accountPublicId,
         familyId,
         issuedAt,
@@ -105,30 +111,30 @@ class AuthRefreshTokenJpaEntity {
    * <p>last_used_at은 정상 rotation 시각을 남기고, 재사용 탐지는 revoked/replaced 상태를 기준으로 수행합니다.
    */
   void rotateTo(Long replacementTokenId, Instant rotatedAt) {
+    RefreshSession rotated = toDomain().rotateTo(replacementTokenId, rotatedAt);
     this.lastUsedAt = rotatedAt;
-    this.revokedAt = rotatedAt;
-    this.revokedReason = ROTATED_REASON;
-    this.replacedByTokenId = replacementTokenId;
+    apply(rotated);
   }
 
   /** 클라이언트 로그아웃으로 제출된 단일 token을 폐기합니다. */
   void revokeForLogout(Instant loggedOutAt) {
-    revoke(LOGOUT_REASON, loggedOutAt);
+    apply(toDomain().revokeAt(LOGOUT_REASON, loggedOutAt));
   }
 
   void revoke(String reason, Instant revokedAt) {
     if (this.revokedAt != null) {
       return;
     }
-    this.revokedAt = revokedAt;
-    this.revokedReason = reason;
+    apply(toDomain().revokeAt(reason, revokedAt));
+  }
+
+  private void apply(RefreshSession session) {
+    this.revokedAt = session.revokedAt();
+    this.revokedReason = session.revokedReason();
+    this.replacedByTokenId = session.replacedByTokenId();
   }
 
   Long id() {
     return id;
-  }
-
-  Long accountId() {
-    return accountId;
   }
 }

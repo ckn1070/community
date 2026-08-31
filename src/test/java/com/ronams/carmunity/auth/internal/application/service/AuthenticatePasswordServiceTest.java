@@ -8,7 +8,6 @@ import com.ronams.carmunity.account.api.PasswordLoginAccount;
 import com.ronams.carmunity.account.api.PasswordLoginAccountLookup;
 import com.ronams.carmunity.account.api.PasswordLoginFailureReason;
 import com.ronams.carmunity.account.api.PasswordLoginResultRecorder;
-import com.ronams.carmunity.account.api.PasswordLoginSuccess;
 import com.ronams.carmunity.auth.internal.application.AuthErrorCode;
 import com.ronams.carmunity.auth.internal.application.port.out.PasswordVerifierPort;
 import com.ronams.carmunity.shared.error.ApiException;
@@ -56,7 +55,7 @@ class AuthenticatePasswordServiceTest {
     assertThat(accountLookup.normalizedEmail).isEqualTo("admin@example.com");
     assertThat(result.account()).isEqualTo(accountLookup.account.orElseThrow());
     assertThat(result.sessionAccess()).isEqualTo(SessionAccess.FULL);
-    assertThat(resultRecorder.success).isNull();
+    assertThat(resultRecorder.successAccountPublicId).isNull();
   }
 
   /** 존재하지 않는 email은 원문 대신 hash를 기록하고 API와 같은 인증 오류로 닫습니다. */
@@ -132,15 +131,15 @@ class AuthenticatePasswordServiceTest {
 
   private static class FakeResultRecorder implements PasswordLoginResultRecorder {
 
-    private PasswordLoginSuccess success;
+    private UUID successAccountPublicId;
     private UUID knownAccountId;
     private PasswordLoginFailureReason failureReason;
     private String unknownIdentifierHash;
     private Instant occurredAt;
 
     @Override
-    public void recordSuccess(PasswordLoginSuccess success) {
-      this.success = success;
+    public void recordSuccess(UUID accountPublicId, Instant occurredAt) {
+      successAccountPublicId = accountPublicId;
     }
 
     @Override

@@ -1,10 +1,10 @@
 package com.ronams.carmunity.auth.internal.application.service;
 
 import com.ronams.carmunity.auth.internal.application.command.LogoutCommand;
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.port.in.LogoutUseCase;
 import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenHashPort;
 import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenLifecycleStorePort;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import java.time.Clock;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class LogoutService implements LogoutUseCase {
   @Transactional
   public void execute(LogoutCommand command) {
     String tokenHash = refreshTokenHashPort.hash(command.refreshToken());
-    RefreshTokenRecord currentToken =
+    RefreshSession currentToken =
         refreshTokenLifecycleStorePort.findByHashForUpdate(tokenHash).orElse(null);
     if (currentToken == null) {
       return;

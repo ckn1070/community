@@ -8,7 +8,6 @@ import com.ronams.carmunity.account.api.AccountAuthSubject;
 import com.ronams.carmunity.account.api.AccountAuthSubjectLookup;
 import com.ronams.carmunity.auth.internal.application.AuthErrorCode;
 import com.ronams.carmunity.auth.internal.application.command.RotateRefreshTokenCommand;
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRejectionReason;
 import com.ronams.carmunity.auth.internal.application.port.out.AccessTokenIssuerPort;
 import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenHashPort;
@@ -17,6 +16,7 @@ import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenLifec
 import com.ronams.carmunity.auth.internal.application.result.IssuedAccessToken;
 import com.ronams.carmunity.auth.internal.application.result.IssuedRefreshToken;
 import com.ronams.carmunity.auth.internal.application.result.RotatedRefreshTokenResult;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import com.ronams.carmunity.shared.error.ApiException;
 import java.time.Clock;
 import java.time.Instant;
@@ -39,10 +39,9 @@ class RotateRefreshTokenServiceTest {
       UUID.fromString("0f3445fd-5f22-4f74-9a9d-1ff0c68a924a");
   private static final UUID TOKEN_FAMILY_ID =
       UUID.fromString("6e74f192-9256-4569-8579-6b8f557d9cb1");
-  private static final RefreshTokenRecord ACTIVE_REFRESH_TOKEN =
-      new RefreshTokenRecord(
+  private static final RefreshSession ACTIVE_REFRESH_TOKEN =
+      new RefreshSession(
           1L,
-          10L,
           ACCOUNT_PUBLIC_ID,
           TOKEN_FAMILY_ID,
           NOW.minusSeconds(60),
@@ -135,9 +134,8 @@ class RotateRefreshTokenServiceTest {
   @Test
   void rejectsExpiredRefreshTokenWithoutRotation() {
     lifecycleStorePort.storedToken =
-        new RefreshTokenRecord(
+        new RefreshSession(
             1L,
-            10L,
             ACCOUNT_PUBLIC_ID,
             TOKEN_FAMILY_ID,
             NOW.minusSeconds(7200),
@@ -155,9 +153,8 @@ class RotateRefreshTokenServiceTest {
   @Test
   void revokesFamilyWhenReplacedRefreshTokenIsReused() {
     lifecycleStorePort.storedToken =
-        new RefreshTokenRecord(
+        new RefreshSession(
             1L,
-            10L,
             ACCOUNT_PUBLIC_ID,
             TOKEN_FAMILY_ID,
             NOW.minusSeconds(60),
@@ -175,9 +172,8 @@ class RotateRefreshTokenServiceTest {
   @Test
   void revokesFamilyWhenExpiredReplacedRefreshTokenIsReused() {
     lifecycleStorePort.storedToken =
-        new RefreshTokenRecord(
+        new RefreshSession(
             1L,
-            10L,
             ACCOUNT_PUBLIC_ID,
             TOKEN_FAMILY_ID,
             NOW.minusSeconds(7200),
@@ -196,9 +192,8 @@ class RotateRefreshTokenServiceTest {
   @Test
   void revokesFamilyWhenExpiredRevokedRefreshTokenIsReused() {
     lifecycleStorePort.storedToken =
-        new RefreshTokenRecord(
+        new RefreshSession(
             1L,
-            10L,
             ACCOUNT_PUBLIC_ID,
             TOKEN_FAMILY_ID,
             NOW.minusSeconds(7200),
@@ -256,8 +251,8 @@ class RotateRefreshTokenServiceTest {
   private static class FakeRefreshTokenLifecycleStorePort
       implements RefreshTokenLifecycleStorePort {
 
-    private RefreshTokenRecord storedToken;
-    private RefreshTokenRecord rotatedToken;
+    private RefreshSession storedToken;
+    private RefreshSession rotatedToken;
     private IssuedRefreshToken replacementToken;
     private Instant rotatedAt;
     private UUID reusedFamilyId;
@@ -267,36 +262,42 @@ class RotateRefreshTokenServiceTest {
     private Instant rejectedAccountAt;
 
     @Override
-    public Optional<RefreshTokenRecord> findByHashForUpdate(String tokenHash) {
+    public Optional<RefreshSession> findByHashForUpdate(String tokenHash) {
       return Optional.ofNullable(storedToken);
     }
 
     @Override
+    public void issue(UUID accountPublicId, IssuedRefreshToken refreshToken) {}
+
+    @Override
     public void rotate(
-        RefreshTokenRecord currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt) {
+        RefreshSession currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt) {
       this.rotatedToken = currentToken;
       this.replacementToken = replacementToken;
       this.rotatedAt = rotatedAt;
     }
 
     @Override
-    public void revokeFamilyForReuse(RefreshTokenRecord reusedToken, Instant detectedAt) {
+    public void revokeFamilyForReuse(RefreshSession reusedToken, Instant detectedAt) {
       reusedFamilyId = reusedToken.familyId();
       reusedAt = detectedAt;
     }
 
     @Override
     public void revokeFamilyForRejectedAccount(
-        RefreshTokenRecord currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt) {
+        RefreshSession currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt) {
       rejectedAccountFamilyId = currentToken.familyId();
       rejectedAccountReason = reason;
       rejectedAccountAt = rejectedAt;
     }
 
     @Override
-    public void revokeForLogout(RefreshTokenRecord currentToken, Instant loggedOutAt) {
+    public void revokeForLogout(RefreshSession currentToken, Instant loggedOutAt) {
       // rotation 유스케이스 테스트에서는 호출되지 않아야 하는 port method입니다.
     }
+
+    @Override
+    public void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt) {}
   }
 
   private static class FakeAccountAuthSubjectLookup implements AccountAuthSubjectLookup {

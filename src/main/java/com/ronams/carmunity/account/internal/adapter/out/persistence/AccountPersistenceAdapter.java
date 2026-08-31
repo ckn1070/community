@@ -3,11 +3,11 @@ package com.ronams.carmunity.account.internal.adapter.out.persistence;
 import com.ronams.carmunity.account.api.AccountAuthStatus;
 import com.ronams.carmunity.account.api.AccountAuthSubject;
 import com.ronams.carmunity.account.api.AccountAuthSubjectLookup;
+import com.ronams.carmunity.account.api.CredentialChanged;
 import com.ronams.carmunity.account.api.PasswordLoginAccount;
 import com.ronams.carmunity.account.api.PasswordLoginAccountLookup;
 import com.ronams.carmunity.account.api.PasswordLoginFailureReason;
 import com.ronams.carmunity.account.api.PasswordLoginResultRecorder;
-import com.ronams.carmunity.account.api.PasswordLoginSuccess;
 import com.ronams.carmunity.account.internal.application.AccountErrorCode;
 import com.ronams.carmunity.account.internal.application.port.out.AccountUniquenessPort;
 import com.ronams.carmunity.account.internal.application.port.out.AuthRoleLookupPort;
@@ -16,16 +16,20 @@ import com.ronams.carmunity.account.internal.application.port.out.PasswordCreden
 import com.ronams.carmunity.account.internal.application.port.out.PasswordResetCredentialStorePort;
 import com.ronams.carmunity.account.internal.application.port.out.SuperAdminBootstrapStorePort;
 import com.ronams.carmunity.account.internal.domain.Account;
+import com.ronams.carmunity.account.internal.domain.PasswordCredential;
 import com.ronams.carmunity.account.internal.domain.PasswordHash;
 import com.ronams.carmunity.account.internal.domain.RoleAssignment;
 import com.ronams.carmunity.account.internal.domain.RoleCode;
+import com.ronams.carmunity.securityaudit.api.SecurityAuditAppender;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.CommonErrorCode;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,8 +62,9 @@ class AccountPersistenceAdapter
   private final AccountPasswordCredentialJpaRepository passwordCredentialRepository;
   private final AuthRoleJpaRepository authRoleRepository;
   private final AccountRoleAssignmentJpaRepository roleAssignmentRepository;
-  private final AuthEventJpaRepository authEventRepository;
-  private final RefreshTokenJpaRepository refreshTokenRepository;
+  private final SecurityAuditAppender securityAuditAppender;
+  private final ApplicationEventPublisher eventPublisher;
+  private final Clock clock;
 
   /** 회원 가입 중복 pre-check용 조회이며, 동시성 최종 방어는 DB unique constraint가 담당합니다. */
   @Override
@@ -143,12 +148,14 @@ class AccountPersistenceAdapter
   @Transactional
   public void save(Account account) {
     try {
-      Long accountId = saveAccountGraph(account);
+      saveAccountGraph(account);
       account
           .domainEvents()
           .forEach(
               event ->
-                  authEventRepository.save(AuthEventJpaEntity.signUpSuccess(accountId, event)));
+                  securityAuditAppender.append(
+                      AccountSecurityAuditRecords.signUpSuccess(
+                          event.accountPublicId(), clock.instant())));
     } catch (DataIntegrityViolationException exception) {
       throw mapDataIntegrityViolation(exception);
     }
@@ -172,10 +179,13 @@ class AccountPersistenceAdapter
     }
 
     try {
-      Long accountId = saveAccountGraph(account);
-      authEventRepository.save(AuthEventJpaEntity.roleGrantedBySuperAdminBootstrap(accountId));
-      authEventRepository.save(
-          AuthEventJpaEntity.passwordResetRequiredByInitialAdminBootstrap(accountId));
+      saveAccountGraph(account);
+      securityAuditAppender.append(
+          AccountSecurityAuditRecords.roleGrantedBySuperAdminBootstrap(
+              account.publicId(), clock.instant()));
+      securityAuditAppender.append(
+          AccountSecurityAuditRecords.passwordResetRequiredByInitialAdminBootstrap(
+              account.publicId(), clock.instant()));
       return Optional.of(account);
     } catch (DataIntegrityViolationException exception) {
       throw mapDataIntegrityViolation(exception);
@@ -211,13 +221,10 @@ class AccountPersistenceAdapter
   @Transactional
   public void changePassword(UUID accountPublicId, PasswordHash passwordHash, Instant changedAt) {
     AccountJpaEntity account = findAccountByPublicId(accountPublicId);
-    int updatedRows =
-        passwordCredentialRepository.changePassword(account.id(), passwordHash.value(), changedAt);
-    if (updatedRows != 1) {
-      throw new ApiException(CommonErrorCode.INTERNAL_ERROR);
-    }
-    refreshTokenRepository.revokeActiveTokensForPasswordChanged(account.id(), changedAt);
-    authEventRepository.save(AuthEventJpaEntity.passwordChangedSuccess(account.id(), changedAt));
+    changePasswordCredential(account.id(), passwordHash, changedAt);
+    eventPublisher.publishEvent(new CredentialChanged(account.publicId(), changedAt));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.passwordChangedSuccess(account.publicId(), changedAt));
   }
 
   /**
@@ -228,13 +235,22 @@ class AccountPersistenceAdapter
   @Override
   @Transactional
   public void resetPassword(Long accountId, PasswordHash passwordHash, Instant changedAt) {
-    int updatedRows =
-        passwordCredentialRepository.changePassword(accountId, passwordHash.value(), changedAt);
-    if (updatedRows != 1) {
-      throw new ApiException(CommonErrorCode.INTERNAL_ERROR);
-    }
-    refreshTokenRepository.revokeActiveTokensForPasswordChanged(accountId, changedAt);
-    authEventRepository.save(AuthEventJpaEntity.passwordResetCompleted(accountId, changedAt));
+    AccountJpaEntity account = findAccountById(accountId);
+    changePasswordCredential(accountId, passwordHash, changedAt);
+    eventPublisher.publishEvent(new CredentialChanged(account.publicId(), changedAt));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.passwordResetCompleted(account.publicId(), changedAt));
+  }
+
+  private void changePasswordCredential(
+      Long accountId, PasswordHash passwordHash, Instant changedAt) {
+    AccountPasswordCredentialJpaEntity credential =
+        passwordCredentialRepository
+            .findById(accountId)
+            .orElseThrow(() -> new ApiException(CommonErrorCode.INTERNAL_ERROR));
+    PasswordCredential changedCredential = credential.toDomain().changeTo(passwordHash);
+    credential.changePassword(changedCredential, changedAt);
+    passwordCredentialRepository.saveAndFlush(credential);
   }
 
   /** current password 불일치 감사 이벤트를 account에 연결해 저장합니다. */
@@ -242,8 +258,8 @@ class AccountPersistenceAdapter
   @Transactional
   public void recordPasswordChangeFailure(UUID accountPublicId, Instant occurredAt) {
     AccountJpaEntity account = findAccountByPublicId(accountPublicId);
-    authEventRepository.save(
-        AuthEventJpaEntity.passwordChangedFailureForCurrentMismatch(account.id(), occurredAt));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.passwordChangedFailure(account.publicId(), occurredAt));
   }
 
   /**
@@ -254,14 +270,10 @@ class AccountPersistenceAdapter
    */
   @Override
   @Transactional
-  public void recordSuccess(PasswordLoginSuccess success) {
-    AccountJpaEntity account = findAccountByPublicId(success.accountPublicId());
-    refreshTokenRepository.save(RefreshTokenJpaEntity.of(account.id(), success.refreshToken()));
-    accountRepository.updateLastLoginAt(account.id(), success.refreshToken().issuedAt());
-    passwordCredentialRepository.resetLoginFailureState(
-        account.id(), success.refreshToken().issuedAt());
-    authEventRepository.save(
-        AuthEventJpaEntity.loginSuccess(account.id(), success.refreshToken().issuedAt()));
+  public void recordSuccess(UUID accountPublicId, Instant occurredAt) {
+    AccountJpaEntity account = findAccountByPublicId(accountPublicId);
+    accountRepository.updateLastLoginAt(account.id(), occurredAt);
+    passwordCredentialRepository.resetLoginFailureState(account.id(), occurredAt);
   }
 
   /** refresh token 없이 browser session 로그인 상태와 성공 감사 이벤트를 원자적으로 반영합니다. */
@@ -271,7 +283,8 @@ class AccountPersistenceAdapter
     AccountJpaEntity account = findAccountByPublicId(accountPublicId);
     accountRepository.updateLastLoginAt(account.id(), occurredAt);
     passwordCredentialRepository.resetLoginFailureState(account.id(), occurredAt);
-    authEventRepository.save(AuthEventJpaEntity.loginSuccess(account.id(), occurredAt));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.loginSuccess(account.publicId(), occurredAt));
   }
 
   /**
@@ -288,17 +301,17 @@ class AccountPersistenceAdapter
       Instant occurredAt) {
     AccountJpaEntity account = findAccountByPublicId(accountPublicId);
     passwordCredentialRepository.recordLoginFailure(account.id(), occurredAt);
-    authEventRepository.save(
-        AuthEventJpaEntity.loginFailureForKnownAccount(
-            account.id(), identifierHash, reason, occurredAt));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.loginFailure(
+            account.publicId(), identifierHash, reason, occurredAt));
   }
 
   /** account를 특정하지 못한 로그인 실패를 identifier hash만 가진 감사 이벤트로 기록합니다. */
   @Override
   @Transactional
   public void recordUnknownFailure(String identifierHash, Instant occurredAt) {
-    authEventRepository.save(
-        AuthEventJpaEntity.loginFailureForUnknownAccount(identifierHash, occurredAt));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.unknownLoginFailure(identifierHash, occurredAt));
   }
 
   /**
@@ -324,6 +337,12 @@ class AccountPersistenceAdapter
   private AccountJpaEntity findAccountByPublicId(UUID accountPublicId) {
     return accountRepository
         .findByPublicId(accountPublicId)
+        .orElseThrow(() -> new ApiException(CommonErrorCode.INTERNAL_ERROR));
+  }
+
+  private AccountJpaEntity findAccountById(Long accountId) {
+    return accountRepository
+        .findById(accountId)
         .orElseThrow(() -> new ApiException(CommonErrorCode.INTERNAL_ERROR));
   }
 
