@@ -71,14 +71,14 @@ public record CatalogModelDetail(
       Integer fastChargeFromPercent,
       Integer fastChargeToPercent,
       BigDecimal fastChargePowerKw,
-      List<Component> components) {
+      List<PowertrainComponent> components) {
 
     public Powertrain {
       components = List.copyOf(components);
     }
   }
 
-  public record Component(
+  public record PowertrainComponent(
       String componentType,
       String componentRole,
       String position,
@@ -139,7 +139,7 @@ public record CatalogModelDetail(
       String frontBrake,
       String rearBrake,
       List<Certification> certifications,
-      List<Configuration> configurations) {
+      List<SalesConfiguration> configurations) {
 
     public Variant {
       certifications = List.copyOf(certifications);
@@ -167,7 +167,7 @@ public record CatalogModelDetail(
       BigDecimal combinedRangeKm,
       BigDecimal co2GPerKm) {}
 
-  public record Configuration(
+  public record SalesConfiguration(
       UUID configurationId,
       String trimName,
       String salesChannel,
@@ -182,7 +182,7 @@ public record CatalogModelDetail(
       Price price,
       List<Option> options) {
 
-    public Configuration {
+    public SalesConfiguration {
       standardFeatures = List.copyOf(standardFeatures);
       warranties = List.copyOf(warranties);
       safetyRatings = List.copyOf(safetyRatings);

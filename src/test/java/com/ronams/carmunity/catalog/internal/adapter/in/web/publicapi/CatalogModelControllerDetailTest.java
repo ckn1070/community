@@ -186,8 +186,8 @@ class CatalogModelControllerDetailTest {
     CatalogModelDetail basic = modelDetail();
     CatalogModelDetail.Generation generation =
         new CatalogModelDetail.Generation(GENERATION_ID, "2세대", "FULL_CHANGE");
-    CatalogModelDetail.Component component =
-        new CatalogModelDetail.Component(
+    CatalogModelDetail.PowertrainComponent component =
+        new CatalogModelDetail.PowertrainComponent(
             "MOTOR",
             "TRACTION",
             "FRONT",
@@ -306,7 +306,7 @@ class CatalogModelControllerDetailTest {
         List.of(variant));
   }
 
-  private CatalogModelDetail.Configuration completeConfiguration() {
+  private CatalogModelDetail.SalesConfiguration completeConfiguration() {
     CatalogModelDetail.Price price =
         new CatalogModelDetail.Price(
             LocalDate.of(2025, 9, 1),
@@ -329,7 +329,7 @@ class CatalogModelControllerDetailTest {
             List.of(),
             LocalDate.of(2025, 9, 1),
             1);
-    return new CatalogModelDetail.Configuration(
+    return new CatalogModelDetail.SalesConfiguration(
         CONFIGURATION_ID,
         "에어",
         "PRIVATE",

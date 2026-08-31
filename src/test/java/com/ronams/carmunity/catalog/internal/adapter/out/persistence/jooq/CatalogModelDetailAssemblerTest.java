@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.mock;
 
-import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Configuration;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.SalesConfiguration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +60,7 @@ class CatalogModelDetailAssemblerTest {
             "safety_ratings", "[]",
             "media", "[]");
 
-    Map<Long, List<Configuration>> configurations =
+    Map<Long, List<SalesConfiguration>> configurations =
         assembler.assembleConfigurations(
             List.of(
                 row(option(base, "ADAS", "주행 보조", 1)), row(option(base, "SOUND", "프리미엄 사운드", 2))));
@@ -84,7 +84,7 @@ class CatalogModelDetailAssemblerTest {
   void groupsVariantRowsAndAttachesConfigurations() {
     UUID variantId = UUID.randomUUID();
     UUID powertrainId = UUID.randomUUID();
-    Configuration configuration =
+    SalesConfiguration configuration =
         assembler
             .assembleConfigurations(
                 List.of(

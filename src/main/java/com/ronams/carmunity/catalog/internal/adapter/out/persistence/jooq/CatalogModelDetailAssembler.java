@@ -6,16 +6,16 @@ import com.ronams.carmunity.catalog.api.PropulsionType;
 import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Certification;
-import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Component;
-import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Configuration;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Generation;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Media;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Model;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.ModelYear;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Option;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Powertrain;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.PowertrainComponent;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Price;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.SafetyRating;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.SalesConfiguration;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.StandardFeature;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Variant;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Warranty;
@@ -27,9 +27,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.stereotype.Component;
 
 /** 다섯 query 결과의 중복을 제거하고 application 상세 graph를 완성합니다. */
-@org.springframework.stereotype.Component
+@Component
 final class CatalogModelDetailAssembler {
 
   private final CatalogJsonConverter jsonConverter;
@@ -51,7 +52,7 @@ final class CatalogModelDetailAssembler {
   }
 
   List<Variant> assembleVariants(
-      List<CatalogProjectionRecord> rows, Map<Long, List<Configuration>> configurations) {
+      List<CatalogProjectionRecord> rows, Map<Long, List<SalesConfiguration>> configurations) {
     LinkedHashMap<Long, VariantBuilder> builders = new LinkedHashMap<>();
     rows.forEach(
         row -> {
@@ -66,7 +67,7 @@ final class CatalogModelDetailAssembler {
         .toList();
   }
 
-  Map<Long, List<Configuration>> assembleConfigurations(List<CatalogProjectionRecord> rows) {
+  Map<Long, List<SalesConfiguration>> assembleConfigurations(List<CatalogProjectionRecord> rows) {
     LinkedHashMap<Long, LinkedHashMap<UUID, ConfigurationBuilder>> byVariant =
         new LinkedHashMap<>();
     rows.forEach(
@@ -80,7 +81,7 @@ final class CatalogModelDetailAssembler {
                       configurationId, ignored -> new ConfigurationBuilder(row, jsonConverter));
           builder.addOption(row);
         });
-    LinkedHashMap<Long, List<Configuration>> result = new LinkedHashMap<>();
+    LinkedHashMap<Long, List<SalesConfiguration>> result = new LinkedHashMap<>();
     byVariant.forEach(
         (variantId, builders) ->
             result.put(
@@ -149,7 +150,7 @@ final class CatalogModelDetailAssembler {
     private final Integer fastChargeFromPercent;
     private final Integer fastChargeToPercent;
     private final BigDecimal fastChargePowerKw;
-    private final List<Component> components = new ArrayList<>();
+    private final List<PowertrainComponent> components = new ArrayList<>();
 
     private PowertrainBuilder(CatalogProjectionRecord resultSet) {
       powertrainId = resultSet.getObject("powertrain_id", UUID.class);
@@ -184,7 +185,7 @@ final class CatalogModelDetailAssembler {
         return;
       }
       components.add(
-          new Component(
+          new PowertrainComponent(
               resultSet.getString("component_type"),
               resultSet.getString("component_role"),
               resultSet.getString("component_position"),
@@ -337,7 +338,7 @@ final class CatalogModelDetailAssembler {
               decimal(resultSet, "co2_g_per_km")));
     }
 
-    private Variant build(List<Configuration> configurations) {
+    private Variant build(List<SalesConfiguration> configurations) {
       return new Variant(
           variantId,
           powertrainId,
@@ -447,8 +448,8 @@ final class CatalogModelDetailAssembler {
               resultSet.getInt("option_display_order")));
     }
 
-    private Configuration build() {
-      return new Configuration(
+    private SalesConfiguration build() {
+      return new SalesConfiguration(
           configurationId,
           trimName,
           salesChannel,

@@ -214,7 +214,7 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
               assertThat(powertrain.name()).isEqualTo("스마트스트림 G2.0 가솔린");
               assertThat(powertrain.components())
                   .singleElement()
-                  .extracting(CatalogModelDetail.Component::displacementCc)
+                  .extracting(CatalogModelDetail.PowertrainComponent::displacementCc)
                   .isEqualTo(1999);
             });
     assertThat(detail.variants())
@@ -292,12 +292,12 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
               assertThat(powertrain.dcChargeConnector()).isEqualTo("CCS_COMBO_2");
               assertThat(powertrain.fastChargePowerKw()).isEqualByComparingTo("350");
               assertThat(powertrain.components())
-                  .extracting(CatalogModelDetail.Component::componentType)
+                  .extracting(CatalogModelDetail.PowertrainComponent::componentType)
                   .containsExactly("MOTOR", "BATTERY");
               assertThat(powertrain.components())
                   .filteredOn(component -> component.componentType().equals("BATTERY"))
                   .singleElement()
-                  .extracting(CatalogModelDetail.Component::usableCapacityKwh)
+                  .extracting(CatalogModelDetail.PowertrainComponent::usableCapacityKwh)
                   .isEqualTo(new java.math.BigDecimal("77.40"));
             });
     assertThat(detail.variants())
@@ -355,7 +355,7 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
     assertThat(detail.variants())
         .flatExtracting(CatalogModelDetail.Variant::configurations)
         .singleElement()
-        .extracting(CatalogModelDetail.Configuration::salesStatus)
+        .extracting(CatalogModelDetail.SalesConfiguration::salesStatus)
         .isEqualTo(SalesStatus.DISCONTINUED);
   }
 

@@ -15,11 +15,11 @@ import com.ronams.carmunity.catalog.internal.adapter.out.persistence.jooq.genera
 import com.ronams.carmunity.catalog.internal.adapter.out.persistence.jooq.generated.tables.CarModelYear;
 import com.ronams.carmunity.catalog.internal.adapter.out.persistence.jooq.generated.tables.CarVehicleVariant;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
-import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Configuration;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Generation;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Model;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.ModelYear;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Powertrain;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.SalesConfiguration;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Variant;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelDetailReadPort;
 import com.ronams.carmunity.catalog.internal.application.service.CatalogModelYearSelector;
@@ -33,9 +33,10 @@ import org.jooq.Field;
 import org.jooq.impl.DSL;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterUtils;
+import org.springframework.stereotype.Component;
 
 /** 모델 상세를 다섯 개의 고정 묶음 query로 읽고 application read model graph로 조립합니다. */
-@org.springframework.stereotype.Component
+@Component
 final class JooqCatalogModelDetailReadAdapter implements CatalogModelDetailReadPort {
 
   private final DSLContext dsl;
@@ -78,7 +79,7 @@ final class JooqCatalogModelDetailReadAdapter implements CatalogModelDetailReadP
         Map.of("modelYearInternalId", selectedModelYearInternalId, "asOf", asOf);
 
     List<Powertrain> powertrains = findPowertrains(yearParameters);
-    Map<Long, List<Configuration>> configurations = findConfigurations(yearParameters);
+    Map<Long, List<SalesConfiguration>> configurations = findConfigurations(yearParameters);
     List<Variant> variants = findVariants(yearParameters, configurations);
     return Optional.of(
         detailAssembler.assemble(
@@ -196,11 +197,11 @@ final class JooqCatalogModelDetailReadAdapter implements CatalogModelDetailReadP
   }
 
   private List<Variant> findVariants(
-      Map<String, ?> parameters, Map<Long, List<Configuration>> configurations) {
+      Map<String, ?> parameters, Map<Long, List<SalesConfiguration>> configurations) {
     return detailAssembler.assembleVariants(fetch(VARIANTS_SQL, parameters), configurations);
   }
 
-  private Map<Long, List<Configuration>> findConfigurations(Map<String, ?> parameters) {
+  private Map<Long, List<SalesConfiguration>> findConfigurations(Map<String, ?> parameters) {
     return detailAssembler.assembleConfigurations(fetch(CONFIGURATIONS_SQL, parameters));
   }
 

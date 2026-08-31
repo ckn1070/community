@@ -199,7 +199,7 @@ public record CatalogModelDetailResponse(
       @Schema(types = {"string", "null"}) String cellType,
       @Schema(types = {"string", "null"}) String chemistry) {
 
-    static ComponentResponse from(CatalogModelDetail.Component component) {
+    static ComponentResponse from(CatalogModelDetail.PowertrainComponent component) {
       return new ComponentResponse(
           component.componentType(),
           component.componentRole(),
@@ -398,7 +398,7 @@ public record CatalogModelDetailResponse(
       @Schema(types = {"object", "null"}) PriceResponse price,
       List<OptionResponse> options) {
 
-    static ConfigurationResponse from(CatalogModelDetail.Configuration configuration) {
+    static ConfigurationResponse from(CatalogModelDetail.SalesConfiguration configuration) {
       return new ConfigurationResponse(
           configuration.configurationId(),
           configuration.trimName(),
