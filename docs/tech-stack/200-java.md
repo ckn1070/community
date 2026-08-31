@@ -11,6 +11,11 @@
 ## 기본 원칙
 
 - 명확한 도메인 개념은 class, record, enum, value object로 표현합니다.
+- 프로젝트가 소유한 타입은 `Component`, `Service`, `Configuration`처럼 framework·표준
+  library와 쉽게 충돌하는 범용 이름 대신 실제 도메인 역할이 드러나는 이름을 사용합니다.
+  프로젝트 타입 때문에 import 충돌이 생기면 annotation이나 framework 타입을 완전 수식명으로
+  우회하기 전에 프로젝트 타입을 구체화합니다. 양쪽 이름을 바꿀 수 없는 외부 계약이 있고
+  별칭을 지원하지 않을 때만 완전 수식명을 예외로 사용합니다.
 - 불변 객체를 우선하고, 변경 가능한 상태는 필요할 때만 둡니다.
 - Null을 정상 흐름으로 사용하지 않습니다.
 - Optional은 반환 타입에서 의미가 있을 때 사용하고, field나 parameter에는 신중히 사용합니다.
