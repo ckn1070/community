@@ -29,7 +29,7 @@
 | 확인할 내용 | 문서 |
 | --- | --- |
 | Repository에 지금 무엇이 구현되어 있는가 | `100-project-overview.md` |
-| 왜 modular monolith와 hexagonal 구조를 쓰는가 | `200-current-architecture.md` |
+| DDD를 어느 수준까지 적용했고 왜 modular monolith와 hexagonal 구조를 쓰는가 | [200 현재 프로젝트 아키텍처](200-current-architecture.md) |
 | 기능을 어느 module에 배치하는가 | `210-module-map.md` |
 | 인증 데이터의 구조적 결정 | `220-account-auth-data-model.md` |
 | 정확한 table, column, constraint, index | `schema/100-account-auth.md` |

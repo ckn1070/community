@@ -7,7 +7,7 @@ Flyway migration 파일이 source of truth이고, 이 문서 그룹은 여러 mi
 
 | 번호대 | 책임 |
 | --- | --- |
-| `100`~`190` | bounded context별 현재 물리 schema reference |
+| `100`~`190` | 관련 업무·기능 묶음별 현재 물리 schema reference |
 
 ## 현재 문서
 

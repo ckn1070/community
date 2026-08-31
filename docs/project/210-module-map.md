@@ -15,6 +15,9 @@
 
 `config`는 업무 Bounded Context가 아니라 애플리케이션 조립 경계입니다.
 `shared`에는 여러 module이 실제로 공유하는 계약만 두며 업무 로직을 모으지 않습니다.
+`notification`은 현재 독립 업무 상태·정책 없이 발송 계약과 provider adapter를 소유하는
+기술 통합 경계입니다. 독립 업무 언어·규칙·상태 생명주기가 생기면 Bounded Context 후보
+여부를 다시 판정합니다.
 
 ## 현재 협력
 
@@ -30,7 +33,10 @@ email verification·invitation·password reset service --> Clock.systemUTC() 직
 ```
 
 - `auth`는 account의 인증 subject와 저장 경계를 공개 계약으로 사용합니다.
-- `account`는 token과 account 상태 전이를 소유하고 이메일 전달은 notification에 위임합니다.
+- `account`는 account 상태, email verification·password reset token과 admin invitation의
+  생명주기를 소유하고 이메일 전달은 notification에 위임합니다. Refresh token의
+  rotation·reuse·logout 조율은 `auth`가 맡지만 현재 물리 writer는 아래 예외처럼
+  `account`와 `auth`에 나뉘어 있습니다.
 - `notification`은 account 상태와 token lifecycle을 소유하지 않습니다.
 - `ChangePasswordService`처럼 실제 `Clock` bean을 주입받는 일부 `account` bean은 production의 유일한 provider인 `auth.internal`의 `JwtTokenConfiguration`에 의존합니다. 이메일 인증·관리자 초대·비밀번호 재설정 service는 public constructor에서 `Clock.systemUTC()`를 직접 만들어 이 bean을 우회합니다. 전자는 source import에 드러나지 않는 runtime DI 예외이고, 후자는 공용 시간 조립 경계가 일관되지 않은 예외입니다.
 
@@ -50,7 +56,16 @@ account persistence ─┬─> refresh_token <─┬─ auth persistence
 - `auth`의 `AuthRefreshTokenJpaRepository`는 native SQL로 `account` table을 직접 읽어 내부 account id를 public id로 바꿉니다. Java package 의존은 아니지만 `account.api` 협력을 우회하는 물리 DB 의존입니다.
 - 따라서 “`auth`가 refresh token lifecycle을 소유한다”는 논리 책임만으로 단일 물리 writer를 뜻하지 않습니다. 현재는 두 module이 같은 table을 별도 entity·repository로 매핑하는 예외입니다.
 
-이 구조는 모듈 간 협력을 공유 table로 처리하지 않는 일반 기준을 충족하지 않습니다. 단일 persistence owner와 transaction 공개 계약으로 이관하고 `auth`의 `account` table 직접 조회를 제거하거나 명시적인 소유 경계로 바꾸는 후속 범위는 [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가 소유합니다.
+이 구조는 모듈 간 협력을 공유 table로 처리하지 않는 일반 기준을 충족하지 않습니다. 단일
+persistence owner와 transaction 공개 계약으로 이관하고 `auth`의 `account` table 직접 조회를
+제거하거나 명시적인 소유 경계로 바꾸는 후속 정리 작업은
+[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가
+소유합니다. 현재 예외 자체의 canonical owner는 이 절입니다.
+
+각 module의 전략적·전술적 DDD 적용 판정과 현재 Context 후보 관계는
+[200 현재 프로젝트 아키텍처](200-current-architecture.md#현재-ddd-적용-판정)가
+소유합니다. 이 문서는 실제 package·협력·persistence 예외만 소유하며 module을 Bounded
+Context로 확정하지 않습니다.
 
 ## 배치 기준
 
@@ -67,8 +82,8 @@ account persistence ─┬─> refresh_token <─┬─ auth persistence
 
 ## 관련 문서
 
-- **현재 구조 SOT**: [프로젝트 아키텍처](200-current-architecture.md)
-- **일반 배치 기준**: [Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
-- **제품 범위**: [기능 범위](../product/200-feature-scope.md)
-- **미확정 횡단 구조**: [프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
-- **현재 persistence 예외 owner**: [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)
+- **현재 DDD 적용 판정**: [200 현재 프로젝트 아키텍처](200-current-architecture.md#현재-ddd-적용-판정)
+- **일반 배치 기준**: [210 Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
+- **제품 범위**: [200 기능 범위](../product/200-feature-scope.md)
+- **미확정 횡단 구조**: [001 프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
+- **후속 정리 작업**: [003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)

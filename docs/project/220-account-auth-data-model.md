@@ -58,14 +58,15 @@ admin_invitation ── auth_role
 | --- | --- | --- |
 | 회원 가입 | account graph, member role, 가입 감사 이벤트 | [Account 도메인](../domain/100-account.md) |
 | 로그인 | refresh token, 로그인 시각·실패 계측, 감사 이벤트 | [인증/인가 정책](../domain/110-account-auth-policy.md) |
-| refresh rotation·reuse | token family와 감사 이벤트 | [Account 도메인](../domain/100-account.md) |
-| 이메일 인증 요청 | verification token을 먼저 commit하고, after-commit provider 호출 뒤 요청 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction | [Auth Event 정책](../domain/120-auth-event-policy.md) |
+| refresh rotation·reuse·logout | token row·family와 감사 이벤트 | [100 Account 도메인](../domain/100-account.md) |
+| 인증된 비밀번호 변경 | credential, active refresh token과 변경 감사 이벤트 | [110 Account/Auth 인증 정책](../domain/110-account-auth-policy.md) |
+| 이메일 인증 요청 | verification token을 먼저 commit하고, after-commit provider 호출 뒤 요청 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction | [120 Auth Event 정책](../domain/120-auth-event-policy.md) |
 | 이메일 인증 확인 | account 활성화, verification token 소비와 확인 감사 이벤트를 같은 transaction에서 변경 | [Account 도메인](../domain/100-account.md) |
 | 관리자 초대 생성 | 기존 open invitation 회수, 새 invitation과 생성 감사 이벤트를 같은 transaction에서 변경하고 notification은 commit 이후 호출 | [Auth Event 정책](../domain/120-auth-event-policy.md) |
 | 관리자 초대 수락 | invitation 수락 terminal state, 신규 account graph, admin role과 수락 감사 이벤트를 같은 transaction에서 변경 | [Account 도메인](../domain/100-account.md) |
 | 관리자 초대 회수 | invitation 회수 terminal state와 회수 감사 이벤트를 같은 transaction에서 변경 | [Account 도메인](../domain/100-account.md) |
-| 비밀번호 재설정 요청 | verification token을 먼저 commit하고, after-commit provider 호출 뒤 요청 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction | [Auth Event 정책](../domain/120-auth-event-policy.md) |
-| 비밀번호 재설정 완료 | verification token 소비, credential, active refresh token과 완료 감사 이벤트를 같은 transaction에서 변경 | [인증/인가 정책](../domain/110-account-auth-policy.md) |
+| 비밀번호 재설정 요청 | password reset token을 먼저 commit하고, after-commit provider 호출 뒤 요청 감사 이벤트 저장만 별도 `REQUIRES_NEW` transaction | [120 Auth Event 정책](../domain/120-auth-event-policy.md) |
+| 비밀번호 재설정 완료 | password reset token 소비, credential, active refresh token과 완료 감사 이벤트를 같은 transaction에서 변경 | [110 Account/Auth 인증 정책](../domain/110-account-auth-policy.md) |
 
 위 표는 서로 다른 operation을 한 행에 합치지 않고 실제 변경 경계만 요약합니다. 정상·거부·
 재시도 세부와 API 접근 조건은 반복하지 않습니다. 이메일 인증 요청과 비밀번호 재설정 요청의
@@ -73,7 +74,31 @@ provider 결과·감사 저장 실패 의미 분리는 Proposed
 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이
 소유합니다.
 
-`refresh_token`과 `auth_event`의 이중 writer는 의도된 최종 모듈 계약이 아니라 현재 구현 예외입니다. 로그인·비밀번호 흐름은 `account` adapter가, rotation·logout·reuse 흐름은 `auth` adapter가 같은 table을 서로 다른 JPA type으로 갱신합니다. 또한 `auth` refresh token repository가 native SQL로 `account` table을 직접 읽어 internal id를 public id로 변환합니다. 목표 owner와 transaction·조회 공개 계약을 정해 하나의 물리 persistence 경계로 이관하기 전까지 새 writer나 직접 table read를 추가하지 않습니다. 후속 완료 조건은 [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가 소유합니다.
+`refresh_token`과 `auth_event`의 이중 writer는 의도된 최종 모듈 계약이 아니라 현재
+table·transaction 예외입니다. 로그인·비밀번호 흐름은 `account` adapter가,
+rotation·logout·reuse 흐름은 `auth` adapter가 같은 table을 서로 다른 JPA type으로
+갱신합니다. Package 의존과 `account` table 직접 read를 포함한 현재 persistence 예외의
+canonical 설명은 [210 모듈 지도의 현재 Persistence 예외](210-module-map.md#현재-persistence-예외)가
+소유합니다. 목표 owner와 transaction 공개 계약을 정하기 전까지 새 writer를 추가하지
+않으며, 후속 정리 작업은
+[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가
+소유합니다.
+
+### 인증 operation별 application·저장 handoff
+
+| operation | application coordinator와 공개 handoff | 현재 물리 변경·transaction |
+| --- | --- | --- |
+| API 비밀번호 로그인 성공·실패 | [AuthenticatePasswordService.java](../../src/main/java/com/ronams/carmunity/auth/internal/application/service/AuthenticatePasswordService.java)·[CreatePasswordSessionService.java](../../src/main/java/com/ronams/carmunity/auth/internal/application/service/CreatePasswordSessionService.java)가 검증과 token 발급을 조율하고 [PasswordLoginResultRecorder.java](../../src/main/java/com/ronams/carmunity/account/api/PasswordLoginResultRecorder.java)로 `account.api`에 결과를 전달합니다. | [AccountPersistenceAdapter.java](../../src/main/java/com/ronams/carmunity/account/internal/adapter/out/persistence/AccountPersistenceAdapter.java)가 credential 계측, refresh token과 login auth event를 자신의 transaction에서 기록합니다. |
+| Swagger interactive 로그인 | [StagingSwaggerAuthenticationProvider.java](../../src/main/java/com/ronams/carmunity/auth/internal/adapter/in/web/swagger/StagingSwaggerAuthenticationProvider.java)가 인증을 조율하고 `PasswordLoginResultRecorder.recordInteractiveSuccess`로 결과를 전달합니다. | `AccountPersistenceAdapter`가 로그인 시각·계측과 auth event를 자신의 transaction에서 기록하며 refresh token은 만들지 않습니다. |
+| 인증된 비밀번호 변경 | [ChangePasswordService.java](../../src/main/java/com/ronams/carmunity/account/internal/application/service/ChangePasswordService.java)가 `PasswordCredentialStorePort`로 현재 credential 검증과 변경을 조율합니다. Verification·reset token은 사용하지 않습니다. | `AccountPersistenceAdapter`가 credential 변경, active refresh token 폐기와 auth event를 service transaction 안에서 기록합니다. |
+| 이메일 인증 요청 | [RequestMemberEmailVerificationService.java](../../src/main/java/com/ronams/carmunity/account/internal/application/service/RequestMemberEmailVerificationService.java)가 `EmailVerificationTokenStorePort`와 `EmailVerificationNotificationSender`를 조율합니다. | [EmailVerificationTokenPersistenceAdapter.java](../../src/main/java/com/ronams/carmunity/account/internal/adapter/out/persistence/EmailVerificationTokenPersistenceAdapter.java)가 token을 먼저 commit하고, notification은 after-commit 호출하며 [AuthEventPersistenceAdapter.java](../../src/main/java/com/ronams/carmunity/account/internal/adapter/out/persistence/AuthEventPersistenceAdapter.java)가 요청 결과 event를 별도 `REQUIRES_NEW` transaction으로 기록합니다. |
+| 이메일 인증 확인 | [ConfirmMemberEmailVerificationService.java](../../src/main/java/com/ronams/carmunity/account/internal/application/service/ConfirmMemberEmailVerificationService.java)가 `EmailVerificationTokenStorePort`, `EmailVerificationAccountActivationPort`, `AuthEventStorePort`를 조율합니다. | `EmailVerificationTokenPersistenceAdapter`, [EmailVerificationAccountPersistenceAdapter.java](../../src/main/java/com/ronams/carmunity/account/internal/adapter/out/persistence/EmailVerificationAccountPersistenceAdapter.java), `AuthEventPersistenceAdapter`가 token 소비·account 활성화·event를 service transaction 안에서 변경합니다. |
+| 비밀번호 재설정 요청 | [RequestPasswordResetService.java](../../src/main/java/com/ronams/carmunity/account/internal/application/service/RequestPasswordResetService.java)가 `PasswordResetTokenStorePort`와 `PasswordResetNotificationSender`를 조율합니다. | [PasswordResetTokenPersistenceAdapter.java](../../src/main/java/com/ronams/carmunity/account/internal/adapter/out/persistence/PasswordResetTokenPersistenceAdapter.java)가 reset token을 먼저 commit하고, notification은 after-commit 호출하며 `AuthEventPersistenceAdapter`가 요청 결과 event를 별도 `REQUIRES_NEW` transaction으로 기록합니다. |
+| 비밀번호 재설정 완료 | [ConfirmPasswordResetService.java](../../src/main/java/com/ronams/carmunity/account/internal/application/service/ConfirmPasswordResetService.java)가 `PasswordResetTokenStorePort`와 `PasswordResetCredentialStorePort`를 조율합니다. | `PasswordResetTokenPersistenceAdapter`와 `AccountPersistenceAdapter`가 reset token 소비, credential 변경, active refresh token 폐기와 event를 service transaction 안에서 기록합니다. |
+| refresh rotation·reuse·logout | [RotateRefreshTokenService.java](../../src/main/java/com/ronams/carmunity/auth/internal/application/service/RotateRefreshTokenService.java)와 [LogoutService.java](../../src/main/java/com/ronams/carmunity/auth/internal/application/service/LogoutService.java)가 `RefreshTokenLifecycleStorePort`를 조율하며 account 상태 조회에는 `account::api`를 사용합니다. | [RefreshTokenPersistenceAdapter.java](../../src/main/java/com/ronams/carmunity/auth/internal/adapter/out/persistence/RefreshTokenPersistenceAdapter.java)가 refresh token과 auth event를 service transaction 안에서 변경합니다. |
+
+이 표는 현재 application·transaction 사실을 소유하며 목표 Bounded Context나 최종
+persistence owner를 결정하지 않습니다.
 
 ## 구현 Source
 
