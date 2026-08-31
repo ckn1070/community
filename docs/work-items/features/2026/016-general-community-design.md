@@ -72,20 +72,20 @@ security·media·notification·moderation·운영 구조만 소유합니다.
 
 ## 확정 결정 요약
 
-| 결정 | 확정 구조 | 보존하는 확장 경계 |
-| --- | --- | --- |
-| 업무 module | `community`, `media`, `moderation` 신설과 기존 `notification`, `account` 공개 계약 확장 | 각 생명주기의 독립 변경과 후속 제재·채널 확장 |
-| 콘텐츠 공통 식별 | `community_content` 공통 root와 post/comment subtype | reaction·report·visibility의 단일 target 무결성 |
-| 게시글 본문 | versioned typed JSON block, v1은 `TEXT`·`IMAGE` | 투표·임베드 등 새 block의 additive 도입 |
-| 대화 | direct parent와 top-level root 동시 저장 | 현재 flat reply와 미래 다단 tree 공존 |
-| 삭제·숨김 | `author_deleted_at`과 `moderator_hidden_at` 별도 보존 | 복구·이의제기 도입 시 원인과 선후 관계 유지 |
-| 작성자 표시 | account 공개 batch lookup으로 현재 표시 이름 조회 | profile 링크 추가 시 콘텐츠 schema 변경 불필요 |
-| 반응 | 콘텐츠·사용자 unique choice와 `LIKE`·`DISLIKE` | 새 reaction type 추가와 별도 ranking projection |
-| 신고 | moderation 소유 case와 Community 숨김 공개 계약 | 후속 계정 제재·감사·appeal을 moderation에 추가 |
-| 서비스 안 알림 | notification 소유 inbox row를 대화 transaction에서 동기 저장 | 이메일·push worker가 inbox source를 후속 소비 |
-| 이미지 | private S3 staging/serving prefix, 비동기 검증·재인코딩·정리 job | storage adapter·delivery adapter와 media 종류 교체 |
-| 조회 | read projection, opaque keyset cursor, author·반응 batch 조회 | 검색·인기·추천 projection을 core write와 분리 |
-| 배포 | additive Flyway와 capability fail-close | application rollback 시 새 schema·object 보존 |
+| 결정        | 확정 구조                                                                        | 보존하는 확장 경계                                    |
+| --------- | ---------------------------------------------------------------------------- | --------------------------------------------- |
+| 업무 module | `community`, `media`, `moderation` 신설과 기존 `notification`, `account` 공개 계약 확장 | 각 생명주기의 독립 변경과 후속 제재·채널 확장                    |
+| 콘텐츠 공통 식별 | 게시글·댓글의 공통 상태 행과 종류별 본문 table 분리                                             | 반응·신고·숨김이 같은 content ID를 사용                   |
+| 게시글 본문    | 순서가 있는 텍스트·이미지 JSON, v1은 `TEXT`·`IMAGE`                                      | 투표·임베드 등 새 본문 조각의 additive 도입                 |
+| 대화        | 직접 답한 대상과 답글을 묶을 최초 댓글 동시 저장                                                 | 현재 1단 화면과 미래 다단 tree 공존                       |
+| 삭제·숨김     | `author_deleted_at`과 `moderator_hidden_at` 별도 보존                             | 복구·이의제기 도입 시 원인과 선후 관계 유지                     |
+| 작성자 표시    | account 공개 batch lookup으로 현재 표시 이름 조회                                        | profile 링크 추가 시 콘텐츠 schema 변경 불필요             |
+| 반응        | 콘텐츠·사용자 unique choice와 `LIKE`·`DISLIKE`                                      | 새 reaction type 추가와 별도 ranking projection     |
+| 신고        | moderation 소유 case와 Community 숨김 공개 계약                                       | 후속 계정 제재·감사·appeal을 moderation에 추가            |
+| 서비스 안 알림  | notification 소유 inbox row를 대화 transaction에서 동기 저장                            | 이메일·push worker가 inbox source를 후속 소비          |
+| 이미지       | private S3 staging/serving prefix, 비동기 검증·재인코딩·정리 job                        | storage adapter·delivery adapter와 media 종류 교체 |
+| 조회        | read projection, opaque keyset cursor, author·반응 batch 조회                    | 검색·인기·추천 projection을 core write와 분리           |
+| 배포        | additive Flyway와 capability fail-close                                       | application rollback 시 새 schema·object 보존     |
 
 ## 설계 결정
 
@@ -130,41 +130,61 @@ notification -X-> community
 멱등 숨김 계약을 호출하고 같은 database transaction에 참여합니다. `community`는 신고 table을
 직접 읽지 않습니다.
 
-### D2. 콘텐츠 공통 root와 공개 식별자
+### D2. 게시글과 댓글이 공유하는 식별 정보
 
-- 배경: 게시글·댓글·답글은 작성자, 수정, 삭제, 숨김, 반응과 신고 규칙을 공유합니다.
-- 검토한 선택지: 대상별 중복 table, `(target_type, target_id)` polymorphic 참조만 사용,
-  공통 root와 subtype table
-- 선택: `community_content`가 공통 상태와 UUID `public_id`를 소유하고
-  `community_post`, `community_comment`가 종류별 payload를 소유합니다.
-- 선택 근거: reaction은 실제 FK 하나로 모든 콘텐츠를 참조하고, 공통 visibility 규칙을 한
-  target에 적용할 수 있습니다. 게시글과 댓글의 다른 구조는 subtype에서 분리합니다.
-- 비용: 저장·조회 mapping이 단일 table보다 늘고 subtype 일치 검증이 필요합니다.
-- 재검토 조건: 콘텐츠 종류가 서로 다른 보존·identity 경계를 가져 공통 root가 의미를
-  잃습니다.
+게시글과 댓글은 본문 모양은 다르지만, 작성자·생성 시각·수정 여부·삭제·관리자 숨김·반응·
+신고처럼 공통으로 관리할 정보가 많습니다. 그래서 화면에 보이는 콘텐츠 하나마다 먼저
+`community_content` 행 하나를 만들고, 실제 본문만 종류에 맞는 table에 나눠 저장합니다.
 
-내부 PK는 현재 schema 규칙대로 identity `BIGINT`, 외부 API와 module 계약은 UUID
-`public_id`를 사용합니다. Community는 작성자 `account_public_id`를 UUID 값으로 보존하지만
-account table에 cross-module FK를 만들지 않습니다. 계정 삭제도 row를 물리 삭제하지 않는 현재
-account 정책과 공개 UUID가 콘텐츠 관계의 안정성을 보장합니다.
+```text
+community_content #101 (종류: 게시글, 작성자·삭제·숨김 상태)
+└── community_post #101 (게시글 본문)
 
-### D3. Board와 게시글 본문 표현
+community_content #205 (종류: 댓글, 작성자·삭제·숨김 상태)
+└── community_comment #205 (댓글 본문)
+```
 
-- 배경: 지금은 자유게시판 하나지만 이후 카테고리를 기존 게시글에 추가해야 하며, 텍스트와
-  이미지의 순서를 잃지 않아야 합니다.
-- 검토한 선택지: board column에 문자열 상수 저장, `community_board` 기준 table, 게시판별
-  subtype; Markdown media token, text+attachment 목록, typed JSON block
-- 선택: `community_board`에 안정된 slug `free`를 seed하고 모든 post가 board FK를 가집니다.
-  본문은 schema version과 ordered JSON block으로 저장하며 v1 block은 `TEXT`와 `IMAGE`만
-  허용합니다.
-- 선택 근거: 새 board는 기준 row를 추가하는 방식이고, typed block은 사용자 HTML을 받지
-  않으면서 텍스트·이미지 순서와 media UUID를 명시적으로 검증합니다.
-- 비용: JSON validation과 block-to-response mapping이 필요하고 DB constraint만으로 전체 JSON
-  shape를 보장할 수 없습니다.
-- 배제한 대안: Markdown token은 parser와 escape 규칙을 공개 API에 영구 결속하고, 단순
-  attachment 목록은 본문 내 이미지 위치를 잃습니다.
-- 재검토 조건: 협업 편집, rich text mark, embed처럼 block 간 참조가 필요한 편집기가
-  확정됩니다.
+- 배경: 게시글·댓글·답글에 같은 반응·신고·삭제 규칙을 적용하면서도 서로 다른 본문 구조를
+  섞지 않아야 합니다.
+- 검토한 선택지: 게시글과 댓글 table에 공통 field를 반복 저장, 종류와 ID만 적는 느슨한
+  참조, 공통 식별 행과 종류별 본문 table 분리
+- 선택: `community_content`가 공통 식별자와 상태를 소유하고, `community_post`와
+  `community_comment`가 각각 게시글과 댓글 본문을 소유합니다.
+- 선택 근거: 좋아요·싫어요와 신고는 항상 `community_content.id` 하나를 가리키므로 대상
+  종류마다 별도 참조 규칙을 만들지 않습니다. 게시글과 댓글의 본문 형식은 각 table에서
+  독립적으로 바꿀 수 있습니다.
+- 비용: 콘텐츠 하나를 저장하거나 읽을 때 공통 행과 본문 행을 함께 다뤄야 하며, 두 행의
+  종류가 맞는지 DB가 검증해야 합니다.
+- 재검토 조건: 미래 콘텐츠 종류가 작성자·삭제·숨김·반응 규칙을 전혀 공유하지 않아 공통
+  식별 행의 의미가 사라집니다.
+
+DB 내부 연결에는 identity `BIGINT`를 사용하고, API에 노출하는 콘텐츠 ID에는 추측하기 어려운
+UUID `public_id`를 사용합니다. 작성자는 account의 공개 UUID만 값으로 보존하며 Community가
+account table에 FK를 만들거나 직접 조회하지 않습니다.
+
+### D3. 자유게시판과 게시글 본문 저장 방식
+
+자유게시판도 문자열 상수로 코드에 박아 두지 않고 `community_board`의 실제 행으로 만듭니다.
+첫 행의 고정 주소는 `free`이고, 게시글은 이 행을 참조합니다. 나중에 게시판을 추가할 때는
+기존 게시글을 옮기지 않고 board 행과 접근 정책만 추가합니다.
+
+게시글 본문은 사용자가 작성한 순서대로 텍스트와 이미지를 배열한 JSON으로 저장합니다.
+여기서 block은 본문 조각 하나를 뜻하며, v1에서는 `TEXT`와 `IMAGE` 두 종류만 허용합니다.
+
+- 배경: 현재에는 자유게시판 하나만 필요하지만 이후 게시판을 추가할 수 있어야 하고, 본문
+  안에서 텍스트와 이미지가 놓인 순서를 잃지 않아야 합니다.
+- 검토한 선택지: 게시판 이름을 문자열 column에 반복 저장, board table 참조, 게시판마다
+  별도 post table; Markdown 안에 이미지 token 삽입, 본문과 첨부 목록 분리, 순서가 있는
+  typed JSON block
+- 선택: `community_board`에 `free` 행을 만들고 모든 게시글이 board FK를 가집니다. 본문은
+  schema version과 순서가 있는 typed JSON block으로 저장합니다.
+- 선택 근거: board 행 추가만으로 새 게시판을 만들 수 있고, JSON block은 사용자 HTML을
+  실행하지 않으면서 텍스트·이미지 순서와 media UUID를 명시적으로 검증할 수 있습니다.
+- 비용: application이 JSON 구조를 검증하고 API 응답으로 변환해야 합니다.
+- 배제한 대안: Markdown token은 parser 규칙을 공개 API에 오래 결속하고, 본문과 첨부 목록을
+  분리하면 이미지가 본문 어디에 있었는지 잃습니다.
+- 재검토 조건: 협업 편집, 글자별 서식이나 embed처럼 본문 조각 사이의 복잡한 관계가 제품
+  범위로 확정됩니다.
 
 v1 본문 계약은 다음과 같습니다.
 
@@ -185,33 +205,42 @@ v1 본문 계약은 다음과 같습니다.
   필요해지면 본문 schema를 암묵적으로 바꾸지 않고 별도 제품 결정으로 추가합니다.
 - 목록 preview는 TEXT block에서 파생하며 별도 사용자 원문을 중복 저장하지 않습니다.
 
-### D4. Comment tree와 1단 표시
+### D4. 화면은 1단으로 유지하면서 실제 답변 대상을 보존하는 방법
 
-- 배경: 현재 UI는 한 단계 답글만 보여 주지만 답글에 다시 답한 직접 대상은 표시해야 하고,
-  향후 깊은 대화를 저장 불가능하게 만들면 안 됩니다.
-- 검토한 선택지: `parent_id` 하나만 저장, top-level root만 저장, direct parent와 root를 함께
-  저장
-- 선택: top-level 댓글은 `parent_comment_id`, `thread_root_comment_id`가 모두 null이고,
-  모든 reply는 direct parent와 top-level root를 함께 저장합니다.
-- 선택 근거: root로 현재의 flat reply page를 효율적으로 조회하고 parent로 정확한 답변 대상과
-  미래 tree를 보존합니다.
-- 비용: 같은 post, root가 실제 top-level인지와 immutable parent를 application에서 먼저
-  검증하고 database constraint trigger로 다시 차단해야 합니다.
-- 재검토 조건: 대화를 별도 thread aggregate나 materialized path로 탐색해야 할 만큼 깊이·
-  조회량이 증가합니다.
+사용자 화면에는 댓글 아래 답글을 한 단계로만 보여 줍니다. 다만 답글 B에 다시 답한 C가
+누구에게 한 말인지는 잃으면 안 되므로, 각 답글에는 `직접 답한 대상`과 `화면에서 묶일 최초
+댓글`을 둘 다 저장합니다.
 
-reply 생성 규칙은 다음과 같습니다.
+```text
+댓글 A
+├── 답글 B  (직접 대상 A, 묶음 기준 A)
+└── 답글 C  (직접 대상 B, 묶음 기준 A)  화면에는 "B에게 답글"로 표시
+```
 
-- 요청은 같은 post에 속한 direct parent UUID를 받습니다.
-- parent가 top-level이면 그 parent가 root입니다.
-- parent가 reply이면 parent의 root를 그대로 복사합니다.
-- parent와 root는 생성 후 변경하지 않습니다. 새 row만 기존 row를 parent로 삼으므로 cycle을
-  만들지 않습니다.
-- 삭제 또는 숨김 처리된 콘텐츠는 새 답변 대상이 될 수 없지만, 이미 존재하는 후손은
-  유지합니다.
-- 응답은 모든 reply를 root 아래 한 단계로 반환하고 direct parent의 공개 UUID와 표시 가능한
-  대상 이름을 `replyTo`에 제공합니다. 대상이 삭제·숨김·탈퇴로 비공개이면 대상 이름은
-  placeholder로 바꿉니다.
+이 구조에서 `parent_comment_id`는 직접 답한 대상이고, `thread_root_comment_id`는 화면에서
+답글을 묶을 최초 댓글입니다.
+
+- 배경: 현재 UI는 1단만 보여 주지만 답글에 다시 답한 대상을 표시해야 하고, 미래에 다단
+  대화를 제공할 가능성도 막지 않아야 합니다.
+- 검토한 선택지: 직접 대상만 저장, 최초 댓글만 저장, 두 관계를 함께 저장
+- 선택: 최초 댓글은 두 field가 모두 null이고, 모든 답글은 직접 대상과 최초 댓글을 함께
+  저장합니다.
+- 선택 근거: 현재 화면은 최초 댓글 기준으로 답글을 빠르게 묶고, 미래에는 직접 대상 관계를
+  따라 실제 대화 tree를 구성할 수 있습니다.
+- 비용: DB는 직접 대상과 최초 댓글이 같은 게시글에 속하고, 최초 댓글이 실제 최상위
+  댓글인지 추가로 검증해야 합니다.
+- 재검토 조건: 깊은 대화의 조회량이 커져 parent 관계만 따라가는 방식으로는 성능 목표를
+  충족하지 못합니다.
+
+답글 생성 규칙은 다음과 같습니다.
+
+- 요청은 같은 게시글에 속한 직접 대상 댓글 UUID를 받습니다.
+- 직접 대상이 최초 댓글이면 그 댓글을 묶음 기준으로 저장합니다.
+- 직접 대상이 다른 답글이면 그 답글이 이미 가진 묶음 기준을 그대로 복사합니다.
+- 직접 대상과 묶음 기준은 생성 뒤 바꾸지 않습니다.
+- 삭제·숨김 콘텐츠에는 새 답글을 달 수 없지만, 이미 존재하는 하위 대화는 유지합니다.
+- API는 모든 답글을 최초 댓글 아래 한 단계로 반환하고 `replyTo`에 직접 대상 UUID와 표시할
+  이름을 넣습니다. 대상이 비공개이면 이름 대신 placeholder를 반환합니다.
 
 ### D5. 수정, 작성자 삭제와 관리자 숨김
 
@@ -394,7 +423,9 @@ Server는 정규화 request hash와 생성 content UUID를 영구 저장합니�
 같은 payload를 재전송하면 최초 status와 resource를 반환하고, 다른 payload나 operation에 key를
 재사용하면 `409`로 거부합니다. 따라서 response 유실 뒤 재시도도 content와 inbox 알림을 하나만
 만듭니다. Media upload도 owner·key·declared metadata·checksum hash를 같은 방식으로 보존하고
-재시도는 media UUID의 현재 상태로 멱등 처리합니다.
+재시도는 media UUID의 현재 상태로 멱등 처리합니다. 이 key의 재사용 범위는 전역이 아니라
+각 module의 resource·operation입니다. 따라서 Community content 생성, Media upload와 관리자
+Media job action은 서로 다른 저장 경계에서 같은 UUID 값을 사용할 수 있습니다.
 
 #### 관리자
 
@@ -404,6 +435,13 @@ Server는 정규화 request hash와 생성 content UUID를 영구 저장합니�
 | `GET` | `/api/v1/admin/community/reports/{reportId}` | report와 검토용 target snapshot |
 | `PATCH` | `/api/v1/admin/community/reports/{reportId}` | `HIDE_CONTENT` 또는 `DISMISS` resolution |
 | `PATCH` | `/api/v1/admin/media/jobs/{jobId}` | `DEAD` job을 `RETRY` 또는 object 부재 확인 뒤 `RESOLVED`로 종결 |
+
+두 관리자 `PATCH`는 최신 응답 `ETag`를 `If-Match`로 제출해야 하고, stale version은 `412`로
+거부합니다. Media job `PATCH`는 추가로 UUID `Idempotency-Key`를 요구합니다. Client는 응답을
+받지 못해 같은 action을 재시도할 때 동일한 key를 다시 보내야 하며, 같은 job에서 같은 key를
+다른 action에 재사용하면 `409`로 거부합니다. Media job handler는 version 검사보다 먼저
+`(job, key)`의 기존 action을 조회합니다. 같은 action이면 저장된 결과를 다시 반환하고, 다른
+action이면 `409`로 거부하며, 기존 action이 없을 때만 `If-Match`를 검사해 새 전이를 수행합니다.
 
 모든 오류는 현재 RFC 9457 Problem Details와 project error code를 사용합니다. 외부 식별자 형식,
 권한 부족, state conflict, media 미준비·소유 불일치와 stale version을 서로 다른 code로
@@ -430,20 +468,98 @@ Query predicate와 index는 항상 같은 `(created_at, internal_id)` 순서를 
 projection을 허용합니다. 한 page의 author display, 내 reaction과 reaction count는 각각 batch
 조회하며 JPA lazy loading으로 response를 조립하지 않습니다.
 
-### D12. Database schema와 무결성
+### D12. 만들 DB table과 무결성
 
-새 table은 단수형, identity internal PK, UUID `public_id`, `TIMESTAMPTZ`, `VARCHAR + CHECK`와
-명시적 FK/index라는 현재 PostgreSQL 규칙을 따릅니다.
+이 설계에서 새로 만드는 table은 아래 12개입니다. 이 절은 각 table의 목적, column type,
+필수·nullable 여부, PK·FK·unique와 상태 제약까지 확정합니다. Constraint·index의 물리 이름과
+Flyway version 번호는 의미를 바꾸지 않는 실행 계획 값이므로 여기서 정하지 않습니다.
+이 구조는 확정된 제품 결과와 D1~D9의 module·상태 소유권을 현재 PostgreSQL 규칙으로 변환한
+목표 계약이며, 아직 구현된 현재 schema라는 뜻은 아닙니다.
+
+```text
+community_board
+└── community_content (POST)
+    ├── community_post
+    ├── community_content (COMMENT, post_content_id로 게시글 연결)
+    │   └── community_comment
+    └── community_reaction
+
+moderation_report     -- content public UUID를 참조하되 module 간 DB FK는 없음
+notification_inbox    -- content public UUID를 참조하되 module 간 DB FK는 없음
+
+media_asset
+├── media_usage
+├── media_job
+│   └── media_job_action
+└── media_reconciliation_issue
+```
+
+내부 PK는 `BIGINT GENERATED BY DEFAULT AS IDENTITY`, API에서 직접 주소로 쓰는 resource ID는
+`UUID`, 시각은 `TIMESTAMPTZ`, 상태는 `VARCHAR + CHECK`를 사용합니다. 아래 `NULL` 표시는 해당
+상태에서 값이 없을 수 있다는 뜻이고, 그 밖의 column은 `NOT NULL`입니다. 아래 code block은
+실행할 SQL이 아니라 column과 관계를 한눈에 보는 schema 계약 표기입니다.
+
+모든 `public_id`와 요청용 UUID는 application이 생성합니다. 단, Flyway가 만드는 기준 row의
+공개 UUID는 migration SQL에 고정한 값을 사용합니다. `created_at`·`updated_at`은
+`DEFAULT NOW()`, `version`은 `DEFAULT 0`으로 시작하고 `version >= 0`,
+`updated_at >= created_at`을 검사합니다. `request_hash`와 checksum은 소문자 SHA-256 형식만
+허용합니다. FK 삭제·갱신 동작은 현재 schema와 같이 PostgreSQL 기본 제한 동작을 사용하며,
+업무 삭제는 row 물리 삭제가 아니라 아래 상태·시각 변경으로 처리합니다.
 
 #### Community 소유
 
-| table | 핵심 column·constraint |
-| --- | --- |
-| `community_board` | `id`, `public_id`, unique `slug`, `name`, `created_at`; `free` seed |
-| `community_content` | `id`, `public_id`, `kind POST|COMMENT`, `account_public_id`, `board_id`, `post_content_id`, `parent_comment_id`, `thread_root_comment_id`, immutable `creation_request_id`·`creation_request_hash`, `edited_at`, `author_deleted_at`, `moderator_hidden_at`, `created_at`, `updated_at`, `version`; kind별 nullable shape와 timestamp check, `(account_public_id, creation_request_id)` unique |
-| `community_post` | `content_id` PK/FK, `body_schema_version=1`, `body JSONB`; payload만 소유 |
-| `community_comment` | `content_id` PK/FK, `body`; payload만 소유 |
-| `community_reaction` | `content_id` FK, `account_public_id`, `reaction_type`, timestamp; `(content_id, account_public_id)` unique |
+```text
+community_board(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  slug VARCHAR(50) UNIQUE,                 -- seed: free
+  name VARCHAR(100),                       -- seed: 자유게시판
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  version BIGINT
+)
+
+community_content(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  kind VARCHAR(20) CHECK (kind IN ('POST', 'COMMENT')),
+  account_public_id UUID,
+  board_id BIGINT NULL FK -> community_board.id,
+  post_content_id BIGINT NULL FK -> community_content.id,
+  parent_comment_id BIGINT NULL FK -> community_content.id,
+  thread_root_comment_id BIGINT NULL FK -> community_content.id,
+  creation_request_id UUID,
+  creation_request_hash CHAR(64),
+  edited_at TIMESTAMPTZ NULL,
+  author_deleted_at TIMESTAMPTZ NULL,
+  moderator_hidden_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  version BIGINT,
+  UNIQUE(account_public_id, creation_request_id)
+)
+
+community_post(
+  content_id BIGINT PK FK -> community_content.id,
+  body_schema_version SMALLINT CHECK (body_schema_version = 1),
+  body JSONB
+)
+
+community_comment(
+  content_id BIGINT PK FK -> community_content.id,
+  body TEXT CHECK (char_length(btrim(body)) BETWEEN 1 AND 2000)
+)
+
+community_reaction(
+  id BIGINT PK IDENTITY,
+  content_id BIGINT FK -> community_content.id,
+  account_public_id UUID,
+  reaction_type VARCHAR(20) CHECK (reaction_type IN ('LIKE', 'DISLIKE')),
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  UNIQUE(content_id, account_public_id)
+)
+```
 
 `community_content`의 kind shape check는 POST일 때 board만, COMMENT일 때 post를 필수로 하고
 top-level COMMENT의 parent/root는 모두 null, reply의 parent/root는 모두 non-null로 제한합니다.
@@ -453,6 +569,11 @@ root가 top-level인지, `community_post`·`community_comment` subtype이 conten
 일치하는지를 검증합니다. Application은 같은 규칙을 먼저 검증해 domain error를 반환하지만
 trigger가 우회 write와 race의 최종 backstop입니다. Parent/root/post와 creation request 값은
 생성 후 갱신하지 않습니다.
+
+`community_post.body`는 DB가 JSON object, `body_schema_version=1`과 `blocks` array 존재까지
+확인합니다. 각 block의 허용 field, TEXT 전체 20,000자, IMAGE 최대 10개와 nonblank TEXT 최소
+1개는 D3 계약을 읽는 application validator가 검증합니다. JSON 내부 전체를 SQL trigger로
+중복 구현하지 않습니다.
 
 주요 index는 다음 query 모양을 소유합니다.
 
@@ -465,36 +586,202 @@ trigger가 우회 write와 race의 최종 backstop입니다. Parent/root/post와
 
 #### Moderation 소유
 
-| table | 핵심 column·constraint |
-| --- | --- |
-| `moderation_report` | `public_id`, `target_content_public_id`, `target_kind`, `reporter_account_public_id`, `status OPEN|CONTENT_HIDDEN|DISMISSED`, `resolved_by_account_public_id`, `created_at`, `resolved_at`, `version` |
+```text
+moderation_report(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  target_content_public_id UUID,
+  target_kind VARCHAR(20) CHECK (target_kind IN ('POST', 'COMMENT')),
+  reporter_account_public_id UUID,
+  status VARCHAR(30) CHECK (status IN ('OPEN', 'CONTENT_HIDDEN', 'DISMISSED')),
+  resolved_by_account_public_id UUID NULL,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  resolved_at TIMESTAMPTZ NULL,
+  version BIGINT
+)
+```
 
 같은 reporter/target의 open 중복은 `status = 'OPEN'` partial unique index로 막고, open report
-조회는 `(status, created_at, id)` index를 사용합니다. Community table FK를 만들지
-않습니다.
+조회는 `(status, created_at DESC, id DESC)` index를 사용합니다. `OPEN`이면 처리자·처리 시각이
+null이고 종결 상태이면 둘 다 필수라는 check를 둡니다. Community table FK는 만들지 않습니다.
 
 #### Notification 소유
 
-| table | 핵심 column·constraint |
-| --- | --- |
-| `notification_inbox` | `public_id`, `recipient_account_public_id`, `actor_account_public_id`, `type`, `source_content_public_id`, `post_public_id`, `created_at`, `read_at`; `(recipient_account_public_id, source_content_public_id, type)` unique |
+```text
+notification_inbox(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  recipient_account_public_id UUID,
+  actor_account_public_id UUID,
+  type VARCHAR(40) CHECK (type IN ('COMMUNITY_COMMENT', 'COMMUNITY_REPLY')),
+  source_content_public_id UUID,
+  post_public_id UUID,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  read_at TIMESTAMPTZ NULL,
+  version BIGINT,
+  UNIQUE(recipient_account_public_id, source_content_public_id, type)
+)
+```
 
 recipient inbox index는 `(recipient_account_public_id, created_at DESC, id DESC)`이고 unread
-query를 위해 `read_at IS NULL` partial index를 둡니다.
+query를 위해 `(recipient_account_public_id, created_at DESC, id DESC) WHERE read_at IS NULL`
+partial index를 둡니다. Community와 account table FK는 만들지 않습니다.
 
 #### Media 소유
 
-| table | 핵심 column·constraint |
-| --- | --- |
-| `media_asset` | `public_id`, owner UUID, immutable idempotency key·request hash, `status`, staging/delivery key, expected/detected media type, byte/pixel/checksum metadata, reservation expiry, timestamps, version; `(owner, idempotency_key)` unique |
-| `media_usage` | asset FK, `consumer_type POST_BODY`, consumer public UUID, `status ACTIVE|HIDDEN_RETAINED|RELEASED`, timestamps; `status <> 'RELEASED'`인 asset당 하나의 partial unique index |
-| `media_job` | asset FK, `type VERIFY|DELETE_STAGING|DELETE_DELIVERY|RECONCILE`, `status READY|RUNNING|RETRY|DONE|DEAD|RESOLVED`, attempt, lease, next attempt, resolution, resolved actor/time, non-sensitive error code, timestamps, version |
-| `media_reconciliation_issue` | object/asset reference, issue type, `OPEN|RESOLVED`, first/last seen, resolution과 actor/time; 같은 불일치의 open 중복 방지 |
+```text
+media_asset(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  owner_account_public_id UUID,
+  idempotency_key UUID,
+  request_hash CHAR(64),
+  status VARCHAR(30) CHECK (status IN ('RESERVED', 'UPLOADED', 'VERIFYING',
+                                       'READY', 'REJECTED', 'DELETE_PENDING', 'DELETED')),
+  staging_object_key VARCHAR(512),
+  delivery_object_key VARCHAR(512) NULL,
+  expected_media_type VARCHAR(50),
+  detected_media_type VARCHAR(50) NULL,
+  original_byte_size BIGINT NULL,
+  delivery_byte_size BIGINT NULL,
+  width INTEGER NULL,
+  height INTEGER NULL,
+  original_checksum_sha256 CHAR(64) NULL,
+  delivery_checksum_sha256 CHAR(64) NULL,
+  reservation_expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  version BIGINT,
+  UNIQUE(owner_account_public_id, idempotency_key)
+)
+
+media_usage(
+  id BIGINT PK IDENTITY,
+  asset_id BIGINT FK -> media_asset.id,
+  consumer_type VARCHAR(30) CHECK (consumer_type IN ('POST_BODY')),
+  consumer_public_id UUID,
+  status VARCHAR(30) CHECK (status IN ('ACTIVE', 'HIDDEN_RETAINED', 'RELEASED')),
+  hidden_at TIMESTAMPTZ NULL,
+  released_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  version BIGINT
+)
+
+media_job(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  asset_id BIGINT NULL FK -> media_asset.id,
+  type VARCHAR(40) CHECK (type IN ('VERIFY', 'DELETE_STAGING', 'DELETE_DELIVERY', 'RECONCILE')),
+  status VARCHAR(30) CHECK (status IN ('READY', 'RUNNING', 'RETRY', 'DONE', 'DEAD', 'RESOLVED')),
+  attempt_count INTEGER DEFAULT 0 CHECK (attempt_count >= 0),
+  lease_owner VARCHAR(200) NULL,
+  lease_until TIMESTAMPTZ NULL,
+  next_attempt_at TIMESTAMPTZ NULL,
+  last_error_code VARCHAR(100) NULL,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  version BIGINT
+)
+
+media_job_action(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  job_id BIGINT FK -> media_job.id,
+  request_id UUID,
+  expected_job_version BIGINT CHECK (expected_job_version >= 0),
+  action_type VARCHAR(30) CHECK (action_type IN ('REQUEUE', 'RESOLVE')),
+  from_status VARCHAR(30) CHECK (from_status IN ('RUNNING', 'DEAD')),
+  to_status VARCHAR(30) CHECK (to_status IN ('RETRY', 'RESOLVED')),
+  actor_type VARCHAR(20) CHECK (actor_type IN ('SYSTEM', 'ADMIN')),
+  actor_account_public_id UUID NULL,
+  action_code VARCHAR(100),
+  created_at TIMESTAMPTZ,
+  UNIQUE(job_id, request_id),
+  CHECK ((actor_type = 'ADMIN' AND actor_account_public_id IS NOT NULL)
+         OR (actor_type = 'SYSTEM' AND actor_account_public_id IS NULL)),
+  CHECK ((action_type = 'REQUEUE' AND from_status = 'DEAD'
+          AND to_status = 'RETRY' AND actor_type = 'ADMIN')
+         OR (action_type = 'RESOLVE' AND from_status = 'DEAD'
+             AND to_status = 'RESOLVED' AND actor_type = 'ADMIN')
+         OR (action_type = 'RESOLVE' AND from_status = 'RUNNING'
+             AND to_status = 'RESOLVED' AND actor_type = 'SYSTEM'))
+)
+
+media_reconciliation_issue(
+  id BIGINT PK IDENTITY,
+  public_id UUID UNIQUE,
+  asset_id BIGINT NULL FK -> media_asset.id,
+  object_scope VARCHAR(30) CHECK (object_scope IN ('STAGING', 'DELIVERY')),
+  object_key VARCHAR(512),
+  issue_type VARCHAR(50) CHECK (issue_type IN ('ORPHAN_OBJECT', 'MISSING_OBJECT', 'METADATA_MISMATCH')),
+  status VARCHAR(20) CHECK (status IN ('OPEN', 'RESOLVED')),
+  first_seen_at TIMESTAMPTZ,
+  last_seen_at TIMESTAMPTZ,
+  resolution_code VARCHAR(100) NULL,
+  resolved_by_type VARCHAR(20) NULL CHECK (resolved_by_type IN ('SYSTEM', 'ADMIN')),
+  resolved_by_account_public_id UUID NULL,
+  resolved_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ,
+  version BIGINT
+)
+```
 
 Object key는 API·log에 노출하지 않고 asset UUID와 무관한 random component를 포함합니다.
 `media_job` worker는 `FOR UPDATE SKIP LOCKED`로 replica 간 job claim을 직렬화합니다. Media claim은
 asset row를 lock하고 non-released usage partial unique index가 동시 이중 claim을 최종
-차단합니다.
+차단합니다. 이 index는 `(asset_id) WHERE status <> 'RELEASED'`이고, 같은 consumer의 중복
+연결은 `(consumer_type, consumer_public_id, asset_id)` unique로 막습니다.
+
+Media 상태 check는 다음을 함께 보장합니다.
+
+- `media_asset.UPLOADED|VERIFYING|READY|REJECTED`에는 original byte size·checksum이 필수이고,
+  `READY`에는 delivery key·detected type·크기·pixel·delivery checksum도 필수입니다.
+  `DELETE_PENDING|DELETED`는 upload 전 만료와 delivery 생성 뒤 삭제를 모두 표현하므로 original
+  metadata 묶음과 delivery metadata 묶음을 각각 전부 null 또는 전부 non-null로 제한합니다.
+  저장된 byte size·width·height는 모두 양수이고 D14의 상한을 넘을 수 없습니다.
+- `media_usage.ACTIVE`에는 hidden/released 시각이 없고, `HIDDEN_RETAINED`에는 hidden 시각,
+  `RELEASED`에는 released 시각이 필수입니다.
+- `media_job.RUNNING`에만 lease owner·expiry가 필요하고, `RETRY`에는 next attempt가 필요합니다.
+  VERIFY·DELETE job은 asset FK가 필수이고 전체 prefix를 대조하는 RECONCILE job만 asset FK가
+  null일 수 있습니다. Resolution 주체·code·시각은 중복 column으로 job에 다시 저장하지 않고
+  아래 action row가 단일 owner가 됩니다.
+- `media_job_action`은 관리자의 `DEAD -> RETRY|RESOLVED`와 worker의 자동
+  `RUNNING -> RESOLVED`를 이전·다음 상태, 실행 주체, code와 시각으로 보존합니다. `REQUEUE`는
+  `DEAD -> RETRY`와 `ADMIN`만, `RESOLVE`는 `RUNNING|DEAD -> RESOLVED`만 허용합니다. `ADMIN`은
+  account UUID가 필수이고 `SYSTEM`은 null입니다. `(job_id, request_id)` unique로 같은
+  재처리 요청을 멱등 처리하며, action이 저장되지 않으면 job 상태도 바뀐 것으로
+  commit하지 않습니다.
+- 관리자 action의 `request_id`는 API의 UUID `Idempotency-Key`를 그대로 저장하고,
+  `expected_job_version`은 `If-Match`의 version입니다. Worker의 자동 `RUNNING -> RESOLVED`는
+  application source에 고정한 UUID v5 namespace
+  `1964ddf0-cb31-45d2-a559-f6bffc25c462`에서
+  `job public UUID + attempt_count + RESOLVE`를 이름으로 사용합니다. Worker는 claim 뒤 읽은
+  version을 `expected_job_version`으로 저장하므로 같은 claim의 DB 결과가 불확실해 재실행돼도
+  같은 request ID와 version을 사용합니다. 관리자 handler와 worker는 모두 상태·version 검사
+  전에 기존 `(job_id, request_id)` action을 먼저 조회해 같은 action이면 저장된 결과로
+  수렴시키고, action 내용이 다르면 conflict로 거부합니다.
+- Action insert trigger는 대상 job row를 `FOR UPDATE`로 잠그고 현재 status·version이
+  `from_status`·`expected_job_version`과 일치하는지 확인합니다. 이어 같은 transaction에서
+  `WHERE id = ? AND status = from_status AND version = ?` 조건으로 job을 `to_status`로 갱신합니다.
+  Deferred constraint trigger는 commit 직전에 action의 `to_status`와 실제 job status가 같고,
+  job version이 `expected_job_version + 1`이며 `RESOLVED` job에는 정확히 한 `RESOLVE` action이
+  있는지 다시 확인합니다. 이 두 trigger로
+  action만 저장되거나 job만 전이되는 우회 write를 차단합니다.
+- Reconciliation issue의 open 중복은 `(object_scope, object_key, issue_type) WHERE status = 'OPEN'`
+  partial unique index로 막습니다. `RESOLVED`에는 같은 처리 주체 조건을 적용합니다.
+
+Worker와 cleanup 조회를 위한 주요 index는 `media_asset(status, reservation_expires_at, id)`,
+`media_job(status, next_attempt_at, created_at, id) WHERE status IN ('READY', 'RETRY')`,
+`media_job(lease_until, id) WHERE status = 'RUNNING'`, `media_job_action(job_id, created_at, id)`입니다.
+Job을 만들 때는 `(asset_id, type) WHERE asset_id IS NOT NULL AND status IN
+('READY', 'RUNNING', 'RETRY', 'DEAD')` partial unique index로 같은 asset·type의 미종결 job
+중복을 막습니다. `type WHERE type = 'RECONCILE' AND asset_id IS NULL AND status IN
+('READY', 'RUNNING', 'RETRY', 'DEAD')` partial unique index로 전체 prefix RECONCILE job도 동시에
+하나만 열리게 합니다.
 
 ### D13. Transaction과 concurrency
 
@@ -681,9 +968,11 @@ Issuer lifecycle은 다음을 고정합니다.
   부재를 확인한 경우에만 `RESOLVED`로 종결할 수 있고, non-released usage가 있거나 object
   존재를 확인하지 못하면 종결을 거부합니다. Verify job의 비복구 입력은 asset을 `REJECTED`로 전환하고
   staging cleanup job까지 저장한 뒤 `RESOLVED`로 닫습니다.
-- Requeue·resolution은 actor UUID, 이전/새 상태, 시각과 non-sensitive resolution code를
-  남기며 같은 요청을 멱등 처리합니다. Open reconciliation issue는 대응 job이 `DONE` 또는
-  검증된 `RESOLVED`가 될 때만 함께 닫습니다.
+- 관리자 Requeue·resolution은 API `Idempotency-Key`와 관리자 UUID를, worker의 자동
+  resolution은 job·attempt에서 결정적으로 만든 request ID와 `SYSTEM` 주체를
+  `media_job_action`에 이전/새 상태·시각·non-sensitive action code와 함께 남깁니다.
+  Open reconciliation issue는 대응 job이 `DONE` 또는 검증된 `RESOLVED`가 될 때만 함께
+  닫습니다.
 - Inbox insert가 실패하면 comment/reply도 rollback되므로 알림 없는 성공 대화를 만들지
   않습니다.
 - 표시 이름 batch 조회나 DB가 실패하면 content를 임의 `익명`으로 성공 응답하지 않고 공통
@@ -705,6 +994,8 @@ Issuer lifecycle은 다음을 고정합니다.
 ### D18. Migration, 공개 전환과 rollback
 
 - 새 table, constraint, index와 `free` board seed는 append-only Flyway migration으로 만듭니다.
+  Seed는 `public_id=ed710d1c-91f1-4266-a035-bba33a7f52cb`, `slug=free`, `name=자유게시판`을
+  고정해 환경마다 같은 공개 식별자와 표시 이름을 만듭니다.
   기존 account/auth table을 Community 편의를 위해 변경하거나 공유 FK를 추가하지 않습니다.
 - Runtime role에는 새 table DML만 부여하고 schema DDL은 기존 migration job이 소유합니다.
 - Community endpoint는 schema, media bucket, OIDC identity·overlap/rollback, worker와 DEAD
