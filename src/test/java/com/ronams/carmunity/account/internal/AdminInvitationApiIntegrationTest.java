@@ -282,7 +282,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
             select (select count(*) from jsonb_object_keys(metadata)) as key_count,
                    metadata ->> 'invitationPublicId' as invitation_public_id,
                    metadata ->> 'roleCode' as role_code,
-                   metadata ->> 'invitedByAccountId' as invited_by_account_id
+                   metadata ->> 'invitedByAccountPublicId' as invited_by_account_public_id
             from auth_event
             where account_id = ?
               and event_type = 'ADMIN_INVITATION_ACCEPTED'
@@ -294,7 +294,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
         .containsEntry("key_count", 3L)
         .containsEntry("invitation_public_id", invitationPublicId.toString())
         .containsEntry("role_code", "ROLE_ADMIN")
-        .containsEntry("invited_by_account_id", inviterAccountId.toString());
+        .containsEntry("invited_by_account_public_id", inviterPublicId.toString());
     assertThat(
             jdbcTemplate.queryForObject(
                 """

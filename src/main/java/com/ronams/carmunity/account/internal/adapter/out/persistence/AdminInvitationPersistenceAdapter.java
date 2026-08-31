@@ -11,6 +11,7 @@ import com.ronams.carmunity.account.internal.application.port.out.AdminInvitatio
 import com.ronams.carmunity.account.internal.application.port.out.AdminInvitationStorePort;
 import com.ronams.carmunity.account.internal.domain.RoleAssignment;
 import com.ronams.carmunity.account.internal.domain.RoleCode;
+import com.ronams.carmunity.securityaudit.api.SecurityAuditAppender;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.CommonErrorCode;
 import java.util.List;
@@ -40,7 +41,7 @@ class AdminInvitationPersistenceAdapter
   private final AccountRoleAssignmentJpaRepository roleAssignmentRepository;
   private final AuthRoleJpaRepository authRoleRepository;
   private final AdminInvitationJpaRepository invitationRepository;
-  private final AuthEventJpaRepository authEventRepository;
+  private final SecurityAuditAppender securityAuditAppender;
 
   /**
    * 같은 email의 기존 open 초대를 폐기하고 새 초대와 생성 감사 이벤트를 저장합니다.
@@ -70,13 +71,14 @@ class AdminInvitationPersistenceAdapter
             AdminInvitationJpaEntity.issue(request, inviter.id(), role.id()));
     AdminInvitationRecord invitation =
         saved.toRecord(RoleCode.valueOf(role.code()), !openInvitations.isEmpty());
-    authEventRepository.saveAndFlush(
-        AuthEventJpaEntity.adminInvitationCreated(
-            invitation.invitedByAccountId(),
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.adminInvitationCreated(
+            inviter.publicId(),
             invitation.publicId(),
             invitation.email(),
             invitation.roleCode().name(),
-            invitation.previousInvitationRevoked()));
+            invitation.previousInvitationRevoked(),
+            request.issuedAt()));
     return invitation;
   }
 
@@ -121,6 +123,10 @@ class AdminInvitationPersistenceAdapter
       AccountJpaEntity accountEntity =
           accountRepository.saveAndFlush(AccountJpaEntity.from(request.account()));
       Long accountId = accountEntity.id();
+      AccountJpaEntity inviter =
+          accountRepository
+              .findById(request.invitedByAccountId())
+              .orElseThrow(() -> new ApiException(CommonErrorCode.INTERNAL_ERROR));
 
       profileRepository.saveAndFlush(
           AccountProfileJpaEntity.of(accountId, request.account().profile()));
@@ -134,12 +140,13 @@ class AdminInvitationPersistenceAdapter
 
       invitation.accept(accountId, request.acceptedAt());
       invitationRepository.saveAndFlush(invitation);
-      authEventRepository.save(
-          AuthEventJpaEntity.adminInvitationAccepted(
-              accountId,
+      securityAuditAppender.append(
+          AccountSecurityAuditRecords.adminInvitationAccepted(
+              accountEntity.publicId(),
               request.invitationPublicId(),
               request.roleCode().name(),
-              request.invitedByAccountId()));
+              inviter.publicId(),
+              request.acceptedAt()));
     } catch (DataIntegrityViolationException exception) {
       throw mapAccountDataIntegrityViolation(exception);
     }
@@ -167,9 +174,12 @@ class AdminInvitationPersistenceAdapter
 
     invitation.revoke(revoker.id(), request.revokedAt());
     invitationRepository.saveAndFlush(invitation);
-    authEventRepository.save(
-        AuthEventJpaEntity.adminInvitationRevoked(
-            revoker.id(), invitation.publicId(), invitation.emailNormalized()));
+    securityAuditAppender.append(
+        AccountSecurityAuditRecords.adminInvitationRevoked(
+            revoker.publicId(),
+            invitation.publicId(),
+            invitation.emailNormalized(),
+            request.revokedAt()));
   }
 
   // account graph 저장 중 발생한 알려진 unique constraint만 사용자 오류로 변환합니다.

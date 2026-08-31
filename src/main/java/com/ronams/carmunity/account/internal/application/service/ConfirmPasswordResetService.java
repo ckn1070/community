@@ -7,15 +7,16 @@ import com.ronams.carmunity.account.internal.application.port.out.PasswordHasher
 import com.ronams.carmunity.account.internal.application.port.out.PasswordResetCredentialStorePort;
 import com.ronams.carmunity.account.internal.application.port.out.PasswordResetTokenStorePort;
 import com.ronams.carmunity.account.internal.application.port.out.StoredPasswordResetToken;
+import com.ronams.carmunity.account.internal.domain.ChallengeState;
 import com.ronams.carmunity.account.internal.domain.PasswordHash;
 import com.ronams.carmunity.account.internal.domain.PasswordPolicy;
+import com.ronams.carmunity.account.internal.domain.PasswordResetChallenge;
 import com.ronams.carmunity.account.internal.domain.PasswordResetTokenHash;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.CommonErrorCode;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,18 +30,8 @@ public class ConfirmPasswordResetService implements ConfirmPasswordResetUseCase 
   private final PasswordHasherPort passwordHasherPort;
   private final Clock clock;
 
-  /** 운영 기본 시간 기준으로 Spring bean을 구성합니다. */
-  @Autowired
-  public ConfirmPasswordResetService(
-      PasswordResetTokenHasher tokenHasher,
-      PasswordResetTokenStorePort tokenStorePort,
-      PasswordResetCredentialStorePort credentialStorePort,
-      PasswordHasherPort passwordHasherPort) {
-    this(tokenHasher, tokenStorePort, credentialStorePort, passwordHasherPort, Clock.systemUTC());
-  }
-
   /** 테스트가 token 만료 판단 시각을 통제할 수 있도록 Clock을 외부에서 주입받습니다. */
-  ConfirmPasswordResetService(
+  public ConfirmPasswordResetService(
       PasswordResetTokenHasher tokenHasher,
       PasswordResetTokenStorePort tokenStorePort,
       PasswordResetCredentialStorePort credentialStorePort,
@@ -70,10 +61,11 @@ public class ConfirmPasswordResetService implements ConfirmPasswordResetUseCase 
             .orElseThrow(() -> new ApiException(AccountErrorCode.PASSWORD_RESET_TOKEN_INVALID));
 
     Instant now = clock.instant();
-    validateToken(token, now);
+    PasswordResetChallenge challenge = validateToken(token, now);
 
     PasswordHash newPasswordHash = passwordHasherPort.hash(command.newPassword());
-    tokenStorePort.consume(token.id(), now);
+    challenge.consumeAt(now);
+    tokenStorePort.consume(challenge.id(), now);
     credentialStorePort.resetPassword(token.accountId(), newPasswordHash, now);
   }
 
@@ -96,12 +88,22 @@ public class ConfirmPasswordResetService implements ConfirmPasswordResetUseCase 
     }
   }
 
-  private void validateToken(StoredPasswordResetToken token, Instant now) {
-    if (token.consumedAt().isPresent() || token.revokedAt().isPresent()) {
+  private PasswordResetChallenge validateToken(StoredPasswordResetToken token, Instant now) {
+    PasswordResetChallenge challenge =
+        new PasswordResetChallenge(
+            token.id(),
+            token.accountId(),
+            token.expiresAt(),
+            token.lastSentAt(),
+            token.consumedAt().orElse(null),
+            token.revokedAt().orElse(null));
+    ChallengeState state = challenge.stateAt(now);
+    if (state == ChallengeState.CONSUMED || state == ChallengeState.REVOKED) {
       throw new ApiException(AccountErrorCode.PASSWORD_RESET_TOKEN_INVALID);
     }
-    if (!token.expiresAt().isAfter(now)) {
+    if (state == ChallengeState.EXPIRED) {
       throw new ApiException(AccountErrorCode.PASSWORD_RESET_TOKEN_EXPIRED);
     }
+    return challenge;
   }
 }

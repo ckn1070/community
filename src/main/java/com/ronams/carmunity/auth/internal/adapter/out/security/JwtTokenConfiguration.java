@@ -1,7 +1,6 @@
 package com.ronams.carmunity.auth.internal.adapter.out.security;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
-import java.time.Clock;
 import javax.crypto.SecretKey;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -50,11 +49,5 @@ public class JwtTokenConfiguration {
         new DelegatingOAuth2TokenValidator<Jwt>(
             new JwtTimestampValidator(), new JwtIssuerValidator(properties.issuer())));
     return jwtDecoder;
-  }
-
-  /** token 발급 코드가 시간 기준을 주입받도록 Clock bean을 노출하고, 테스트는 이 bean을 대체해 발급 시각을 통제합니다. */
-  @Bean
-  Clock clock() {
-    return Clock.systemUTC();
   }
 }

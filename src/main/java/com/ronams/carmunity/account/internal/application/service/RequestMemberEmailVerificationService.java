@@ -11,6 +11,7 @@ import com.ronams.carmunity.account.internal.application.port.out.EmailVerificat
 import com.ronams.carmunity.account.internal.application.port.out.StoredEmailVerificationToken;
 import com.ronams.carmunity.account.internal.domain.AccountStatus;
 import com.ronams.carmunity.account.internal.domain.EmailAddress;
+import com.ronams.carmunity.account.internal.domain.EmailVerificationChallenge;
 import com.ronams.carmunity.account.internal.domain.EmailVerificationTokenHash;
 import com.ronams.carmunity.notification.api.EmailVerificationNotificationRequest;
 import com.ronams.carmunity.notification.api.EmailVerificationNotificationSender;
@@ -22,7 +23,6 @@ import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -46,27 +46,8 @@ public class RequestMemberEmailVerificationService
   private final AuthEventStorePort authEventStorePort;
   private final Clock clock;
 
-  /** 운영 기본 시간 기준으로 Spring bean을 구성합니다. */
-  @Autowired
-  public RequestMemberEmailVerificationService(
-      EmailVerificationAccountLookupPort accountLookupPort,
-      EmailVerificationTokenGeneratorPort tokenGeneratorPort,
-      EmailVerificationTokenHasher tokenHasher,
-      EmailVerificationTokenStorePort tokenStorePort,
-      EmailVerificationNotificationSender notificationSender,
-      AuthEventStorePort authEventStorePort) {
-    this(
-        accountLookupPort,
-        tokenGeneratorPort,
-        tokenHasher,
-        tokenStorePort,
-        notificationSender,
-        authEventStorePort,
-        Clock.systemUTC());
-  }
-
   /** 테스트가 token TTL과 cooldown 판단 시각을 통제할 수 있도록 Clock을 외부에서 주입받습니다. */
-  RequestMemberEmailVerificationService(
+  public RequestMemberEmailVerificationService(
       EmailVerificationAccountLookupPort accountLookupPort,
       EmailVerificationTokenGeneratorPort tokenGeneratorPort,
       EmailVerificationTokenHasher tokenHasher,
@@ -141,7 +122,17 @@ public class RequestMemberEmailVerificationService
   }
 
   private boolean isInCooldown(StoredEmailVerificationToken token, Instant now) {
-    return token.lastSentAt().plus(REQUEST_COOLDOWN).isAfter(now);
+    return toChallenge(token).isInCooldownAt(now, REQUEST_COOLDOWN);
+  }
+
+  private EmailVerificationChallenge toChallenge(StoredEmailVerificationToken token) {
+    return new EmailVerificationChallenge(
+        token.id(),
+        token.accountId(),
+        token.expiresAt(),
+        token.lastSentAt(),
+        token.consumedAt().orElse(null),
+        token.revokedAt().orElse(null));
   }
 
   private void runAfterCommit(Runnable task) {
