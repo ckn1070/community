@@ -59,7 +59,7 @@ account persistence ─┬─> refresh_token <─┬─ auth persistence
 이 구조는 모듈 간 협력을 공유 table로 처리하지 않는 일반 기준을 충족하지 않습니다. 단일
 persistence owner와 transaction 공개 계약으로 이관하고 `auth`의 `account` table 직접 조회를
 제거하거나 명시적인 소유 경계로 바꾸는 후속 정리 작업은
-[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가
+[009 비카탈로그 DDD 보완](../work-items/improvements/2026/009-non-catalog-ddd-hardening.md)가
 소유합니다. 현재 예외 자체의 canonical owner는 이 절입니다.
 
 각 module의 전략적·전술적 DDD 적용 판정과 현재 Context 후보 관계는
@@ -86,4 +86,4 @@ Context로 확정하지 않습니다.
 - **일반 배치 기준**: [210 Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
 - **제품 범위**: [200 기능 범위](../product/200-feature-scope.md)
 - **미확정 횡단 구조**: [001 프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
-- **후속 정리 작업**: [003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)
+- **후속 정리 작업**: [009 비카탈로그 DDD 보완](../work-items/improvements/2026/009-non-catalog-ddd-hardening.md)

@@ -81,7 +81,7 @@ rotation·logout·reuse 흐름은 `auth` adapter가 같은 table을 서로 다�
 canonical 설명은 [210 모듈 지도의 현재 Persistence 예외](210-module-map.md#현재-persistence-예외)가
 소유합니다. 목표 owner와 transaction 공개 계약을 정하기 전까지 새 writer를 추가하지
 않으며, 후속 정리 작업은
-[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#authaccount-persistence-owner-정리)가
+[009 비카탈로그 DDD 보완](../work-items/improvements/2026/009-non-catalog-ddd-hardening.md)가
 소유합니다.
 
 ### 인증 operation별 application·저장 handoff

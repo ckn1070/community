@@ -34,14 +34,6 @@ Open
 
 ## 활성 Backlog
 
-### Auth/Account Persistence Owner 정리
-
-- `refresh_token`과 `auth_event`를 `account`·`auth`가 각각 별도 JPA entity와 repository로 쓰는 현재 이중 매핑을 제거합니다.
-- `auth` refresh token repository가 `account` table을 native SQL로 직접 읽는 우회도 제거하고 `account.api` 또는 선택한 단일 persistence owner의 공개 조회 계약으로 바꿉니다.
-- 로그인, 비밀번호 변경·재설정, rotation, logout과 reuse detection의 transaction 경계를 보존하면서 단일 물리 persistence owner와 공개 application 계약을 결정합니다.
-- 다른 module의 table·entity를 직접 공유하지 않고 공개 interface·DTO로 협력한다는 architecture 기준을 만족하게 합니다.
-- 완료 시 두 table의 JPA entity·repository owner가 하나인지, `auth`에 `account` table 직접 조회가 없는지, 모든 lifecycle test가 같은 경계를 통과하는지, Spring Modulith·ArchUnit과 전체 integration test가 통과하는지 검증합니다.
-
 ### 로그인 Abuse 대응
 
 - account hard lock 도입 여부, 실패 횟수, 잠금 시간과 잠금 해제 정책을 결정합니다.
@@ -117,3 +109,4 @@ Open
 
 - **업무 범위**: [Account domain](../../../domain/100-account.md), [Account 인증 정책](../../../domain/110-account-auth-policy.md)
 - **현재 데이터 구조**: [Account 인증/인가 데이터 모델](../../../project/220-account-auth-data-model.md), [물리 Schema Reference](../../../project/schema/100-account-auth.md)
+- **Persistence owner 전환 작업**: [009 비카탈로그 DDD 보완](../../improvements/2026/009-non-catalog-ddd-hardening.md)
