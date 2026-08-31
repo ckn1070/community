@@ -16,6 +16,26 @@ discovery·closure는 [작업 실행 워크플로우](100-work-execution-workflo
 - local 검증을 마친 후보와 push 뒤 적용할 terminal gate
 - 제외할 기존·다른 작업의 staged·unstaged·untracked 상태
 
+사용자가 파일·기능·변경 종류처럼 의미로 history rewrite 대상을 제한하면, 첫 Git topology
+projection 전에 rewrite가 도달하는 각 commit·path·effect를 실제 patch와 사용자 원문에
+대조해 다음 처분 manifest를 완성합니다.
+
+```text
+현재 사용자 원문의 exact target
+→ 영향받는 commit·path·effect와 실제 patch
+→ 직접 대상 / 불가피한 의존 / 무관 / 관계 미확정
+→ 제거 / 보존 / 중단·질문
+```
+
+Checkpoint, parent SHA, 작성 시각과 descendant 관계는 조사 범위를 정하는 source이지
+그 범위 전체가 제거 대상이라는 증거가 아닙니다. `X 시점부터 다시 시작`도 사용자가
+`X 이후를 관련성과 무관하게 전부 제거`한다고 명시하지 않았다면 같은 방식으로
+소비합니다. 무관한 descendant는 유지할 commit 순서에 넣고, 관계 미확정 항목이 하나라도
+있으면 ref cutoff·재생 순서나 `branch → base`를 먼저 정하지 않고 작업 실행
+워크플로우로 반환합니다. 반대로 사용자가 exact cutoff 뒤의 모든 commit 또는 exact
+제거·보존 집합을 명시했다면 그 topology 지시가 처분 manifest를 직접 닫으므로 commit별
+기능 관련성을 다시 묻지 않습니다.
+
 첫 ref mutation 전에 현재 사용자 결정 source와 다음 Git topology를 한 record로 대조하고,
 사용자 commentary에 그대로 투영합니다.
 

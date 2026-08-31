@@ -88,7 +88,14 @@ hunk나 기존 staged 상태를 안전하게 분리할 수 없으면 stage하지
 작업 실행 workflow로 반환한다.
 
 history 복구가 operation map에 있으면 일반 commit 흐름으로 바꾸지 않고 커밋 workflow의
-격리 candidate·compare-and-swap 절차를 적용한다.
+격리 candidate·compare-and-swap 절차를 적용한다. 첫 history rewrite 범위나 topology를
+사용자에게 투영하기 전에도 커밋 workflow의 처분 manifest를 실제로 소비한다. 사용자
+원문의 의미 target, 영향받는 각 commit·path·effect의 실제 patch와 `제거 / 보존 /
+중단·질문` 처분이 모두 연결되기 전에는 checkpoint나 ancestry를 ref cutoff로 바꾸거나
+`branch → base`를 출력하지 않는다. 무관한 descendant는 유지 순서로 전달하고, 관계가
+미확정이면 topology 선택 전 작업 실행 workflow로 반환한다. 사용자가 exact cutoff 뒤
+전체 제거 또는 exact 제거·보존 집합을 명시한 경우에는 그 지시를 다시 기능 관련성
+질문으로 막지 않는다.
 
 Git 명령의 sandbox·tool approval이 거절돼도 이미 확정된 operation map을 권한 없음으로
 바꾸거나 사용자에게 같은 stage·commit·push 승인을 반복해서 묻지 않는다. 거절은 실행
