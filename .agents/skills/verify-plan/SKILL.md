@@ -26,6 +26,30 @@ closure만 감사 범위로 연다. 선행 단계가 닫히기 전에 생성된 
 section·후보 상세는 내용 품질과 무관한 필수 결함이다. 다음 단계에서만 필요한 검토 축은
 현재 후보의 누락으로 판정하지 않고 `해당 없음`으로 닫는다.
 
+### 실행 라운드 admission
+
+Writer가 만든 후보의 discovery·closure로 위임받은 검증은 작업 실행 workflow의 review
+state를 content audit보다 먼저 소비한다. 호출 입력에는 operation generation, round id,
+`discovery|closure`, candidate identity·digest, 예정 reviewer identity, active writer 수,
+앞선 reviewer terminal 상태, correction 처분과 이전 closure verdict가 있어야 한다. 현재
+verifier는 자신의 identity와 실제 thread·handoff에서 이 값을 대조하고, 누락·불일치·stale을
+호출자의 설명으로 보충하지 않는다.
+
+- Closure verifier는 discovery verifier와 달라도 되지만 correction 뒤 새 candidate를 동결할
+  때 예정 reviewer로 먼저 고정돼야 한다. Closure 시작 뒤 verifier 교체, `final-v2` 같은 이름
+  변경이나 새 digest만으로 같은 round를 다시 열지 않는다.
+- Active writer가 남았거나 review 중 candidate가 바뀌었으면 content finding을 새 후보에
+  재사용하지 않고 `Invalidated`를 반환한다.
+- Closure가 이미 실패했거나 수행됐다면 추가 축을 감사하거나 새 correction finding을 만들지
+  않고 `Invalidated`와 원인 phase 인계만 반환한다. 새 round는 원인 재계획과 새 round id의
+  `Frozen` 증거가 있을 때만 별도 discovery로 시작한다.
+- 위 상태를 직접 대조할 trace가 없으면 `판정 불가`로 끝내며 후보 품질의 통과·실패와 섞지
+  않는다.
+
+사용자가 계획의 독립 read-only 감사 자체를 직접 요청했고 active writer round가 없으면
+`standalone`으로 한 번 감사할 수 있다. 이 verdict는 계획 수정·correction·closure 횟수나
+실행 라우팅 권한을 만들지 않는다.
+
 ## 2. 최초 목적 계약
 
 계획 상세를 평가하기 전에 다음을 세션의 coverage map으로 만든다.

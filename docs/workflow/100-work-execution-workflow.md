@@ -788,7 +788,9 @@ patch·review를 반복하지 않고 후보와 원인 phase를 `Invalidated`로 
 
 이 순서는 설명용 목록이 아니라 actor 호출 전 admission state입니다. Review를 사용하는
 라운드는 세션 원장에 다음 상태 중 하나만 가지며, 현재 Agent는 각 tool 호출 직전에 허용된
-전이인지 대조합니다.
+전이인지 대조합니다. `Frozen`에는 round id, audit 종류, candidate identity·digest와 예정한
+reviewer identity 집합을 함께 고정합니다. Correction 뒤 closure reviewer는 discovery와
+달라도 되지만 새 candidate를 `Frozen`으로 전이할 때 그 identity 집합을 먼저 고정합니다.
 
 ```text
 Writing
@@ -813,6 +815,19 @@ ClosureRunning → Closed 또는 Invalidated
 - `FindingsCollected`는 예정한 reviewer가 모두 terminal이고 현재 Agent가 finding 전체의
   권위·blocking·처분을 한 번에 동결한 상태입니다. 수정할 finding이 0개이면 같은 candidate로
   closure review를 호출하고, 하나 이상이면 이 상태에서만 한 correction batch로 전이합니다.
+- Closure는 새 `Frozen`에 예정된 reviewer 집합으로 한 번만 수행합니다. Discovery와 다른
+  reviewer task를 closure에 사용할 수 있지만 closure 시작 뒤 교체할 수는 없습니다. Closure가
+  실패했거나 candidate가 review 중 바뀌었다면 reviewer는 추가 finding을 생성하는 새 audit을
+  열지 않고 `Invalidated`와 원인 phase 인계만 반환합니다. `final-v2` 같은 이름 변경, 새
+  reviewer 생성과 candidate digest 교체는 새 round의 원인 재계획·새 `Frozen` 증거가 아닙니다.
+- Review consumer는 호출자가 전달한 round id·audit 종류·candidate digest·예정 reviewer
+  identity·active writer 수·앞선 terminal과 closure 상태를 실제 thread·handoff와 대조합니다.
+  필드가 없거나 stale이거나 자신의 identity가 예정 집합과 다르거나 이미 closure가 끝났으면
+  content audit을 시작하지 않고 `검증 불가` 또는 `Invalidated`를 반환합니다. Caller가 같은
+  state를 기억하고 있다는 선언은 이 consumer 대조를 대신하지 않습니다.
+- 사용자가 독립 read-only audit 자체를 직접 요청한 경우에는 active writer round가 없는
+  `standalone` audit 한 번을 허용합니다. 이 결과는 correction·closure 권한이나 실행 라운드
+  완료 증거가 아니며, 이후 writer가 결과를 소비하려면 정식 round admission을 별도로 닫습니다.
 - 단순 진행 상태 질문은 현재 phase를 관찰하는 edge이며 위 상태를 바꾸지 않습니다. 답변을
   위해 active reviewer를 interrupt하거나 writer·review 원자를 중단 상태로 바꾸지 않고,
   보고 뒤 같은 candidate·review set·남은 terminal gate에서 계속합니다. 사용자가 현재
