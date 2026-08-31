@@ -19,8 +19,7 @@ Source 사전 조사·권리 비교·입력 방식 후보는
 소유합니다.
 
 016의 아직 수행하지 않은 push 뒤 CI·Sonar 검증과 017의 데이터 확보는 서로 대신하지
-않습니다. 현재 요청은 외부 문의·가입·표본·견적 요청·계약·구매, push 또는 환경 적용 권한을
-만들지 않습니다.
+않습니다. push 또는 환경 적용도 현재 범위에 포함하지 않습니다.
 
 ## 달성할 결과
 
@@ -37,7 +36,7 @@ data migration으로 적용합니다.
 
 - runtime crawler, scheduler, 관리자 입력 API·CMS와 application writer 권한
 - 사용·보관·재배포 권리가 확인되지 않은 원문 파일, 이미지와 실제 값
-- 외부 기관 문의·가입·표본·견적 요청·계약·구매
+- 공개 이용 조건만으로 확정할 수 없는 제조사·유료 source
 - push와 staging·production 적용
 - 상용·특장차, 렌터카 전용·장애인 전용 판매 구성, 재고·대리점·보조금·중고차
 - 차량번호·VIN과 사용자 소유 차량 조회
@@ -51,35 +50,32 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | 단계 | 상태 | 결과와 다음 전환 |
 | --- | --- | --- |
 | 1. 016 database·조회 API | 완료 | 로컬에서 검증된 11개 table과 공개 조회 계약을 017의 입력으로 사용합니다. |
-| 2. 최초 공개 범위 결정 | 완료 | 현대·기아 현재 모델, 이미지 제외, 유료 후보는 계약 없이 비교한다는 범위를 고정했습니다. |
+| 2. 최초 공개 범위 결정 | 완료 | 현대·기아 현재 모델과 이미지 제외 범위를 고정했습니다. |
 | 3. 확보 계획·provenance 계약 | 완료 | source 적격성, mapping, coverage와 권한 경계를 검증된 `Proposed` checkpoint로 남겼습니다. |
 | 4. 공개 source 사전 조사 | 완료 | 대표 4모델의 현재 판매 여부와 공개된 가격·제원·인증 정보, 제조사·공공·유료 후보의 권리 공백을 확인했습니다. |
-| 5. exact source qualification | **현재** | 원문을 revision별로 확보해 checksum·recipe를 기록하고 대표 4모델의 exact column mapping, 재실행과 실패 표본을 만듭니다. |
-| 6. 입력 방식·계획 확정 | 후속 | 실제 표본 규모와 오류를 근거로 수동 Flyway SQL과 구조화 입력+generator를 비교하고, 필요한 외부 회신까지 닫은 뒤 `$verify-plan`을 통과합니다. |
+| 5. exact source qualification | **현재** | 한국에너지공단 원본·checksum·동일 bytes 재취득과 대표 후보 168행을 확보하고, K5·카니발·넥쏘 22개 값을 column에 mapping했습니다. EV6 최신 행과 record 필수값은 `BLOCKED`입니다. |
+| 6. 입력 방식·계획 확정 | 후속 | 공개 이용 조건이 확인된 source만으로 가능한 범위를 재산정하고, 실제 mapping 규모와 오류를 근거로 수동 Flyway SQL과 구조화 입력+generator를 비교한 뒤 `$verify-plan`을 통과합니다. |
 | 7. 전체 데이터 작성 | 후속 | 전체 inventory·mapping·정형 입력과 versioned data migration을 만듭니다. |
 | 8. 결과 검증·영구 문서 반영 | 후속 | 원문↔DB↔API 누락 0건, 정정 경로, 전체 check와 `$verify-dev`를 닫고 SOT·runbook을 동기화합니다. |
 | 9. Git·환경 적용 | 후속 | 검증된 exact path를 local commit합니다. push·staging·production은 각각 별도 권한이 있을 때만 수행합니다. |
 
-현재 단계는 **미완성**입니다. 공개 웹 조사만으로는 source manifest의 exact bytes·checksum·
-revision, 네 모델의 원문 위치→column mapping과 재실행 결과가 생기지 않습니다. 기술
-qualification은 계속 수행할 수 있지만, 제조사 외부 공개 권리와 한국에너지공단 exact dataset
-조건이 닫히기 전에는 실제 값을 Git·DB·API에 넣지 않습니다. 외부 확인이 필요한 대상과 질문은
-[017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md)의 요청
-package에 준비했으며 아직 발송하지 않았습니다.
+현재 단계는 **미완성**입니다. K5 원문 2991행, 카니발 621행, 넥쏘 1957행은 제조사 현재
+제원의 공통 효율값과 일치해 승인된 KEA 값 22개를 schema column에 mapping했습니다. EV6는
+`2026-04-24` 원본에 현재 2027 제원과 일치하는 행이 없습니다. 네 record 모두 model year·
+vehicle variant identity와 schema 필수값이 남아 실제 값을 Git·DB·API에 넣지 않습니다.
+제조사·유료 source는 production 후보에서 제외하며, 공개 이용 조건이 확인된 공공 source만으로
+해결되지 않는 필드는 추정하거나 외부 확인으로 보완하지 않고 범위 또는 schema 결정으로
+되돌립니다.
 
 ### 즉시 다음 실행 단위
 
-- **실행자**: Codex가 공개 약관·저작권 안내·dataset metadata를 source별로 대조합니다.
-- **입력**: 설계 문서의 manifest 후보와 공개되어 있는 이용조건입니다. `ACQUIRE`가
-  `PENDING`인 동안 원문 파일을 repository나 영구 작업 artifact로 저장하지 않습니다.
-- **첫 결과**: 각 source의 `ACQUIRE`·임시 처리·checksum 계산 가능 여부와 exact 근거를
-  rights matrix에 정규화하고, 문의가 필요한 항목과 문의 없이 진행 가능한 항목을 분리합니다.
-- **관찰 결과**: source별 판정·근거 URL·조항·확인 시각, `APPROVED` 또는 남은 `PENDING`과
-  blocker가 보여야 합니다.
-- **최초 consumer**: 같은 작업의 manifest·mapping 작성 단계가 `APPROVED` source만 입력으로
-  받아 exact bytes·checksum·재실행 evidence를 만듭니다.
-- **사용자 작업**: 이 첫 단위에는 없습니다. 외부 문의가 필요한 `PENDING`만 남았을 때 문의
-  발송 권한을 별도로 요청합니다.
+- **실행자**: Codex가 저장된 한국에너지공단 file dataset과 공개 metadata만 사용합니다.
+- **입력**: file dataset `15083023`의 exact revision·manifest와 대표 mapping입니다.
+- **첫 결과**: 공개 source만으로 채울 수 있는 column, 채울 수 없는 필드와 그로 인해 줄여야 할
+  최초 적재 범위를 분리한 coverage 표입니다.
+- **관찰 결과**: 각 값은 승인된 source ID·revision·원문 위치·변환 규칙에 연결되고, 남은 값은
+  `BLOCKED` 또는 범위 제외로 명시돼야 합니다.
+- **최초 consumer**: 입력 방식 비교와 최초 Flyway data migration 계획이 이 coverage를 사용합니다.
 
 ## 확정 범위와 결정
 
@@ -88,18 +84,16 @@ package에 준비했으며 아직 발송하지 않았습니다.
 | 브랜드·차종 | 현대자동차·기아의 국내 일반 개인 구매 승용·SUV·MPV | 다른 브랜드와 상용·특장·전용 판매 구성은 source·권리·identity·coverage를 새로 검증한 증분 작업으로 확장합니다. |
 | 기간 | qualification 시작일에 판매 중인 현재 모델 연식 | 단종 모델·이전 세대는 현재 범위의 수집·정정 경로를 닫은 뒤 별도 Flyway 증분으로 추가합니다. |
 | 이미지 | 이미지 파일과 외부 이미지 URL을 모두 제외 | 복제·가공·배포 권리와 보관·삭제 정책이 별도 승인될 때만 다시 엽니다. |
-| 유료 후보 | 공개 정보로 비교하며 표본·견적·계약·구매하지 않음 | KAIDA 같은 후보의 field·외부 공개·비용·종료 조건은 별도 권한을 받은 요청과 회신으로만 확정합니다. |
+| source 제한 | 공개 이용 조건이 확인된 공공 source만 production 후보로 사용 | 제조사·유료 source가 필요해지면 현재 작업을 확대하지 않고 별도 범위 결정으로 다시 엽니다. |
 | provenance | 모든 적재 값에 exact source·수집 방식·변환 규칙·revision을 연결 | 연결되지 않은 값은 게시하지 않으며 정정·확장에도 같은 계약을 적용합니다. |
 
 ## source와 입력 결정의 현재 결론
 
 - 기술 후보 조합은 제조사 공식 목록·가격표·catalog와 한국에너지공단 인증자료입니다.
-- 현대·기아 공개 자료는 정확성 대조에는 쓸 수 있지만 외부 공개 재사용 권리가 확인되지 않아
-  production source로는 `PENDING`입니다.
-- 한국에너지공단 자료는 인증값 보완 후보이며, exact dataset revision·개별 이용허락·제3자
-  권리와 EV 온도 조건을 확인해야 합니다.
-- KAIDA Service A는 공개용으로 제외하고, Service B는 field dictionary·표본·재게시·종료 조건을
-  확인하기 전까지 `PENDING`입니다.
+- 현대·기아 공개 자료는 정확성 대조 위치로만 남기며 production source에서는 제외합니다.
+- 한국에너지공단 file dataset `15083023`의 `2026-04-24` revision은 공공데이터포털의
+  `이용허락범위 제한 없음` 근거로 취득·보관·가공 가능한 source로 승인했습니다. 다만 현재
+  판매·연식·조건 식별 필드가 부족하므로 이 source만으로 DB 인증 행을 만들 수 없습니다.
 - 입력 방식은 아직 선택하지 않습니다. 대표 4모델의 실제 inventory 행 수·mapping 복잡도·수동
   SQL 오류와 재실행 결과를 얻은 뒤 `검토된 수동 Flyway SQL`과 `구조화 입력+generator`를
   비교합니다.
@@ -107,6 +101,21 @@ package에 준비했으며 아직 발송하지 않았습니다.
 상세 근거, representative observation, rights matrix와 대안·전환 조건은
 [017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md)에서
 확인합니다.
+
+## 외부 데이터 저장 위치
+
+원본과 qualification 가공본은 Git 밖의 다음 경로를 사용합니다.
+
+`<external-catalog-data-root>`
+
+- `raw/`에는 `ACQUIRE`와 `STORE_RAW`가 모두 승인된 immutable revision만 둡니다.
+- `manifests/`는 exact source·취득 recipe·checksum·권리 근거를 소유합니다.
+- `normalized/qualification/`의 모든 행은 source ID·revision·원문 위치를 포함합니다.
+- `changes/`는 계획과 달라진 source·경로·필드·권리·변환 결정을 소유합니다.
+
+현재 저장된 원본은 `kea-efficiency-file-dataset/2026-04-24` 한 건입니다. 제조사 원본은
+production source 범위 밖이므로 저장하지 않습니다. 대표 column mapping은
+`normalized/qualification/representative-column-mapping-2026-08-31.csv`에 있습니다.
 
 ## 가져오는 흐름
 
@@ -183,12 +192,13 @@ source 후보 발견
 - source bytes를 저장할 권리가 없으면 checksum 계산 뒤 폐기하고 허용된 metadata만 남깁니다.
 - 같은 recipe 재실행과 source revision 변경, 실패 표본을 검증합니다.
 
-### 작업 2. 외부 권리·계약 공백을 닫습니다
+### 작업 2. 공개 source coverage를 확정합니다
 
-- 별도 권한을 받은 뒤 현대·기아의 사실 추출·저장·외부 공개·과거 revision 보존 범위를
-  서면으로 확인합니다.
-- 한국에너지공단 exact dataset의 이용허락·식별자·EV 조건을 확인합니다.
-- 별도 비교 승인이 있으면 KAIDA Service B의 표본·field dictionary·견적·종료 조건을 받습니다.
+- 한국에너지공단 exact dataset의 이용허락·식별자·EV 조건을 공개 metadata와 원본으로 확인합니다.
+- 제조사·유료 source의 값이 필요한 field는 production mapping에서 제외하고 coverage 공백으로
+  기록합니다.
+- 공개 source만으로 현재 완료 조건을 충족하지 못하면 최초 적재 범위 축소 또는 schema 변경을
+  별도 결정으로 올립니다.
 
 ### 작업 3. 입력 방식을 확정합니다
 
