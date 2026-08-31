@@ -8,24 +8,27 @@ Proposed
 
 이 작업은 [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)가 로컬에서
 구현·검증한 11개 database table과 조회 기능을 입력 계약으로 사용합니다. 현재는 실제 공개할
-브랜드·과거 기간·이미지·유료 공급사 비교 범위가 정해지지 않았으며 운영 데이터도 없습니다.
+범위를 현대자동차·기아의 현재 판매 모델로 제한하고 이미지 없이 시작하기로 확정했으며,
+운영 데이터는 아직 없습니다. 이후 다른 브랜드와 과거 모델은 같은 source 적격성·mapping·
+coverage gate를 통과하는 증분 작업으로 확장합니다.
 
 현재 자동차 개념과 물리 target은 각각
 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)과
 [110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)에서 확인합니다.
 
 016의 아직 수행하지 않은 push 뒤 CI·Sonar 검증과 017의 데이터 확보는 서로 대신하지
-않습니다. 실제 데이터 조사와 적재를 시작할 때는 아래 U1~U4를 사용자가 확정해야 하며,
-선택만으로 외부 문의·가입·계약·구매나 staging 적용 권한이 생기지는 않습니다.
+않습니다. 확정한 공개 범위는 외부 문의·가입·견적 요청·계약·구매나 staging 적용 권한을
+만들지 않습니다.
 
 ## 달성할 결과
 
-선택한 대한민국 자동차 범위에서 외부 공개 권리가 확인된 공식 가격표·catalog·제원·인증
-자료를 출처 명세(source manifest: 원문 위치·적용일·확인 시각·같은 원문인지 구분하는
-checksum·권리 근거 기록)와
-원문→`table.column` 대응표로 고정하고, 016 schema에 맞는 정형 입력으로 변환합니다. 빠진
-모델·연식·판매 구성·주요 값이 없는지 검수한 뒤 versioned Flyway data migration으로
-적용합니다.
+확정한 대한민국 자동차 범위에서 외부 공개 권리가 확인된 공식 가격표·catalog·제원·인증
+자료를 출처 명세(source manifest)와 원문→`table.column` 대응표로 고정하고, 016 schema에
+맞는 정형 입력으로 변환합니다. Manifest에는 원문 위치뿐 아니라 실제 수집 방식·요청 조건·
+적용일·확인 시각·checksum·source revision·권리 근거를 남깁니다. 모든 적재 값은 exact
+source와 변환 규칙으로 역추적할 수 있어야 하며, 이후 브랜드·과거 연식을 추가할 때 같은
+수집 절차와 판정 기록을 재사용합니다. 빠진 모델·연식·판매 구성·주요 값이 없는지 검수한 뒤
+versioned Flyway data migration으로 적용합니다.
 
 완료 상태는 “일부 대표 차량이 들어감”이 아니라 선택한 범위의 공식 목록과 DB 행을 양방향으로
 대조해 누락이 0건인 상태입니다.
@@ -46,82 +49,32 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | 단계 | 상태 | 만드는 결과와 다음 전환 |
 | --- | --- | --- |
 | 1. 016 database·조회 API | 완료 | 로컬에서 검증된 11개 table과 공개 조회 계약을 017의 입력으로 사용합니다. 016의 push 뒤 검증은 별도 책임으로 남습니다. |
-| 2. 최초 공개 범위 결정 | **현재** | 사용자가 U1 브랜드·U2 기간·U3 이미지·U4 유료 후보를 선택하면 이 단계가 끝납니다. |
-| 3. 선택 반영·조사 계획 검증 | 다음 | Agent가 네 선택을 반영하고 검증된 `Proposed` local commit을 만든 뒤 대표 4모델 조사를 시작할 수 있게 합니다. |
-| 4. 데이터 원천 적격성·대표 4모델 검증 | 후속 | 사용·가공·저장·외부 공개 권리와 필드 대응을 확인합니다. 외부 문의는 별도 권한이 있을 때만 수행합니다. |
+| 2. 최초 공개 범위 결정 | 완료 | 현대·기아 현재 모델, 이미지 제외, 유료 후보는 계약 없이 비교한다는 범위를 고정했습니다. |
+| 3. 선택 반영·조사 계획 검증 | 완료 | 확정 결정을 provenance 계약과 후속 조사 단위에 반영해 검증된 `Proposed` local checkpoint로 남깁니다. |
+| 4. 데이터 원천 적격성·대표 4모델 검증 | **현재** | 공개 원문으로 manifest·rights·field matrix를 만들고 사용·가공·저장·외부 공개 권리와 필드 대응을 확인합니다. 외부 문의는 별도 권한이 있을 때만 수행합니다. |
 | 5. 구현 가능한 계획 확정 | 후속 | 조사 결과로 source 조합·입력 형식·배치 위치·변환 도구를 고정하고 `$verify-plan`을 통과해 `Planned`로 전환합니다. |
 | 6. 전체 데이터 작성 | 후속 | 검토된 SQL 또는 정형 입력 변환 도구로 전체 목록·대응표·Flyway migration을 만듭니다. |
 | 7. 결과 검증·영구 문서 반영 | 후속 | 원문↔DB↔API 누락 0건, 정정 경로, 전체 check와 `$verify-dev`를 닫고 domain·schema·product·operations SOT를 동기화합니다. |
 | 8. Git·환경 적용 | 후속 | 검증된 결과를 exact path로 local commit합니다. push·staging·production은 각각 별도 권한이 있을 때만 적용·검증합니다. |
-| 이미지 처리 | 조건부 | U3-A는 이미지 없음으로 끝냅니다. U3-B는 권리가 확인된 이미지를 저장·공개하고, U3-C는 복제 없이 확인된 제조사 상세 URL만 제공하는 작업으로 구조화 데이터 뒤에 합류합니다. |
+| 이미지 처리 | 해당 없음 | 첫 공개에는 이미지 파일과 외부 이미지 URL을 모두 넣지 않습니다. 별도 권리·보관 요구가 승인될 때만 증분 범위로 다시 엽니다. |
 | 새 infrastructure | 해당 없음 | 초기 수집은 runtime crawler·관리자 writer·scheduler를 만들지 않으므로 새 운영 infrastructure를 요구하지 않습니다. |
 
-현재 단계는 **미완성**입니다. 즉시 다음 작업의 실행자는 사용자이며, 아래 한 줄 형식으로
-U1~U4를 선택하면 됩니다. 그 응답을 처음 소비하는 대상은 이 계획 문서이고, 반영 뒤에는
-공개 범위와 데이터 원천 조사 범위가 하나로 고정된 검증된 `Proposed` checkpoint를 관찰할
-수 있습니다. 실제 source 조합과 입력 방식이 대표 4모델에서 검증된 뒤에만 `Planned`로
-전환합니다.
-지금 사용자가 수행할 외부 문의·계약·구매는 없습니다.
+현재 단계는 **미완성**입니다. 즉시 다음 작업의 실행자는 Agent이며, K5·카니발·EV6·넥쏘
+대표 4모델의 공개 원문을 source manifest·rights matrix·field matrix에 등록해 source
+조합과 입력 방식의 실제 근거를 만듭니다. 공개 자료만으로 권리가 닫히지 않는 항목은
+`PENDING`으로 중단하고, 외부 문의·표본·견적 요청이 필요한 exact 대상과 질문을 사용자에게
+별도 승인 단위로 제시합니다. 대표 4모델에서 source 조합과 입력 방식이 검증된 뒤에만
+`Planned`로 전환합니다. 지금 사용자가 수행할 작업은 없습니다.
 
-## U1. 최초 공개 브랜드 범위
+## 확정 범위와 결정
 
-다음 중 하나를 선택해야 합니다.
-
-| 선택 | 범위 | 영향 |
+| 결정 | 첫 공개 범위 | 영향과 재개방 조건 |
 | --- | --- | --- |
-| A | 현대자동차·기아의 국내 일반 개인 구매 승용·SUV·MPV | 내연기관·하이브리드·전기·수소전기와 인승 변형을 한 번에 검증하지만 자료량이 큼 |
-| B | 현대자동차만 | 범위가 작지만 기아 가격표 형식과 MPV 대표 자료가 빠짐 |
-| C | 기아만 | K5·카니발·EV6를 포함할 수 있지만 수소전기 대표가 빠짐 |
-| D | 사용자가 지정한 브랜드·모델 목록 | 우선순위를 정확히 반영하지만 정확한 목록이 필요함 |
-
-상용·특장차, 렌터카 전용과 장애인 전용 판매 구성(트림·채널)을 포함할지는 U1의 정확한 범위에 함께
-기록합니다. 기록하지 않은 범위를 임의로 포함하지 않습니다.
-
-**추천:** U1-A입니다. 두 제조사와 내연기관·하이브리드·전기·수소전기·MPV를 함께 포함해야 016 schema가
-실제 서로 다른 공식 자료 형식을 수용하는지 검증할 수 있습니다. 다만 전체 범위를 바로
-변환하지 않고 대표 4모델의 권리·필드·식별 기준부터 먼저 통과시킵니다.
-
-## U2. 과거 데이터 기간
-
-| 선택 | 범위 | 영향 |
-| --- | --- | --- |
-| A | 조사 시작일에 판매 중인 현재 모델 연식 | 가장 빨리 공개할 수 있지만 최근 단종·이전 세대는 포함하지 않음 |
-| B | 현재 모델 연식과 바로 이전 세대 | 커뮤니티에서 최근 단종 차량을 참조할 수 있지만 조사량이 크게 늘어남 |
-| C | 사용자가 지정한 시작일 이후 | 완료 경계가 명확하지만 exact 시작일이 필요함 |
-| D | 확보 가능한 온라인 공식 자료 전체 | 최대 범위지만 먼저 원문 발견 조사를 한 뒤 가장 오래된 포함일과 공백을 다시 확정해야 함 |
-
-U2-D는 “찾히는 만큼”을 완료 조건으로 사용하지 않습니다. 원문 발견 결과의 정확한 시작일과
-자료 공백을 사용자에게 다시 제시하고 2차 범위를 확정한 뒤 적재합니다.
-
-**추천:** U2-A입니다. 현재 모델 연식의 수집·정정 경로를 한 번 닫은 뒤 B 이상을 별도
-증분 Flyway 변경 파일로 추가해야 과거 자료 공백 때문에 첫 공개 전체가 막히지 않습니다.
-
-## U3. 첫 공개 이미지 범위
-
-| 선택 | 범위 | 영향 |
-| --- | --- | --- |
-| A | 이미지 없이 구조화된 문자·숫자만 공개 | 가격·제원·옵션 수집을 먼저 닫고 이미지 권리·보관 비용을 분리함 |
-| B | 복제·가공·배포 허락이 확인된 이미지만 저장·공개 | 상세 품질은 높지만 원본·변환본 권리와 보존·삭제 정책이 필요함 |
-| C | 이미지를 복제하지 않고 제조사 상세 페이지 링크만 제공 | 저장 권리는 줄지만 링크 변경과 외부 페이지 상태에 의존함 |
-
-**추천:** U3-A입니다. 제조사 페이지에 이미지가 보인다는 사실은 Carmunity의 복제·가공·
-배포 권리를 뜻하지 않습니다. U3-B의 서면 근거가 생길 때만 이미지를 별도 증분 범위로 엽니다.
-
-## U4. 유료 데이터 공급사 비교 범위
-
-| 선택 | 범위 | 영향 |
-| --- | --- | --- |
-| A | 표본·견적·외부 사용 조건까지 비교하되 계약하지 않음 | 수작업 비용과 상용 공급의 실제 필드·권리를 구매 전에 비교함 |
-| B | 공공데이터와 제조사 직접 허락 경로만 검증 | 비용 후보는 줄지만 전 브랜드·트림 필드를 닫지 못할 수 있음 |
-| C | 외부 공개 권리가 포함된 상용 공급을 우선 협상 | 반복 갱신은 쉬워질 수 있지만 계약 종속·비용·종료 조건이 생김 |
-
-**추천:** U4-A입니다. KAIDA 등 데이터 공급사의 공개 설명만으로 트림·공식 판매가격·옵션·
-이미지 범위까지 충족한다고 확정하지 않고, 표본과 이용 조건을 같은 필드 대응표에서
-비교합니다.
-
-**응답 형식:** `U1 A / U2 A / U3 A / U4 A로 계획 확정해`처럼 네 값을 한 줄로 답합니다.
-이 응답은 계획의 사용자 결정을 닫지만 외부 기관에 연락하거나 계약·구매할 권한은 만들지
-않습니다.
+| 브랜드·차종 | 현대자동차·기아의 국내 일반 개인 구매 승용·SUV·MPV | 다른 브랜드는 source inventory·권리·identity·coverage를 새로 검증한 증분 작업으로 확장합니다. 상용·특장차, 렌터카 전용과 장애인 전용 판매 구성은 별도 포함 결정 전까지 넣지 않습니다. |
+| 기간 | 조사 시작일에 판매 중인 현재 모델 연식 | 단종 모델·이전 세대는 첫 공개에서 제외하고, 현재 모델 수집·정정 경로를 닫은 뒤 별도 Flyway 증분으로 추가합니다. |
+| 이미지 | 이미지 파일과 외부 이미지 URL을 모두 제외 | 구조화된 문자·숫자 데이터부터 닫습니다. 복제·가공·배포 권리와 보관·삭제 정책이 별도 승인될 때만 다시 엽니다. |
+| 유료 후보 | 공개 정보·표본·견적·외부 사용 조건까지 비교하되 계약·구매하지 않음 | KAIDA 같은 후보의 필드·재배포·비용·종료 조건을 제조사·공공 source와 같은 matrix에서 비교합니다. 문의·표본·견적 요청, 계약과 구매는 각각 별도 실행 권한이 필요합니다. |
+| provenance | 적재한 모든 값에 exact source·수집 방식·변환 규칙·revision을 연결 | 이후 데이터 추가와 정정 때 같은 수집 recipe를 재실행하고, source 변경과 DB 변경의 차이를 추적합니다. 연결되지 않은 값은 게시하지 않습니다. |
 
 ## 현재 확인한 source와 역할
 
@@ -130,12 +83,12 @@ U2-D는 “찾히는 만큼”을 완료 조건으로 사용하지 않습니다.
 
 | source | 확인한 범위 | 이번 계획의 역할 |
 | --- | --- | --- |
-| [현대자동차 카탈로그·가격표](https://www.hyundai.com/kr/ko/e/vehicles/catalog-price-download), [기아 카탈로그·가격표](https://www.kia.com/kr/vehicles/catalog-price) | 판매 모델의 가격표·catalog와 일부 상세 페이지에서 트림·기본품목·선택품목·제원을 공개함 | 제품·판매 사실의 정확성 대조용 1차 원문입니다. 외부 서비스 재사용은 제조사별 서면 허락이나 계약 범위를 확인하기 전까지 적재 source로 확정하지 않습니다. |
+| [현대자동차 카탈로그·가격표](https://www.hyundai.com/kr/ko/e/vehicles/catalog-price-download), [기아 카탈로그·가격표](https://www.kia.com/kr/vehicles/catalog-price) | 판매 모델의 가격표·catalog와 일부 상세 페이지에서 트림·기본품목·선택품목·제원을 공개함 | 제품·판매 사실의 정확성 대조용 1차 원문입니다. 양사 사이트의 copyright 표시는 공개 열람과 Carmunity의 재사용·재배포 허락이 같지 않음을 보여 주므로, 서면 허락이나 계약 범위를 확인하기 전까지 실제 값의 적재 source는 `PENDING`입니다. |
 | [한국에너지공단 자동차 표시연비 정보](https://www.data.go.kr/dataset/15005963/openapi.do) | 모델명·제조사·차종·복합/도심/고속도로 연비·1회 충전 주행거리·등급을 제공함 | 연비와 전기차 주행거리의 공식 대조 source입니다. 모델·기술 변형 연결과 이용 조건은 표본에서 검증합니다. |
 | [한국교통안전공단 신규등록정보 API](https://www.data.go.kr/data/15059401/openapi.do) | 차종·지역·연료·차명 코드별 월간 신규등록 통계를 제공함 | 공개 범위의 인기·누락 대조용입니다. 트림·옵션·판매가격의 원문으로 사용하지 않습니다. |
 | [자동차365 자동차종합정보 개방 서비스](https://www.car365.go.kr/ccpt/comm/ntcn/ntcDetailView.do?_menuId=M640101000&bbsId=123&pstId=5550) | 특정 자동차의 기본·제원·이력·성능점검 API와 등록 생애주기 자료를 제공함 | 차량 단위 이력 source이므로 판매 중인 전체 신차 카탈로그 적재에서는 제외합니다. |
 | [Hyundai Developers 데이터 API](https://developers.hyundai.com/web/v1/hyundai/data_api) | 동의한 사용자가 구매한 차량의 차명·트림·색상·옵션 등을 조회함 | 사용자 소유 차량 조회 API이므로 전체 신차 카탈로그 source에서 제외합니다. |
-| [KAIDA Vehicle Registration DB Service](https://www.kaida.co.kr/en/service/dbService.do) | 신규 등록 국산·수입차의 제원·구매가격 등 45개 필드를 월간 Excel로 제공하고 외부 사용용 `Service B`를 안내함 | U4의 유료 후보입니다. 표본에서 모델·세대·트림 식별, 공식 판매가격·옵션·이미지 필드와 재배포·계약 종료 조건을 확인합니다. |
+| [KAIDA Vehicle Registration DB Service](https://www.kaida.co.kr/en/service/dbService.do) | 신규 등록 국산·수입차의 제원·구매가격 등 45개 필드를 월간 Excel로 제공하고 외부 사용용 `Service B`를 안내함 | 유료 후보입니다. 공개 설명만으로는 트림·공식 판매가격·옵션·외부 재배포·계약 종료 뒤 처분 조건을 닫을 수 없으므로 표본·계약 조건을 확인하기 전까지 `PENDING`입니다. |
 
 공개 웹페이지를 자동으로 읽을 수 있다는 기술적 가능성, `robots.txt` 허용이나 검색 노출은
 복제·가공·저장·외부 공개 권리의 증거가 아닙니다. 권리가 닫히지 않은 원문을 production
@@ -147,7 +100,9 @@ source마다 다음 값을 rights matrix에 기록하고 `APPROVED`인 용도로
 
 | 항목 | 반드시 닫을 내용 |
 | --- | --- |
-| identity | 제공자, 원문 종류, URL 또는 계약 dataset ID, 적용 시장·모델 연식 |
+| identity | stable source manifest ID, 제공자, 원문 종류, URL 또는 계약 dataset ID, 적용 시장·모델 연식 |
+| 수집 recipe | 수동 공식 다운로드, 공식 API와 request parameter, 계약 delivery와 수령 파일 ID 중 실제 방법·도구·절차 |
+| revision | source 발행·적용일, 실제 확인·수령 시각, checksum, 이전 revision과 `supersedes` 관계 |
 | 권리 근거 | 약관·공공데이터 이용허락·서면 허락·계약의 문서명과 확인일 |
 | 허용 행위 | 가져오기, 값 변환, 원문 보관, Carmunity API·화면 공개, 수정본 배포 가능 여부 |
 | 보존·종료 | 원문과 변환 데이터의 보존 기간, 계약 종료·철회 때 삭제 또는 계속 제공 조건 |
@@ -156,7 +111,8 @@ source마다 다음 값을 rights matrix에 기록하고 `APPROVED`인 용도로
 | 판정 | `APPROVED`, `RESTRICTED`, `REJECTED`, `PENDING`과 판정자·근거 |
 
 `PENDING` source는 표본 구조를 합성 fixture로만 검증하고 실제 값을 Git·DB·API에 넣지
-않습니다. U4-A나 C를 선택해도 표본·견적 문의, 계약과 구매는 각각 별도 실행 권한을 받습니다.
+않습니다. 유료 후보 비교 범위에 들어 있어도 표본·견적 문의, 계약과 구매는 각각 별도 실행
+권한을 받습니다.
 Agent는 공개 약관·계약 문구와 기술적 사용 범위를 대조하고, 제품 owner 또는 지정된 계약·
 법무 책임자가 외부 공개 근거를 최종 승인합니다. 견적·계약·비공개 표본 원문, credential과
 secret은 Git에 저장하지 않고 승인된 보관 위치와 식별 정보만 rights matrix에 연결합니다.
@@ -179,9 +135,16 @@ secret은 Git에 저장하지 않고 승인된 보관 위치와 식별 정보만
 보존해야 한다는 요구가 생기면 URL metadata만 DB에 넣지 않고 별도 보관 위치·보존 기간·해시
 검증을 함께 설계합니다.
 
-각 inventory 항목은 source identity, 원문 적용일, 실제 확인 시각, checksum, rights matrix
-판정과 연결합니다. 같은 URL의 내용이 바뀌어도 새 원문인지 구분할 수 있어야 하며, 원문 보관이
-허용되지 않으면 파일을 Git에 넣지 않고 허용된 보관 위치와 checksum만 기록합니다.
+각 inventory 항목은 stable source manifest ID, 원문 적용일, 실제 확인 시각, checksum,
+source revision, rights matrix 판정과 실제 수집 recipe에 연결합니다. Recipe는 수동 공식
+다운로드, 공식 API의 endpoint·request parameter, 계약 delivery의 dataset·수령 파일 ID처럼
+같은 범위를 다시 확보하는 데 필요한 방법을 기록합니다. 같은 URL의 내용이 바뀌어도 새
+원문인지 구분하고 이전 revision과의 `supersedes` 관계를 남겨야 하며, 원문 보관이 허용되지
+않으면 파일을 Git에 넣지 않고 허용된 보관 위치와 checksum만 기록합니다.
+
+새 브랜드·연식·정정 자료는 기존 recipe를 복사하는 대신 현재 source 조건으로 재실행해 새
+revision을 등록합니다. URL, API parameter, delivery 형식이나 권리 조건이 바뀌면 기존
+manifest를 덮어쓰지 않고 변경 이유와 새 recipe를 추가합니다.
 
 검색 결과, 자동차 매체와 판매자가 옮겨 쓴 자료는 핵심 수치의 원본으로 사용하지 않습니다.
 원문에 발행일이 없으면 날짜를 추정하지 않고 실제 확인일만 기록합니다.
@@ -193,8 +156,9 @@ source를 읽은 뒤 다음 단위로 mapping 표를 작성합니다.
 | key | 필수 내용 |
 | --- | --- |
 | 대상 | brand, model, generation, model_year와 configuration code |
-| source identity | source manifest ID, 원문 checksum과 rights matrix 판정 |
-| 원문 위치 | source URL·확인일·page 또는 section·원문 label |
+| source identity | source manifest ID, source revision, 원문 checksum과 rights matrix 판정 |
+| 수집 방식 | manifest의 수집 recipe와 이번 실행·수령 식별자 |
+| 원문 위치 | source URL 또는 dataset ID·확인일·page 또는 section·원문 label |
 | 원문 값 | 값, 단위와 인승·휠·카메라·온도 같은 조건 |
 | DB 대상 | 정확한 `table.column` 또는 허용된 configuration JSONB 경로 |
 | 정규화 값 | DB에 넣을 값과 변환 규칙 |
@@ -203,7 +167,9 @@ source를 읽은 뒤 다음 단위로 mapping 표를 작성합니다.
 typed column에 해당하는 값을 JSONB로 우회하지 않습니다. 예를 들어 EV 배터리 kWh·Ah·V는
 component 칼럼, 카니발 휠·카메라별 연비는 certification 행, K5 트림 가격은 price 행에
 mapping합니다. 원문에 있으나 현재 schema에 넣을 수 없는 반복 핵심값이 발견되면 data를 버리거나
-EAV로 우회하지 않고 schema 변경 작업을 먼저 엽니다.
+EAV로 우회하지 않고 schema 변경 작업을 먼저 엽니다. 적재되는 모든 정규화 값은 이 mapping
+중 하나와 연결되어야 하며, source·수집 방식·원문 위치·변환 규칙 중 하나라도 끊긴 값은
+`BLOCKED`로 두고 게시하지 않습니다.
 
 표시 이름을 identity로 사용하지 않습니다. 제조사가 공개한 안정된 code가 있으면 원문 code와
 repository code의 대응을 남기고, 없으면 부모 code·시장·연식·edition·동력·차체·인승·판매
@@ -240,7 +206,7 @@ qualification은 다음 세 결과 단위로 진행합니다.
 
 1. 네 모델의 공식 원문 inventory, rights matrix와 필수 field matrix를 만듭니다.
 2. 정상 원문, 같은 원문 재실행, 필수값 누락, 단위 오류, 중복 configuration과 새
-   source revision을 공통 후보 형식으로 변환합니다.
+   source revision을 manifest의 수집 recipe로 다시 확보해 공통 후보 형식으로 변환합니다.
 3. source별 필드·권리·비용·갱신 책임을 비교하고 아래 입력 방식을 확정합니다.
 
 다음 중 하나라도 남으면 전체 inventory로 확대하지 않습니다.
@@ -255,7 +221,8 @@ qualification은 다음 세 결과 단위로 진행합니다.
 
 ```text
 APPROVED source의 새 원문 발견
-→ source identity·적용일·확인 시각·checksum·권리 근거를 manifest에 고정
+→ exact 수집 recipe로 원문을 확보하고 실행·수령 식별자를 기록
+→ source identity·적용일·확인 시각·checksum·revision·권리 근거를 manifest에 고정
 → 선택 범위의 inventory 분모와 원문→table.column mapping 작성
 → 공개 DB와 분리된 정형 입력 후보로 변환
 → identity·필수값·단위·가격 기준·중복·FK·JSON 형식 사전 검증
@@ -268,7 +235,8 @@ APPROVED source의 새 원문 발견
 - 외부 호출과 DB 변경을 한 transaction에 묶지 않습니다. 원문 수집·변환은 runtime DB 밖의
   후보에서 끝내고, 검증된 migration만 DB transaction으로 적용합니다.
 - 같은 checksum·적용일의 원문은 새 후보나 migration을 만들지 않습니다. 내용이나 적용일이
-  바뀌면 기존 mapping과의 diff를 먼저 만들고 새 migration으로만 반영합니다.
+  바뀌면 새 source revision과 `supersedes` 관계를 등록하고 기존 mapping과의 diff를 먼저
+  만든 뒤 새 migration으로만 반영합니다.
 - 검증 실패 후보는 전체를 게시 대상에서 제외하고 source·오류 위치·이유를 남깁니다. 일부
   성공 행만 기존 공개본에 섞지 않습니다.
 - 정형 입력 후보의 판매 구성은 기본적으로 `is_published=false`입니다. 원문↔DB coverage와
@@ -285,7 +253,7 @@ APPROVED source의 새 원문 발견
 
 ### 분모
 
-U1·U2 범위에 속하는 다음 항목을 모두 분모로 셉니다.
+확정한 현대·기아 현재 모델 범위에 속하는 다음 항목을 모두 분모로 셉니다.
 
 1. 공식 목록의 브랜드·모델
 2. 각 모델의 세대·모델 연식
@@ -293,12 +261,13 @@ U1·U2 범위에 속하는 다음 항목을 모두 분모로 셉니다.
 4. 각 configuration의 모든 기본 가격과 유상 선택 품목
 5. catalog의 필수 동력 장치와 주요 typed 제원
 6. 공식 인증표의 모든 측정 조건 행
-7. 원문에 선언된 기본 품목·색상·보증·안전도·공개 가능한 media
+7. 원문에 선언된 기본 품목·색상·보증·안전도
 
 ### 완료 조건
 
 - 범위 안 모델·연식·configuration 누락 0건
 - source 문서 누락 0건
+- source manifest의 수집 recipe·revision·권리 근거 누락 0건
 - typed field 값·단위·조건 mapping 누락 0건
 - FK가 끊기거나 다른 연식·동력계통에 연결된 행 0건
 - 가격표의 트림·가격·옵션 수와 DB 행 수 불일치 0건
@@ -321,23 +290,25 @@ inventory와 mapping의 실제 규모를 본 뒤 다음 중 가장 단순한 방
 
 관리자 runtime import는 반복 운영 요구와 writer 권한·감사 설계를 별도 승인하기 전에는 선택하지
 않습니다. custom generator도 inventory 규모와 반복 실패 증거 없이 미리 만들지 않습니다.
-공식 데이터 공급자는 U4와 source 적격성 gate가 선택하는 upstream source이며, SQL과
-generator 중 하나를 고르는 이 입력 방식과 같은 대안으로 취급하지 않습니다.
+공식 데이터 공급자는 유료 후보 비교와 source 적격성 gate가 선택하는 upstream source이며,
+SQL과 generator 중 하나를 고르는 이 입력 방식과 같은 대안으로 취급하지 않습니다.
 
-**현재 추천:** U1-A처럼 한 제조사의 전체 현재 모델 이상이면 `구조화 입력 + repository
-generator`를 선택하고, U1-D로 최대 4모델만 일회성 공개하면 검토된 Flyway data SQL을
-선택합니다. Generator는 source를 직접 내려받는 crawler가 아니라, 검토된 정형 입력을 같은
-SQL로 재현하고 사전 검증하는 build-time 도구입니다. 정형 입력의 exact 파일 형식·배치 경로와
-generator entrypoint는 대표 4모델에서 SQL·diff 가독성, 중복·누락 검출과 라이선스 보관 조건을
-대조한 결과로 작업 3에서 고정합니다.
+**현재 추천:** 현대·기아의 전체 현재 모델처럼 반복 자료가 있는 범위이므로 `구조화 입력 +
+repository generator`를 우선 후보로 검증합니다. Generator는 source를 직접 내려받는 crawler가
+아니라, manifest와 mapping을 갖춘 검토된 정형 입력을 같은 SQL로 재현하고 사전 검증하는
+build-time 도구입니다. 정형 입력의 exact 파일 형식·배치 경로와 generator entrypoint는 대표
+4모델에서 SQL·diff 가독성, 중복·누락 검출과 라이선스 보관 조건을 대조한 결과로 작업 3에서
+고정합니다.
 
 ## 개발·적용 계획
 
-### 작업 1. U1~U4를 확정합니다
+### 작업 1. 확정 범위를 조사 입력으로 고정합니다
 
-- 브랜드·모델 종류, 판매 채널, 상용·특장·전용 configuration 포함 여부를 정확한 목록으로 씁니다.
-- U2-C는 시작일, U2-D는 discovery 후 2차 시작일과 공백 결정을 닫습니다.
-- 이미지와 유료 공급사 비교 범위, 포함하지 않는 외부 효과를 함께 고정합니다.
+- 현대·기아의 조사 시작일 현재 판매 모델 목록과 일반 개인 구매 승용·SUV·MPV 경계를
+  inventory 분모로 씁니다.
+- 이미지 제외와 유료 후보 비교 범위, 포함하지 않는 외부 문의·계약·구매 효과를 함께 고정합니다.
+- 모든 값의 exact source·수집 방식·revision·변환 규칙을 manifest와 mapping의 필수값으로
+  고정합니다.
 
 완료 결과는 임의 판단 없이 각 차량·날짜·media·공급사 후보를 포함·제외할 수 있는 범위입니다.
 
@@ -352,7 +323,7 @@ generator entrypoint는 대표 4모델에서 SQL·diff 가독성, 중복·누락
 
 ### 작업 3. 입력 방식을 확정하고 검증합니다
 
-- U1 범위와 대표 표본을 기준으로 SQL과 구조화 입력+generator 후보를 비교합니다.
+- 확정 범위와 대표 표본을 기준으로 SQL과 구조화 입력+generator 후보를 비교합니다.
 - 선택한 방법은 같은 입력의 결정적 SQL, stable UUID, 중복 code, FK, 단위, 가격,
   component 종류와 JSON 형식을 migration 작성 전에 검사합니다.
 - 정형 입력을 선택하면 exact 파일 형식·배치 경로, generator entrypoint와 생성 SQL diff 검증을
@@ -364,7 +335,8 @@ generator entrypoint는 대표 4모델에서 SQL·diff 가독성, 중복·누락
 
 - 모델 목록부터 시작해 연식별 가격표·catalog·제원·인증 source를 등록합니다.
 - source의 configuration, 옵션, 조건별 인증 행을 먼저 세고 DB target을 지정합니다.
-- inventory마다 checksum·적용일·rights 판정과 정규화 identity를 연결합니다.
+- inventory마다 checksum·적용일·source revision·수집 recipe·rights 판정과 정규화 identity를
+  연결합니다.
 - schema에 없는 반복 핵심값은 적재 전에 016 보완 대상으로 보고합니다.
 
 완료 결과는 누락을 숨길 수 없는 분모와 source→table.column 대응표입니다.
@@ -392,13 +364,12 @@ generator entrypoint는 대표 4모델에서 SQL·diff 가독성, 중복·누락
 
 ### 작업 7. 영구 문서와 독립 검증을 닫습니다
 
-- 실제 공개 브랜드·기간, source 확인일, 입력·정정 절차를 domain·schema·product·operations
-  문서에 반영합니다.
+- 실제 공개 브랜드·기간, source 확인일, 수집 recipe, 입력·정정 절차를
+  domain·schema·product·operations 문서에 반영합니다.
 - 전체 check와 `verify-dev` 독립 검증을 수행합니다.
 
-U3-B이면 허락 범위와 보관·변환·삭제 정책을, U3-C이면 URL source·변경 감지·끊어진 링크
-처리를 이 단계의 검증과 operations SOT에 포함합니다. U3-A이면 이미지 관련 구현·운영 작업은
-`해당 없음`으로 닫습니다.
+이미지 관련 구현·운영 작업은 `해당 없음`으로 닫습니다. 향후 이미지를 다시 열면 허락 범위와
+원본·변환본 보관·변환·삭제 정책을 구조화 데이터와 분리된 증분 계획에서 검증합니다.
 
 ### 작업 8. 별도 승인된 환경에 적용합니다
 
@@ -414,11 +385,10 @@ U3-B이면 허락 범위와 보관·변환·삭제 정책을, U3-C이면 URL sou
   migration 작업을 추적합니다. 현재 schema 자체는
   [110 자동차 카탈로그 Schema Reference](../../../project/schema/110-car-catalog.md)가 소유합니다.
 - 외부 데이터 공급 계약, custom 도구 도입, push와 staging 적용은 각각 별도 권한이 필요합니다.
-- U1~U4가 닫히고 대표 4모델 qualification에서 source 조합·입력 방식까지 검증되기 전에는
+- 대표 4모델 qualification에서 source 조합·수집 recipe·입력 방식까지 검증되기 전에는
   `Proposed`를 유지합니다. 이 결과가 `$verify-plan`을 통과하면 `Planned`, 전체 inventory와
   data migration 작성을 시작할 때 `In Progress`로 전환합니다.
-- U3-B는 권리가 확인되지 않은 media를 넣지 않고, U3-C는 원문 URL과 연결 조건을 확인하지
-  않은 링크를 공개 data로 넣지 않습니다.
+- 첫 공개에는 이미지 파일과 외부 이미지 URL을 넣지 않습니다.
 - 선택 범위의 공식 자료가 확보되지 않으면 임의 추정하지 않고 범위 축소 또는 공식 공급자
   도입을 사용자 결정으로 다시 엽니다.
 
