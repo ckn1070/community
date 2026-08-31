@@ -11,8 +11,10 @@ import com.ronams.carmunity.catalog.api.FuelType;
 import com.ronams.carmunity.catalog.api.PropulsionType;
 import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogPriceBasis;
 import com.ronams.carmunity.catalog.internal.application.port.in.GetCatalogModelDetailUseCase;
+import com.ronams.carmunity.catalog.internal.application.port.in.SearchCatalogModelsUseCase;
 import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDetailQuery;
 import com.ronams.carmunity.config.ApiErrorResponseFactory;
 import com.ronams.carmunity.config.ApiExceptionHandler;
@@ -33,14 +35,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** 카탈로그 모델 상세 public API의 연식 선택·기본 기준일·404 계약을 검증합니다. */
-@WebMvcTest(controllers = CatalogModelDetailController.class)
+@WebMvcTest(controllers = CatalogModelController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
   ApiErrorResponseFactory.class,
   ApiExceptionHandler.class,
-  CatalogModelDetailControllerTest.TestUseCaseConfig.class
+  CatalogModelControllerDetailTest.TestUseCaseConfig.class
 })
-class CatalogModelDetailControllerTest {
+class CatalogModelControllerDetailTest {
 
   private static final UUID MODEL_ID = UUID.fromString("0f3445fd-5f22-4f74-9a9d-1ff0c68a924a");
   private static final UUID BRAND_ID = UUID.fromString("68dce8d8-34ed-49ec-a593-7a3c0afb2670");
@@ -349,6 +351,11 @@ class CatalogModelDetailControllerTest {
     @Bean
     FakeGetCatalogModelDetailUseCase fakeGetCatalogModelDetailUseCase() {
       return new FakeGetCatalogModelDetailUseCase();
+    }
+
+    @Bean
+    SearchCatalogModelsUseCase unusedSearchCatalogModelsUseCase() {
+      return query -> new CatalogModelPage(List.of(), 0, 20, 0, 0);
     }
   }
 

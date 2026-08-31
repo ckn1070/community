@@ -12,6 +12,7 @@ import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelSummary;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogPriceBasis;
+import com.ronams.carmunity.catalog.internal.application.port.in.GetCatalogModelDetailUseCase;
 import com.ronams.carmunity.catalog.internal.application.port.in.SearchCatalogModelsUseCase;
 import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
@@ -33,14 +34,14 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** 카탈로그 모델 목록 public API의 기본 조회·filter·validation·응답 계약을 검증합니다. */
-@WebMvcTest(controllers = CatalogModelSearchController.class)
+@WebMvcTest(controllers = CatalogModelController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import({
   ApiErrorResponseFactory.class,
   ApiExceptionHandler.class,
-  CatalogModelSearchControllerTest.TestUseCaseConfig.class
+  CatalogModelControllerSearchTest.TestUseCaseConfig.class
 })
-class CatalogModelSearchControllerTest {
+class CatalogModelControllerSearchTest {
 
   private static final UUID MODEL_ID = UUID.fromString("0f3445fd-5f22-4f74-9a9d-1ff0c68a924a");
   private static final UUID BRAND_ID = UUID.fromString("68dce8d8-34ed-49ec-a593-7a3c0afb2670");
@@ -185,6 +186,11 @@ class CatalogModelSearchControllerTest {
     @Bean
     FakeSearchCatalogModelsUseCase fakeSearchCatalogModelsUseCase() {
       return new FakeSearchCatalogModelsUseCase();
+    }
+
+    @Bean
+    GetCatalogModelDetailUseCase unusedGetCatalogModelDetailUseCase() {
+      return query -> java.util.Optional.empty();
     }
   }
 

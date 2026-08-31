@@ -35,7 +35,7 @@ public class CatalogBrandController {
       description = "지원하지 않는 HTTP method",
       content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  public List<CatalogBrandResponse> listBrands() {
+  public List<CatalogBrandResponse> list() {
     return listCatalogBrandsUseCase.execute().stream().map(CatalogBrandResponse::from).toList();
   }
 }

@@ -9,7 +9,8 @@ In Progress
 catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·133개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
 검증에 이어 jOOQ 기반 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
-경계, 세 공개 GET Web adapter까지 구현했습니다. 검색 정규화·literal escape, 같은
+경계와 모델 resource 단위 Controller를 포함한 세 공개 GET endpoint까지 구현했습니다. 검색
+정규화·literal escape, 같은
 configuration filter, 기준일 가격, 대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제
 PostgreSQL로 검증했습니다. Flyway V13~V17에서 build-time schema model을 생성하며, 첫 진입
 무필터 모델 page, 선택 filter, 목록에서 상세로 이어지는
