@@ -37,7 +37,10 @@
 - 현재 코드의 소유 모듈, 호출 흐름과 의존 방향을 확인했습니다.
 - 기능 구현, 작은 기반, 큰 기반 또는 혼합 작업으로 분류했습니다.
 - public API, DB, 보안, transaction과 외부 연동 설계가 필요한지 확인했습니다.
-- DDD 변경이면 Domain Inventory, Aggregate와 boundary model을 결정했습니다.
+- 모든 변경 module에서 업무 언어·규칙·모델·상태와 생명주기·소유권·경계의 DDD 영향을
+  판정했습니다. 영향이 없으면 actual source에 근거한 `해당 없음`으로 닫고, 영향이 있거나
+  새 module이면 [110 설계 워크플로우의 DDD 판정 gate](110-design-workflow.md#설계-입력)를
+  통과했습니다.
 - TDD 적용 여부와 예외 시 대체 검증을 정했습니다.
 - 변경 파일의 주석, 환경변수와 영구 문서 영향을 확인했습니다.
 - 작업 실행 workflow가 확정한 dirty 경계와 이번 변경이 분리돼 있습니다.
@@ -93,6 +96,8 @@ workflow가 소유합니다. 이 문서는 그 판정에 필요한 코드·test�
 - 관련 test와 적용되는 Java/Gradle 최종 검증을 실행했습니다.
 - 변경 Java, 설정과 SQL의 주석 필요성을 실제 파일에서 검토했습니다.
 - work item, SOT와 운영 문서를 실제 결과에 맞췄습니다.
+- 모든 변경 module의 DDD 영향 판정 또는 `해당 없음` 근거가 실제 package·모델·의존
+  경계와 일치합니다.
 - 코드 작업이면 exact SHA의 required CI 성공과 Sonar의 revision 일치·Quality Gate
   `OK`·overall `open_issues` 0건을 확인했습니다. push 권한이 없거나 이 gate를 확인하지
   못했으면 local 구현 결과만 닫고 전체 코드 작업은 미완료로 유지했습니다.

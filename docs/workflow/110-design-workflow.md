@@ -23,6 +23,22 @@
 3. 결과에 영향을 주는 설계 표면과 근거 있는 제외 표면을 식별합니다.
 4. 결과를 바꾸는 사용자 소유 결정과 저장소·공식 근거로 닫을 기술 판단을 분리합니다.
 
+모든 최상위 module 내부 변경은 작업 이름과 변경 종류에 무관하게 DDD 영향을 먼저
+판정합니다. 업무 언어·규칙·모델·상태와 생명주기·소유권·경계에 영향이 없으면 actual
+source에 근거한 `해당 없음`으로 닫습니다. 하나라도 영향이 있거나 새 module을 만들면 다음
+판정을 필수 산출물로 남깁니다.
+
+- 해당 module이 업무 Bounded Context 후보인지 기술·조립 경계인지 분류합니다.
+- 업무 후보이면 Subdomain·Ubiquitous Language·상태와 생명주기 owner·다른 후보와의 관계를
+  판정하고, 미확정 항목은 현재 사실로 확정하지 않습니다.
+- 업무 규칙과 일관성 경계를 조사해 전술 패턴의 적용 또는 근거 있는 생략을 판정합니다.
+- 기술·조립 경계이면 전략적·전술적 DDD를 `해당 없음`으로 닫고 업무 로직 유입 금지 기준을
+  명시합니다.
+
+이 판정에는 [120 DDD 개념과 적용 기준](../architecture/120-domain-driven-design.md)을
+사용합니다. 모든 module에 전술 패턴을 강제하는 절차가 아니라, 모든 module 변경에서 DDD
+판단 자체가 누락되지 않게 하는 gate입니다.
+
 초기 가정이나 기존 문서를 정답으로 고정하지 않습니다. Best Practice는 후보를 좁히는 근거이며 현재 맥락의 trade-off를 대신하지 않습니다.
 
 ## 설계 의존 경계
@@ -118,7 +134,8 @@ projection 전에 발견한 관련 열린 사용자 결정은 작업 실행 work
 
 | 설계 대상 | 먼저 볼 기준 |
 | --- | --- |
-| 용어, DDD와 모델 경계 | [아키텍처 개념](../architecture/110-architecture-concepts.md), [헥사고날 원칙](../architecture/200-hexagonal-architecture.md) |
+| 아키텍처 개념 비교 | [110 아키텍처 개념 구분](../architecture/110-architecture-concepts.md) |
+| DDD 전략·전술, 모델과 경계 판정 | [120 DDD 개념과 적용 기준](../architecture/120-domain-driven-design.md), [200 헥사고날 아키텍처](../architecture/200-hexagonal-architecture.md) |
 | Spring module·package | [Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md) |
 | request·response·port·entity 경계 | [경계와 매핑 규칙](../architecture/220-boundary-and-mapping-rules.md) |
 | REST resource·URI·status·error | [REST API 설계](../architecture/230-rest-api-design.md) |
@@ -165,6 +182,8 @@ Workflow는 위 상세 규칙을 다시 설명하지 않습니다.
 - 선택한 모든 기술 결정이 목표 보존 identity에서 `충족` 또는 `영향 없음`이며 약화·미증명
   항목이 없습니다.
 - 결과에 영향을 주는 설계 표면이 확정 또는 근거 있는 해당 없음입니다.
+- 모든 변경 module에 전략적·전술적 DDD 판정 또는 DDD 영향이 없다는 `해당 없음` 근거가
+  기록됐습니다.
 - 중대한 결정이 배경·대안·선택·영향·재검토 조건과 함께 닫혔습니다.
 - 구현자가 제품·기술 결정을 새로 만들지 않고 실행할 수 있습니다.
 - 실패·보안·데이터·운영·전환과 검증 책임이 명확합니다.
