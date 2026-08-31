@@ -51,6 +51,7 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 → 활성 결정과 source → 포함·제외·복귀점
 → raw batch 항목별 문장 기능·요청 효과·positive 권한 source 또는 미확정 사유
 → 모든 항목의 처분이 닫힌 batch admission
+→ 동일 역할 sibling·source inventory → 공통 선택 축·source-backed 예외 또는 해당 없음
 → 예정 artifact별 관찰 효과·실행 방식·blocking 여부·전문 owner 처분
 → 실제 control 기준선 R·요청 generation G·target candidate C·호출 전 상태 S0
 → 앞 phase의 전문 결과·candidate 제약·필수 후속 gate P
@@ -69,6 +70,12 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 있지만 세 번째를 증명하지 않는다. 현재 구조를 대상으로 만든 test도 그 구조가 정확히
 연결됨을 증명할 뿐 구조 자체의 필수성을 증명하지 않는다. 세 번째가 현재 source와 동결
 결정에서 유일하게 닫히지 않으면 writer가 구조를 선택하지 않고 설계·계획 owner로 돌린다.
+
+동일 역할·동일 표면의 artifact를 둘 이상 만들거나 바꾸면 작업 실행 workflow의 반복 선택
+기준선에서 전체 sibling과 공통 선택 축을 먼저 고정합니다. Writer는 Search에는 가독성,
+Detail에는 분리 편의처럼 sibling마다 다른 사후 기준을 만들지 않습니다. 다른 축은 독립
+source가 요구하는 필수 차이와 영향·재검토 조건이 mutation 전에 닫힌 경우만 소비합니다.
+역할이 다른 경계 객체나 sibling 없는 기계적 변경에는 이 gate를 확대하지 않습니다.
 
 원래 요구와 authoritative source로 이 계약을 유한하게 채우지 못하면 개발을 시작하지 않고
 Bootstrap 또는 실제 결정 owner로 돌아간다. 라운드 계약의 field 의미, 새 발견·차단 판정,
@@ -120,6 +127,10 @@ Reviewer 입력에는 입장 gate를 통과한 관찰 효과와 그 효과별 �
 만든 계약은 구현·test·문서 정합성의 검토 대상일 뿐 요구 source가 아니며, reviewer가
 입장되지 않은 효과를 발견하면 그 내부 결함을 열거해 보강하지 않고 하나의 미승인 효과로
 반환한다.
+
+반복 선택이 있으면 reviewer 입력에는 mutation 전 sibling·source inventory와 공통 선택 축,
+허용한 예외의 독립 근거를 포함합니다. 일부 파일이나 candidate와 함께 만든 test만 맞는지
+보지 않고 동일 역할 sibling 전체가 같은 축을 소비하는지 대조합니다.
 
 설계·문서 구조 proposal·도구 처분·전문 검증이 owner·topology·write set이나 필수 후속
 gate를 확정하면 그 결과 identity와 제약을 `P`로 writer·reviewer·Git 인계까지 보존한다.

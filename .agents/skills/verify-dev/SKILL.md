@@ -26,6 +26,13 @@ snapshot 변경을 추적하는 별도 lifecycle을 열지 않는다.
 
 정방향으로 모든 요구를 추적하고 역방향으로 모든 변경 artifact가 정당한 요구·결정에 연결되는지 확인한다.
 
+동일 역할·동일 표면에 둘 이상의 artifact·이름·구조·기술 경로가 있으면 후보를 보기 전에
+변경 전 SOT와 실제 source에서 전체 sibling inventory와 공통 선택 축을 독립 복원합니다.
+모든 sibling이 같은 축을 소비하는지, 다른 축은 mutation 전 독립 source가 요구한 필수 차이와
+영향·재검토 조건으로 닫혔는지 확인합니다. 후보가 함께 만든 test·work item·문서와 각 artifact의
+국소 가독성은 선택 admission이나 예외 근거가 아닙니다. 역할이 다른 객체, sibling 없는 국소
+선택과 source가 하나로 고정한 기계적 변환에는 동일 어휘·구조를 강제하지 않습니다.
+
 Baseline과 후보 사이에서 변경·삭제된 test·validator·정책 검사는 assertion이 강화·보존·
 완화됐는지 분류합니다. 기존 실패 조건을 허용하도록 assertion을 삭제·축소하거나 예외를
 추가한 변경은, 그 불변식을 대체하는 더 최신 사용자 결정 또는 독립 authoritative source가

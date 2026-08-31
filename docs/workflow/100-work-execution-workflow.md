@@ -402,6 +402,25 @@ API 경로, module 경계, schema 정규화처럼 내부 기술 결과가 크거
 인계 전에 각각 대조합니다. 검증 입력에는 원래 기준선과 유효한 대체 source를 포함하며,
 reviewer는 같은 작업에서 만든 test·문서의 내부 일치만으로 활성 결정을 재정의하지 않습니다.
 
+### 반복 선택 기준선
+
+동일 역할·동일 표면에서 둘 이상의 artifact, 이름, 구조나 기술 경로를 선택하면 첫 대표
+mutation 전에 전체 sibling·source inventory와 공통 선택 축을 한 번 고정합니다. 각 sibling의
+국소 장점이나 작성 순서로 기준을 다시 고르지 않으며, 같은 축을 모든 sibling에 적용한 결과를
+writer admission에 포함합니다.
+
+다른 축을 사용하는 예외는 독립 authoritative source가 요구하는 필수 차이, 그 차이가 공통
+축으로 충족되지 않는 영향과 재검토 조건이 mutation 전에 닫힌 경우에만 허용합니다. 파일 크기,
+작성 편의, 사후 가독성과 후보가 함께 만든 test·work item·문서의 내부 일치는 예외 근거가
+아닙니다. 필수 차이를 증명하지 못하면 공통 축의 첫 대표 결과로 돌아가고 나머지 sibling으로
+확장하지 않습니다.
+
+이 gate는 같은 역할의 반복 선택에 적용합니다. Controller와 Request·Response·method처럼
+역할이 다르거나, sibling이 없는 국소 선택, authoritative source가 값 하나로 고정한 기계적
+변환에는 하나의 어휘·구조나 별도 설계 문서를 강제하지 않습니다. Reviewer는 후보를 보기 전에
+변경 전 SOT와 sibling inventory에서 공통 축과 예외를 독립 복원하고, 후보의 자기 일관성으로
+이 기준선을 새로 만들지 않습니다.
+
 여러 독립 조건이나 source가 있으면 세션 또는 `/tmp`의 활성 조건 원장에만 다음을
 연결합니다.
 
