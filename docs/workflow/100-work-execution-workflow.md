@@ -885,6 +885,25 @@ Writing
 ClosureRunning → Closed 또는 Invalidated
 ```
 
+Review phase는 세션 내부 판정만으로 전이하지 않습니다. 첫 reviewer 호출 직전과 reviewer
+결과를 소비한 직후, 현재 Agent는 다음 review transition receipt를 사용자-visible commentary와
+해당 reviewer 입력에 같은 identity로 결속합니다.
+
+```text
+candidate digest
+→ 현재 phase·review 역할(discovery/closure)·active review set
+→ correction 사용 여부·closure 사용 여부
+→ 이번 호출이 반환할 수 있는 terminal과 그 뒤 허용되는 다음 actor
+```
+
+이 receipt는 내부 추론이나 finding 전문을 공개하는 보고가 아니라 reviewer invocation과
+상태 전이를 관찰할 수 있게 하는 최소 실행 증거입니다. Commentary와 reviewer 입력 중 하나가
+없거나 두 identity가 다르면 reviewer를 호출하지 않습니다. 결과 직후 receipt에는 reviewer
+verdict, 실제 다음 phase와 허용되는 다음 actor를 갱신하며, 이 projection이 끝나기 전에는
+writer나 다른 reviewer를 호출하지 않습니다. `ClosureRunning`의 실패 receipt가 허용하는
+다음 actor는 원인·공통 contract·대표 결과를 다시 동결할 planner뿐입니다. Patch writer,
+추가 closure와 이름만 바꾼 fresh reviewer는 허용하지 않습니다.
+
 - 첫 discovery·closure reviewer 호출 전에 `Frozen`의 candidate identity·digest와
   `active writer=0`을 실제 상태에서 확인합니다. 하나라도 없으면 reviewer를 호출하지
   않습니다.
