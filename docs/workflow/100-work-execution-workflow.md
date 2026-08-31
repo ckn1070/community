@@ -711,6 +711,22 @@ format·protocol·actor 같은 선행 선택의 권위 source가 아닙니다. �
 
 구현을 포함한 한 실행 라운드는 다음 phase를 순서대로 닫습니다.
 
+Test·build·review 같은 evidence producer를 실행하기 전에는 앞서 만든 소비 원장과 병렬
+경계를 실제 command admission으로 사용합니다. 각 실행은 `candidate identity → 닫을 exact
+oracle과 최초 consumer → 재사용할 기존 evidence 또는 무효화 근거 → 읽고 쓰는 build output·
+DB·report·cache → 실행 owner·재실행 조건`에 연결돼야 합니다. 이 연결이 없거나 같은 oracle을
+이미 유효한 evidence가 닫았으면 실행하지 않습니다. 같은 공유 검증 resource를 쓰는 command는
+actor가 read-only reviewer여도 직렬화하며, 병렬화하려면 source write set뿐 아니라 검증
+resource와 evidence identity까지 독립적이어야 합니다.
+
+후보 수정 뒤에는 기존 evidence가 실제로 무효화된 범위의 가장 좁은 검증부터 다시 시작합니다.
+표준 전체 검증은 동결 후보의 남은 넓은 oracle을 닫을 때 한 번 소비하고, 작은 수정·reviewer
+교체·명령 실패만으로 자동 반복하지 않습니다. 실패가 candidate 결함인지 infrastructure·공유
+resource 충돌인지 최소 진단으로 먼저 분리하고, 원인이 제거되지 않은 같은 명령 반복은 새
+evidence가 아닙니다. 서로 다른 specialist라도 candidate·source·oracle이 같으면 이름만 다른
+검토로 중복하지 않고, 독립 owner가 서로 다른 필수 oracle을 소유할 때만 별도 evidence로
+유지합니다.
+
 1. 동결한 결과·결정·제외·oracle 안에서 writer가 후보와 local evidence를 만듭니다.
 2. 모든 writer를 멈춘 뒤 최종 diff와 실제 caller에서 후보가 추가·변경한 관찰 효과를
    원래 operation map으로 역추적합니다. 후보와 같은 작업에서 만든 test·README·SOT·work

@@ -53,6 +53,8 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 → 모든 항목의 처분이 닫힌 batch admission
 → 동일 역할 sibling·source inventory → 공통 선택 축·source-backed 예외 또는 해당 없음
 → 예정 artifact별 관찰 효과·실행 방식·blocking 여부·전문 owner 처분
+→ 검증별 candidate·exact oracle·최초 consumer → 기존 evidence 재사용 또는 무효화 근거
+→ build output·DB·report·cache의 공유 여부·단일 실행 owner·재실행 조건
 → 실제 control 기준선 R·요청 generation G·target candidate C·호출 전 상태 S0
 → 앞 phase의 전문 결과·candidate 제약·필수 후속 gate P
 → writer 단위·exact write set → 검토 phase와 현재 상태
@@ -242,6 +244,20 @@ inventory를 동기화한다. 완료하지 않은 구현을 결과로 쓰거나 
 5. 변경 문서의 source·owner·링크·현재 명령 대조
 6. 전체 diff, `git diff --check`와 Git 상태
 7. 수용 기준별 구현·test·문서 evidence
+
+첫 검증 command 전에 작업 실행 workflow의 소비 원장과 command admission을 이 목록에
+적용한다. 가장 좁은 test가 닫은 oracle, 기존 evidence가 아직 유효한 범위와 다음 consumer를
+먼저 고정하고, 후보 변경으로 무효화된 범위만 다시 실행한다. 표준 전체 검증은 동결 후보에
+남은 넓은 oracle의 producer로 한 번 배치하며, 작은 후속 수정이나 reviewer 변경만으로 반복하지
+않는다. 실패하면 같은 command를 즉시 반복하지 않고 candidate 결함·infrastructure·공유 resource
+충돌 중 다음 행동을 바꾸는 최소 진단부터 수행한다.
+
+같은 worktree의 build output, DB/schema, generated source, report나 cache를 읽고 쓰는 검증은
+파일을 수정하지 않는 reviewer라도 하나의 실행 owner가 직렬화한다. 병렬 실행은 source write
+set과 이 검증 resource·evidence가 모두 독립적일 때만 허용한다. 새 reviewer를 호출하기 전에는
+기존 review의 candidate·source·oracle을 대조하고, 이름만 다른 같은 감사를 추가하지 않는다.
+회고 행동 검증처럼 별도 owner가 서로 다른 필수 oracle을 소유하면 그 차이를 라운드 계약에
+남기고 별도 evidence로 유지한다.
 
 Java/Gradle 최종 명령, Docker preflight와 Sonar 기술 판정은
 [코드 품질 도구](../../../docs/tech-stack/310-code-quality-tools.md)를 그대로 사용한다.
