@@ -57,6 +57,7 @@ test "$(stat -f '%Lp' .env)" = '600'
 typeset +x \
   STG_DB_RUNTIME_PASSWORD STG_DB_MIGRATOR_PASSWORD \
   STG_AUTH_JWT_HMAC_SECRET STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET \
+  STG_COMMUNITY_CURSOR_HMAC_SECRET \
   STG_RESEND_API_KEY
 ```
 
@@ -64,6 +65,7 @@ typeset +x \
 
 - `STG_DB_RUNTIME_PASSWORD`, `STG_DB_MIGRATOR_PASSWORD`
 - `STG_AUTH_JWT_HMAC_SECRET`, `STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET`
+- `STG_COMMUNITY_CURSOR_HMAC_SECRET`
 - `STG_RESEND_API_KEY`
 - `NOTIFICATION_EMAIL_FROM`
 - `EMAIL_VERIFICATION_BASE_URL`, `ADMIN_INVITATION_BASE_URL`, `PASSWORD_RESET_BASE_URL`
@@ -162,7 +164,7 @@ credential을 workload에 주입하지 않게 합니다. Script가 package 설�
 - **실행 주체**: `2`절의 `100`을 완료한 운영자
 - **실행 위치**: Local terminal
 - **시작 directory**: 제한 없음
-- **무엇을**: 다섯 Secret 값을 NUL-delimited stdin으로 EC2의 application `200`에
+- **무엇을**: 여섯 Secret 값을 NUL-delimited stdin으로 EC2의 application `200`에
   전달합니다.
 
 Runtime과 migrator username은 script의 `carmunity_runtime`, `carmunity_migrator` 고정
@@ -174,6 +176,7 @@ printf '%s\0' \
   "${STG_DB_MIGRATOR_PASSWORD}" \
   "${STG_AUTH_JWT_HMAC_SECRET}" \
   "${STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}" \
+  "${STG_COMMUNITY_CURSOR_HMAC_SECRET}" \
   "${STG_RESEND_API_KEY}" \
 | env -i HOME="${HOME}" PATH="${PATH}" ssh -i "<KEY_PATH>" "ubuntu@<EC2_SSH_HOST>" \
   'sudo -n /home/ubuntu/car-community-scripts/bootstrap/application/200-apply-application-prerequisites.sh'
@@ -381,7 +384,7 @@ script를 선행 조건으로 만들지 않습니다.
 | `1`절 render·sentinel 실패 | Git working tree 변경 | 빈 manifest 생성·remote 반영 | 값 수정 뒤 `1`절 |
 | Application `100` package·입력·RDS 실패 | PostgreSQL client 또는 일부 application role·권한 | Role 삭제·password rotation·다른 major client 설치 | 원인을 해결한 뒤 같은 입력으로 [`2-A`](#2-a-rds-role-적용)의 `100` 재실행 |
 | Application `100` 종료 결과를 확정할 수 없음 | Role이 생성됐을 수 있음 | Role 삭제·password rotation | 같은 입력으로 `100`을 재실행해 없는 role 생성·권한 적용·role 존재 확인을 완료 |
-| Application `200` 실패 | 같은 owner의 Namespace·Secret 일부 | Secret 삭제·다른 값 추측 | 같은 다섯 값으로 [`2-B`](#2-b-kubernetes-application-prerequisite-적용)의 `200` 재실행 |
+| Application `200` 실패 | 같은 owner의 Namespace·Secret 일부 | Secret 삭제·다른 값 추측 | 같은 여섯 값으로 [`2-B`](#2-b-kubernetes-application-prerequisite-적용)의 `200` 재실행 |
 | Dry-run·push·CI 실패 | DB role과 Secret 유지, remote Git 미반영 또는 실패한 `main` revision | `100`·`200` 재실행·GitOps `200` 진행 | [`2.1`](#21-target-server-side-dry-run과-git-반영)에서 Git 또는 CI를 수정해 새 exact SHA로 재개 |
 | GitHub App 설정·PEM 실패 | GitHub App 일부 설정 | PAT·write permission 우회 | [`3`](#3-read-only-github-app-준비) 설정 수정 |
 | GitOps `200` owner·인증·sync 실패 | Repository Secret·AppProject·Application 일부 | Resource 삭제·label 보정·live spec 수정 | [180 Argo CD reconciliation 진단](diagnostics/180-argocd-reconciliation.md)으로 원인을 분류한 뒤 같은 [`5`](#5-local에서-ssh-stdin으로-최초-연결) 명령 재실행 |

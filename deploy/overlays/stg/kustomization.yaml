@@ -13,6 +13,12 @@ patches:
   - path: deployment-profile-patch.yaml
 
 configMapGenerator:
+  - name: car-community-community-config
+    literals:
+      - COMMUNITY_MEDIA_BUCKET=car-community-stg-media-000000000000-ap-northeast-2
+      - COMMUNITY_MEDIA_REGION=ap-northeast-2
+      - COMMUNITY_MEDIA_ROLE_ARN=arn:aws:iam::000000000000:role/car-community-stg-media-role
+      - COMMUNITY_TRUSTED_PROXY_CIDRS=10.0.0.0/20,10.0.16.0/20
   - name: car-community-notification-config
     literals:
       # 승인된 staging sender와 공개 URL을 application notification 설정으로 제공합니다.

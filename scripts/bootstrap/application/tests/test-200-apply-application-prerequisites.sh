@@ -47,20 +47,24 @@ set_valid_inputs() {
   MIGRATOR_PASSWORD='migrator-password'
   AUTH_JWT_HMAC_SECRET='jwt-secret-with-at-least-thirty-two-bytes'
   AUTH_LOGIN_IDENTIFIER_HMAC_SECRET='identifier-secret-with-at-least-32-bytes'
+  COMMUNITY_CURSOR_HMAC_SECRET='community-cursor-secret-with-at-least-32-bytes'
   RESEND_API_KEY='re_staging_notification_key'
 }
 
-test_accepts_exact_five_nul_fields() {
+test_accepts_exact_six_nul_fields() {
   read_fixed_input < <(printf '%s\0' \
     'runtime-password' \
     'migrator-password' \
     'jwt-secret-with-at-least-thirty-two-bytes' \
     'identifier-secret-with-at-least-32-bytes' \
+    'community-cursor-secret-with-at-least-32-bytes' \
     're_staging_notification_key')
   validate_inputs
 
   assert_equals 'runtime-password' "${RUNTIME_PASSWORD}" "Runtime password를 읽어야 합니다."
   assert_equals 'migrator-password' "${MIGRATOR_PASSWORD}" "Migrator password를 읽어야 합니다."
+  assert_equals 'community-cursor-secret-with-at-least-32-bytes' "${COMMUNITY_CURSOR_HMAC_SECRET}" \
+    "Community cursor secret을 읽어야 합니다."
   assert_equals 're_staging_notification_key' "${RESEND_API_KEY}" "Resend API key를 읽어야 합니다."
 }
 
@@ -79,11 +83,12 @@ test_rejects_missing_or_trailing_input() {
     'migrator-password' \
     'jwt-secret-with-at-least-thirty-two-bytes' \
     'identifier-secret-with-at-least-32-bytes' \
+    'community-cursor-secret-with-at-least-32-bytes' \
     're_staging_notification_key' \
     'extra')) >/dev/null 2>&1
   status=$?
   set -e
-  [[ "${status}" -ne 0 ]] || fail_test "여섯 번째 stdin field를 거부해야 합니다."
+  [[ "${status}" -ne 0 ]] || fail_test "일곱 번째 stdin field를 거부해야 합니다."
 }
 
 test_rejects_invalid_runtime_contract() {
@@ -112,6 +117,14 @@ test_rejects_invalid_runtime_contract() {
   status=$?
   set -e
   [[ "${status}" -ne 0 ]] || fail_test "32 bytes 미만 HMAC secret을 거부해야 합니다."
+
+  set_valid_inputs
+  COMMUNITY_CURSOR_HMAC_SECRET="${AUTH_JWT_HMAC_SECRET}"
+  set +e
+  (validate_inputs) >/dev/null 2>&1
+  status=$?
+  set -e
+  [[ "${status}" -ne 0 ]] || fail_test "인증 secret을 Community cursor에 재사용하면 거부해야 합니다."
 }
 
 test_has_no_secondary_verification_mode_or_cross_script_dependency() {
@@ -133,6 +146,7 @@ test_applies_exact_resources_without_secret_arguments() {
   MIGRATOR_PASSWORD="${secret_sentinel}-migrator"
   AUTH_JWT_HMAC_SECRET="${secret_sentinel}-jwt-01234567890123456789012345678901"
   AUTH_LOGIN_IDENTIFIER_HMAC_SECRET="${secret_sentinel}-identifier-01234567890123456789012345678901"
+  COMMUNITY_CURSOR_HMAC_SECRET="${secret_sentinel}-community-01234567890123456789012345678901"
   RESEND_API_KEY="${secret_sentinel}-resend"
 
   kubectl_admin() {
@@ -157,9 +171,11 @@ test_applies_exact_resources_without_secret_arguments() {
   assert_contains "${manifest_log}" "DB_MIGRATOR_USERNAME: $(base64_no_wrap 'carmunity_migrator')" \
     "Migrator username은 고정 값을 적용해야 합니다."
   assert_contains "${manifest_log}" 'name: car-community-auth' "Auth Secret을 적용해야 합니다."
+  assert_contains "${manifest_log}" 'name: car-community-community' "Community Secret을 적용해야 합니다."
+  assert_contains "${manifest_log}" 'COMMUNITY_CURSOR_HMAC_SECRET:' "Cursor key schema를 적용해야 합니다."
   assert_contains "${manifest_log}" 'name: car-community-notification' "Notification Secret을 적용해야 합니다."
   assert_contains "${manifest_log}" 'RESEND_API_KEY:' "Resend key schema를 적용해야 합니다."
-  assert_equals '5' "$(grep -c '^kind:' "${manifest_log}")" "정확히 다섯 resource를 적용해야 합니다."
+  assert_equals '6' "$(grep -c '^kind:' "${manifest_log}")" "정확히 여섯 resource를 적용해야 합니다."
   assert_excludes "${manifest_log}" "${secret_sentinel}" "Secret manifest에 plaintext를 쓰면 안 됩니다."
 }
 
@@ -205,7 +221,7 @@ run_tests() {
   TEST_ROOT="$(mktemp -d)"
   trap cleanup EXIT
 
-  run_test test_accepts_exact_five_nul_fields
+  run_test test_accepts_exact_six_nul_fields
   run_test test_rejects_missing_or_trailing_input
   run_test test_rejects_invalid_runtime_contract
   run_test test_has_no_secondary_verification_mode_or_cross_script_dependency

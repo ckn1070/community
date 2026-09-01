@@ -14,6 +14,7 @@ readonly APPLICATION_NAMESPACE="car-community"
 readonly RUNTIME_SECRET="car-community-db-runtime"
 readonly MIGRATOR_SECRET="car-community-db-migrator"
 readonly AUTH_SECRET="car-community-auth"
+readonly COMMUNITY_SECRET="car-community-community"
 readonly NOTIFICATION_SECRET="car-community-notification"
 readonly FIELD_MANAGER="car-community-application-bootstrap"
 readonly SECRET_FIELD_MANAGER="car-community-application-secrets"
@@ -25,6 +26,7 @@ RUNTIME_PASSWORD=""
 MIGRATOR_PASSWORD=""
 AUTH_JWT_HMAC_SECRET=""
 AUTH_LOGIN_IDENTIFIER_HMAC_SECRET=""
+COMMUNITY_CURSOR_HMAC_SECRET=""
 RESEND_API_KEY=""
 
 print_usage() {
@@ -35,11 +37,12 @@ print_usage() {
     "${STG_DB_MIGRATOR_PASSWORD}" \
     "${STG_AUTH_JWT_HMAC_SECRET}" \
     "${STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}" \
+    "${STG_COMMUNITY_CURSOR_HMAC_SECRET}" \
     "${STG_RESEND_API_KEY}" \
   | env -i HOME="${HOME}" PATH="${PATH}" ssh ubuntu@<EC2> \
     'sudo -n /home/ubuntu/car-community-scripts/bootstrap/application/200-apply-application-prerequisites.sh'
 
-정확히 다섯 개의 NUL-delimited Secret 값만 stdin으로 받습니다. DB username은
+정확히 여섯 개의 NUL-delimited Secret 값만 stdin으로 받습니다. DB username은
 carmunity_runtime과 carmunity_migrator로 고정합니다. .env 파일 자체와 실제 값은
 argument·log·temporary file에 기록하지 않습니다.
 EOF
@@ -67,6 +70,7 @@ read_fixed_input() {
     MIGRATOR_PASSWORD \
     AUTH_JWT_HMAC_SECRET \
     AUTH_LOGIN_IDENTIFIER_HMAC_SECRET \
+    COMMUNITY_CURSOR_HMAC_SECRET \
     RESEND_API_KEY
   if [[ -t 0 ]]; then
     fail "Secret은 terminal이 아니라 NUL-delimited stdin으로 전달해야 합니다."
@@ -76,10 +80,11 @@ read_fixed_input() {
   read_nul_field MIGRATOR_PASSWORD STG_DB_MIGRATOR_PASSWORD
   read_nul_field AUTH_JWT_HMAC_SECRET STG_AUTH_JWT_HMAC_SECRET
   read_nul_field AUTH_LOGIN_IDENTIFIER_HMAC_SECRET STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET
+  read_nul_field COMMUNITY_CURSOR_HMAC_SECRET STG_COMMUNITY_CURSOR_HMAC_SECRET
   read_nul_field RESEND_API_KEY STG_RESEND_API_KEY
 
   if IFS= read -r -d '' trailing_input || [[ -n "${trailing_input}" ]]; then
-    fail "stdin에는 정확히 다섯 field만 있어야 합니다."
+    fail "stdin에는 정확히 여섯 field만 있어야 합니다."
   fi
 }
 
@@ -105,6 +110,13 @@ validate_inputs() {
   fi
   if [[ "${AUTH_JWT_HMAC_SECRET}" == "${AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}" ]]; then
     fail "두 HMAC secret은 서로 달라야 합니다."
+  fi
+  if [[ "$(secret_byte_length "${COMMUNITY_CURSOR_HMAC_SECRET}")" -lt 32 ]]; then
+    fail "Community cursor HMAC secret은 32 bytes 이상이어야 합니다."
+  fi
+  if [[ "${COMMUNITY_CURSOR_HMAC_SECRET}" == "${AUTH_JWT_HMAC_SECRET}" \
+      || "${COMMUNITY_CURSOR_HMAC_SECRET}" == "${AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}" ]]; then
+    fail "Community cursor HMAC secret은 인증 HMAC secret과 달라야 합니다."
   fi
   if [[ -z "${RESEND_API_KEY//[[:space:]]/}" \
       || "${RESEND_API_KEY}" == *$'\n'* \
@@ -163,6 +175,7 @@ apply_resources() {
   local migrator_password_encoded
   local jwt_secret_encoded
   local identifier_secret_encoded
+  local community_cursor_secret_encoded
 
   cat <<EOF | apply_yaml_stream
 apiVersion: v1
@@ -179,6 +192,7 @@ EOF
   migrator_password_encoded="$(base64_no_wrap "${MIGRATOR_PASSWORD}")"
   jwt_secret_encoded="$(base64_no_wrap "${AUTH_JWT_HMAC_SECRET}")"
   identifier_secret_encoded="$(base64_no_wrap "${AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}")"
+  community_cursor_secret_encoded="$(base64_no_wrap "${COMMUNITY_CURSOR_HMAC_SECRET}")"
 
   cat <<EOF | apply_yaml_stream
 apiVersion: v1
@@ -216,6 +230,17 @@ type: Opaque
 data:
   AUTH_JWT_HMAC_SECRET: ${jwt_secret_encoded}
   AUTH_LOGIN_IDENTIFIER_HMAC_SECRET: ${identifier_secret_encoded}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${COMMUNITY_SECRET}
+  namespace: ${APPLICATION_NAMESPACE}
+  labels:
+    app.kubernetes.io/managed-by: ${FIELD_MANAGER}
+type: Opaque
+data:
+  COMMUNITY_CURSOR_HMAC_SECRET: ${community_cursor_secret_encoded}
 EOF
 
   application_secret_apply_notification \
@@ -231,6 +256,7 @@ verify_resources() {
     "secret/${RUNTIME_SECRET}" \
     "secret/${MIGRATOR_SECRET}" \
     "secret/${AUTH_SECRET}" \
+    "secret/${COMMUNITY_SECRET}" \
     "secret/${NOTIFICATION_SECRET}" \
     >/dev/null
   application_secret_verify_notification \
@@ -244,6 +270,7 @@ cleanup() {
   MIGRATOR_PASSWORD=""
   AUTH_JWT_HMAC_SECRET=""
   AUTH_LOGIN_IDENTIFIER_HMAC_SECRET=""
+  COMMUNITY_CURSOR_HMAC_SECRET=""
   RESEND_API_KEY=""
 }
 
@@ -265,14 +292,14 @@ main() (
       ;;
   esac
 
-  echo "[입력] 다섯 개의 application Secret 값을 확인합니다."
+  echo "[입력] 여섯 개의 application Secret 값을 확인합니다."
   read_fixed_input
   validate_inputs
   run_preflight
   echo "[적용] Namespace와 Secret을 적용합니다."
   apply_resources
   verify_resources
-  echo "[완료] Application prerequisite resource 5개를 확인했습니다."
+  echo "[완료] Application prerequisite resource 6개를 확인했습니다."
 )
 
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then

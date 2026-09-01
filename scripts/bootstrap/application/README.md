@@ -82,14 +82,15 @@ Table DML과 identity sequence 권한은 role 생성 시 미리 부여하지 않
 | Secret `car-community-db-runtime` | `DB_USERNAME`, `DB_PASSWORD` |
 | Secret `car-community-db-migrator` | `DB_MIGRATOR_USERNAME`, `DB_MIGRATOR_PASSWORD` |
 | Secret `car-community-auth` | `AUTH_JWT_HMAC_SECRET`, `AUTH_LOGIN_IDENTIFIER_HMAC_SECRET` |
+| Secret `car-community-community` | `COMMUNITY_CURSOR_HMAC_SECRET` |
 | Secret `car-community-notification` | `RESEND_API_KEY` |
 
-입력은 두 role password, 서로 다른 32 bytes 이상의 두 HMAC secret과
-`STG_RESEND_API_KEY`인 다섯 NUL field입니다. Role 이름은 `carmunity_runtime`과
+입력은 두 role password, 서로 다른 32 bytes 이상의 인증 HMAC secret 두 개, 별도의 32 bytes
+이상 Community cursor HMAC secret과 `STG_RESEND_API_KEY`인 여섯 NUL field입니다. Role 이름은 `carmunity_runtime`과
 `carmunity_migrator`로 고정하므로 다시 입력받지 않습니다. Project field manager로
 `kubectl apply --server-side`를 실행하고
 `--force-conflicts`는 사용하지 않습니다. Secret 값은 base64 `data`로 변환하므로 CLI
-argument와 log에 원문을 넣지 않으며, 적용 뒤 resource 5개를 Kubernetes API에서 확인합니다.
+argument와 log에 원문을 넣지 않으며, 적용 뒤 resource 6개를 Kubernetes API에서 확인합니다.
 
 DB URL과 pinned Seoul RDS CA는 비밀이 아니므로 `200`이 받거나 내려받지 않습니다.
 `deploy/overlays/stg/pre-sync`의 Git-tracked ConfigMap이 Argo CD PreSync wave `-2`에서 먼저
@@ -102,6 +103,7 @@ printf '%s\0' \
   "${STG_DB_MIGRATOR_PASSWORD}" \
   "${STG_AUTH_JWT_HMAC_SECRET}" \
   "${STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}" \
+  "${STG_COMMUNITY_CURSOR_HMAC_SECRET}" \
   "${STG_RESEND_API_KEY}" \
 | env -i HOME="${HOME}" PATH="${PATH}" ssh ubuntu@<EC2> \
   'sudo -n /home/ubuntu/car-community-scripts/bootstrap/application/200-apply-application-prerequisites.sh'

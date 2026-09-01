@@ -8,6 +8,12 @@ metadata:
     app.kubernetes.io/part-of: car-community
     app.kubernetes.io/managed-by: argocd
 spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app.kubernetes.io/name: car-community
@@ -19,6 +25,7 @@ spec:
         app.kubernetes.io/component: api
         app.kubernetes.io/part-of: car-community
     spec:
+      serviceAccountName: car-community-application
       automountServiceAccountToken: false
       enableServiceLinks: false
       nodeSelector:
@@ -71,6 +78,38 @@ spec:
                 secretKeyRef:
                   name: car-community-auth
                   key: AUTH_LOGIN_IDENTIFIER_HMAC_SECRET
+            - name: COMMUNITY_ENABLED
+              value: "false"
+            - name: COMMUNITY_CURSOR_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-community
+                  key: COMMUNITY_CURSOR_HMAC_SECRET
+                  optional: true
+            - name: COMMUNITY_MEDIA_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: car-community-community-config
+                  key: COMMUNITY_MEDIA_BUCKET
+                  optional: true
+            - name: COMMUNITY_MEDIA_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: car-community-community-config
+                  key: COMMUNITY_MEDIA_REGION
+                  optional: true
+            - name: COMMUNITY_MEDIA_ROLE_ARN
+              valueFrom:
+                configMapKeyRef:
+                  name: car-community-community-config
+                  key: COMMUNITY_MEDIA_ROLE_ARN
+                  optional: true
+            - name: COMMUNITY_TRUSTED_PROXY_CIDRS
+              valueFrom:
+                configMapKeyRef:
+                  name: car-community-community-config
+                  key: COMMUNITY_TRUSTED_PROXY_CIDRS
+                  optional: true
           envFrom:
             - configMapRef:
                 name: car-community-notification-config
@@ -95,6 +134,9 @@ spec:
             - name: rds-ca
               mountPath: /etc/car-community/rds-ca
               readOnly: true
+            - name: aws-web-identity-token
+              mountPath: /var/run/secrets/aws/serviceaccount
+              readOnly: true
       volumes:
         - name: tmp
           emptyDir: {}
@@ -104,3 +146,10 @@ spec:
             items:
               - key: ap-northeast-2-bundle.pem
                 path: ap-northeast-2-bundle.pem
+        - name: aws-web-identity-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  audience: sts.amazonaws.com
+                  expirationSeconds: 3600
+                  path: token
