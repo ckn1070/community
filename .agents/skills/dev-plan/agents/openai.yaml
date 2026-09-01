@@ -2,4 +2,4 @@
 interface:
   display_name: "개발 계획"
   short_description: "현재 계획 단계의 결정과 artifact만 근거 있게 작성"
-  default_prompt: "Use $dev-plan to write only the current plan stage and its allowed artifacts, keep recommendation, selection, and user confirmation distinct, collect every currently answerable user-owned decision into one stage decision block, and do not transition or create dependent details before the user confirms the exact current-stage result."
+  default_prompt: "Use $dev-plan to write only the current plan stage and its allowed artifacts, keep recommendation, selection, confirmation, and mutation authority distinct without forcing duplicate confirmation turns, collect answerable user-owned decisions into one block, pause on real ambiguity, and continue when an unambiguous final confirmation closes the stage."
