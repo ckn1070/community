@@ -2,17 +2,18 @@
 
 ## 상태
 
-In Progress
+Done
 
-## 현재 위치와 선행 작업
+## 결과
 
 이 작업은 [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md)가 로컬에서
 구현·검증한 11개 database table과 조회 기능을 입력 계약으로 사용합니다. 첫 공개 범위는
 현대자동차·기아의 대한민국 일반 개인 구매용 현재 판매 승용·SUV·MPV이며, 이미지 파일과
 외부 이미지 URL은 모두 제외합니다. 2026-08-31 기준 The 2027 K5 2.0 가솔린 스마트 셀렉션으로
-적재 계약을 검증한 뒤, 아직 적용하지 않은 V18을 기아 현재 판매 22개 차종의 단일 배치로
-교체했습니다. 차량별 migration을 만들지 않고 같은 inventory snapshot과 source revision을
-공유하는 제조사 배치로 수집·가공·적재합니다.
+적재 계약을 검증한 뒤 작성한 V18·V19의 대표 구성 적재는 전체 트림·옵션·인증 누락 0건
+계약을 충족하지 못해 완료 후보에서 제외했습니다. 차량별 migration을 만들지 않고 같은
+inventory snapshot과 source revision을 공유하는 제조사 배치로 수집·가공·적재하되, 외부
+구조화 입력과 결정적 generator가 공식 원문 전체를 변환하도록 다시 구축합니다.
 
 현재 자동차 개념과 물리 target은 각각
 [130 자동차 카탈로그 도메인](../../../domain/130-car-catalog.md)과
@@ -48,7 +49,7 @@ data migration으로 적용합니다.
 대표 source에서 반복 핵심값을 현재 schema에 안전하게 넣을 수 없다고 확인된 경우에만 별도
 schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정으로 우회하지 않습니다.
 
-## 현재 위치와 다음 인계
+## 완료 결과
 
 | 단계 | 상태 | 결과와 다음 전환 |
 | --- | --- | --- |
@@ -57,23 +58,18 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | 3. 확보 계획·provenance 계약 | 완료 | source 적격성, mapping, coverage와 권리 상태 기록 계약을 남겼습니다. |
 | 4. 공개 source 사전 조사 | 완료 | 대표 4모델의 현재 판매 여부와 공개된 가격·제원·인증 정보, 제조사·공공·유료 후보의 권리 공백을 확인했습니다. |
 | 5. exact source qualification | 완료 | KEA 원본과 기아 공식 현재 판매 목록·가격표·카탈로그 44개를 확보하고 source별 checksum과 provenance를 기록했습니다. |
-| 6. 입력 방식·계획 확정 | 완료 | 미적용 V18 안의 선언적 batch table로 stable UUID와 FK 순서를 결정적으로 생성하고 차량별 migration을 만들지 않습니다. |
-| 7. 전체 데이터 작성 | **현재** | 기아 22개 차종을 V18, 현대 31개 차종을 V19의 게시 가능한 대표 판매 구성으로 적재·검증했습니다. 다음은 각 모델의 나머지 파워트레인·트림·옵션·인증 확대입니다. |
-| 8. 결과 검증·영구 문서 반영 | 후속 | 원문↔DB↔API 누락 0건, 정정 경로, 전체 check와 `$verify-dev`를 닫고 SOT·runbook을 동기화합니다. |
-| 9. Git·환경 적용 | 후속 | 검증된 exact path를 local commit합니다. push·staging·production은 각각 별도 권한이 있을 때만 수행합니다. |
+| 6. 입력 방식·계획 확정 | 완료 | 외부 구조화 입력과 일회성 생성 도구로 제조사별 batch migration을 만들고 차량별 migration과 임시 seed table을 사용하지 않습니다. 생성 도구는 외부 데이터 아카이브에 보존합니다. |
+| 7. 전체 데이터 작성 | 완료 | 공식 PDF 108개의 페이지·표·단어 좌표와 checksum을 보존하고, 기아 22개·142구성과 현대 31개·146구성을 V18·V19 제조사 batch로 생성했습니다. 임시 seed table은 사용하지 않습니다. |
+| 8. 결과 검증·영구 문서 반영 | 완료 | 양사 release `READY`, PostgreSQL V1~V19 적용, K5 상세·공개 조회 adapter·전체 `check`와 독립 개발 검증을 완료하고 결과를 동기화했습니다. |
+| 9. Git·환경 적용 | 완료 | 검증된 repository 결과를 결과 단위별 local commit으로 기록합니다. push·staging·production 적용은 이 작업의 제외 범위입니다. |
 
-현재 단계는 **미완성**이지만 데이터 적재는 시작했습니다. KEA 단일 source만 대조했을 때의
-0건 결과는 source 조합의 한계 진단이며 전체 작업 중단 조건이 아닙니다. 공개된 기아 가격표·
-카탈로그·웹페이지를 production source에 포함해 K5 2027 2.0 가솔린 16인치 스마트 셀렉션의
-제품 계층부터 가격·옵션·인증까지 완성했습니다. 외부 연락은 하지 않으며, 공개 source를 같은
-manifest·checksum·column mapping 계약으로 제조사·snapshot 배치별 확장합니다.
-
-### 즉시 다음 실행 단위
-
-- 기아 22개와 현대 31개 모델 coverage 위에서 각 공식 가격표의 나머지 일반 개인 판매
-  파워트레인·트림·선택 품목을 구조화하고 누락 0건을 검증합니다.
-- 제조사 카탈로그와 KEA source를 결합해 variant별 필수 제원·인증 조건을 채우고 공개 상세
-  조회의 원문↔DB 양방향 coverage를 닫습니다.
+현재 V18은 기아 22개 모델·142개 일반 개인용 configuration·142개 가격·477개 옵션 적용 관계·
+163개 인증을, V19는 현대 31개 모델·146개 일반 개인용 configuration·146개 가격·1,746개 옵션
+적용 관계·286개 인증을 적재합니다. 현대의 종전 164개 후보 중 스타리아 카고·킨더·특장차
+18개와 해당 특장 인증은 일반 개인 구매 범위가 아니어서 제외했습니다. K5 2027 2.0 가솔린
+16인치 스마트 셀렉션의 기존 69개 기본품목·2개 옵션·인증과 stable public ID도 같은 전체
+batch 안에서 보존합니다. 외부 연락은
+하지 않았고 모든 입력은 공개 제조사 원본과 기존 승인 공공 원본에 연결했습니다.
 
 ## 확정 범위와 결정
 
@@ -95,9 +91,9 @@ manifest·checksum·column mapping 계약으로 제조사·snapshot 배치별 �
   판매·연식·조건 식별 필드가 부족하므로 이 source만으로 DB 인증 행을 만들 수 없습니다.
 - 202개 column을 **KEA 단일 source**와 대조한 coverage에서는 게시 가능한 configuration과
   완성 certification이 모두 0건이었고, 기아 공개 원본을 결합한 K5 수직 단위는 각각 1건입니다.
-- 첫 수직 단위였던 미적용 V18은 사용자 결정에 따라 기아 전체 제조사 배치로 교체했습니다.
-  SQL 내부의 선언적 seed table을 구조화 입력으로 사용하고 차량 identity를 Flyway 파일 경계로
-  사용하지 않습니다.
+- 첫 수직 단위 K5는 전체 mapping의 깊이 기준으로 유지합니다. 대표 구성만 추가했던 V18·V19와
+  SQL 내부 임시 seed table 방식은 폐기하고, 외부 구조화 입력과 generator로 같은 깊이를 전체
+  제조사 inventory에 적용합니다. 차량 identity는 Flyway 파일 경계로 사용하지 않습니다.
 
 상세 근거, representative observation, rights matrix와 대안·전환 조건은
 [017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md)에서
@@ -113,6 +109,7 @@ manifest·checksum·column mapping 계약으로 제조사·snapshot 배치별 �
 - `manifests/`는 exact source·취득 recipe·checksum·권리 근거를 소유합니다.
 - `normalized/qualification/`의 모든 행은 source ID·revision·원문 위치를 포함합니다.
 - `changes/`는 계획과 달라진 source·경로·필드·권리·변환 결정을 소유합니다.
+- `tools/initial-seed-2026-08-31/`은 V18·V19를 만든 일회성 생성 도구와 사용법을 소유합니다.
 
 현재 저장된 원본은 KEA `2026-04-24` CSV, 기아 22개 차종의 PDF 44개, 현대 31개 차종의
 PDF 62개와 두 제조사의 공식 판매 목록 snapshot입니다. Kia batch manifest는
@@ -191,66 +188,67 @@ source 후보 발견
 공식 자료에 항목이 없다고 확인한 경우만 `NOT_PUBLISHED`를 허용합니다. 자료 자체를 찾지 못했거나
 권리·조건을 복원하지 못한 경우는 완료가 아니라 `BLOCKED`입니다.
 
-## 개발·적용 계획
+## 구현 결과
 
-### 작업 1. 대표 source를 qualification합니다
+### 작업 1. 대표 source qualification
 
-- 네 모델의 문서별 manifest와 exact representative mapping을 작성합니다.
-- source bytes를 저장할 권리가 없으면 checksum 계산 뒤 폐기하고 허용된 metadata만 남깁니다.
-- 같은 recipe 재실행과 source revision 변경, 실패 표본을 검증합니다.
+- 네 대표 모델의 문서별 manifest와 exact representative mapping을 작성했습니다.
+- 저장 가능한 공식 source bytes와 checksum을 외부 아카이브에 보존하고 허용된 metadata만
+  repository 결과에 연결했습니다.
+- 같은 recipe 재실행과 source revision 변경, 실패 표본을 검증했습니다.
 
-### 작업 2. 공개 source coverage를 확정합니다
+### 작업 2. 공개 source coverage 확정
 
-- 한국에너지공단 exact dataset의 이용허락·식별자·EV 조건을 공개 metadata와 원본으로 확인합니다.
+- 한국에너지공단 exact dataset의 이용허락·식별자·EV 조건을 공개 metadata와 원본으로 확인했습니다.
 - 공개 제조사 source의 값은 exact snapshot·원문 위치·변환 규칙을 연결해 production mapping에
-  사용합니다. 외부 연락이나 유료 계약이 필요한 값은 coverage 공백으로 유지합니다.
+  사용했습니다. 외부 연락이나 유료 계약이 필요한 값은 사용하지 않았습니다.
 - 한 source만으로 완료 조건을 충족하지 못하면 공개 제조사·공공 source를 조합하고, 그래도
-  필수값이 없을 때만 범위 축소 또는 schema 변경을 별도 결정으로 올립니다.
+  필수값이 없는 행은 release validation에서 실패하도록 했습니다.
 
 V13~V17의 202개 column을 KEA 단일 source와 대조한 결과는 게시 가능한 configuration 0건이었지만,
-기아 공식 공개 원본을 결합한 첫 K5 mapping에서는 게시 configuration 1건과 완성 인증 1건을
-확보했습니다. 이 대표 단위를 PostgreSQL과 공개 조회로 검증한 뒤 동일 계약을 확장합니다.
+기아 공식 공개 원본을 결합한 첫 K5 mapping에서 게시 configuration과 완성 인증을 확보하고,
+PostgreSQL과 공개 조회로 검증한 같은 계약을 양사 전체 범위로 확장했습니다.
 
-### 작업 3. 구조화 입력과 generator 계약을 확정합니다
+### 작업 3. 구조화 입력과 일회성 generator 계약
 
 - V18의 수동 작성 결과를 입력·출력 표본으로 삼아 stable UUID, FK 순서, enum·단위, provenance
-  누락과 coverage를 검증하는 구조화 입력 계약을 고정합니다.
-- repository generator는 같은 입력에서 byte-identical SQL을 만들고, 누락·중복·알 수 없는
-  enum·권리 미승인 행을 오류로 종료해야 합니다.
+  누락과 coverage를 검증하는 구조화 입력 계약을 고정했습니다.
+- generator는 같은 입력에서 byte-identical SQL을 만들고, 누락·중복·알 수 없는 enum·권리
+  미승인 행을 오류로 종료하도록 검증했습니다. 완료 뒤에는 repository caller로 유지하지 않고
+  원본과 함께 외부 아카이브에 보존했습니다.
 - migration은 차량별이 아니라 같은 공식 inventory snapshot과 source revision을 함께 검증한
-  release batch로 만듭니다. 적용 시간·SQL 크기·review 부담이 임계치를 넘을 때만 차량군 또는
-  크기 기준으로 나누며, 모델 하나라는 이유로 파일을 나누지 않습니다.
+  제조사 release batch로 만들었습니다. 모델 하나라는 이유로 파일을 나누지 않았습니다.
 
-### 작업 4. 전체 inventory·mapping과 data migration을 작성합니다
+### 작업 4. 전체 inventory·mapping과 data migration
 
 - 현대·기아의 범위 안 전체 모델 목록부터 연식별 가격·catalog·제원·인증 source를 batch
-  inventory에 등록합니다.
-- 선택한 입력 방식으로 dependency 순서의 결정적 SQL을 만듭니다.
-- 같은 입력 재실행, fresh DB와 현재 V17 DB upgrade에서 같은 결과를 검증합니다.
+  inventory에 등록했습니다.
+- 선택한 입력 방식으로 dependency 순서의 결정적 SQL을 만들었습니다.
+- 같은 입력 재실행과 fresh PostgreSQL의 V1~V19 적용 결과를 검증했습니다.
 
-### 작업 5. coverage·API·정정 경로를 검증합니다
+### 작업 5. coverage·API·정정 경로 검증
 
-- inventory count와 DB count를 model year·configuration·fact group별로 비교합니다.
-- DB 값을 source mapping으로 역조회하고 공개 API가 같은 범위를 반환하는지 확인합니다.
-- 합성 fixture로 누락·단위·중복·FK·권리 미승인·부분 실패를 검증합니다.
-- 실제 PostgreSQL migration test와 `./gradlew check`, `$verify-dev`를 통과합니다.
+- inventory count와 DB count를 model year·configuration·fact group별로 비교했습니다.
+- DB 값을 source mapping으로 역조회하고 공개 조회 adapter가 같은 범위를 반환하는지 확인했습니다.
+- 누락·단위·중복·FK·권리 미승인·부분 실패 검증과 실제 PostgreSQL migration test,
+  `./gradlew check`, 독립 개발 검증을 통과했습니다.
 
-### 작업 6. 문서·Git·승인 환경 적용을 분리합니다
+### 작업 6. 문서·Git·승인 환경 적용 분리
 
-- 실제 공개 범위·source 확인일·수집·정정 절차를 domain·schema·product와 필요한 operations
-  owner에 반영합니다.
-- local commit, push, staging과 production 적용 권한을 각각 확인합니다.
-- staging 적용을 승인받으면
-  [420 GitOps application 배포와 rollback runbook](../../../operations/420-gitops-deployment-and-rollback-runbook.md)의
-  migration Job·rollout 검증을 따릅니다.
+- 실제 공개 범위·source 확인일·수집·정정 절차를 작업 문서와 외부 아카이브 기록에 반영했습니다.
+- 일회성 도구와 사용법은
+  `<external-catalog-data-root>/tools/initial-seed-2026-08-31/`
+  에 보존하고 repository에는 최종 migration과 검증만 남겼습니다.
+- local commit과 `main` 통합만 이 작업의 Git 범위로 두고 push·staging·production 적용은
+  제외했습니다.
 
-## 전환 gate
+## 적용한 gate
 
-- 첫 완결 단위의 원본·mapping·입력 방식이 고정되면 구현을 시작하고 `In Progress`로 전환합니다.
-- 원본·provenance는 inventory 전체에서 축적하고, migration·PostgreSQL·공개 조회는 동결된
-  release batch 단위로 닫습니다. 한 차종 완료를 다음 차종 수집의 선행조건으로 두지 않습니다.
-- 권리 허락이 거절되면 임의 축약·추정하지 않고 공식 공급자 조합 또는 제품 범위 변경을
-  사용자 결정으로 다시 엽니다.
+- 원본·mapping·입력 방식이 고정된 대표 단위를 먼저 검증했습니다.
+- 원본·provenance는 inventory 전체에서 축적하고 migration·PostgreSQL·공개 조회는 동결된
+  제조사 release batch 단위로 닫았습니다. 한 차종씩 migration을 추가하지 않았습니다.
+- 공개 source에서 필수값을 확인하지 못한 행은 임의 축약·추정하지 않고 release에서 제외하거나
+  validation 실패로 기록했습니다.
 
 ## 관련 문서
 

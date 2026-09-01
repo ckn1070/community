@@ -20,4 +20,4 @@
 | 014 | Done | [014 Staging 외부 HTTPS ingress](014-staging-external-https-ingress.md) | [014 설계](014-staging-external-https-ingress-design.md) | LBC·ALB·ACM·Cloudflare DNS-only 외부 경로 구축 완료 |
 | 015 | Done | [015 API 운영 추적성](015-api-operational-traceability.md) | - | 정상·거부·실패 API 완료 이벤트와 고객 상관관계 자동화 |
 | 016 | In Progress | [016 신차 카탈로그 schema·조회 API](016-new-car-catalog-query-api.md) | [016 신차 카탈로그 DB 설계 결정 기록](016-new-car-catalog-query-api-design.md) | schema·조회 application/persistence/Web API 로컬 구현·검증 완료, remote gate 미확인 |
-| 017 | In Progress | [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md) | [017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md) | K5 첫 완결 데이터를 적재·검증하고 같은 provenance 계약으로 차종별 확장 중 |
+| 017 | Done | [017 자동차 카탈로그 초기 데이터 구축](017-car-catalog-initial-data.md) | [017 자동차 카탈로그 초기 데이터 확보 설계](017-car-catalog-initial-data-design.md) | 현대·기아 현재 판매 범위의 초기 seed와 provenance·DB 검증 완료 |

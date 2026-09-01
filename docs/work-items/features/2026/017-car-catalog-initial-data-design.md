@@ -147,14 +147,15 @@ source에만** 적용됩니다. 기아 공식 원본을 결합한 K5 2027 mappin
 
 runtime crawler·관리자 import는 현재 범위가 아닙니다. V18에서 수동 SQL이 한 configuration에도
 제품 계층·가격·옵션·인증과 stable UUID를 반복 작성해야 한다는 점을 확인했습니다. 아직 적용하지
-않은 V18은 외부 executable을 추가하지 않고 SQL 내부 선언적 seed table과 deterministic UUID
-표현식으로 기아 22개 차종을 한 번에 변환합니다. 차량별 SQL 복제는 사용하지 않습니다.
+않은 V18에 사용했던 SQL 내부 임시 seed table은 전체 필드 coverage를 검증할 입력 계약이
+아니므로 폐기합니다. 외부 구조화 입력과 deterministic generator로 제조사 inventory를 한
+번에 변환하며 차량별 SQL 복제는 사용하지 않습니다.
 
 | 대안 | 장점 | 비용·위험 | 채택 조건 |
 | --- | --- | --- | --- |
 | 검토된 수동 Flyway SQL | 새 도구가 없고 작은 범위에서 diff가 직접 보임 | 반복·오기·stable UUID·coverage 누락 위험 | V18 계약 검증 표본에만 사용하고 후속 전체 확대에는 사용하지 않음 |
 | 구조화 입력 + 기존 Gradle·Java 보조 | schema 검증과 결정적 변환을 재사용할 수 있음 | build 코드 경계와 입력 형식 유지 책임 | 기존 기능만으로 required validation·determinism을 충족하고 새 custom tool이 불필요함 |
-| SQL 내부 선언적 seed table | 별도 runtime 없이 Flyway가 같은 transaction에서 관계를 생성 | SQL review 비용과 source field 수동 대조 | 미적용 V18의 Kia batch에 채택. 모델 coverage를 PostgreSQL test로 고정 |
+| SQL 내부 선언적 seed table | 별도 runtime 없이 Flyway가 같은 transaction에서 관계를 생성 | source field와 전체 행 coverage를 숨기고 대표값 축약을 허용 | 폐기. V18·V19 최종 입력으로 사용하지 않음 |
 
 generator는 representative inventory·mapping 행 수, 생성 SQL line·byte 수, 동일 입력 2회 output
 diff, validation false positive/negative, 실행 시간과 PostgreSQL 적용 시간·lock을 기록합니다.
@@ -166,9 +167,11 @@ diff, validation false positive/negative, 실행 시간과 PostgreSQL 적용 시
 확장했습니다. 후속 현대 migration도 같은 공식 inventory snapshot과 source revision을 공유하는
 제조사 release batch로 만들며 차량 identity 자체를 파일 경계로 사용하지 않습니다.
 
-현재 대표 후보 CSV를 만든 macOS 기본 Ruby 2.6 parser는 qualification용 일회성 수단으로만
-남깁니다. 후속 generator는 repository가 소유하고 입력 schema, 결정적 출력, 오류·삭제 경로와
-검증 명령을 함께 제공합니다.
+현재 batch의 변환 도구는 최초 seed를 재현할 때만 참고하는 일회성 수단입니다. 애플리케이션·
+Flyway·Gradle·CI caller가 없으므로 repository에서는 제거하고, 원본·구조화 입력과 같은 수명을
+가진 외부 데이터 아카이브에 사용법·검증 명령과 함께 보존합니다. 이후 revision은 적용된
+V18·V19를 다시 만들지 않고 새 migration으로 처리하며, 도구 재사용 여부도 그 작업에서 다시
+판정합니다.
 
 ## 2026-08-31 계획 변경
 
@@ -182,8 +185,8 @@ diff, validation false positive/negative, 실행 시간과 PostgreSQL 적용 시
 | 공개 source coverage | KEA 단일 source에서 게시 가능 configuration·완성 인증 모두 0건 | 기아 공식 원본을 결합해 K5 configuration·인증 각 1건을 완성 | K5는 표본으로 종료하고 전체 inventory를 배치로 수집·검증 |
 | 입력 방식 | 대표 4모델 전체 비교 뒤 선택 | V18은 수동 SQL 표본, 후속 전체 범위는 구조화 입력+generator | 수동 SQL을 차량별로 복제하지 않음 |
 | migration 분할 | 모델별 수직 단위를 차례로 추가 | 같은 inventory snapshot·source revision의 검증된 release batch로 생성 | SQL 크기·적용 시간·review 임계치만 분할 근거로 사용 |
-| V18 처리 | K5 표본을 유지하고 새 번호부터 batch 추가 | migration 미적용이라는 사용자 확인에 따라 V18을 Kia 22개 차종 batch로 직접 교체 | K5 상세 행은 보존하고 나머지 21개 차종의 대표 게시 구성을 같은 transaction에 추가 |
-| generator 도입 | 별도 repository generator를 후속 표준으로 도입 | Kia batch는 SQL 내부 선언적 seed table과 PostgreSQL constraint/test로 필요한 결정성을 충족 | 새 executable의 owner·유지비 없이 모델별 migration 복제를 제거하며, 필요성이 다시 확인될 때 도입을 재평가 |
+| V18 처리 | K5 표본을 유지하고 새 번호부터 batch 추가 | 미적용 V18을 Kia 전체 batch로 교체하되 전체 트림·옵션·인증을 포함 | 대표 구성만 넣은 후보는 무효이며 K5 상세 깊이를 전체 차종에 적용 |
+| generator 도입 | 별도 repository generator를 후속 표준으로 도입 | 현재 batch 생성에는 사용했지만 반복 caller가 없어 외부 데이터 아카이브의 일회성 재현 도구로 보존 | repository에는 최종 migration과 DB 검증만 유지하고, 다음 revision의 도구 필요성은 다시 판정 |
 | 제조사 실행 순서 | 현대·기아 원본을 함께 모은 뒤 게시 batch 결정 | 사용자 결정에 따라 Kia 22개 V18을 검증·commit한 뒤 현대 31개 V19를 작성 | 앞 제조사 PostgreSQL 검증을 다음 제조사 mutation의 gate로 사용하고 두 결과를 별도 commit으로 보존 |
 | 현대 inventory revision | 2026년 7월 검색 snapshot 후보 | 실제 렌더링 페이지와 공식 상품 API는 2026년 8월 25일 갱신본 | 화면 노출 36개 중 킨더·ST1·포터 Electric 5개를 제외하고 31개를 현재 범위로 고정 |
 
