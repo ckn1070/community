@@ -226,6 +226,71 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             "SX20", "US30", "US31", "US33", "US34", "US39", "US40", "US41", "US46");
   }
 
+  /** 제조사 원문에서 정규화한 가격·옵션 적용 관계·인증 행 수를 배치별 고정값으로 검증합니다. */
+  @Test
+  void seedsCompleteManufacturerFactGroups() {
+    List<Map<String, Object>> counts =
+        jdbcTemplate.queryForList(
+            """
+            SELECT brand.code,
+                   COUNT(DISTINCT configuration.id) AS configurations,
+                   COUNT(DISTINCT price.id) AS prices,
+                   COUNT(DISTINCT option_row.id) AS options,
+                   COUNT(DISTINCT certification.id) AS certifications
+            FROM car_brand brand
+            JOIN car_model model ON model.brand_id = brand.id
+            JOIN car_generation generation ON generation.model_id = model.id
+            JOIN car_model_year model_year ON model_year.generation_id = generation.id
+            JOIN car_vehicle_variant variant ON variant.model_year_id = model_year.id
+            JOIN car_configuration configuration ON configuration.vehicle_variant_id = variant.id
+            JOIN car_configuration_price price ON price.configuration_id = configuration.id
+            LEFT JOIN car_configuration_option option_row
+                   ON option_row.configuration_id = configuration.id
+            LEFT JOIN car_certification certification
+                   ON certification.vehicle_variant_id = variant.id
+            WHERE brand.code IN ('KIA', 'HYUNDAI')
+            GROUP BY brand.code
+            ORDER BY brand.code
+            """);
+
+    assertThat(counts)
+        .containsExactly(
+            Map.of(
+                "code", "HYUNDAI",
+                "configurations", 146L,
+                "prices", 146L,
+                "options", 1_746L,
+                "certifications", 286L),
+            Map.of(
+                "code", "KIA",
+                "configurations", 142L,
+                "prices", 142L,
+                "options", 477L,
+                "certifications", 163L));
+  }
+
+  /** 인증 종류를 같은 모델의 첫 variant가 아니라 실제 추진 형식과 호환되는 variant에 연결합니다. */
+  @Test
+  void linksCertificationsToCompatiblePowertrains() {
+    Integer incompatibleRows =
+        jdbcTemplate.queryForObject(
+            """
+            SELECT COUNT(*)
+            FROM car_certification certification
+            JOIN car_vehicle_variant variant ON variant.id = certification.vehicle_variant_id
+            JOIN car_powertrain powertrain ON powertrain.id = variant.powertrain_id
+            WHERE (certification.certification_type = 'ELECTRIC'
+                       AND powertrain.propulsion_type <> 'BEV')
+               OR (certification.certification_type = 'HYDROGEN'
+                       AND powertrain.propulsion_type <> 'FCEV')
+               OR (certification.certification_type = 'LIQUID_FUEL'
+                       AND powertrain.propulsion_type NOT IN ('ICE', 'MHEV', 'HEV', 'PHEV'))
+            """,
+            Integer.class);
+
+    assertThat(incompatibleRows).isZero();
+  }
+
   /** 설계가 이름으로 고정한 133개 constraint와 조회 index 네 개를 빠짐없이 생성합니다. */
   @Test
   void createsExactNamedConstraintsAndQueryIndexes() {

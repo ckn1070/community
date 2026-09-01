@@ -208,6 +208,11 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
     assertThat(detail.model().name()).isEqualTo("K5");
     assertThat(detail.selectedModelYear().modelYear()).isEqualTo(2027);
     assertThat(detail.powertrains())
+        .filteredOn(
+            powertrain ->
+                powertrain
+                    .powertrainId()
+                    .equals(UUID.fromString("4a94ba5f-94fc-54d5-928d-1dc89384caef")))
         .singleElement()
         .satisfies(
             powertrain -> {
@@ -218,6 +223,9 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
                   .isEqualTo(1999);
             });
     assertThat(detail.variants())
+        .filteredOn(
+            variant ->
+                variant.variantId().equals(UUID.fromString("77d72233-88a4-5c7d-bbf4-1a45f2ab0f38")))
         .singleElement()
         .satisfies(
             variant -> {
@@ -230,6 +238,11 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
                         assertThat(certification.co2GPerKm()).isEqualByComparingTo("132.00");
                       });
               assertThat(variant.configurations())
+                  .filteredOn(
+                      configuration ->
+                          configuration
+                              .configurationId()
+                              .equals(UUID.fromString("7d836d76-88a1-5d9f-9da8-f7eb22c8c179")))
                   .singleElement()
                   .satisfies(
                       configuration -> {
