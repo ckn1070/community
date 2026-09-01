@@ -6,17 +6,18 @@
 - **설계 전체 확정 상태**: 미확정입니다.
 - **결과 정의**: 게시글 제목, 목록 페이지 이동과 알림 수신자를 포함한 15개 제품 결정이
   사용자 확정 상태로 닫혔습니다.
-- **개별 값 확정 상태**: D1~D11의 기술 선택과 D12의 첫 범위 미디어 3-table 구성이 사용자
-  확정 상태이고, D12의 나머지 계약과 D13~D19는 Agent 기술 선택 상태입니다. 개별 값 확정은
-  해결 설계 단계 전체 확정으로 전파하지 않습니다.
+- **개별 값 확정 상태**: D1~D13과 D15~D18은 사용자 확정 상태입니다. D19에서 이미지
+  decoder와 직접 관계없는 도구·외부 시스템 경계도 사용자 확정 상태입니다. D14의 일반적인
+  정적 이미지 형식 지원 요구를 반영해 다시 연 D14 허용 형식과 D19 decoder 계약은 Agent
+  기술 선택 상태입니다. 개별 값 확정은 해결 설계 단계 전체 확정으로 전파하지 않습니다.
 - **기술 선택 기준선**: D1~D19는 대안과 근거를 갖춰 Agent가 선택해 보존한 설계
-  기준선입니다. D1~D11과 D12 미디어 table 범위의 개별 확정 상태를 나머지 기술 선택 및
+  기준선입니다. D14·D19의 이미지 형식 계약을 제외한 개별 확정 상태를 해당 보완 계약 및
   해결 설계 단계 전체의 미확정 상태와 구분합니다.
 - **보존과 보완**: 기존 결정과 영향받지 않은 설계는 유지하고, 제목·게시글 페이지 이동·
   대화 알림 수신자·Account 공개 UUID 관계와 첫 범위 미디어 3-table 결정에 직접 의존하는
   계약만 보완했습니다.
-- **현재 확인 대상**: 제목과 preview, 게시글 번호 page, 알림 수신자 정책, Account 공개 UUID
-  FK와 댓글 관계 field를 포함한 D1~D19 전체의 exact 해결 설계 후보입니다.
+- **현재 확인 대상**: JPEG·PNG·정적 GIF·정적 WebP 입력과 JPEG·PNG 정규화를 포함해 보완된
+  D14·D19 및 기존 확정값을 합친 D1~D19 전체의 exact 해결 설계 후보입니다.
 - **소비 gate**: 이 후보의 독립 계획 검증이 통과하고 사용자님이 exact 후보를 확정해야 실행
   계획 단계로 넘어갈 수 있습니다. 그 전에는 구현 입력으로 소비하지 않습니다.
 
@@ -108,7 +109,7 @@ module·domain·API·data·transaction·security·media·notification·moderatio
 | 반응        | 콘텐츠·사용자 unique choice와 `LIKE`·`DISLIKE`                                      | 새 reaction type 추가와 별도 ranking projection     |
 | 신고        | moderation 소유 case와 Community 숨김 공개 계약                                       | 후속 계정 제재·감사·appeal을 moderation에 추가            |
 | 서비스 안 알림  | notification 소유 inbox row를 대화 transaction에서 동기 저장하고 후보 수신자를 정책으로 정제        | 게시글별 알림 해제와 이메일·push를 후속 추가             |
-| 이미지       | `media_asset`·`media_usage`·`media_job`, private S3와 비동기 검증·정리 worker              | 관리자 action·개별 정합성 case와 media 종류를 후속 추가 |
+| 이미지       | JPEG·PNG·정적 GIF·정적 WebP 입력, JPEG·PNG 정규화, 미디어 3-table과 private S3·비동기 worker | 새 decoder·관리자 action·개별 정합성 case를 후속 추가 |
 | 조회        | 게시글 번호 page와 대화·알림용 keyset cursor, author·반응 batch 조회                       | 검색·인기·추천 projection을 core write와 분리           |
 | 배포        | additive Flyway와 capability fail-close                                       | application rollback 시 새 schema·object 보존     |
 
@@ -953,8 +954,18 @@ Notification inbox 저장은 외부 전송이 아닌 같은 datasource의 DB ins
 
 #### 허용 형식과 안전 제한
 
-- v1은 static JPEG와 PNG만 허용합니다. GIF, SVG, WebP, HEIC, 영상과 일반 파일은
-  거부합니다.
+- **사용자 의견 요약**: 영상은 이번 범위에서 제외해도 되지만 JPEG와 PNG 두 형식만 허용하면
+  일반적인 이미지 업로드 경험에 비해 지나치게 제한적이므로, 널리 쓰이는 이미지 형식은
+  가능한 한 수용해야 한다는 우려가 있었습니다.
+- **Agent 답변·판단 요약**: JDK ImageIO가 기본 지원하는 형식 중 웹 게시글 입력으로 실익이
+  큰 정적 GIF를 추가하고, pure Java ImageIO plugin으로 읽을 수 있는 WebP도 추가하는 것이
+  현재 Java 21·ARM64 배포 경계를 유지하면서 범용성을 높이는 균형점입니다. BMP·TIFF는 웹
+  입력 실익보다 대용량·다중 image 처리 표면이 크고, HEIC/HEIF·AVIF는 현재 선택한 JVM
+  decoder 경계에서 검증된 지원이 없으며, SVG는 active content 보안 경계가 달라 제외합니다.
+- **최종 반영**: v1 입력은 JPEG/JPG, PNG, 단일 frame GIF와 단일 frame WebP를 허용하고,
+  모두 metadata를 제거해 JPEG 또는 PNG delivery object로 정규화합니다. animated GIF·WebP,
+  SVG, BMP, TIFF, HEIC/HEIF, AVIF, 영상과 일반 파일은 거부합니다. 새 형식은 MIME allow-list만
+  늘리지 않고 D19의 decoder admission을 통과해 추가합니다.
 - client file name, extension과 `Content-Type`은 신뢰하지 않습니다. 실제 byte signature와
   decode 결과를 기준으로 판정합니다.
 - 한 image 최대 10 MiB, 24 megapixel, 한 post 최대 10개, 전체 TEXT 20,000자, comment/reply
@@ -963,8 +974,9 @@ Notification inbox 저장은 외부 전송이 아닌 같은 datasource의 DB ins
   중단하고 실제 byte length와 SHA-256을 계산합니다. 그 뒤 known-length file을 S3
   `PutObject`의 SHA-256 checksum과 DB metadata에 결속하고 `finally` 경계에서 temporary file을
   삭제합니다. Declared file name과 `Content-Type`은 검증 근거가 아닙니다.
-- worker는 bounded concurrency `1`로 header·size·pixel 제한을 먼저 확인하고 decode합니다.
-  Orientation을 적용한 뒤 metadata를 버리고 JPEG/PNG로 다시 encode합니다.
+- worker는 bounded concurrency `1`로 header·size·pixel·frame 수 제한을 먼저 확인하고
+  decode합니다. Orientation을 적용한 뒤 metadata를 버리고 alpha channel이 필요하면 PNG,
+  그렇지 않으면 JPEG로 다시 encode합니다.
 - staging 원본은 절대 public read 대상이 아니며 검증 성공·실패 뒤 삭제 job 대상입니다.
 
 #### Media 상태
@@ -1148,12 +1160,43 @@ Issuer lifecycle은 다음을 고정합니다.
   deployment model을 유지합니다.
 - S3 adapter는 AWS SDK for Java 2.x의 S3 client와 STS web identity 지원을 사용합니다. SDK
   타입은 `media.internal.adapter.out.storage` 밖으로 노출하지 않습니다.
-- JPEG/PNG 검증·재인코딩은 Java ImageIO의 실제 decode 결과를 사용합니다. 새 format은 decoder
-  보안·ARM64 호환·resource 상한을 검증한 별도 adapter 결정 없이 MIME allow-list만 늘리지
-  않습니다.
+- JPEG·PNG·단일 frame GIF 검증과 JPEG·PNG 재인코딩은 JDK ImageIO의 실제 decode 결과를
+  사용합니다. 단일 frame WebP 입력은 pure Java
+  `com.twelvemonkeys.imageio:imageio-webp:3.14.0` reader를 같은 `media` 내부 decoder adapter
+  뒤에서 사용합니다. Format별 byte signature, frame 수, pixel 상한과 corrupt corpus를
+  검증하고 runtime reader 등록을 fail-close로 확인합니다.
+- 새 format은 decoder 보안, Java 21·ARM64 호환, resource 상한과 정규화 출력의 golden corpus를
+  통과한 별도 adapter 결정 없이 MIME allow-list만 늘리지 않습니다. Native library가 필요한
+  decoder는 별도 배포·취약점·성능 계약을 먼저 결정해야 합니다.
 - 현재 범위에는 Redis, message broker, search engine, CDN, antivirus SaaS와 별도 worker
   deployment를 도입하지 않습니다. DB job과 bounded worker가 현재 신뢰성 요구를 충족하지
   못한다는 측정값이 생기면 각각 독립적으로 재검토합니다.
+
+#### WebP reader 도입 판정
+
+- **근본 문제와 비교 경로**: JDK ImageIO만 사용하면 JPEG·PNG·GIF는 처리할 수 있지만 WebP
+  입력을 해석할 수 없습니다. Client 변환은 신뢰할 수 없는 입력 검증을 client에 넘기고,
+  ImageMagick·libvips는 더 많은 형식을 제공하는 대신 native binary·OS/CPU patch와 별도
+  sandbox 운영 표면을 만듭니다. 현재 필요한 단일 WebP read 책임에는 ImageIO SPI plugin이
+  가장 작은 경로입니다.
+- **선택과 순효과**: `imageio-webp:3.14.0`은 WebP read만 추가하고 정규화 write는 기존 JDK
+  JPEG·PNG writer를 유지합니다. 3.14.0은 WebP 전체 frame allocation을 줄이는 guard를 포함한
+  최신 고정 release입니다. Direct JAR SHA-256은
+  `40e5b82b99bde56889f810349615f9403aae6a0d39cdc27c6899754770bb3752`이며, 구현에서는
+  transitive artifact까지 Gradle dependency verification metadata에 고정합니다.
+- **실행·신뢰·실패 경계**: Build 때 Maven Central에서만 내려받고 runtime network·secret·AWS
+  권한은 사용하지 않습니다. Java 21 Linux ARM64 Pod의 media worker가 size-bounded temporary
+  file을 읽는 좁은 경계에서만 호출합니다. Reader 미등록, 손상·지원하지 않는 WebP와 frame
+  판정 불가는 asset을 `REJECTED`로 닫으며 JPEG/PNG로 오인하거나 원본을 공개하지 않습니다.
+- **독립 검증과 오판 한계**: byte signature·frame chunk parser, 정상·손상·대형·animated WebP
+  corpus, pixel·heap 상한과 실제 ARM64 container 실행을 독립 oracle로 사용합니다. 보수적인
+  false reject는 허용하지만 unsupported input을 READY로 만드는 false accept와 worker OOM은
+  허용하지 않습니다.
+- **Owner와 갱신·제거**: `media` module과 이 설계가 선택을 소유합니다. Version 갱신은 release
+  note·취약점·checksum·corpus·ARM64 결과를 다시 확인합니다. JDK가 같은 WebP read 책임을
+  안전하게 제공하거나 WebP 입력을 제품에서 제거하면 plugin과 dependency verification 항목을
+  함께 제거합니다. 더 많은 형식 때문에 native decoder가 필요해지면 이 판정을 재사용하지
+  않고 별도 배포·보안·복구 계약을 다시 결정합니다.
 
 ## API payload 핵심 계약
 
@@ -1244,6 +1287,7 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 | 공개 profile | account가 author 표시 DTO에 public profile link를 additive 제공 | Content는 같은 account 관계와 표시 batch 계약 유지 |
 | 새 reaction | reaction type과 별도 count/ranking projection 추가 | 사용자·target unique source row 유지 |
 | 글자 서식 | 새 body schema version과 parser·preview extractor 추가 | 제목 scalar와 v1 reader를 유지하고 기존 row를 강제 migration하지 않음 |
+| 추가 정적 이미지 형식 | format별 decoder adapter·signature·resource corpus를 추가하고 JPEG/PNG로 정규화 | 기존 IMAGE block과 media UUID·delivery 계약 유지 |
 | 게시글별 알림 해제 | Notification에 post·recipient preference를 추가해 후보 수신자를 filter | Community의 수신 후보와 기존 inbox row를 유지 |
 | 검색·인기·추천 | versioned body reader와 reaction source를 소비하는 cursor read projection 추가 | Core write와 현재 번호 page 계약 변경 불필요 |
 | 영상·파일 | media type별 검증 adapter와 새 body block 추가 | 기존 IMAGE asset과 v1 post block 해석 유지 |
@@ -1274,8 +1318,9 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
   수렴합니다.
 - Security: anonymous는 공개 GET만 접근하고 full session/member/admin 경계가 현재 policy와
   일치합니다.
-- Media: 위조 MIME, oversized/pixel bomb, SVG/GIF, checksum mismatch, 검증 전 원본과
-  `HIDDEN_RETAINED|RELEASED` usage가 노출되지 않습니다.
+- Media: JPEG·PNG·정적 GIF·정적 WebP의 정상·손상 corpus, 위조 MIME, oversized/pixel bomb,
+  animated GIF·WebP, SVG·BMP·TIFF·HEIC/HEIF·AVIF, checksum mismatch, 검증 전 원본과
+  `HIDDEN_RETAINED|RELEASED` usage가 계약대로 허용 또는 차단됩니다.
 - Recovery: worker 중단·재시작, S3 일시 실패와 중복 job 실행이 object/DB 상태를 잃거나 중복
   공개하지 않습니다. Reconciliation의 안전한 자동 복구, 해결 불가능한 `DEAD`·error
   code·metric과 terminal job 비재실행을 검증합니다.
@@ -1334,4 +1379,8 @@ resource name과 환경별 값은 이 기술 계약을 소비하는 실행 계�
   [AWS IAM OIDC provider](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html),
   [AWS SDK for Java credential chain](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html),
   [S3 PutObject와 checksum](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html),
-  [S3 lifecycle](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)
+  [S3 lifecycle](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html),
+  [JDK ImageIO 표준 format plugin](https://docs.oracle.com/en/java/javase/21/docs/api/java.desktop/javax/imageio/package-summary.html),
+  [TwelveMonkeys ImageIO 지원 format과 설치](https://github.com/haraldk/TwelveMonkeys/blob/master/README.md),
+  [TwelveMonkeys 3.14.0 release](https://github.com/haraldk/TwelveMonkeys/releases/tag/twelvemonkeys-3.14.0),
+  [Maven Central imageio-webp](https://repo1.maven.org/maven2/com/twelvemonkeys/imageio/imageio-webp/3.14.0/)
