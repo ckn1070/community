@@ -10,15 +10,23 @@ Proposed
 
 ## 현재 위치와 다음 작업
 
-| 항목 | 현재 상태 |
+결과 정의와 해결 설계는 완료됐고, 현재 Agent가 실행 계획을 작성·검증합니다.
+
+| 구분 | 요약값 |
 | --- | --- |
-| 결과 정의 | 15개 제품 결정 모두 사용자 확정 상태로 닫혀 있습니다. |
-| 해결 설계 | [016 일반 커뮤니티 해결 설계](016-general-community-design.md)의 D1~D19 기술 계약이 Agent 기술 결정으로 닫혔습니다. |
-| 보완 결과 | D16·D18에서 구현할 수 없는 replica 자동 판정과 전체 API 중단을 만드는 `Recreate`를 제거했습니다. |
-| 현재 actor | Agent가 구현 순서·검증·전환·복구 단위를 갖춘 실행 계획을 작성하고 독립 검증합니다. |
-| 현재 입력 | 명시적 replica `1`, `RollingUpdate`와 Pod별 local limiter를 사용하고 rollout 중 최대 두 Pod의 일시적 상한 증가를 허용합니다. |
-| 사용자 작업 | 없습니다. Agent가 질문 없이 실행 계획 작성과 검증을 이어서 수행합니다. |
-| 다음 단계 전환 | 실행 계획이 독립 검증을 통과하고 `Planned` checkpoint로 커밋되면 개발을 시작할 수 있습니다. |
+| 제품 결정 | 사용자 확정 15개 |
+| 기술 결정 | Agent 결정 D1~D19 |
+| 현재 actor | Agent |
+| 현재 행동 | 실행 계획 작성·독립 검증 |
+| 사용자 작업 | 없음 |
+| 구현 gate | 검증된 `Planned` checkpoint 커밋 |
+
+### 실행 계획의 핵심 입력
+
+- 배포: replica `1`과 `RollingUpdate`
+- 공개 보호: Pod별 local limiter
+- Rollout 비용: 최대 두 Pod의 일시적 상한 증가
+- 상세 계약: [016 일반 커뮤니티 해결 설계](016-general-community-design.md)의 D16·D18
 
 ### 보존된 핵심 기준
 
