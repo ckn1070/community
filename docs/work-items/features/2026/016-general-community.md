@@ -2,24 +2,26 @@
 
 ## 상태
 
-Proposed
+Planned
 
 ## 계획 단계
 
-실행 계획 작성
+개발 준비 완료
 
 ## 현재 위치와 다음 작업
 
-결과 정의와 해결 설계는 완료됐고, 현재 Agent가 실행 계획을 작성·검증합니다.
+결과 정의·해결 설계·실행 계획 검증이 완료됐습니다. 다음 개발은 U1 공통 경계·schema부터
+시작합니다.
 
 | 구분 | 요약값 |
 | --- | --- |
 | 제품 결정 | 사용자 확정 15개 |
 | 기술 결정 | Agent 결정 D1~D19 |
-| 현재 actor | Agent |
-| 현재 행동 | 실행 계획 작성·독립 검증 |
-| 사용자 작업 | 없음 |
-| 구현 gate | 검증된 `Planned` checkpoint 커밋 |
+| 계획 검증 | 통과, `Planned` 자격 충족 |
+| 다음 실행자 | 개발 Agent |
+| 정확한 다음 작업 | U1 module 공개 경계·Community 5-table additive schema의 실패 test부터 작성 |
+| 사용자 작업 | 개발을 시작하려면 별도 구현 요청 |
+| 외부 gate | A1 전에 별도 live 권한·Auth Event migration·AWS Block Public Access 대조 필요 |
 
 ### 실행 계획의 핵심 입력
 
@@ -44,6 +46,24 @@ Proposed
   첫 범위에서 제외하고, 새 형식은 기존 본문·media 식별자를 바꾸지 않는 decoder 경계로
   추가합니다.
 - API·DB·동시성·복구·migration 계약이 현재 핵심 기능과 후속 확장을 함께 보호합니다.
+
+## 전체 진행 지도
+
+| 단계 | 상태 | 결과와 전환 조건 |
+| --- | --- | --- |
+| 1. 결과 정의 | 완료 | 15개 제품 결정과 수용 기준을 사용자가 확정했습니다. |
+| 2. 해결 설계 | 완료 | D1~D19의 module·domain·API·DB·보안·운영 계약을 Agent 기술 결정으로 닫았습니다. |
+| 3. 실행 계획 | 완료 | 의미 단위, producer·consumer 의존성, TDD·전환·복구와 영구 SOT가 독립 검증을 통과했습니다. |
+| 4. 개발 | 다음 | 검증된 `Planned` checkpoint 뒤 공통 계약과 첫 게시글 slice부터 구현합니다. |
+| 5. 결과 검증·SOT | 후속 | 전체 local gate와 독립 구현 검증을 통과하고 실제 source를 영구 SOT에 반영합니다. |
+| 6. Git·remote gate | 후속 | 별도 Git 권한에 따라 commit·push하고 exact SHA의 CI·Sonar를 확인합니다. |
+| 7. 기반 배포 | 조건부 | 명시적 live 변경 권한과 Auth Event migration gate를 충족한 뒤 capability off로 배포합니다. |
+| 8. 기능 활성화 | 조건부 | storage·OIDC·proxy·limiter·rollout live 검증 뒤 별도 GitOps 변경으로 전체 기능을 함께 엽니다. |
+| 9. 종료 | 후속 | 제품 수용 기준의 실제 동작, 복구 경계와 영구 SOT가 모두 닫히면 `Done`으로 전환합니다. |
+
+현재 `Planned` checkpoint까지 완료됐고 정확한 다음 단계는 개발입니다. 구현 요청이 들어오면
+개발 Agent가 U1의 실패 test부터 시작합니다. 외부 AWS·Kubernetes 상태 변경과 push 권한은
+이 계획 작성 요청에서 생기지 않았습니다.
 
 ## 결과 정의 종료와 설계 인계
 
@@ -299,6 +319,228 @@ Proposed
 - 해결 설계는 제품 확정 기준선과 영향받지 않은 기술 결정을 보존하고, 구현 불가능한 replica
   자동 판정과 `Recreate`를 D16·D18의 명시적 singleton `RollingUpdate`·activation gate로
   국소 보완했습니다.
+
+## 요구사항과 실행 결과 연결
+
+| 결과 ID | 관찰할 제품 결과 | 구현·검증 owner |
+| --- | --- | --- |
+| R1 | 차량 데이터 없이 자유게시판이 독립적으로 존재합니다. | U1 schema·module, U2 게시글 slice |
+| R2 | 제목·본문 게시글의 번호 page, 상세, 수정·삭제와 tombstone이 계약대로 동작합니다. | U2 게시글 slice |
+| R3 | 1단 표시 대화와 직접 응답 대상이 보존되고 inbox 알림이 대화와 원자적으로 생성됩니다. | U3 대화·알림 |
+| R4 | 반응 선택과 신고·관리자 숨김이 중복·동시 요청에도 정해진 상태로 수렴합니다. | U4 참여·운영 |
+| R5 | 안전한 게시글 이미지만 private S3 생명주기와 결속되고 검증 전·숨김 이미지는 노출되지 않습니다. | U5 media, I1 storage·identity |
+| R6 | anonymous read 보호, capability 전환, migration·rollback과 후속 확장 경계가 기존 API를 훼손하지 않습니다. | U6 통합, V1 검증, A1·A2 전환 |
+
+## 구현·검증 실행 계획
+
+공통 계약과 이를 처음 소비하는 대표 결과를 먼저 검증한 뒤 나머지 기능을 확장합니다.
+U3와 U4는 U2 뒤 논리적으로 독립적이지만 자동 병렬 실행을 허용한다는 뜻은 아닙니다. U5의
+asset·worker core는 U2 뒤 시작할 수 있어도 관리자 숨김과 media usage 결속까지 완료하려면
+U4의 visibility 계약이 먼저 필요합니다. 실제 write set이 겹치면 같은 worktree에서 직렬로
+구현합니다.
+
+```text
+U1 공통 경계·schema -> U2 게시글 대표 slice -> {U3 대화·알림, U4 참여·운영}
+U2 + U4 ---------------------------------------> U5 media 완료
+I1 storage·workload identity ----------------------------------------------┐
+U3 + U5 ------------------------------------------------------------------> U6 통합·보호
+U6 -> V1 전체 검증·영구 SOT -> Git·remote gate -> A1 capability-off 기반 -> A2 활성화
+```
+
+### U1. Module 경계와 additive schema
+
+- **만들 결과**: `community`, `media`, `moderation` module과 기존 `notification`, `account`
+  공개 계약의 compile-time 경계를 만들고, Community core 5개 table과 고정 `free` board seed를
+  additive migration으로 제공합니다. Community capability는 계속 기본 `false`입니다.
+- **Producer → consumer**: Account의 쓰기 가능 상태·표시 이름 batch API, Media claim API와
+  Notification inbox store 계약이 producer입니다. U2가 Account·Media 계약을, U3가 Notification
+  계약을 처음 소비합니다.
+- **변경 경계**: D1의 bounded context·aggregate 방향, D2·D12의
+  `community_board|content|post|comment|reaction`, module `package-info`, 공개 DTO·Port만 만듭니다.
+  상대 module `internal`이나 table을 읽지 않습니다.
+- **Migration 규칙**: 구현 시점 HEAD에서 다음 비어 있는 Flyway version을 사용하고 이미 적용된
+  versioned file을 수정하지 않습니다. UUID Account FK, subtype·parent/root·reaction·visibility
+  check와 index를 실제 PostgreSQL이 최종 강제합니다.
+- **TDD·검증**: 먼저 Modulith/ArchUnit 경계 실패와 PostgreSQL migration·constraint 실패
+  사례를 만들고 최소 구현으로 통과시킵니다. Capability off에서 새 HTTP route와 worker가
+  생성되지 않는 context test도 이 단위가 소유합니다.
+- **복구·관찰**: 실패 시 capability off와 additive table을 보존하고 forward migration으로만
+  수정합니다. 완료 뒤 clean PostgreSQL에 5개 table·seed가 생기며 잘못된 subtype·부모·Account
+  참조를 DB가 거부합니다.
+
+### U2. 제목·본문 게시글 대표 vertical slice
+
+- **만들 결과**: 제목과 versioned body를 가진 게시글 작성, 최신 번호 page, 상세, ETag 기반
+  수정과 멱등 삭제를 Domain → UseCase → Port → Web/persistence adapter 한 경로로 완성합니다.
+- **의존성**: U1의 Community schema, Account 공개 API, Media claim 계약을 소비합니다. Media
+  adapter가 아직 준비되지 않은 test에서는 text-only 본문 또는 명시적 fake Port를 사용하며,
+  이 중간 결과를 public으로 활성화하지 않습니다.
+- **변경 경계**: `Idempotency-Key`, canonical body hash·preview, `If-Match`, 공개 UUID,
+  anonymous GET·full-session write, author·reaction batch projection과 page `0..N` 계약을
+  구현합니다. 차량·검색·추천 관계를 추가하지 않습니다.
+- **TDD·검증**: 제목 Unicode·whitespace, body v1, 같은/다른 idempotency payload, stale ETag,
+  tombstone, 음수·범위 밖 page, 고정 정렬, 목록 body JSON 미조회와 N+1 부재를 domain,
+  application, MVC, repository·PostgreSQL 순서로 검증합니다.
+- **복구·관찰**: Post 저장과 preview·media claim 중 하나만 commit되는 부분 성공을 허용하지
+  않습니다. 완료 뒤 내부 test profile에서 text-only 게시글의 전체 왕복이 처음 관찰되지만
+  capability off이므로 staging 사용자에게는 노출되지 않습니다.
+
+### U3. 댓글·답글과 서비스 안 알림
+
+- **만들 결과**: 최상위 댓글과 직접 parent/root를 보존하는 답글, 댓글 cursor 조회, inbox
+  목록·읽음 처리를 완성하고 `notification_inbox` migration을 추가합니다.
+- **의존성**: U2의 post/content identity와 U1의 Notification 공개 store 계약을 소비합니다.
+  Community가 수신 후보를 계산하고 Notification이 inbox aggregate·table을 소유합니다.
+- **변경 경계**: 답글은 화면 depth `1`로 투영하되 reply-to-reply의 direct parent를 잃지
+  않습니다. 최상위 댓글은 원글 작성자, 답글은 원글 작성자와 direct parent 작성자를 후보로
+  삼고 actor·중복을 제거합니다.
+- **TDD·검증**: 다른 post parent/root 거부, reply 정렬, 수신자 `0..2`, 같은 수신자, 자기 알림,
+  재시도와 inbox unique를 먼저 실패시킵니다. Inbox insert가 실패하면 comment도 rollback되는
+  실제 PostgreSQL transaction test를 필수로 둡니다.
+- **복구·관찰**: 대화와 inbox를 별도 보상 작업으로 맞추지 않습니다. 완료 뒤 댓글 하나가
+  저장되면 필요한 inbox row만 같은 transaction에서 관찰됩니다.
+
+### U4. 반응·신고·관리자 숨김
+
+- **만들 결과**: 좋아요·싫어요 선택·교체·취소, 사용자 신고, 관리자 report 조회·resolution과
+  Community visibility 전환을 완성하고 `moderation_report` migration을 추가합니다.
+- **의존성**: U2의 content identity·visibility 공개 계약을 소비합니다. Moderation은 Community
+  공개 hide 계약을 호출하고 상대 repository를 사용하지 않습니다.
+- **변경 경계**: 사용자·content당 reaction 하나, 동일 사용자의 open report 하나,
+  `HIDE_CONTENT|DISMISS`, report ETag, 작성자 삭제와 관리자 숨김의 독립 사실을 구현합니다.
+- **TDD·검증**: 동시 reaction upsert/delete, 중복 report, stale resolution, 이미 삭제·숨김된
+  대상, hide와 open report 종결의 원자성, 일반 사용자와 admin 권한 분리를 실제 DB와 MVC에서
+  검증합니다.
+- **복구·관찰**: 숨김 실패 시 report만 종결되지 않으며, 이미 성공한 숨김을 작성자 삭제로
+  되돌리지 않습니다. 완료 뒤 일반 조회의 tombstone과 관리자 report 사실이 동시에 보존됩니다.
+
+### U5. Media lifecycle와 post 결속
+
+- **만들 결과**: `media_asset`, `media_usage`, `media_job` migration, multipart reservation·upload,
+  JDK ImageIO 검증·정규화, private S3 adapter, bounded worker, 공개 image stream과 post
+  claim/release/hide를 완성합니다.
+- **의존성**: U1의 Media 공개 API와 U2의 post transaction을 소비해 asset·worker core를
+  시작하고, U4의 visibility transaction이 준비된 뒤 hide usage 결속까지 완료합니다. AWS SDK
+  for Java 2.x의 S3·STS web identity 타입은 storage adapter 안에만 둡니다.
+- **변경 경계**: JPEG·PNG·정적 GIF만 받아 JPEG·PNG로 재인코딩하고 WebP를 포함한 제외 형식,
+  10 MiB·24 MP·10 images 상한, checksum, deterministic delivery key, lease와 8회 retry,
+  `ACTIVE|HIDDEN_RETAINED|RELEASED` usage를 구현합니다.
+- **TDD·검증**: 정상·손상·위조·pixel bomb·animated corpus, bounded `/tmp` cleanup, S3 성공 뒤 DB
+  실패, lease 만료·늦은 worker, 중복 job, orphan reconciliation, 숨김 직후 404와 공개 stream
+  동시성·전달량을 검증합니다. 외부 S3 없이 domain·worker·SDK request 계약을 먼저 닫고 실제
+  STS/S3는 A1 live qualification이 소유합니다.
+- **복구·관찰**: 외부 I/O 중 DB transaction을 열지 않고 job 상태로 재시도합니다. Object를
+  자동 공개하거나 rollback 때 삭제하지 않습니다. 완료 뒤 fake storage와 PostgreSQL에서
+  upload부터 READY·claim·stream·release까지 수렴합니다.
+
+### I1. Private storage와 workload identity 기반
+
+- **만들 결과**: D15의 media bucket, 별도 public OIDC metadata bucket, IAM OIDC provider와
+  media role, application ServiceAccount·projected token, cursor secret 전달과 issuer 전환·회전
+  절차를 repository source로 만듭니다.
+- **Resource identity**: bucket은 각각
+  `car-community-stg-media-<AWS_ACCOUNT_ID>-ap-northeast-2`와
+  `car-community-stg-oidc-<AWS_ACCOUNT_ID>-ap-northeast-2`, role은
+  `car-community-stg-media-role`, ServiceAccount는
+  `car-community/car-community-application`, token path는
+  `/var/run/secrets/aws/serviceaccount/token`, token·STS session은 `3,600초`를 사용합니다.
+  Account ID·ARN·VPC CIDR은 live source에서 파생하며 사용자 선택값으로 만들지 않습니다.
+- **도구·문서 경계**: 현재 공식 AWS CLI·kubeadm·kubectl과 GitOps manifest를 사용하고 새 IaC
+  framework를 도입하지 않습니다. 최초 AWS·issuer mutation, 기존 cluster의 multi-issuer
+  overlap, key rotation은 목적·권한·복구가 다른 재사용 runbook으로 분리하고, 반복 검증만 좁은
+  verifier/script가 정당한 경우에 둡니다.
+- **검증**: Manifest contract는 automount off, exact audience·TTL·path·ServiceAccount,
+  prefix 최소 권한과 node credential fallback 금지를 확인합니다. Media bucket의 전체 public
+  차단·SSE-S3와 identity bucket의 두 metadata object만 공개되는 policy를 분리합니다. Runbook/source
+  검증은 live 성공을 대신하지 않으며 Organizations·Account·bucket Block Public Access,
+  discovery/JWKS HTTPS, STS subject/audience와 S3 prefix 접근은 A1에서 확인합니다.
+- **권한·복구**: 이 계획은 AWS·control-plane 변경 권한이 아닙니다. Live 실행 전 exact target과
+  old/new issuer, token TTL, 복귀 순서를 제시해 명시적 허락을 받습니다. 첫 범위는 new issuer로
+  발급하면서 old issuer 검증을 계속 유지합니다. 상위 Block Public Access가 public policy를
+  막으면 이를 낮추지 않고 D15를 다시 엽니다. 실패하면 old issuer를 발급 우선으로 복귀시키되
+  new issuer·key·provider는 token TTL과 실제 consumer 확인 전에 삭제하지 않습니다.
+
+### U6. Capability, 보안, 관측과 GitOps 합류
+
+- **만들 결과**: U2~U5와 I1의 contract를 한 application에 조립하고 공개 GET allow-list,
+  full-session/admin 정책, signed cursor, trusted proxy client key, bounded local limiter,
+  health·metric·structured event와 capability off/on 설정을 완성합니다.
+- **설정 계약**: `COMMUNITY_ENABLED=false`가 기본이며 cursor HMAC secret, media bucket·region·
+  role ARN·token path, trusted proxy CIDR, limiter·worker 값은 validated
+  `@ConfigurationProperties`로 한 번 binding합니다. Cursor secret은 JWT·identifier secret과
+  다른 `car-community-community` Secret이 소유합니다. `.env.example`·`application.yaml`,
+  staging ConfigMap·Secret producer와 Deployment env consumer를 같은 변경에서 동기화하고,
+  Migration Job은 capability 기본값 false에서 media secret 없이도 계속 기동돼야 합니다.
+- **배포 계약**: Base Deployment에 `replicas: 1`, `RollingUpdate(maxSurge=1,
+  maxUnavailable=0)`, exact ServiceAccount·projected token을 명시하고 HPA를 두지 않습니다.
+  Capability가 false이면 route·worker가 비활성이고, true인데 필수 dependency가 없으면
+  Community만 `503`으로 fail-close합니다. Community dependency health는 route·worker와 별도
+  Actuator component가 사용하되 production readiness group에는 넣지 않아 기존 Auth API와 Pod
+  readiness를 함께 내리지 않습니다.
+- **TDD·검증**: spoofed/valid XFF, token bucket 경계·10,000 key 상한·TTL·동시 update,
+  image semaphore·byte budget, 429 `Retry-After`, cursor tamper·cross-Pod shared secret,
+  capability context와 rendered manifest를 검증합니다. Staging remote address·append chain은
+  source만으로 확정하지 않고 A1 read-only qualification에서 확인합니다.
+- **복구·관찰**: 통합 실패 시 capability를 false로 유지하는 forward fix를 사용합니다. 완료 뒤
+  모든 local 기능은 하나의 검증 후보가 되지만 public activation은 아직 하지 않습니다.
+
+### V1. 전체 검증과 영구 SOT 승격
+
+- **Local gate**: 각 단위의 가장 좁은 test 뒤 Docker daemon preflight와 재사용 없는
+  `./gradlew check --no-daemon --rerun-tasks --console=plain`을 실행합니다. 변경한 Shell이 있으면
+  exact path의 `bash -n`, pinned ShellCheck와 contract test를 추가하고, Kustomize render·link·
+  `git diff --check`를 별도로 확인합니다.
+- **독립 검증**: 구현 Agent의 설명이 아니라 최초 목적, 이 문서의 R1~R6, D1~D19와 실제 code·
+  migration·manifest·test를 다시 읽어 module, data, transaction, concurrency, security, media,
+  recovery와 activation 축을 독립 감사합니다. 미충족 항목은 영향 단위만 다시 열고 전체
+  문서를 삭제하지 않습니다.
+- **영구 SOT**: 실제 구현이 생긴 뒤 `domain`에는 Community·Media·Moderation·Notification의
+  업무 상태와 전이를 목적별 문서로, `project/schema`에는 bounded-context별 최종 10-table
+  schema를, project module map·current architecture에는 실제 공개 의존 방향을 반영합니다.
+  Storage·OIDC·GitOps 현재 사실은 infrastructure 문서가, 최초 구축·rotation·qualification의
+  exact 실행은 각각 operations runbook이 소유합니다.
+- **Git gate**: 검증 후보를 동결한 뒤 구현·migration, infrastructure·operations, SOT 동기화를
+  의존 가능한 commit 경계로 나눕니다. Push는 별도 사용자 권한이 있을 때만 수행하고 exact SHA의
+  required CI·Sonar Quality Gate·open issue를 확인하기 전에는 전체 완료로 보고하지 않습니다.
+
+### A1. Capability-off 기반 배포
+
+- **선행 gate**: 별도 live 변경 권한, exact image SHA, I1 resource 준비와
+  `flyway_schema_history` V7·V10 checksum·기존 `auth_event` 값의 read-only 대조가 필요합니다.
+  AWS Organizations·Account·identity bucket의 effective Block Public Access가 두 metadata
+  object 공개 policy를 허용하는지도 mutation 전에 확인합니다. 상위 정책이 막으면 account
+  guard를 자동 완화하지 않고 D15 대안 검토로 돌아갑니다.
+  현재 source와 일치하지 않으면 repair·validation 우회를 금지하고
+  [001 Auth Event Taxonomy 재설계](../../improvements/2026/001-auth-event-taxonomy-redesign.md)의
+  호환성 완료까지 중단합니다.
+- **전환**: schema·code·identity·bucket·worker·metric과 rollout 계약을
+  `COMMUNITY_ENABLED=false`로 먼저 배포합니다. 기존 Auth/API smoke, migration runtime 권한,
+  discovery/JWKS·STS·S3 prefix, 3,600초 projected token 갱신, worker off,
+  rendered/live replica·strategy·HPA를 확인합니다. S3·STS를 의도적으로 실패시킨 좁은 검증에서도
+  Community만 unavailable이고 기존 Auth 요청과 전역 readiness가 유지돼야 합니다.
+- **복구**: 실패하면 capability off를 유지하고 schema·object·OIDC resource를 삭제하지
+  않습니다. 이전 image가 새 schema를 소비할 수 있음이 검증되지 않으면 image rollback 대신
+  forward fix를 사용합니다.
+
+### A2. 전체 기능 활성화와 제품 수용
+
+- **선행 gate**: A1 전체 성공, steady Ready endpoint `1`, rollout 중 최대 Pod `2`, 실제
+  ALB→NodePort remote address/XFF 신뢰 경계, limiter와 이미지 stream 상한, DEAD signal,
+  anonymous·member·admin smoke를 충족해야 합니다.
+- **전환**: 별도 GitOps 변경 하나가 `COMMUNITY_ENABLED=true`로 바꾸며 게시글·대화·반응·신고·
+  inbox·이미지를 함께 엽니다. Image 없는 축소 기능을 먼저 공개하지 않습니다.
+- **수용·복구**: R1~R6의 실제 HTTP 결과와 DB·S3 상태를 확인합니다. 실패하면 activation
+  변경만 되돌려 capability를 끄고 data·object를 보존한 채 원인을 수정합니다. 상시 replica
+  `2` 이상이나 HPA가 필요해지면 활성화를 강행하지 않고 shared/edge limiter 설계를 먼저
+  엽니다.
+
+## 현재 남은 결정과 실행 권한
+
+- 제품 결정과 Agent 기술 결정은 모두 닫혀 있으며 구현을 막는 미결정은 없습니다.
+- AWS account ID, ARN, bucket 존재 상태, trusted proxy의 live remote address와 Flyway checksum은
+  선택 질문이 아니라 A1에서 authoritative source로 확인할 환경 값입니다.
+- 현재 요청은 실행 계획 작성·검증과 local checkpoint commit까지입니다. 개발, push,
+  AWS·Kubernetes·staging mutation 권한은 포함하지 않습니다.
 
 ## 관련 문서
 

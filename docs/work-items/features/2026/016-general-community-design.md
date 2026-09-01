@@ -2,16 +2,17 @@
 
 ## 현재 적용 상태
 
-해결 설계는 완료됐고, 현재 사용자 확인 없이 실행 계획을 작성할 수 있습니다.
+해결 설계와 실행 계획 검증이 완료됐고, 다음 구현은 U1 공통 경계·schema부터 시작합니다.
 
 | 구분 | 요약값 |
 | --- | --- |
-| 계획 단계 | 실행 계획 작성 |
+| 계획 단계 | 개발 준비 완료 |
 | 제품 결정 | 사용자 확정 15개 |
 | 기술 결정 | Agent 결정 D1~D19 |
-| 현재 actor | Agent |
-| 사용자 작업 | 없음 |
-| 구현 gate | 검증된 `Planned` checkpoint |
+| 계획 검증 | 통과, `Planned` checkpoint 완료 |
+| 다음 실행자 | 개발 Agent |
+| 정확한 다음 작업 | U1 module 공개 경계·Community 5-table additive schema의 실패 test 작성 |
+| 사용자 작업 | 개발을 시작하려면 별도 구현 요청 |
 
 ### 이번 보완의 핵심 계약
 
@@ -155,6 +156,24 @@ notification -X-> community
 `moderation`은 숨김을 결정하지만 Community row를 직접 갱신하지 않습니다. `community.api`의
 멱등 숨김 계약을 호출하고 같은 database transaction에 참여합니다. `community`는 신고 table을
 직접 읽지 않습니다.
+
+전략·전술 DDD 경계는 다음과 같이 고정합니다.
+
+| 경계 | 분류 | aggregate와 책임 |
+| --- | --- | --- |
+| `community` | 이 기능의 core subdomain이자 bounded context | 게시글·댓글 각각의 `CommunityContent`, 사용자·콘텐츠별 `ReactionChoice`가 독립 aggregate root입니다. Board는 현재 seed와 조회 정책을 소유합니다. |
+| `media` | supporting subdomain이자 bounded context | 외부 object lifecycle이 다른 `MediaAsset`, `MediaUsage`, `MediaJob`을 각각 aggregate root로 두고 application service가 공개 계약과 DB 제약으로 조정합니다. |
+| `moderation` | supporting subdomain이자 bounded context | `ModerationReport`가 신고 접수부터 resolution까지 소유하고 Community의 공개 숨김 계약만 호출합니다. |
+| `notification` | 기존 supporting bounded context | `InboxNotification`이 읽음 상태와 수신자·source 중복 방지를 소유합니다. 이메일 delivery lifecycle과 섞지 않습니다. |
+| `account` | 기존 upstream identity context | 016이 재분류하지 않습니다. 쓰기 가능 여부와 표시 이름만 공개 API로 제공합니다. |
+| `config` | 기술 조립 경계 | bounded context나 업무 aggregate가 아니며 보안 allow-list와 bean 조립만 소유합니다. |
+
+Context map은 Account가 Community에 identity/display를 제공하고, Media와 Notification이
+Community가 호출하는 downstream 공개 계약을 제공하며, Community가 Moderation에 visibility
+변경 계약을 제공하는 방향입니다. 같은 PostgreSQL transaction에 참여해도 상대 aggregate나
+table을 공유하지 않고, 공개 API·Port와 각 module persistence adapter를 통해서만 협력합니다.
+따라서 한 aggregate가 다른 module aggregate를 객체 참조로 품거나 상대 repository를 직접
+호출하지 않습니다.
 
 ### D2. 게시글과 댓글이 공유하는 식별 정보
 
@@ -583,6 +602,13 @@ Top-level comment·notification·report의 기본/최대 크기는 `20/50`, repl
 version을 서명한 URL-safe token으로 감쌉니다. 서명은 변조를 막고, opaque 계약은 client가
 내부 field의 형식이나 의미에 의존하지 못하게 합니다. Query predicate와 index는 항상 같은
 `(created_at, internal_id)` 순서를 사용합니다.
+
+Cursor 서명은 JWT·로그인 식별자 hash와 분리된 32 bytes 이상의
+`carmunity.community.cursor-hmac-secret`을 사용합니다. Community capability가 켜질 때 이 값이
+없거나 너무 짧으면 시작을 실패시키고, 모든 Pod가 같은 Kubernetes Secret 값을 사용해 rollout
+중 old/new Pod가 서로 발급한 cursor를 검증할 수 있게 합니다. 이 secret의 rotation은 진행 중인
+cursor를 무효화할 수 있으며 client는 첫 목록부터 다시 시작합니다. Cursor는 영구 식별자나
+복구 token이 아니므로 첫 범위에는 복수 verification key 생명주기를 추가하지 않습니다.
 
 변경 use case는 Domain model과 Port를 사용하고, 공개 목록·상세는 필요한 column만 읽는
 projection을 허용합니다. 한 page의 author display, 내 reaction과 reaction count는 각각 batch
@@ -1027,7 +1053,8 @@ RESERVED -> UPLOADED -> VERIFYING -> READY -> DELETE_PENDING -> DELETED
 - trust policy는 exact issuer, `aud=sts.amazonaws.com`,
   `sub=system:serviceaccount:car-community:car-community-application`만 허용합니다.
 - Pod 전체 자동 mount는 계속 끄고 media adapter container에 audience·TTL이 제한된 projected
-  token만 mount합니다.
+  token만 mount합니다. `expirationSeconds`와 IAM role의 최대 STS session은 각각 `3,600초`로
+  고정하고 SDK는 만료 전에 web identity credential을 갱신합니다.
 - SDK는 default chain으로 node instance profile에 fallback하지 않고 web identity token file과
   role ARN을 명시한 provider를 사용해 설정 오류를 fail-close합니다.
 - role permission은 exact media bucket의 staging/delivery prefix에 필요한 object read/write/
@@ -1037,26 +1064,35 @@ RESERVED -> UPLOADED -> VERIFYING -> READY -> DELETE_PENDING -> DELETED
   log, API와 문서에 남기지 않습니다.
 - OIDC issuer, IAM role과 private bucket 경계가 검증되기 전에는 Community capability를 public으로
   열지 않습니다.
+- Media bucket은 bucket-level Block Public Access 네 항목을 모두 켜고, versioning은 끄며,
+  bucket default SSE-S3 `AES256`과 TLS-only policy를 사용합니다. 첫 범위에는 KMS key lifecycle과
+  application KMS 권한을 추가하지 않습니다.
 
 Issuer lifecycle은 다음을 고정합니다.
 
 - Media bucket과 분리된 versioned identity-metadata S3 bucket의 virtual-hosted HTTPS URL을
   stable issuer로 사용합니다. Bucket name과 region은 issuer가 활성인 동안 바꾸지 않습니다.
   Public bucket policy는 `/.well-known/openid-configuration`과 `/openid/v1/jwks` 두 object의
-  `GetObject`만 허용하고 list·write는 운영 identity에 한정합니다. Account-level public block과
-  bucket-level 설정은 이 두 공개 object만 실제로 읽을 수 있게 대조하며, private signing key는
+  `GetObject`만 허용하고 list·write는 운영 identity에 한정합니다. ACL public access는 계속
+  차단하고 bucket policy public read에 필요한 `BlockPublicPolicy`와 `RestrictPublicBuckets`만 이
+  bucket에서 끕니다. Mutation 전에 AWS Organizations·Account·bucket의 effective Block Public
+  Access를 모두 읽습니다. 상위 정책이 public policy를 막으면 이를 자동 완화하지 않고 D15를
+  다시 열어 private S3+CloudFront OAC 같은 HTTPS 공개 경로를 비교합니다. Private signing key는
   node PKI 밖으로 내보내지 않습니다.
-- 기존 issuer는 즉시 교체하지 않습니다. Kubernetes API server는 old/new issuer를 함께
-  검증하는 overlap 상태로 먼저 들어가고 new issuer를 발급 issuer로 전환한 뒤, 최대 projected
-  token TTL과 STS 허용 clock skew가 지난 뒤에만 old issuer를 제거합니다.
+- 기존 issuer는 즉시 제거하지 않습니다. Kubernetes API server는 new issuer를 첫 번째 발급
+  issuer로, old issuer를 후속 검증 issuer로 함께 설정합니다. Cluster 전체의 기존 projected
+  token 최대 수명을 현재 source에서 증명하지 못하므로 첫 범위에서는 old issuer를 제거하지
+  않습니다. 제거는 전체 workload token inventory와 최대 TTL을 확인한 별도 운영 변경입니다.
 - Signing key 회전도 new public key를 JWKS와 API server verifier에 먼저 게시하고, 새 key로
   발급을 전환하고, 기존 token 최대 TTL 이후 old key를 제거하는 순서를 지킵니다. JWKS는
   rotation 동안 두 key를 함께 제공합니다.
 - Discovery/JWKS 또는 STS가 실패하면 SDK가 node credential로 fallback하지 않고 media 예약·
   검증·stream을 실패시킵니다. Community capability health는 이 실패를 공개 준비 상태로
   간주하지 않습니다.
-- Rollback은 old issuer를 발급 우선순위로 되돌리되 new issuer, key와 IAM provider를 new token
-  최대 TTL 전에는 삭제하지 않습니다. OIDC resource 제거는 application rollback과 분리합니다.
+- Rollback은 old issuer를 발급 우선순위로 되돌리되 new issuer를 검증 목록에 유지합니다. New
+  issuer, key와 IAM provider는 발급됐던 3,600초 token과 5분 안전 여유가 지난 뒤에도 active
+  workload가 사용하지 않음을 확인하기 전에는 삭제하지 않습니다. OIDC resource 제거는
+  application rollback과 분리합니다.
 
 ### D16. Security, privacy와 abuse 경계
 
@@ -1115,6 +1151,16 @@ Issuer lifecycle은 다음을 고정합니다.
   `64 MiB/minute`를 상한으로 두고 초과 요청은 `Retry-After`가 있는 `429`로 거부합니다.
   Client key는 exact ALB ingress에서 append된 trusted `X-Forwarded-For` chain과 직접 peer를
   함께 검증해 만들며 임의 요청 header를 그대로 신뢰하지 않습니다.
+- Client별 token bucket state는 무제한 map으로 두지 않습니다. Pod별 최대 추적 client key는
+  `10,000`, idle TTL은 `10분`으로 시작하며 같은 limiter configuration이 소유합니다. 새 key가
+  들어오면 만료 state를 정리한 뒤에도 상한에 도달한 경우 기존 hot key를 퇴출해 제한을
+  우회시키지 않고 새 key를 `429`로 fail-close합니다. 추적 수·상한 거부·만료 정리를 metric으로
+  남기고 단조 시간과 동시 update를 단위·경쟁 test로 검증합니다. 이 bounded local state와 Pod
+  재시작 때 초기화되는 한계는 공유 limiter 재검토 조건에 포함합니다.
+- `X-Forwarded-For`는 설정된 trusted proxy CIDR 안의 직접 peer를 통해 들어온 요청에서만
+  해석하고, 그 밖의 요청은 header를 버리고 직접 peer를 client key로 사용합니다. Staging의
+  instance-target ALB·NodePort 경로에서 실제 remote address와 append 순서를 확인해 trusted CIDR을
+  확정하기 전에는 capability를 활성화하지 않습니다.
 - 이 limiter는 공개 read use case 앞의 Port로 두어 delivery adapter를 교체할 수 있게 합니다.
   현재 local limiter는 deployment 전체가 아니라 Pod별 상한입니다. `replicas: 1`·
   `RollingUpdate`에서는 평상시 위 수치가 전체 처리 상한과 같고, rollout 중 최대 두 Pod가
@@ -1140,7 +1186,14 @@ Issuer lifecycle은 다음을 고정합니다.
 
 - DB 저장 실패는 해당 use case 전체를 rollback합니다. S3 실패는 Community transaction을
   rollback시키지 않고 media job을 `RETRY`로 남깁니다.
-- Worker는 exponential backoff와 최대 attempt 뒤 `DEAD`로 전환합니다. Media module이
+- Worker는 capability가 켜진 application process 안에서 concurrency `1`, poll interval `5초`,
+  claim batch `1`, lease `2분`으로 실행합니다. 실패한 job은 `30초`부터 두 배씩 늘어나고
+  `30분`에서 멈추는 backoff로 최대 `8회` claim한 뒤 `DEAD`로 전환합니다. 만료 reservation과
+  미사용 READY asset은 `1시간`마다, 전체 prefix reconciliation은 `6시간`마다 새 job 필요 여부를
+  DB에서 확인합니다. 이 값들은 media worker configuration의 같은 validated source를 사용하며
+  양수가 아니거나 lease가 S3 전체 call timeout `60초`보다 짧으면 capability 시작을
+  실패시킵니다.
+- Media module이
   job 상태와 `last_error_code`의 canonical owner이며 `DEAD`를 일반 API 성공이나 완료
   metric으로 숨기지 않습니다. 첫 범위에는 `DEAD`를 application API로 다시 여는 전이가
   없습니다.
@@ -1186,7 +1239,8 @@ Issuer lifecycle은 다음을 고정합니다.
 - Community capability는 명시적 `carmunity.community.enabled=false`를 기본값으로 둡니다.
   이 값이 false이면 Community·Media·Moderation·inbox HTTP route를 활성화하지 않고 media
   worker도 새 job을 실행하지 않습니다. true인데 필수 bucket·region·role ARN·projected token
-  path, decoder와 limiter 설정이 빠졌으면 application 시작을 실패시킵니다.
+  path, cursor HMAC secret, decoder, trusted proxy CIDR와 limiter 설정이 빠졌으면 application
+  시작을 실패시킵니다.
 - 최초 공개는 두 GitOps 변경으로 나눕니다. 기반 변경은 schema·code·private bucket·OIDC
   identity·worker·metric과 명시적 `replicas: 1`·`RollingUpdate(maxSurge=1,
   maxUnavailable=0)`를 capability off 상태로 배포합니다.
@@ -1197,8 +1251,10 @@ Issuer lifecycle은 다음을 고정합니다.
 - Runtime에서 저장소·decoder·필수 내부 health가 준비되지 않으면 Community route는
   `503 Service Unavailable`과 비민감 `COMMUNITY_CAPABILITY_UNAVAILABLE` problem code로
   fail-close합니다. Auth 등 기존 비Community route까지 Community 외부 의존 실패로 함께
-  내리지 않습니다. Replica·rollout 수는 application이 추측하지 않고 위 GitOps·live
-  activation gate가 소유합니다.
+  내리지 않습니다. Community dependency health는 route·worker gate와 별도 Actuator component로
+  관찰하되 production 전역 readiness group에는 넣지 않습니다. 따라서 DB가 정상인 Pod는 S3·STS
+  장애 중에도 Ready를 유지하고 기존 Auth 요청을 계속 처리합니다. Replica·rollout 수는
+  application이 추측하지 않고 위 GitOps·live activation gate가 소유합니다.
 - Community migration 전에 대상 DB의 V7·V10 checksum과 `auth_event.event_type` 값 분포가
   현재 source와 일치해 기존 결함의 영향을 받지 않음을 증명하거나,
   [001 Auth Event Taxonomy 재설계](../../improvements/2026/001-auth-event-taxonomy-redesign.md)의
@@ -1219,6 +1275,9 @@ Issuer lifecycle은 다음을 고정합니다.
   deployment model을 유지합니다.
 - S3 adapter는 AWS SDK for Java 2.x의 S3 client와 STS web identity 지원을 사용합니다. SDK
   타입은 `media.internal.adapter.out.storage` 밖으로 노출하지 않습니다.
+- Local limiter의 token bucket·bounded key state·stream semaphore는 JDK 동시성 primitive와
+  주입 가능한 단조 시간으로 구현합니다. 현재 상한에는 별도 limiter/cache 제품을 추가하지
+  않으며, shared/edge limiter 전환 때 storage·정확성 요구를 기준으로 도구를 다시 비교합니다.
 - JPEG·PNG·단일 frame GIF 검증과 JPEG·PNG 재인코딩은 JDK ImageIO의 실제 decode 결과를
   사용합니다. Format별 byte signature, frame 수, pixel 상한과 corrupt corpus를 검증하고
   runtime reader 등록을 fail-close로 확인합니다.
@@ -1338,7 +1397,7 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 목록은 실행 순서가 아니라 최종 계약의 검증 축입니다.
 
 - Module: Spring Modulith/ArchUnit에서 새 module cycle, 상대 `internal` 참조와 table 공유가
-  없습니다.
+  없고 D1의 bounded context·aggregate root가 상대 aggregate를 객체 참조로 품지 않습니다.
 - Domain: reply-to-reply가 direct parent와 root를 보존하면서 depth 1 응답으로 투영됩니다.
 - Data: unique/FK/check, deferrable constraint trigger와 partial unique index가 reaction 중복,
   다른 post parent·invalid root, subtype 불일치, media 이중 usage와 notification 중복을
@@ -1348,19 +1407,24 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 - Concurrency: stale edit, 동시 reaction 교체, 동시 report와 reply/hide가 정해진 결과로
   수렴합니다.
 - Security: anonymous는 공개 GET만 접근하고 full session/member/admin 경계가 현재 policy와
-  일치합니다. Local limiter의 경계값과 trusted client key를 검증하고, rendered Deployment가
+  일치합니다. Local limiter의 경계값, 10,000개 bounded key state·idle TTL·capacity fail-close와
+  trusted client key를 검증하고, cursor secret이 JWT secret과 분리되면서 rollout Pod 사이에는
+  동일한지 확인합니다. Media bucket의 전체 public 차단과 identity bucket 두 object만의 공개,
+  effective Organizations·Account Block Public Access preflight를 확인합니다. Rendered Deployment가
   exact `replicas: 1`·`RollingUpdate(maxSurge=1,maxUnavailable=0)`이며 HPA가 없음을 확인합니다.
   Cluster integration은 steady state의 Ready endpoint가 하나이고 rollout 중에는 old/new Pod가
   최대 둘까지 겹치며 각 Pod의 limiter와 합산 이론 상한이 계약 범위를 넘지 않음을 확인합니다.
 - Media: JPEG·PNG·정적 GIF의 정상·손상 corpus, 위조 MIME, oversized/pixel bomb, WebP,
   animated GIF, SVG·BMP·TIFF·HEIC/HEIF·AVIF, checksum mismatch, 검증 전 원본과
   `HIDDEN_RETAINED|RELEASED` usage가 계약대로 허용 또는 차단됩니다.
-- Recovery: worker 중단·재시작, S3 일시 실패와 중복 job 실행이 object/DB 상태를 잃거나 중복
-  공개하지 않습니다. Reconciliation의 안전한 자동 복구, 해결 불가능한 `DEAD`·error
+- Recovery: worker 중단·재시작, 2분 lease·8회 backoff, S3 일시 실패와 중복 job 실행이
+  object/DB 상태를 잃거나 중복 공개하지 않습니다. Reconciliation의 안전한 자동 복구,
+  해결 불가능한 `DEAD`·error
   code·metric과 terminal job 비재실행을 검증합니다.
 - Activation: capability 기본값이 false이고 필수 설정·storage·decoder·limiter health가
   준비되지 않으면 Community route와 worker가 성공 동작하지 않습니다. 기반 배포와 activation
-  변경을 분리하고 live replica·strategy·HPA·Service endpoint preflight가 실패하면 activation을
+  변경을 분리하고 Community dependency 장애가 전역 readiness와 기존 Auth 요청을 내리지 않는지
+  확인합니다. Live replica·strategy·HPA·Service endpoint preflight가 실패하면 activation을
   중단합니다.
 - Query: 실제 PostgreSQL에서 게시글 page 기본값·음수 page·size 하한/상한·전체 건수·전체 범위
   밖의 유효 page와 나머지 cursor 경계, 정렬, tombstone과 batch 조회가 N+1 없이 계약대로
