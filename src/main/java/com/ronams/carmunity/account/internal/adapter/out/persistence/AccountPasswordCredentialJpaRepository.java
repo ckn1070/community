@@ -34,20 +34,4 @@ interface AccountPasswordCredentialJpaRepository
       where credential.accountId = :accountId
       """)
   int recordLoginFailure(@Param("accountId") Long accountId, @Param("failedAt") Instant failedAt);
-
-  /** 비밀번호 변경 성공 시 hash와 강제 변경 flag를 같은 row update로 고정합니다. */
-  @Modifying
-  @Query(
-      """
-      update AccountPasswordCredentialJpaEntity credential
-      set credential.passwordHash = :passwordHash,
-          credential.passwordChangeRequired = false,
-          credential.passwordUpdatedAt = :changedAt,
-          credential.updatedAt = :changedAt
-      where credential.accountId = :accountId
-      """)
-  int changePassword(
-      @Param("accountId") Long accountId,
-      @Param("passwordHash") String passwordHash,
-      @Param("changedAt") Instant changedAt);
 }

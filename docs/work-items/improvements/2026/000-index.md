@@ -10,6 +10,7 @@
 | 006 | Done | [Notification 설정 properties 경계 정리](006-notification-configuration-properties.md) | - | notification email 설정을 단일 검증된 `@ConfigurationProperties`로 통합 |
 | 007 | Done | [OpenAPI 실제 응답 계약 동기화](007-openapi-response-contract.md) | - | 실제 응답 schema·보안·공통 오류와 생성 OpenAPI 자동 동기화 |
 | 008 | Done | [Staging Swagger 관리자 접근 보호](008-staging-swagger-admin-access.md) | [설계](008-staging-swagger-admin-access-design.md) | staging 전용 Swagger를 기존 관리자 계정 Form Login으로 보호 |
+| 009 | Done | [비카탈로그 DDD 보완](009-non-catalog-ddd-hardening.md) | [설계](009-non-catalog-ddd-hardening-design.md) | refresh·security audit 단일 writer와 필요한 전술 모델·구조 gate 구현 완료 |
 
 ## 관련 문서
 

@@ -17,6 +17,26 @@ discovery·closure는 [작업 실행 워크플로우](100-work-execution-workflo
 - local 검증을 마친 후보와 push 뒤 적용할 terminal gate
 - 제외할 기존·다른 작업의 staged·unstaged·untracked 상태
 
+사용자가 파일·기능·변경 종류처럼 의미로 history rewrite 대상을 제한하면, 첫 Git topology
+projection 전에 rewrite가 도달하는 각 commit·path·effect를 실제 patch와 사용자 원문에
+대조해 다음 처분 manifest를 완성합니다.
+
+```text
+현재 사용자 원문의 exact target
+→ 영향받는 commit·path·effect와 실제 patch
+→ 직접 대상 / 불가피한 의존 / 무관 / 관계 미확정
+→ 제거 / 보존 / 중단·질문
+```
+
+Checkpoint, parent SHA, 작성 시각과 descendant 관계는 조사 범위를 정하는 source이지
+그 범위 전체가 제거 대상이라는 증거가 아닙니다. `X 시점부터 다시 시작`도 사용자가
+`X 이후를 관련성과 무관하게 전부 제거`한다고 명시하지 않았다면 같은 방식으로
+소비합니다. 무관한 descendant는 유지할 commit 순서에 넣고, 관계 미확정 항목이 하나라도
+있으면 ref cutoff·재생 순서나 `branch → base`를 먼저 정하지 않고 작업 실행
+워크플로우로 반환합니다. 반대로 사용자가 exact cutoff 뒤의 모든 commit 또는 exact
+제거·보존 집합을 명시했다면 그 topology 지시가 처분 manifest를 직접 닫으므로 commit별
+기능 관련성을 다시 묻지 않습니다.
+
 첫 ref mutation 전에 현재 사용자 결정 source와 다음 Git topology를 한 record로 대조하고,
 사용자 commentary에 그대로 투영합니다.
 
@@ -181,6 +201,43 @@ diff를 한 commit으로 stage하지 않습니다.
 7. 각 commit의 직접 test와 문서는 그 commit이 만든 결과를 증명·설명해야 합니다. 뒤의
    거대한 통합 commit이나 최종 build가 앞 commit의 누락된 oracle을 대신하지 않습니다.
 
+### 분할 반증 gate
+
+첫 Git mutation 전에 예정 subject나 상위 작업명을 보지 않은 상태에서 final diff와 실제
+source·consumer·test로 만들 수 있는 가장 이른 유효 prefix를 먼저 찾습니다. 각 변경은
+독립적으로 호출·소비되는 결과, 실패 뒤 재시작·복구 지점과 revert 영향이 달라지는 지점에서
+분할 후보가 됩니다. 그다음에만 예정 commit 순서와 다음 증거를 대조합니다.
+
+```text
+예정 commit
+→ 하나의 관찰 결과와 exact path·hunk
+→ 다음 consumer·재시작·복구·revert 경계
+→ 그 commit 직후 prefix의 source·compile·직접 test 검증
+→ 인접 분할 후보를 합쳤다면 더 이른 prefix가 유효할 수 없는 직접 증거
+```
+
+인접 후보를 합치는 쪽이 그 불가분성을 증명합니다. 같은 사용자 요청·상위 기능·파일,
+공유 port·fixture·test 파일, 전체 test 통과와 한 문장짜리 계획은 직접 증거가 아닙니다.
+더 이른 prefix가 compile·직접 test를 통과하거나 이후 결과를 제거해도 앞 결과의 consumer가
+유지되면 별도 commit으로 분리합니다. 같은 파일에 순차 hunk가 있어도 격리 candidate에서
+각 prefix를 재구성할 수 있으면 파일 단위로 합치지 않습니다.
+
+History rewrite는 격리 worktree에서 모든 replacement prefix를 실제로 만들고 검증합니다.
+일반 commit에서 분할 가능성이 source만으로 닫히지 않으면, 기존 dirty를 건드리지 않는 격리
+candidate로 더 이른 prefix를 검증합니다. 안전하게 재구성할 수 없으면 불가분으로 추정하지
+않고 더 작은 보수적 경계를 선택하거나 정확한 same-file 분리 blocker를 작업 실행
+워크플로우에 반환합니다.
+
+사용자 commentary의 예정 순서는 이 gate의 결과 projection입니다. 작성자가 그 projection을
+만들었다는 사실, Conventional Commit 형식과 최종 tree의 정합성은 위 prefix 증거를 대신하지
+않습니다.
+
+Commit의 결과는 그 commit 직후의 tree입니다. Rewrite 시작 전에 이미 결함으로 확정된
+상태를 중간 commit에서 다시 만든 뒤 후속 commit으로 고치는 순서는, 최종 tree가 옳고
+각 subject가 서로 달라도 유효한 결과 분리가 아닙니다. 후속 요구가 새로 생겼거나
+호환성·backfill처럼 중간 상태 자체가 유효한 독립 배포 결과라는 source가 없다면, 해당
+수정은 최초로 그 결과를 소유하는 replacement commit에 포함합니다.
+
 message는 최근 repository 이력을 대조한 Conventional Commit 형식을 사용합니다. type과
 선택적 scope는 표준 식별자를 유지하고, subject는 한국어 명사구로 작성합니다. `검토`,
 `확인`, `검증` 같은 일시적 활동은 그 규칙이나 도구 자체가 영속적으로 바뀐 경우가
@@ -197,10 +254,12 @@ requirement와 어긋난 의도하지 않은 결함이고 patch가 그 결함을
 사실만으로 `fix`를 선택하지 않습니다. 반대로 기존 값이 원래 계약과 어긋났다는 source가
 있으면 같은 파일·값 변경도 `fix`가 될 수 있습니다.
 
-첫 Git mutation 전에 예정 subject와 함께 `변경 전 의도 → 변경 뒤 결과 → 선택 type`을
-대조합니다. 하나의 관계로 type이 결정되지 않으면 `fix`를 기본값으로 사용하지 않고 결과
-분류로 돌아갑니다. Commit 뒤 full patch를 읽을 때도 subject뿐 아니라 type이 이 관계와
-일치하는지 다시 확인합니다.
+첫 Git mutation 전에 각 예정 subject와 `변경 전 의도 → 변경 뒤 결과 → 선택 type`을
+사용자 commentary에 함께 투영합니다. 이 관계는 원래 요구와 변경 전 authoritative source에
+연결해야 하며, 파일 종류·patch의 보안 효과·추가·삭제 같은 겉모양으로 채우지 않습니다.
+하나의 관계로 type이 결정되지 않으면 `fix`를 기본값으로 사용하지 않고 결과 분류로
+돌아갑니다. Commit 뒤 full patch를 읽을 때도 subject뿐 아니라 type이 이 관계와 일치하는지
+다시 확인합니다.
 
 ## 4. Exact stage와 local commit
 
@@ -272,16 +331,36 @@ history에서 commit 흔적을 제거하되 최종 tree를 유지하는 history-
 절차를 사용합니다.
 
 1. 대상 branch의 시작 SHA, 재생 base, 제거 대상과 유지할 commit 순서를 고정합니다.
-2. 기존 dirty worktree를 건드리지 않고 임시 detached worktree에서 base부터 유지할
+2. Rewrite 시작 전에 확정된 요구·결함과 현재 final artifact에서 다음 manifest를
+   고정합니다.
+
+   ```text
+   제거할 결함·보존할 결과
+   → 그 결과를 처음 도입할 replacement commit
+   → final path·hunk·tree에서의 관찰값
+   → 뒤 commit이 제공하는 독립 결과 또는 앞 commit의 보상 여부
+   ```
+
+   `기존 내용을 먼저 그대로 재생`하는 작업 순서나 원본 commit의 파일 묶음을 결과
+   경계로 사용하지 않습니다. Rewrite 전에 이미 final 값과 결함이 알려졌다면 최초 owner
+   commit이 곧바로 final 값을 도입해야 합니다.
+3. 기존 dirty worktree를 건드리지 않고 임시 detached worktree에서 base부터 유지할
    commit만 순서대로 재생합니다.
-3. candidate의 parent·patch 순서와 최종 tree가 요구 결과와 같고, history-only 작업이면
-   재작성 전 최종 tree와도 같은지 확인합니다.
-4. target branch ref와 remote ref가 조사 때와 같은지 다시 읽습니다.
-5. 현재 branch ref가 시작 SHA일 때만 `git update-ref <ref> <candidate> <start-sha>`의
+4. Candidate를 최종 tree뿐 아니라 각 first-parent prefix에서 검증합니다. Rewrite 전에
+   알려진 요구가 적용되는 prefix가 그 요구를 만족하는지 확인하고, 뒤 commit이 앞
+   commit의 알려진 결함만 제거한다면 이를 독립 결과가 아닌 보상 commit으로 분류합니다.
+   보상 commit이 하나라도 남으면 ref를 바꾸지 않고 candidate를 폐기해 2번 manifest부터
+   다시 구성합니다. 새 요구, 유효한 호환성 구간이나 backfill처럼 중간 tree 자체의
+   consumer·복구 경계가 source로 증명된 경우만 후속 commit으로 유지합니다.
+5. Candidate의 parent·patch 순서와 최종 tree가 요구 결과와 같고, history-only 작업이면
+   재작성 전 최종 tree와도 같은지 확인합니다. 최종 tree 동일성은 4번 prefix 검증을
+   대신하지 않습니다.
+6. target branch ref와 remote ref가 조사 때와 같은지 다시 읽습니다.
+7. 현재 branch ref가 시작 SHA일 때만 `git update-ref <ref> <candidate> <start-sha>`의
    compare-and-swap으로 교체합니다.
-6. 대상 commit이 branch log와 branch를 가리키는 local ref에서 사라지고, 유지 commit,
+8. 대상 commit이 branch log와 branch를 가리키는 local ref에서 사라지고, 유지 commit,
    최종 tree, 기존 dirty·index와 remote ref가 보존됐는지 확인합니다.
-7. 임시 worktree가 clean하고 candidate가 target ref에 도달 가능한 뒤 표준 worktree
+9. 임시 worktree가 clean하고 candidate가 target ref에 도달 가능한 뒤 표준 worktree
    remove로 정리합니다.
 
 이 저장소의 history 복구에는 `git revert`를 사용하지 않습니다. `reset --hard`, 자동

@@ -12,7 +12,7 @@ Done
 - JWT HMAC secret과 issuer·TTL 환경변수 계약을 추가했습니다.
 - token, Security, module boundary test와 최종 Gradle 검증을 통과했습니다.
 - 전체 완료 여부: 예
-- 남은 책임: 이 작업의 최초 token 기반 범위에는 없습니다. 현재 secret 동일값 검증과 공용 `Clock` bean 소유 결함은 각각 [Auth secret 분리 검증 누락](../../bugs/2026/002-auth-secret-separation-validation.md), [공용 Clock bean의 auth 내부 소유](../../bugs/2026/003-shared-clock-bean-ownership.md)가 소유합니다.
+- 남은 책임: 이 작업의 최초 token 기반 범위에는 없습니다. 현재 secret 동일값 검증과 공용 `Clock` bean 소유 결함의 수정 상태는 각각 [002 Auth secret 분리 검증 누락](../../bugs/2026/002-auth-secret-separation-validation.md), [003 공용 Clock bean의 auth 내부 소유](../../bugs/2026/003-shared-clock-bean-ownership.md)에서 추적합니다.
 
 ## 범위
 

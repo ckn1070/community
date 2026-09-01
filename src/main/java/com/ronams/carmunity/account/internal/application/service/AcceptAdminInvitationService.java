@@ -10,6 +10,8 @@ import com.ronams.carmunity.account.internal.application.port.out.AdminInvitatio
 import com.ronams.carmunity.account.internal.application.port.out.PasswordHasherPort;
 import com.ronams.carmunity.account.internal.application.result.AcceptedAdminInvitationResult;
 import com.ronams.carmunity.account.internal.domain.Account;
+import com.ronams.carmunity.account.internal.domain.AdminInvitation;
+import com.ronams.carmunity.account.internal.domain.ChallengeState;
 import com.ronams.carmunity.account.internal.domain.DisplayName;
 import com.ronams.carmunity.account.internal.domain.EmailAddress;
 import com.ronams.carmunity.account.internal.domain.PasswordHash;
@@ -38,24 +40,25 @@ public class AcceptAdminInvitationService implements AcceptAdminInvitationUseCas
   private final Supplier<UUID> accountPublicIdGenerator;
   private final Clock clock;
 
-  /** 운영 기본 public id와 시간 기준으로 Spring bean을 구성합니다. */
+  /** 운영에서는 config Clock과 UUID generator를 조합합니다. */
   @Autowired
   public AcceptAdminInvitationService(
       AccountUniquenessPort accountUniquenessPort,
       PasswordHasherPort passwordHasherPort,
       AdminInvitationTokenHasher tokenHasher,
-      AdminInvitationAcceptancePort acceptancePort) {
+      AdminInvitationAcceptancePort acceptancePort,
+      Clock clock) {
     this(
         accountUniquenessPort,
         passwordHasherPort,
         tokenHasher,
         acceptancePort,
         UUID::randomUUID,
-        Clock.systemUTC());
+        clock);
   }
 
   /** 테스트가 account public id와 현재 시각을 통제할 수 있도록 의존성을 외부에서 주입받습니다. */
-  AcceptAdminInvitationService(
+  public AcceptAdminInvitationService(
       AccountUniquenessPort accountUniquenessPort,
       PasswordHasherPort passwordHasherPort,
       AdminInvitationTokenHasher tokenHasher,
@@ -126,15 +129,23 @@ public class AcceptAdminInvitationService implements AcceptAdminInvitationUseCas
 
   private void validateInvitation(
       AdminInvitationForAcceptance invitation, String rawToken, Instant now) {
-    if (invitation.closed()) {
+    ChallengeState state =
+        new AdminInvitation(
+                invitation.publicId(),
+                invitation.expiresAt(),
+                invitation.closed() ? now : null,
+                null)
+            .stateAt(now);
+    if (state == ChallengeState.CONSUMED || state == ChallengeState.REVOKED) {
       throw new ApiException(AccountErrorCode.ADMIN_INVITATION_ALREADY_CLOSED);
     }
     if (!tokenMatches(invitation.tokenHash(), rawToken)) {
       throw new ApiException(AccountErrorCode.ADMIN_INVITATION_TOKEN_INVALID);
     }
-    if (!invitation.expiresAt().isAfter(now)) {
+    if (state == ChallengeState.EXPIRED) {
       throw new ApiException(AccountErrorCode.ADMIN_INVITATION_TOKEN_EXPIRED);
     }
+    new AdminInvitation(invitation.publicId(), invitation.expiresAt(), null, null).acceptAt(now);
   }
 
   private boolean tokenMatches(String expectedHash, String rawToken) {

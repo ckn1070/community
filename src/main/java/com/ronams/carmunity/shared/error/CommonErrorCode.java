@@ -11,6 +11,8 @@ public enum CommonErrorCode implements ErrorCode {
   INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Invalid request", "요청 값이 올바르지 않습니다."),
   UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized", "인증이 필요합니다."),
   FORBIDDEN(HttpStatus.FORBIDDEN, "Forbidden", "요청한 리소스에 접근할 권한이 없습니다."),
+  METHOD_NOT_ALLOWED(
+      HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "지원하지 않는 HTTP method입니다."),
   UNSUPPORTED_MEDIA_TYPE(
       HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", "지원하지 않는 Content-Type입니다."),
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", "예상하지 못한 서버 오류입니다.");

@@ -7,9 +7,11 @@
 ## 시작
 
 1. 이 파일과 [문서 목차](docs/000-index.md)를 읽습니다.
-2. 새 사용자 메시지마다 첫 commentary를 포함한 답변·도구 호출·review·mutation 전에
-   작업 실행 워크플로우의 Bootstrap으로 다시 진입합니다. Bootstrap 판정 전에는 과거
-   작업이나 pending 효과의 재개·정리·조사·검증을 약속하거나 시작하지 않습니다.
+2. 새 사용자 메시지마다 source read만 알리는 최소 안내 외의 첫 commentary·답변·도구
+   호출·review·mutation 전에 작업 실행 워크플로우의 현재 메시지 입장 상태를 산출합니다.
+   이 상태 전에는 과거 작업이나 pending 효과의 재개·정리·조사·검증을 약속하거나 시작하지
+   않습니다. Bootstrap보다 먼저 나온 실질 약속은 폐기하고 입장 상태의 근거로 사용하지
+   않습니다.
 3. 사용자가 사용할 수 있는 skill을 이름·tag·link로 명시하면, 첫 실질 답변·판단·계획
    전에 해당 `SKILL.md` 전체와 필수 공통 owner를 읽습니다. 그 전 안내는 읽을 source와
    source read가 선행한다는 사실만 말하며 specialist·mode·효과·terminal을 확정하지
@@ -32,6 +34,9 @@ workflow와 history를 기본으로 읽지 않습니다.
   질문을 실행 요청으로 확대하거나 실행 요청을 질문으로 축소하지 않습니다.
 - 사용자 요구, 제약·제외, 우려·평가 기준과 Agent의 추천을 권위별로 분리합니다.
   후속 메시지는 명시적으로 바꾼 의미만 갱신합니다.
+- Agent가 선택하는 비용·변경량·가역성 최적화는 사용자 목표와 성공 조건을 모두 충족한
+  후보 사이에서만 적용합니다. 목표 일부를 포기하는 안은 기술적 trade-off가 아니라 목표
+  변경이며, 영향·대안·추천을 먼저 제시해 사용자가 선택하기 전에는 구현하지 않습니다.
 - 과거 요청, 내부 plan, pending operation과 도구의 승인·거절은 현재 메시지의 상태 변경
   효과 권한으로 승계하지 않습니다. 현재 메시지가 독립적으로 명시했거나 작업 실행
   워크플로우가 현재 generation에서 허용한 효과만 실행합니다.
@@ -46,6 +51,9 @@ workflow와 history를 기본으로 읽지 않습니다.
   복구·revert할 수 있는 의미 단위를 먼저 복원하고, 그 단위와 의존 순서를 모든 phase에
   동일하게 전달합니다. 공유 계약과 첫 대표 단위가 검증되기 전에 그 계약을 소비하는
   작업을 확장하지 않습니다.
+- 기존 확정 계약이 없는 도메인 소유권·모듈 경계·데이터 생명주기·공개 계약 변경은
+  검증된 `Planned` 설계 checkpoint를 production mutation보다 먼저 committed baseline에
+  둡니다. 구현 요청은 변경 권한을 주지만 미완료 설계를 구현 계약으로 바꾸지 않습니다.
 - 병렬 작업은 입력·수용 기준·증거와 write set이 독립적일 때만 허용합니다. 공유 계약,
   producer와 consumer, 동결 후보를 다시 여는 검토는 직렬화합니다.
 - 기존 dirty 변경과 다른 작업자의 변경을 되돌리거나 이번 결과에 포함하지 않습니다.
@@ -121,9 +129,15 @@ payload를 두지 않습니다.
   승인된 새 branch는 raw SHA의 remote ref 생성도 포함해
   [Git Worktree 워크플로우의 Naming과 배치](docs/workflow/310-git-worktree-workflow.md#naming과-배치)에
   이름을 대조한 뒤에만 생성합니다.
-- 첫 `git add`·`git commit` 전에 Git 마무리가 요구하는 source-backed 예정 commit
-  순서를 사용자 commentary에 투영합니다. 이 phase 인계와 투영이 없으면 상위 작업명이나
-  전체 diff를 하나의 commit 경계로 간주하지 않고 Git mutation을 호출하지 않습니다.
+- 첫 `git add`·`git commit`과 같은 generation에서 커밋 워크플로우와 Git 마무리를 실제로
+  읽고, 현재 final diff의 결과 단위를 다음 consumer·복구·revert 경계로 다시 분류합니다.
+  [커밋 워크플로우의 분할 반증 gate](docs/workflow/300-commit-workflow.md#분할-반증-gate)에서
+  단일 커밋 가정을 배제한 분할 후보와 각 prefix의 실행 가능성을 먼저 대조한 뒤, 예정 commit
+  순서와 exact path·hunk 귀속을 사용자 commentary에 투영합니다. 작성자가 같은 commentary에서
+  모든 변경을 불가분이라고 선언한 사실은 분할 반증이나 결과 경계 증거가 아닙니다.
+  과거 turn의 read·plan, 상위 작업명, 전체 diff label과 test 통과는 현재 Git phase의
+  invocation이나 commit 경계 증거가 아닙니다. 이 phase 인계와 투영이 없으면 Git mutation을
+  호출하지 않습니다.
 - 도구의 승인·중단·취소 상태는 artifact의 실제 변경 상태가 아닙니다. 변경 여부를
   보고하기 전에 Git ref·index·worktree·외부 상태의 authoritative source를 읽고,
   확인하지 못한 상태를 변경 없음으로 확정하지 않습니다.

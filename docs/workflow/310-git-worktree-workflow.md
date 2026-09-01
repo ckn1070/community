@@ -15,7 +15,8 @@ stage·commit·push와 history 복구는
 - 현재 작업 문서에서 branch가 소유할 상위 결과, 의미 단위 지도와 각 단위의 예정 commit·
   검증 경계
 - worktree 생성, target ref 통합, conflict 내용 수정, merge commit, worktree 제거,
-  local branch 삭제별 허용 효과
+  local branch 삭제와 remote push별 허용 효과, 통합 완료 뒤 source worktree·local branch의
+  보존 요청 또는 cleanup 차단 조건
 - 제외할 기존·다른 작업의 dirty·staged·untracked·ignored 상태
 - 통합 전후 필요한 domain 검증과 완료 oracle
 
@@ -193,7 +194,10 @@ git -C <main-path> rev-parse HEAD
 git worktree list --porcelain
 ```
 
-source worktree 제거는 별도 cleanup 효과가 입력에 있고 다음 조건을 모두 만족할 때만
+완료된 source branch·worktree를 main에 병합·통합·마무리하라는 요청은 사용자가 보존을
+명시하지 않는 한, 검증 성공 뒤 source worktree와 local source branch를 제거하는
+cleanup까지 하나의 terminal 결과로 포함합니다. 이 기본값은 remote branch 삭제 권한을
+만들지 않습니다. Cleanup은 merge 전에 시작하지 않고 다음 조건을 모두 만족할 때만
 수행합니다.
 
 - source SHA가 검증된 main HEAD에 포함됐습니다.
@@ -210,9 +214,9 @@ filesystem path가 사라지고 다른 worktree record가 유지됐는지 확인
 directory가 남아도 소유자와 보존 필요성을 확인하지 않은 `rm`이나 forced remove를
 사용하지 않습니다.
 
-local source branch 삭제는 worktree 제거와 다른 ref mutation입니다. 그 효과가 별도로
-입력됐고 source SHA가 main에 포함됐으며 어느 worktree에도 checkout되지 않았을 때만
-safe delete를 사용합니다.
+local source branch 삭제는 worktree 제거 뒤 수행하는 별도 ref mutation이지만, 위 통합
+요청의 기본 terminal 결과에 함께 포함됩니다. source SHA가 main에 포함됐고 어느
+worktree에도 checkout되지 않았을 때만 safe delete를 사용합니다.
 
 ```sh
 git branch -d -- <source-branch>
@@ -220,6 +224,10 @@ git branch -d -- <source-branch>
 
 `-D`로 포함 관계 검증을 우회하지 않습니다. push가 입력에 있으면 여기서 수행하지
 않고 커밋 워크플로우의 exact branch push와 exact SHA 원격 검증으로 인계합니다.
+
+사용자가 source 보존을 명시했거나 cleanup 조건 중 하나라도 충족하지 못하면 worktree와
+branch를 그대로 두고 exact 대상과 차단 사유를 반환합니다. 이때 main 통합은 완료일 수
+있지만 병합·통합·마무리 요청의 기본 terminal 결과는 cleanup까지 닫히지 않은 상태입니다.
 
 ## 7. Mechanics 결과 인계
 

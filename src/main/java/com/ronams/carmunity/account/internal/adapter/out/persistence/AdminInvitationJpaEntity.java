@@ -3,6 +3,7 @@ package com.ronams.carmunity.account.internal.adapter.out.persistence;
 import com.ronams.carmunity.account.internal.application.port.out.AdminInvitationForAcceptance;
 import com.ronams.carmunity.account.internal.application.port.out.AdminInvitationRecord;
 import com.ronams.carmunity.account.internal.application.port.out.AdminInvitationSaveRequest;
+import com.ronams.carmunity.account.internal.domain.AdminInvitation;
 import com.ronams.carmunity.account.internal.domain.RoleCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -101,16 +102,22 @@ class AdminInvitationJpaEntity {
 
   /** open 초대를 폐기 상태로 전환합니다. */
   void revoke(Long revokedByAccountId, Instant revokedAt) {
+    AdminInvitation revoked = toDomain().revokeAt(revokedAt);
     this.revokedByAccountId = revokedByAccountId;
-    this.revokedAt = revokedAt;
+    this.revokedAt = revoked.revokedAt();
     this.updatedAt = revokedAt;
   }
 
   /** open 초대를 수락 상태로 전환합니다. */
   void accept(Long acceptedAccountId, Instant acceptedAt) {
+    AdminInvitation accepted = toDomain().acceptAt(acceptedAt);
     this.acceptedAccountId = acceptedAccountId;
-    this.acceptedAt = acceptedAt;
+    this.acceptedAt = accepted.acceptedAt();
     this.updatedAt = acceptedAt;
+  }
+
+  private AdminInvitation toDomain() {
+    return new AdminInvitation(publicId, expiresAt, acceptedAt, revokedAt);
   }
 
   /** 저장된 초대 row를 application snapshot으로 변환합니다. */

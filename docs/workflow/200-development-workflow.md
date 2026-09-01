@@ -18,7 +18,9 @@
 1. 작업 실행 workflow가 현재 작업 문서와 source에서 확정한 의미 단위 지도, 결과 계약,
    허용 표면과 dirty 경계를 입력으로 받습니다. 상위 기능명이나 전체 구현 목록을 한 단위로
    축약하지 않습니다.
-2. 관련 코드, test와 현재 SOT를 읽고 호출 흐름과 책임 경계를 파악합니다.
+2. 관련 코드, test와 현재 SOT를 읽고 호출 흐름, 책임 경계와 동일 역할의 sibling 전체를
+   파악합니다. 반복 선택이면 작업 실행 workflow의 공통 선택 축과 예외 상태를 첫 mutation
+   전에 동결합니다.
 3. 설계 또는 기반 구조가 포함되면 [설계 워크플로우](110-design-workflow.md)를 먼저 통과합니다.
 4. 외부 도구나 저장소 내부 실행 script·verifier·hook의 도입·존치·제거, caller,
    보장 범위, 비용 또는 dependency·lifecycle이 바뀌면
@@ -43,9 +45,14 @@
   대조했습니다.
 - 현재 구현 단위의 write set, 실패 뒤 재시작 지점과 독립 revert 경계를 확인했습니다.
 - 현재 코드의 소유 모듈, 호출 흐름과 의존 방향을 확인했습니다.
+- 동일 역할의 반복 선택이면 전체 sibling·source inventory, 공통 선택 축과 source-backed
+  예외를 첫 mutation 전에 확정했습니다.
 - 기능 구현, 작은 기반, 큰 기반 또는 혼합 작업으로 분류했습니다.
 - public API, DB, 보안, transaction과 외부 연동 설계가 필요한지 확인했습니다.
-- DDD 변경이면 Domain Inventory, Aggregate와 boundary model을 결정했습니다.
+- 모든 변경 module에서 업무 언어·규칙·모델·상태와 생명주기·소유권·경계의 DDD 영향을
+  판정했습니다. 영향이 없으면 actual source에 근거한 `해당 없음`으로 닫고, 영향이 있거나
+  새 module이면 [110 설계 워크플로우의 DDD 판정 gate](110-design-workflow.md#설계-입력)를
+  통과했습니다.
 - TDD 적용 여부와 예외 시 대체 검증을 정했습니다.
 - 변경 파일의 주석, 환경변수와 영구 문서 영향을 확인했습니다.
 - 작업 실행 workflow가 확정한 dirty 경계와 이번 변경이 분리돼 있습니다.
@@ -53,6 +60,8 @@
 ## 구현 원칙
 
 - 기존 패턴과 책임 경계를 우선합니다.
+- 동일 역할의 sibling에는 한 번 정한 선택 축을 적용하고, 필수 차이가 없는 artifact별
+  사후 기준으로 구조·이름·기술 경로를 나누지 않습니다.
 - 추상화는 실제 복잡도나 중복을 줄일 때만 추가합니다.
 - 관련 없는 refactor, 이동과 포맷 변경을 포함하지 않습니다.
 - 보안, 인증, 데이터 변경은 완화 기본값보다 명시적 실패를 우선합니다.
@@ -103,6 +112,8 @@ workflow가 소유합니다. 이 문서는 그 판정에 필요한 코드·test�
 - 관련 test와 적용되는 Java/Gradle 최종 검증을 실행했습니다.
 - 변경 Java, 설정과 SQL의 주석 필요성을 실제 파일에서 검토했습니다.
 - work item, SOT와 운영 문서를 실제 결과에 맞췄습니다.
+- 모든 변경 module의 DDD 영향 판정 또는 `해당 없음` 근거가 실제 package·모델·의존
+  경계와 일치합니다.
 - 코드 작업이면 exact SHA의 required CI 성공과 Sonar의 revision 일치·Quality Gate
   `OK`·overall `open_issues` 0건을 확인했습니다. push 권한이 없거나 이 gate를 확인하지
   못했으면 local 구현 결과만 닫고 전체 코드 작업은 미완료로 유지했습니다.

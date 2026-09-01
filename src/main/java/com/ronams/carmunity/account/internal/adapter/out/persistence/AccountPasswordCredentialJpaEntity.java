@@ -1,6 +1,7 @@
 package com.ronams.carmunity.account.internal.adapter.out.persistence;
 
 import com.ronams.carmunity.account.internal.domain.PasswordCredential;
+import com.ronams.carmunity.account.internal.domain.PasswordHash;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -78,5 +79,18 @@ class AccountPasswordCredentialJpaEntity {
   /** access token과 refresh 재발급 판단에 반영할 강제 변경 flag입니다. */
   boolean passwordChangeRequired() {
     return passwordChangeRequired;
+  }
+
+  /** credential 변경 규칙을 Domain Model에 위임한 뒤 저장 상태에 반영합니다. */
+  void changePassword(PasswordCredential changedCredential, Instant changedAt) {
+    this.passwordHash = changedCredential.passwordHash().value();
+    this.passwordChangeRequired = changedCredential.passwordChangeRequired();
+    this.passwordUpdatedAt = changedAt;
+    this.updatedAt = changedAt;
+  }
+
+  /** 저장 상태를 credential Domain Model로 복원합니다. */
+  PasswordCredential toDomain() {
+    return new PasswordCredential(PasswordHash.from(passwordHash), passwordChangeRequired);
   }
 }

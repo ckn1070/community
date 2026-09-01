@@ -10,8 +10,10 @@
 
 ## 기본 원칙
 
-- 기본 설계 접근은 DDD, 모듈러 모놀리스, 헥사고날 아키텍처의 실용적 조합입니다.
-- DDD는 도메인 이해와 경계 설정의 기본 방식으로 적용합니다.
+- 현재 프로젝트가 선택한 기본 조합은
+  [200 현재 프로젝트 아키텍처](../project/200-current-architecture.md)가 소유합니다.
+- DDD 고유의 전략·전술 적용 기준은
+  [120 DDD 개념과 적용 기준](120-domain-driven-design.md)을 사용합니다.
 - 업무 모듈 경계를 계층 경계보다 우선합니다.
 - 헥사고날 아키텍처는 모듈 내부 기본 구조로 사용하되, 단순 조회와 규칙 없는 CRUD에는 과한 추상화를 피합니다.
 - 아키텍처 선택은 목표, 변경 가능성, 테스트 가능성, 운영 리스크를 기준으로 판단합니다.
@@ -62,9 +64,46 @@
 - 단순 CRUD에 UseCase, Port, Mapper를 모두 둘지 여부입니다.
 - JPA Entity와 Domain Model을 분리할지 여부입니다.
 - 조회 모델을 도메인 모델로 처리할지, 별도 Read Model/Projection으로 처리할지 여부입니다.
+- SQL을 실행·매핑하는 기술을 ORM, Spring JDBC, SQL mapper, type-safe SQL DSL, reactive client,
+  DB view 중 무엇으로 둘지 여부입니다.
 - Repository 추상화를 application/domain에 둘지, Spring Data Repository를 직접 사용할지 여부입니다.
 - 트랜잭션 경계를 UseCase에 둘지, 더 바깥 서비스 계층에 둘지 여부입니다.
 - 캐시, 비동기, 이벤트를 도입할지 여부입니다.
+
+## 조회 구현 방식 선택
+
+Raw SQL이 필요하다는 사실만으로 실행 기술을 결정하지 않습니다. 후보를 비교할 때에는 제품명부터
+고르지 않고 다음 계열을 현재 stack에서 실제 사용할 수 있는 구현과 연결합니다.
+
+| 후보 계열 | 대표 구현 | 먼저 확인할 적합성 |
+| --- | --- | --- |
+| ORM query·projection | Spring Data JPA derived query·JPQL·native projection, `EntityManager` | aggregate 탐색과 평면 projection, 기존 transaction 관례 |
+| Spring JDBC | `JdbcTemplate`, `NamedParameterJdbcTemplate`, `JdbcClient` | 직접 SQL과 낮은 도입 비용, 수동 mapping 허용 범위 |
+| SQL mapper | MyBatis | SQL 소유와 선언적 결과 mapping, XML·mapper 이중 source 비용 |
+| Type-safe SQL DSL·code generation | jOOQ, QueryDSL SQL | DB 전용 SQL 표현력, schema drift 감지, build 생성 비용 |
+| 경량 SQL object | Jdbi | SQL object·row mapper 단순성, 별도 persistence convention 비용 |
+| Aggregate 중심 JDBC | Spring Data JDBC | 단순 aggregate 저장·조회이며 복합 read projection이 아닌지 |
+| Reactive SQL | R2DBC | 전체 호출 stack과 transaction이 실제로 non-blocking인지 |
+| DB 소유 read model | view, materialized view, function | 여러 consumer의 공통 계산, 배포·권한·refresh lifecycle |
+| 별도 조회 저장소 | 검색엔진, cache, denormalized read model | 측정된 병목·검색 요구와 동기화·복구 비용 |
+
+후보 이름이 목록에 있다는 이유로 모두 같은 깊이로 검증하지 않습니다. 먼저 현재 요구와 충돌하는
+계열을 목적 불일치로 제외하되, 제외 근거를 남긴 뒤 남은 후보를 같은 평가 축으로 비교합니다.
+평가 축은 최소한 다음을 포함합니다.
+
+- Query 표현력: 필요한 join·CTE·window·집계·DB 전용 type을 손실 없이 표현하는가
+- 결과 조립: 평면 projection과 중첩 graph를 어디서 어떤 타입으로 조립하는가
+- Schema 안전성: table·column 변경을 compile·test·runtime 중 어느 시점에 탐지하는가
+- 실행 통제: query 수, binding, transaction, timeout, 실행 계획과 관측을 통제할 수 있는가
+- 기존 stack 정합성: 현재 MVC/reactive model, transaction과 build에 자연스럽게 참여하는가
+- 도입 비용: dependency, code generation, 설정, 두 번째 source와 학습·upgrade 비용은 얼마인가
+- 변경 축: 조회 복잡도·DB 종속성·consumer 증가 때 어느 코드와 문서가 함께 바뀌는가
+
+단순 CRUD의 기본값과 복합 조회의 기본값을 하나로 통일하지 않습니다. 같은 기능 안에서도 단순
+aggregate 변경은 JPA, 복합 read projection은 jOOQ처럼 다른 adapter 기술을 사용할 수 있지만,
+application Port 밖으로 persistence type을 노출하거나 하나의 transaction 의미를 기술별로
+분열시키면 안 됩니다. 새 기술을 선택하면 실제로 쓰는 장점, 감수하는 비용, 보호되지 않는 범위와
+재검토 조건을 해당 `tech-stack` SOT와 작업 design에 함께 남깁니다.
 
 ## 과설계 방지 기준
 
@@ -103,10 +142,11 @@
 
 1. 목표와 변경 대상의 책임을 한 문장으로 정리합니다.
 2. 기존 코드, project 결정, domain 정책을 확인합니다.
-3. 가능한 선택지를 2~3개로 압축합니다.
-4. 이 문서의 평가 축으로 비교합니다.
-5. 추천안과 배제한 대안의 이유를 설명합니다.
-6. 검증 방법과 재검토 조건을 남깁니다.
+3. 해당 문제 계열의 후보군을 실제 사용할 수 있는 구현까지 빠짐없이 복원합니다.
+4. 요구·현재 stack과 충돌하는 후보를 근거와 함께 제외한 뒤, 남은 shortlist를 만듭니다.
+5. 이 문서의 평가 축으로 shortlist를 같은 깊이에서 비교합니다.
+6. 추천안과 제외·배제한 대안의 이유를 설명합니다.
+7. 선택에서 실제로 사용하는 장점, 보호하지 못하는 범위, 검증 방법과 재검토 조건을 남깁니다.
 
 설계 확정과 문서화 절차는 [설계 워크플로우](../workflow/110-design-workflow.md)가 소유합니다.
 
@@ -117,6 +157,7 @@
 
 ## 관련 문서
 
-- **용어 기준**: [아키텍처 개념 구분](110-architecture-concepts.md)
+- **용어 비교**: [110 아키텍처 개념 구분](110-architecture-concepts.md)
+- **DDD 적용 기준**: [120 DDD 개념과 적용 기준](120-domain-driven-design.md)
 - **구조 적용 기준**: [헥사고날 아키텍처](200-hexagonal-architecture.md)
 - **설계 실행 절차**: [설계 워크플로우](../workflow/110-design-workflow.md)

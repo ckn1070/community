@@ -5,7 +5,6 @@ import com.ronams.carmunity.account.api.AccountAuthSubject;
 import com.ronams.carmunity.account.api.AccountAuthSubjectLookup;
 import com.ronams.carmunity.auth.internal.application.AuthErrorCode;
 import com.ronams.carmunity.auth.internal.application.command.RotateRefreshTokenCommand;
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRejectionReason;
 import com.ronams.carmunity.auth.internal.application.port.in.RotateRefreshTokenUseCase;
 import com.ronams.carmunity.auth.internal.application.port.out.AccessTokenIssuerPort;
@@ -15,6 +14,7 @@ import com.ronams.carmunity.auth.internal.application.port.out.RefreshTokenLifec
 import com.ronams.carmunity.auth.internal.application.result.IssuedAccessToken;
 import com.ronams.carmunity.auth.internal.application.result.IssuedRefreshToken;
 import com.ronams.carmunity.auth.internal.application.result.RotatedRefreshTokenResult;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import com.ronams.carmunity.shared.error.ApiException;
 import java.time.Clock;
 import java.time.Instant;
@@ -45,7 +45,7 @@ public class RotateRefreshTokenService implements RotateRefreshTokenUseCase {
   @Transactional(noRollbackFor = ApiException.class)
   public RotatedRefreshTokenResult execute(RotateRefreshTokenCommand command) {
     String tokenHash = refreshTokenHashPort.hash(command.refreshToken());
-    RefreshTokenRecord currentToken =
+    RefreshSession currentToken =
         refreshTokenLifecycleStorePort
             .findByHashForUpdate(tokenHash)
             .orElseThrow(this::invalidRefreshToken);

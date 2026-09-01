@@ -1,10 +1,11 @@
 package com.ronams.carmunity.auth.internal.application.port.out;
 
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRejectionReason;
 import com.ronams.carmunity.auth.internal.application.result.IssuedRefreshToken;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * refresh token lifecycle 저장소 port입니다.
@@ -19,7 +20,10 @@ public interface RefreshTokenLifecycleStorePort {
    * @param tokenHash refresh token 원문의 저장용 hash입니다.
    * @return rotation 판단에 사용할 저장 token snapshot입니다.
    */
-  Optional<RefreshTokenRecord> findByHashForUpdate(String tokenHash);
+  Optional<RefreshSession> findByHashForUpdate(String tokenHash);
+
+  /** 최초 로그인에서 발급한 refresh session을 저장합니다. */
+  void issue(UUID accountPublicId, IssuedRefreshToken refreshToken);
 
   /**
    * 새 token을 저장하고 기존 token을 ROTATED로 폐기합니다.
@@ -28,8 +32,7 @@ public interface RefreshTokenLifecycleStorePort {
    * @param replacementToken 클라이언트에 전달할 새 refresh token 발급 결과입니다.
    * @param rotatedAt rotation 시각입니다.
    */
-  void rotate(
-      RefreshTokenRecord currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt);
+  void rotate(RefreshSession currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt);
 
   /**
    * 제출된 단일 refresh token을 LOGOUT으로 폐기합니다.
@@ -39,7 +42,7 @@ public interface RefreshTokenLifecycleStorePort {
    * @param currentToken lock이 잡힌 로그아웃 대상 refresh token입니다.
    * @param loggedOutAt 로그아웃 처리 시각입니다.
    */
-  void revokeForLogout(RefreshTokenRecord currentToken, Instant loggedOutAt);
+  void revokeForLogout(RefreshSession currentToken, Instant loggedOutAt);
 
   /**
    * 재사용이 감지된 token family의 활성 token을 REUSE_DETECTED로 폐기합니다.
@@ -47,7 +50,7 @@ public interface RefreshTokenLifecycleStorePort {
    * @param reusedToken 재사용으로 판단된 refresh token입니다.
    * @param detectedAt 탐지 시각입니다.
    */
-  void revokeFamilyForReuse(RefreshTokenRecord reusedToken, Instant detectedAt);
+  void revokeFamilyForReuse(RefreshSession reusedToken, Instant detectedAt);
 
   /**
    * refresh 시점의 account 상태가 token 발급을 허용하지 않을 때 family를 폐기합니다.
@@ -57,5 +60,8 @@ public interface RefreshTokenLifecycleStorePort {
    * @param rejectedAt 거부 시각입니다.
    */
   void revokeFamilyForRejectedAccount(
-      RefreshTokenRecord currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt);
+      RefreshSession currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt);
+
+  /** account 보안 자격 증명 변경 후 해당 account의 활성 session을 모두 폐기합니다. */
+  void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt);
 }

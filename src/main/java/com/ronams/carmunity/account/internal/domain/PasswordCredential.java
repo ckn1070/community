@@ -32,4 +32,9 @@ public record PasswordCredential(PasswordHash passwordHash, boolean passwordChan
   static PasswordCredential adminInvitation(PasswordHash passwordHash) {
     return new PasswordCredential(passwordHash, false);
   }
+
+  /** 사용자가 확인한 새 hash로 교체하고 강제 변경 상태를 해제합니다. */
+  public PasswordCredential changeTo(PasswordHash newPasswordHash) {
+    return new PasswordCredential(newPasswordHash, false);
+  }
 }

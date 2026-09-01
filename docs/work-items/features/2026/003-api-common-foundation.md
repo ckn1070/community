@@ -12,7 +12,7 @@ Done
 - 공개 endpoint를 명시하고 나머지 `/api/**`를 기본 보호하는 baseline을 만들었습니다.
 - `./gradlew test`와 `./gradlew check`를 통과했습니다.
 - 전체 완료 여부: 예
-- 남은 책임: 이 작업의 완료 당시 공통 기반 범위에는 없습니다. 현재 Spring MVC path type·method 예외 분류 누락은 [Spring MVC framework 예외 분류 누락](../../bugs/2026/007-spring-mvc-exception-classification.md)이 소유합니다.
+- 남은 책임: 이 작업의 완료 당시 공통 기반 범위에는 없습니다. 현재 Spring MVC path type·method 예외 분류 누락의 수정 상태는 [007 Spring MVC framework 예외 분류 누락](../../bugs/2026/007-spring-mvc-exception-classification.md)에서 추적합니다.
 
 ## 범위
 

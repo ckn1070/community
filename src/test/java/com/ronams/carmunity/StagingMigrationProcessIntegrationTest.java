@@ -22,6 +22,19 @@ class StagingMigrationProcessIntegrationTest extends PostgreSqlIntegrationTestSu
 
   private static final Duration PROCESS_TIMEOUT = Duration.ofSeconds(120);
   private static final String TEST_HMAC = "staging-process-test-hmac-secret-32-bytes";
+  private static final List<String> CATALOG_TABLES =
+      List.of(
+          "car_brand",
+          "car_certification",
+          "car_configuration",
+          "car_configuration_option",
+          "car_configuration_price",
+          "car_generation",
+          "car_model",
+          "car_model_year",
+          "car_powertrain",
+          "car_powertrain_component",
+          "car_vehicle_variant");
 
   /** Migration과 runtime 권한 callback이 한 process에서 재실행 가능한 상태로 끝나는지 검증합니다. */
   @Test
@@ -60,6 +73,12 @@ class StagingMigrationProcessIntegrationTest extends PostgreSqlIntegrationTestSu
         .isTrue();
     assertThat(
             queryBoolean(
+                "SELECT has_table_privilege('carmunity_runtime', 'public.account', 'INSERT') "
+                    + "AND has_table_privilege('carmunity_runtime', 'public.account', 'UPDATE') "
+                    + "AND has_table_privilege('carmunity_runtime', 'public.account', 'DELETE')"))
+        .isTrue();
+    assertThat(
+            queryBoolean(
                 "SELECT has_sequence_privilege("
                     + "'carmunity_runtime', 'public.account_id_seq', 'USAGE')"))
         .isTrue();
@@ -68,6 +87,73 @@ class StagingMigrationProcessIntegrationTest extends PostgreSqlIntegrationTestSu
                 "SELECT has_table_privilege('carmunity_runtime', "
                     + "'public.flyway_schema_history', 'SELECT')"))
         .isFalse();
+
+    for (String table : CATALOG_TABLES) {
+      assertThat(
+              queryBoolean(
+                  "SELECT has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'SELECT')"))
+          .as("catalog runtime SELECT privilege: %s", table)
+          .isTrue();
+      assertThat(
+              queryBoolean(
+                  "SELECT has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'INSERT') OR has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'UPDATE') OR has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'DELETE') OR has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'TRUNCATE') OR has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'REFERENCES') OR has_table_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "', 'TRIGGER')"))
+          .as("catalog runtime mutation privilege: %s", table)
+          .isFalse();
+      assertThat(
+              queryBoolean(
+                  "SELECT has_sequence_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "_id_seq', 'USAGE') OR has_sequence_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "_id_seq', 'SELECT') OR has_sequence_privilege('carmunity_runtime', 'public."
+                      + table
+                      + "_id_seq', 'UPDATE')"))
+          .as("catalog runtime sequence privilege: %s", table)
+          .isFalse();
+    }
+
+    assertRuntimeStatementsRespectCatalogReadOnlyBoundary();
+  }
+
+  private static void assertRuntimeStatementsRespectCatalogReadOnlyBoundary() throws SQLException {
+    try (var connection =
+            DriverManager.getConnection(postgresJdbcUrl(), postgresUsername(), postgresPassword());
+        var statement = connection.createStatement()) {
+      statement.execute("SET ROLE carmunity_runtime");
+      for (String table : CATALOG_TABLES) {
+        statement.executeQuery("SELECT * FROM public." + table + " LIMIT 0").close();
+        assertPermissionDenied(statement, "INSERT INTO public." + table + " DEFAULT VALUES");
+        assertPermissionDenied(statement, "UPDATE public." + table + " SET id = id WHERE FALSE");
+        assertPermissionDenied(statement, "DELETE FROM public." + table + " WHERE FALSE");
+        assertPermissionDenied(statement, "TRUNCATE TABLE public." + table);
+        assertPermissionDenied(
+            statement, "SELECT nextval('public." + table + "_id_seq'::regclass)");
+      }
+      statement.execute("RESET ROLE");
+    }
+  }
+
+  private static void assertPermissionDenied(java.sql.Statement statement, String sql) {
+    try {
+      statement.execute(sql);
+      throw new AssertionError("runtime catalog statement가 거부되지 않았습니다: " + sql);
+    } catch (SQLException exception) {
+      assertThat(exception.getSQLState()).isEqualTo("42501");
+    }
   }
 
   private static boolean queryBoolean(String sql) throws SQLException {

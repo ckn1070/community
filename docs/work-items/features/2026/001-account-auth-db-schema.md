@@ -19,7 +19,9 @@ Done
 - 필수 `ROLE_SUPER_ADMIN`, `ROLE_ADMIN`, `ROLE_MEMBER` seed
 - PostgreSQL migration과 실제 schema 검증
 
-이 작업 이후 추가된 verification token, admin invitation과 password reset schema는 후속 기능 작업과 [현재 Schema Reference](../../../project/schema/100-account-auth.md)가 소유합니다.
+이 작업 이후 추가된 verification token, admin invitation과 password reset의 현재 schema는
+[100 Account 인증/인가 Schema Reference](../../../project/schema/100-account-auth.md)가 소유합니다.
+후속 기능 문서는 각 변경의 작업 결과와 결정 근거만 보존합니다.
 
 ## 확정 결정 색인
 

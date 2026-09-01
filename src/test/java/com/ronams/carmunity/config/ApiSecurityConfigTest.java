@@ -153,6 +153,27 @@ class ApiSecurityConfigTest {
         .andExpect(header().string(ApiRequestIdContext.REQUEST_ID_HEADER, not(blankString())));
   }
 
+  /** 카탈로그 조회는 선택 없이 첫 화면을 구성해야 하므로 세 GET만 인증 없이 공개합니다. */
+  @Test
+  void allowsPublicCatalogGetEndpointsWithoutAuthentication() throws Exception {
+    mockMvc.perform(get("/api/v1/car/brands")).andExpect(status().isOk());
+    mockMvc.perform(get("/api/v1/car/models")).andExpect(status().isOk());
+    mockMvc
+        .perform(get("/api/v1/car/models/0f3445fd-5f22-4f74-9a9d-1ff0c68a924a"))
+        .andExpect(status().isOk());
+  }
+
+  /** 공개 카탈로그 path라도 GET 이외 method는 anonymous에게 열리지 않고 인증 후 MVC에서 405로 분류됩니다. */
+  @Test
+  void keepsUnsupportedCatalogMethodsProtectedBeforeMvcMethodClassification() throws Exception {
+    mockMvc.perform(post("/api/v1/car/models")).andExpect(status().isUnauthorized());
+
+    mockMvc
+        .perform(post("/api/v1/car/models").with(fullSessionJwt()))
+        .andExpect(status().isMethodNotAllowed())
+        .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
+  }
+
   /** allow-list에 없는 business API는 기본적으로 인증을 요구하고 401 Problem Details로 실패해야 합니다. */
   @Test
   void rejectsOtherApiEndpointWithoutAuthenticationAsProblemDetail() throws Exception {
@@ -443,6 +464,21 @@ class ApiSecurityConfigTest {
     @PostMapping("/api/v1/auth/logout")
     void logoutAuthSession(HttpServletResponse response) {
       response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    }
+
+    @GetMapping("/api/v1/car/brands")
+    String catalogBrands() {
+      return "ok";
+    }
+
+    @GetMapping("/api/v1/car/models")
+    String catalogModels() {
+      return "ok";
+    }
+
+    @GetMapping("/api/v1/car/models/{carModelId}")
+    String catalogModelDetail() {
+      return "ok";
     }
 
     @GetMapping("/api/protected")

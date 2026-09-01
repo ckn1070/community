@@ -11,15 +11,16 @@
 
 ## 현재 도메인
 
-현재 구현과 영구 정책이 있는 영역은 account와 auth입니다.
+현재 구현과 영구 정책이 있는 영역은 account, auth와 자동차 카탈로그입니다.
 
 - [100-account.md](100-account.md): account, profile, credential, role, refresh token, verification token의 업무 의미
 - [110-account-auth-policy.md](110-account-auth-policy.md): account status, session access, password 변경 상태, role별 API 접근 정책
 - [120-auth-event-policy.md](120-auth-event-policy.md): 인증·인가 감사 이벤트의 생성 조건, 결과, reason, metadata 정책
+- [130-car-catalog.md](130-car-catalog.md): 자동차 제품·기술·판매 정보의 개념, 관계, 상태와 조회 의미
 
 ## 제품 범위와 미래 영역
 
-자동차 카탈로그, 커뮤니티, 공개 member profile, moderation, media, 중고차 listing은 현재 확정된 상세 도메인 문서가 없습니다.
+커뮤니티, 공개 member profile, moderation, media, 중고차 listing은 현재 확정된 상세 도메인 문서가 없습니다.
 제품 방향은 [제품 개요](../product/100-product-overview.md), 기능 범위와 제품 후보는
 [기능 범위](../product/200-feature-scope.md)와
 [AutoSquare 제품 후보](../work-items/backlog/2026/002-autosquare-mvp-candidate.md), 횡단
@@ -41,5 +42,5 @@ architecture·privacy·운영 결정은
 
 - **현재 구현 상태**: [프로젝트 문서](../project/000-index.md)
 - **제품 목표·범위**: [제품 문서](../product/000-index.md)
-- **용어 경계**: [아키텍처 개념](../architecture/110-architecture-concepts.md)
+- **DDD와 Bounded Context 기준**: [120 DDD 개념과 적용 기준](../architecture/120-domain-driven-design.md)
 - **변경 계획·결과**: [작업 문서](../work-items/000-index.md)

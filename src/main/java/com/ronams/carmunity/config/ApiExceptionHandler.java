@@ -11,11 +11,13 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * Spring MVC 예외를 프로젝트 공통 Problem Details 응답으로 변환합니다.
@@ -60,6 +62,20 @@ public class ApiExceptionHandler {
   ResponseEntity<ProblemDetail> handleHttpMessageNotReadable(
       HttpMessageNotReadableException exception, WebRequest request) {
     return toResponseEntity(responseFactory.create(CommonErrorCode.INVALID_REQUEST, request));
+  }
+
+  /** path·query parameter를 공개 타입으로 변환하지 못하면 {@code 400 INVALID_REQUEST}로 응답합니다. */
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  ResponseEntity<ProblemDetail> handleMethodArgumentTypeMismatch(
+      MethodArgumentTypeMismatchException exception, WebRequest request) {
+    return toResponseEntity(responseFactory.create(CommonErrorCode.INVALID_REQUEST, request));
+  }
+
+  /** 존재하는 resource가 지원하지 않는 HTTP method는 {@code 405 METHOD_NOT_ALLOWED}로 응답합니다. */
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  ResponseEntity<ProblemDetail> handleHttpRequestMethodNotSupported(
+      HttpRequestMethodNotSupportedException exception, WebRequest request) {
+    return toResponseEntity(responseFactory.create(CommonErrorCode.METHOD_NOT_ALLOWED, request));
   }
 
   /**

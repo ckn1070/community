@@ -46,21 +46,38 @@ local commit 개수는 이 대조를 대신하지 않는다. Test 통과나 후�
 대조가 없거나, 적용할 specialist 검토가 commit 뒤로 남아 있으면 미검증 후보로 관련
 owner에 반환한다. 이 skill에서 공통 discovery·closure 횟수를 다시 정의하지 않는다.
 
+설계 workflow가 적용된 candidate는 작업 실행 workflow의 목표 보존 identity와 설계 준비도
+인계를 별도로 확인합니다. 목표 약화·미증명 항목이 있거나 필수 계획 검증이 없으면 stage하지
+않습니다. 기존 committed 계약이 없던 도메인 소유권·모듈 경계·데이터 생명주기·공개 계약을
+바꾸는 production patch라면 검증된 `Planned` checkpoint commit이 fixed-base `HEAD` 자체에
+포함되고 첫 production commit보다 선행하는지 Git ancestry로 확인합니다. Checkpoint가
+fixed base 자체인 경우도 유효하며, 같은 staged candidate나 뒤 commit의 plan·design은 선행
+설계나 원래 목표 source로 인정하지 않고 `$dev-plan`으로 반환합니다.
+
 ## 3. Local Git orchestration
 
 operation map에 stage·commit이 있으면 커밋 workflow를 순서대로 실행한다.
 
-첫 Git mutation 전에 예정 commit 순서를 사용자 commentary에 투영한다. 각 항목은 예정
+첫 Git mutation 전에 커밋 workflow의 분할 반증 gate를 실행한다. 예정 subject와 상위 작업명을
+입력에서 제외하고 final diff의 실제 consumer·재시작·복구·revert 경계에서 가장 이른 유효
+prefix를 먼저 찾으며, 각 prefix의 source·compile·직접 test 결과 또는 더 이른 prefix가
+성립하지 않는 직접 dependency를 고정한다. 같은 요청·파일·공유 test, 전체 test 통과나
+작성자의 불가분 선언은 이 증거가 아니다. History rewrite와 source만으로 분할 가능성이
+닫히지 않는 일반 commit은 기존 dirty를 건드리지 않는 격리 candidate에서 prefix를 검증한다.
+
+이 증거를 만든 뒤 예정 commit 순서를 사용자 commentary에 투영한다. 각 항목은 예정
 subject, 원래 요구에서 동결한 하나의 결과, exact path·hunk와 필수 dependency, 적용된
-specialist 검증과 같은 `R/G/C/P` identity를 포함한다. 결과 경계는 이름으로 선언하지 않고 다음 consumer, 실패 뒤
-재시작 지점, retry·복구 방법과 독립 revert 가능성을 대조한다. 하나라도 다르면 불가분
-dependency가 증명되지 않는 한 별도 결과로 투영한다.
+specialist 검증과 같은 `R/G/C/P` identity를 포함한다. 또한 커밋 workflow가 요구하는
+`변경 전 의도 → 변경 뒤 결과 → 선택 type`을 원래 요구·변경 전 source에 연결해 같은 항목에
+표시한다. 결과 경계는 이름으로 선언하지 않고 다음 consumer, 실패 뒤 재시작 지점,
+retry·복구 방법과 독립 revert 가능성을 대조한다. 하나라도 다르면 불가분 dependency가
+증명되지 않는 한 별도 결과로 투영한다.
 
 이 투영이 없거나 상위 목적 이름으로 서로 다른 경계를 합치거나, 한 subject가 독립적인
 병렬 결과를 나열하거나, 그 commit만 revert했을 때 다른 결과의 코드·test·문서가 함께
-사라지면 stage하지 않고 결과 단위 또는 specialist 검증으로 반환한다. 이 투영은
-사용자에게 새 승인을 묻는 절차가 아니라, source-backed 결과 단위 gate가 실제 Git
-경로에서 호출됐다는 관찰 가능한 실행 증거다.
+사라지거나, 더 이른 유효 prefix가 있는데도 합치면 stage하지 않고 결과 단위 또는 specialist
+검증으로 반환한다. 이 투영은 사용자에게 새 승인을 묻는 절차가 아니라 분할 반증 결과의
+projection이다. 투영 자체를 source-backed 결과 단위 gate의 실행 증거로 다시 사용하지 않는다.
 
 첫 Git mutation과 sandbox·tool approval 호출에는 operation map을 만든 exact 사용자 원문
 원자, 적용한 workflow 상시 예외 또는 직접 Git 요청, exact 효과·path와 제외 효과를 함께
@@ -71,7 +88,8 @@ dependency가 증명되지 않는 한 별도 결과로 투영한다.
 2. 확정된 결과 단위·dependency 순서에서 commit patch와 subject를 만든다.
 3. exact path만 stage하고 cached full patch·whitespace·제외 dirty를 확인한다.
 4. Conventional Commit을 만든다.
-5. commit object, parent, tree, full patch와 status를 표준 Git source에서 확인한다.
+5. commit object, parent, tree, full patch와 status를 표준 Git source에서 확인하고, 실제
+   type이 mutation 전에 투영한 변경 전 의도·변경 뒤 결과와 일치하는지 다시 판정한다.
 6. 모든 대상 commit 뒤 fixed base부터 cumulative diff와 `E/K/X/D` closure를 확인한다.
 
 workflow의 명령과 금지를 그대로 실행하며 broad add, `commit -a`, `--no-verify`, stash,
@@ -80,7 +98,14 @@ hunk나 기존 staged 상태를 안전하게 분리할 수 없으면 stage하지
 작업 실행 workflow로 반환한다.
 
 history 복구가 operation map에 있으면 일반 commit 흐름으로 바꾸지 않고 커밋 workflow의
-격리 candidate·compare-and-swap 절차를 적용한다.
+격리 candidate·compare-and-swap 절차를 적용한다. 첫 history rewrite 범위나 topology를
+사용자에게 투영하기 전에도 커밋 workflow의 처분 manifest를 실제로 소비한다. 사용자
+원문의 의미 target, 영향받는 각 commit·path·effect의 실제 patch와 `제거 / 보존 /
+중단·질문` 처분이 모두 연결되기 전에는 checkpoint나 ancestry를 ref cutoff로 바꾸거나
+`branch → base`를 출력하지 않는다. 무관한 descendant는 유지 순서로 전달하고, 관계가
+미확정이면 topology 선택 전 작업 실행 workflow로 반환한다. 사용자가 exact cutoff 뒤
+전체 제거 또는 exact 제거·보존 집합을 명시한 경우에는 그 지시를 다시 기능 관련성
+질문으로 막지 않는다.
 
 Git 명령의 sandbox·tool approval이 거절돼도 이미 확정된 operation map을 권한 없음으로
 바꾸거나 사용자에게 같은 stage·commit·push 승인을 반복해서 묻지 않는다. 거절은 실행

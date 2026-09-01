@@ -11,6 +11,7 @@ import com.ronams.carmunity.account.internal.application.port.out.PasswordResetT
 import com.ronams.carmunity.account.internal.application.port.out.StoredPasswordResetToken;
 import com.ronams.carmunity.account.internal.domain.AccountStatus;
 import com.ronams.carmunity.account.internal.domain.EmailAddress;
+import com.ronams.carmunity.account.internal.domain.PasswordResetChallenge;
 import com.ronams.carmunity.account.internal.domain.PasswordResetTokenHash;
 import com.ronams.carmunity.notification.api.PasswordResetNotificationRequest;
 import com.ronams.carmunity.notification.api.PasswordResetNotificationSender;
@@ -22,7 +23,6 @@ import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -44,27 +44,8 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
   private final AuthEventStorePort authEventStorePort;
   private final Clock clock;
 
-  /** 운영 기본 시간 기준으로 Spring bean을 구성합니다. */
-  @Autowired
-  public RequestPasswordResetService(
-      PasswordResetAccountLookupPort accountLookupPort,
-      PasswordResetTokenGeneratorPort tokenGeneratorPort,
-      PasswordResetTokenHasher tokenHasher,
-      PasswordResetTokenStorePort tokenStorePort,
-      PasswordResetNotificationSender notificationSender,
-      AuthEventStorePort authEventStorePort) {
-    this(
-        accountLookupPort,
-        tokenGeneratorPort,
-        tokenHasher,
-        tokenStorePort,
-        notificationSender,
-        authEventStorePort,
-        Clock.systemUTC());
-  }
-
   /** 테스트가 token TTL과 cooldown 판단 시각을 통제할 수 있도록 Clock을 외부에서 주입받습니다. */
-  RequestPasswordResetService(
+  public RequestPasswordResetService(
       PasswordResetAccountLookupPort accountLookupPort,
       PasswordResetTokenGeneratorPort tokenGeneratorPort,
       PasswordResetTokenHasher tokenHasher,
@@ -136,7 +117,14 @@ public class RequestPasswordResetService implements RequestPasswordResetUseCase 
   }
 
   private boolean isInCooldown(StoredPasswordResetToken token, Instant now) {
-    return token.lastSentAt().plus(REQUEST_COOLDOWN).isAfter(now);
+    return new PasswordResetChallenge(
+            token.id(),
+            token.accountId(),
+            token.expiresAt(),
+            token.lastSentAt(),
+            token.consumedAt().orElse(null),
+            token.revokedAt().orElse(null))
+        .isInCooldownAt(now, REQUEST_COOLDOWN);
   }
 
   private void runAfterCommit(Runnable task) {

@@ -16,11 +16,6 @@ interface AuthRefreshTokenJpaRepository extends JpaRepository<AuthRefreshTokenJp
   Optional<AuthRefreshTokenJpaEntity> findByTokenHashForUpdate(
       @Param("tokenHash") String tokenHash);
 
-  @Query(
-      value = "select account.public_id from account account where account.id = :accountId",
-      nativeQuery = true)
-  Optional<UUID> findAccountPublicId(@Param("accountId") Long accountId);
-
   @Lock(LockModeType.PESSIMISTIC_WRITE)
   @Query(
       """
@@ -30,4 +25,15 @@ interface AuthRefreshTokenJpaRepository extends JpaRepository<AuthRefreshTokenJp
         and token.revokedAt is null
       """)
   List<AuthRefreshTokenJpaEntity> findActiveFamilyTokensForUpdate(@Param("familyId") UUID familyId);
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query(
+      """
+      select token
+      from AuthRefreshTokenJpaEntity token
+      where token.accountPublicId = :accountPublicId
+        and token.revokedAt is null
+      """)
+  List<AuthRefreshTokenJpaEntity> findActiveAccountTokensForUpdate(
+      @Param("accountPublicId") UUID accountPublicId);
 }

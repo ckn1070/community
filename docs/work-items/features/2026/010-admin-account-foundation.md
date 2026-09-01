@@ -13,7 +13,7 @@ Done
 - 관리자 API에 full session, password 변경 완료와 role 조건을 적용했습니다.
 - command, password change, Security, persistence와 integration test 및 최종 Gradle 검증을 통과했습니다.
 - 전체 완료 여부: 예
-- 남은 책임: 이 작업의 관리자 기반 완료 범위에는 없습니다. 현재 공용 `Clock` provider 위치와 command 다음 행동 문구는 각각 [공용 Clock bean의 auth 내부 소유](../../bugs/2026/003-shared-clock-bean-ownership.md), [Bootstrap 다음 행동 안내 범위 오류](../../bugs/2026/006-bootstrap-next-action-message.md)가 소유합니다.
+- 남은 책임: 이 작업의 관리자 기반 완료 범위에는 없습니다. 현재 공용 `Clock` provider 위치와 command 다음 행동 문구의 수정 상태는 각각 [003 공용 Clock bean의 auth 내부 소유](../../bugs/2026/003-shared-clock-bean-ownership.md), [006 Bootstrap 다음 행동 안내 범위 오류](../../bugs/2026/006-bootstrap-next-action-message.md)에서 추적합니다.
 
 ## 범위
 

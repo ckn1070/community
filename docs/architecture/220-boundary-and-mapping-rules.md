@@ -134,7 +134,7 @@ DTO 경계에서는 이동 방향이 이름에 드러나야 합니다.
 | --- | --- | --- |
 | `from(source)` | 하나의 source model, raw value, 외부 표현을 현재 타입으로 변환합니다. | `EmailAddress.from(rawEmail)`, `MemberResponse.from(result)` |
 | `of(values...)` | 이미 검증되거나 의미가 분명한 여러 값을 조립합니다. | `PageRange.of(start, size)` |
-| 의미 있는 factory 이름 | 고정된 업무 의미나 기본값을 숨기지 않고 드러냅니다. | `AuthEventJpaEntity.signUpSuccess(accountId)` |
+| 의미 있는 factory 이름 | 고정된 업무 의미나 기본값을 숨기지 않고 드러냅니다. | `AccountSecurityAuditRecords.signUpSuccess(accountPublicId, occurredAt)` |
 
 의미 있는 factory 이름은 `of`보다 길어도 허용합니다.
 예를 들어 특정 이벤트 타입과 성공 결과를 함께 고정하는 factory는 `of(accountId)`보다 `signUpSuccess(accountId)`가 낫습니다.
@@ -183,20 +183,25 @@ JPA Entity factory는 저장 모델 생성 의도를 기준으로 이름을 고�
 
 ## Entity와 Domain 분리 기준
 
+업무 규칙이 Domain Model을 필요로 하는지는
+[120 DDD 개념과 적용 기준](120-domain-driven-design.md#domain-model)이 소유합니다.
+이 절은 Domain Model을 사용하기로 한 뒤, persistence 요구와 업무 표현의 차이에 따라
+JPA Entity를 별도 모델로 둘지와 어느 경계에서 매핑할지를 판단합니다.
+
 분리를 우선하는 경우는 다음과 같습니다.
 
-- 도메인 규칙이 복잡합니다.
-- Entity 연관관계와 API/UseCase 모델이 다릅니다.
-- 테스트를 Spring/JPA 없이 빠르게 실행해야 합니다.
-- DB 구조가 도메인 언어보다 기술적입니다.
-- 장기적으로 저장 전략이 바뀔 수 있습니다.
+- JPA annotation, proxy, 기본 생성자나 변경 감지가 Domain Model의 불변성을 약화합니다.
+- table·연관관계 구조와 Domain Model의 객체 경계가 다릅니다.
+- 하나의 Domain Model을 여러 persistence 표현으로 저장해야 합니다.
+- 저장 전략 변경이 Domain Model의 공개 계약까지 바꾸면 안 됩니다.
+- persistence 없이 Domain Model을 생성·검증해야 하는데 Entity 제약이 이를 방해합니다.
 
 합쳐도 되는 경우는 다음과 같습니다.
 
-- 초기 CRUD이고 규칙이 거의 없습니다.
-- 매핑 비용이 구조적 이득보다 큽니다.
-- Entity가 도메인 개념을 거의 그대로 표현합니다.
-- 이후 분리할 조건을 알고 있습니다.
+- 선택한 Domain Model과 table 구조가 거의 같은 경계를 표현합니다.
+- JPA 요구가 생성 규칙과 불변조건을 깨뜨리지 않습니다.
+- 별도 persistence model과 매핑을 추가해도 독립성이나 변경 격리가 개선되지 않습니다.
+- persistence 표현이 달라질 때 분리할 조건을 알고 있습니다.
 
 합치는 경우에도 API DTO로 Entity를 직접 노출하지 않습니다.
 
@@ -241,5 +246,6 @@ Port의 목적형 이름, 최소 method 노출, 조회·저장 분리와 persist
 ## 관련 문서
 
 - **구조 원칙**: [헥사고날 아키텍처](200-hexagonal-architecture.md)
+- **Domain Model 적용 기준**: [120 DDD 개념과 적용 기준](120-domain-driven-design.md#domain-model)
 - **모듈 배치**: [Spring Boot 모듈 구조](210-spring-boot-module-structure.md)
 - **영속성 구현 기준**: [Spring Data JPA](../tech-stack/230-spring-data-jpa.md)

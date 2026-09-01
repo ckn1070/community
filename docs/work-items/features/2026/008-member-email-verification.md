@@ -13,7 +13,7 @@ Done
 - request·completion auth event, environment contract와 관련 test를 구현했습니다.
 - schema, service, controller, notification, Security와 최종 Gradle 검증을 통과했습니다.
 - 전체 완료 여부: 예
-- 남은 책임: 이 작업의 이메일 인증 완료 범위에는 없습니다. 현재 notification logging, 공용 `Clock` owner와 delivery/audit 실패 의미 결함은 [Bug 작업](../../bugs/2026/000-index.md)이 각각 소유합니다.
+- 남은 책임: 이 작업의 이메일 인증 완료 범위에는 없습니다. 현재 notification logging, 공용 `Clock` owner와 delivery/audit 실패 의미 결함의 수정 상태는 [000 Bug 작업](../../bugs/2026/000-index.md)에서 각각 추적합니다.
 
 ## 범위
 

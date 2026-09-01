@@ -2,8 +2,8 @@ package com.ronams.carmunity.auth.internal.adapter.out.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.ronams.carmunity.auth.internal.application.model.RefreshTokenRecord;
 import com.ronams.carmunity.auth.internal.application.result.IssuedRefreshToken;
+import com.ronams.carmunity.auth.internal.domain.RefreshSession;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -35,10 +35,9 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     UUID familyId = UUID.fromString("6e74f192-9256-4569-8579-6b8f557d9cb1");
     Long tokenId = createRefreshToken(accountId, "a".repeat(64), familyId);
 
-    RefreshTokenRecord token = adapter.findByHashForUpdate("a".repeat(64)).orElseThrow();
+    RefreshSession token = adapter.findByHashForUpdate("a".repeat(64)).orElseThrow();
 
     assertThat(token.id()).isEqualTo(tokenId);
-    assertThat(token.accountId()).isEqualTo(accountId);
     assertThat(token.accountPublicId()).isEqualTo(publicId);
     assertThat(token.familyId()).isEqualTo(familyId);
   }
@@ -50,7 +49,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     Long accountId = createAccount(publicId, "refresh-rotate@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("154c0fef-4f88-449f-a070-c8b0ed201501");
     Long oldTokenId = createRefreshToken(accountId, "b".repeat(64), familyId);
-    RefreshTokenRecord current = adapter.findByHashForUpdate("b".repeat(64)).orElseThrow();
+    RefreshSession current = adapter.findByHashForUpdate("b".repeat(64)).orElseThrow();
     IssuedRefreshToken replacement =
         new IssuedRefreshToken(
             "new-refresh-token", "c".repeat(64), familyId, NOW, NOW.plusSeconds(2_592_000));
@@ -95,7 +94,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     Long reusedTokenId = createRefreshToken(accountId, "d".repeat(64), familyId);
     Long activeTokenId = createRefreshToken(accountId, "e".repeat(64), familyId);
     markRotated(reusedTokenId, activeTokenId);
-    RefreshTokenRecord reused = adapter.findByHashForUpdate("d".repeat(64)).orElseThrow();
+    RefreshSession reused = adapter.findByHashForUpdate("d".repeat(64)).orElseThrow();
 
     adapter.revokeFamilyForReuse(reused, NOW);
 
@@ -128,7 +127,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     UUID familyId = UUID.fromString("33f8ae96-1ef1-4c97-b4de-3b239284d19c");
     Long logoutTokenId = createRefreshToken(accountId, "f".repeat(64), familyId);
     Long otherTokenId = createRefreshToken(accountId, "0".repeat(64), familyId);
-    RefreshTokenRecord current = adapter.findByHashForUpdate("f".repeat(64)).orElseThrow();
+    RefreshSession current = adapter.findByHashForUpdate("f".repeat(64)).orElseThrow();
 
     adapter.revokeForLogout(current, NOW);
 

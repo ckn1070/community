@@ -8,13 +8,14 @@ import com.ronams.carmunity.account.internal.application.port.out.EmailVerificat
 import com.ronams.carmunity.account.internal.application.port.out.EmailVerificationConfirmFailureReason;
 import com.ronams.carmunity.account.internal.application.port.out.EmailVerificationTokenStorePort;
 import com.ronams.carmunity.account.internal.application.port.out.StoredEmailVerificationToken;
+import com.ronams.carmunity.account.internal.domain.ChallengeState;
+import com.ronams.carmunity.account.internal.domain.EmailVerificationChallenge;
 import com.ronams.carmunity.account.internal.domain.EmailVerificationTokenHash;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.CommonErrorCode;
 import com.ronams.carmunity.shared.error.ErrorCode;
 import java.time.Clock;
 import java.time.Instant;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,18 +30,8 @@ public class ConfirmMemberEmailVerificationService
   private final AuthEventStorePort authEventStorePort;
   private final Clock clock;
 
-  /** 운영 기본 시간 기준으로 Spring bean을 구성합니다. */
-  @Autowired
-  public ConfirmMemberEmailVerificationService(
-      EmailVerificationTokenHasher tokenHasher,
-      EmailVerificationTokenStorePort tokenStorePort,
-      EmailVerificationAccountActivationPort accountActivationPort,
-      AuthEventStorePort authEventStorePort) {
-    this(tokenHasher, tokenStorePort, accountActivationPort, authEventStorePort, Clock.systemUTC());
-  }
-
   /** 테스트가 token 만료 판단 시각을 통제할 수 있도록 Clock을 외부에서 주입받습니다. */
-  ConfirmMemberEmailVerificationService(
+  public ConfirmMemberEmailVerificationService(
       EmailVerificationTokenHasher tokenHasher,
       EmailVerificationTokenStorePort tokenStorePort,
       EmailVerificationAccountActivationPort accountActivationPort,
@@ -73,7 +64,7 @@ public class ConfirmMemberEmailVerificationService
                         AccountErrorCode.EMAIL_VERIFICATION_TOKEN_INVALID));
 
     Instant now = clock.instant();
-    validateToken(token, now);
+    EmailVerificationChallenge challenge = validateToken(token, now);
 
     boolean activated = accountActivationPort.activatePendingAccount(token.accountId(), now);
     if (!activated) {
@@ -83,7 +74,8 @@ public class ConfirmMemberEmailVerificationService
           AccountErrorCode.EMAIL_VERIFICATION_TOKEN_INVALID);
     }
 
-    tokenStorePort.consume(token.id(), now);
+    challenge.consumeAt(now);
+    tokenStorePort.consume(challenge.id(), now);
     authEventStorePort.recordEmailVerified(token.accountId());
   }
 
@@ -99,25 +91,38 @@ public class ConfirmMemberEmailVerificationService
     }
   }
 
-  private void validateToken(StoredEmailVerificationToken token, Instant now) {
-    if (token.consumedAt().isPresent()) {
-      throw emailVerificationConfirmFailure(
-          token.accountId(),
-          EmailVerificationConfirmFailureReason.TOKEN_ALREADY_USED,
-          AccountErrorCode.EMAIL_VERIFICATION_TOKEN_INVALID);
+  private EmailVerificationChallenge validateToken(
+      StoredEmailVerificationToken token, Instant now) {
+    EmailVerificationChallenge challenge =
+        new EmailVerificationChallenge(
+            token.id(),
+            token.accountId(),
+            token.expiresAt(),
+            token.lastSentAt(),
+            token.consumedAt().orElse(null),
+            token.revokedAt().orElse(null));
+    ChallengeState state = challenge.stateAt(now);
+    switch (state) {
+      case OPEN -> {
+        return challenge;
+      }
+      case CONSUMED ->
+          throw emailVerificationConfirmFailure(
+              token.accountId(),
+              EmailVerificationConfirmFailureReason.TOKEN_ALREADY_USED,
+              AccountErrorCode.EMAIL_VERIFICATION_TOKEN_INVALID);
+      case REVOKED ->
+          throw emailVerificationConfirmFailure(
+              token.accountId(),
+              EmailVerificationConfirmFailureReason.TOKEN_REVOKED,
+              AccountErrorCode.EMAIL_VERIFICATION_TOKEN_INVALID);
+      case EXPIRED ->
+          throw emailVerificationConfirmFailure(
+              token.accountId(),
+              EmailVerificationConfirmFailureReason.TOKEN_EXPIRED,
+              AccountErrorCode.EMAIL_VERIFICATION_TOKEN_EXPIRED);
     }
-    if (token.revokedAt().isPresent()) {
-      throw emailVerificationConfirmFailure(
-          token.accountId(),
-          EmailVerificationConfirmFailureReason.TOKEN_REVOKED,
-          AccountErrorCode.EMAIL_VERIFICATION_TOKEN_INVALID);
-    }
-    if (!token.expiresAt().isAfter(now)) {
-      throw emailVerificationConfirmFailure(
-          token.accountId(),
-          EmailVerificationConfirmFailureReason.TOKEN_EXPIRED,
-          AccountErrorCode.EMAIL_VERIFICATION_TOKEN_EXPIRED);
-    }
+    throw new IllegalStateException("email verification state is not handled");
   }
 
   private ApiException emailVerificationConfirmFailure(

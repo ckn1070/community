@@ -17,6 +17,7 @@
 | Spring Boot와 Web MVC | [210-spring-boot.md](210-spring-boot.md) |
 | Spring Security와 JWT | [220-spring-security.md](220-spring-security.md) |
 | JPA와 transaction | [230-spring-data-jpa.md](230-spring-data-jpa.md) |
+| catalog 복합 조회와 jOOQ | [235-jooq.md](235-jooq.md) |
 | Flyway migration | [240-flyway.md](240-flyway.md) |
 | PostgreSQL | [250-postgresql.md](250-postgresql.md) |
 | springdoc-openapi | [260-openapi.md](260-openapi.md) |

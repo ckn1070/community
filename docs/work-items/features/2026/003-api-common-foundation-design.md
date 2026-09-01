@@ -75,7 +75,7 @@ application -X-> SecurityContextHolder
 - 초기 public business API: `POST /api/v1/members`
 - 현재 전체 allow-list와 account 상태별 권한은 [Account 인증 정책](../../../domain/110-account-auth-policy.md)이 소유합니다.
 - CSRF 기준: `/api/**`는 stateless JSON API로 보고 CSRF 보호 예외로 둡니다.
-- 문서 endpoint 기준: Swagger/OpenAPI는 business API가 아니므로 이 작업 완료 당시 운영 노출에서 제외했습니다. 현재 production 비활성과 미구현 protected scheme·401·403 계약은 [OpenAPI 기준](../../../tech-stack/260-openapi.md)과 연결된 Account backlog가 소유합니다.
+- 문서 endpoint 기준: Swagger/OpenAPI는 business API가 아니므로 이 작업 완료 당시 운영 노출에서 제외했습니다. 이후 [007 OpenAPI 실제 응답 계약 동기화](../../improvements/2026/007-openapi-response-contract.md)가 protected scheme과 401·403 명세를 구현했습니다. 현재 production 노출·보호 계약은 [260 OpenAPI 기준](../../../tech-stack/260-openapi.md)이 소유합니다.
 
 ## 관련 문서
 

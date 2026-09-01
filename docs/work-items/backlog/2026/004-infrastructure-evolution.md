@@ -56,7 +56,7 @@ data 손실 영향과 가까운 도입 시점을 함께 보고 판단합니다.
 
 ### 공개 요청의 공유 limiter
 
-- **검토할 문제**: 016 일반 커뮤니티의 첫 범위는 desired replica `1`과 `RollingUpdate`,
+- **검토할 문제**: 018 일반 커뮤니티의 첫 범위는 desired replica `1`과 `RollingUpdate`,
   교체 가능한 Port 뒤의 Pod별 local limiter를 사용합니다. 평상시에는 Pod 하나가 상한을
   소유하지만 rollout 중 최대 두 Pod가 잠시 겹치면 요청·이미지 동시성·전달량의 이론적 합이
   두 배가 될 수 있습니다. 이 일시적 증가는 현재 허용하며 shared/edge limiter를 첫 공개의
@@ -67,7 +67,7 @@ data 손실 영향과 가까운 도입 시점을 함께 보고 판단합니다.
   전체 기준으로 검증해야 합니다. 구체 제품·인프라 선택은 해당 전환 작업이 소유합니다.
 - **도입 trigger**: 상시 다중 replica, HPA, local limiter 우회 abuse 관찰, 이미지 트래픽의
   비용·자원 압박 또는 deployment 전체의 정확한 상한 요구 중 하나가 생길 때입니다.
-- **현재 근거**: [016 일반 커뮤니티 해결 설계](../../features/2026/016-general-community-design.md),
+- **현재 근거**: [018 일반 커뮤니티 해결 설계](../../features/2026/018-general-community-design.md),
   [220 GitOps application delivery](../../../project/infrastructure/220-gitops-application-delivery.md)
 
 ### 다중 node 기반과 Node autoscaling

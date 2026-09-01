@@ -6,8 +6,6 @@ import com.ronams.carmunity.account.api.AccountAuthStatus;
 import com.ronams.carmunity.account.api.PasswordLoginAccountLookup;
 import com.ronams.carmunity.account.api.PasswordLoginFailureReason;
 import com.ronams.carmunity.account.api.PasswordLoginResultRecorder;
-import com.ronams.carmunity.account.api.PasswordLoginSuccess;
-import com.ronams.carmunity.account.api.StoredRefreshToken;
 import com.ronams.carmunity.account.internal.application.command.RegisterMemberAccountCommand;
 import com.ronams.carmunity.account.internal.application.port.in.RegisterMemberAccountUseCase;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
@@ -28,9 +26,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSupport {
 
   private static final String PASSWORD = "correct horse battery staple";
-  private static final String REFRESH_TOKEN_HASH =
-      "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
-  private static final UUID FAMILY_ID = UUID.fromString("b43236f5-92d7-495e-aebc-2a3a66d7b21d");
   private static final Instant NOW = Instant.parse("2026-06-22T00:00:00Z");
 
   @Autowired private RegisterMemberAccountUseCase registerMemberAccountUseCase;
@@ -52,9 +47,9 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
     assertThat(account.roleCodes()).containsExactly("ROLE_MEMBER");
   }
 
-  /** 로그인 성공 기록은 refresh token 저장, 실패 횟수 초기화, last_login_at, 성공 감사 이벤트를 함께 반영합니다. */
+  /** 로그인 성공 계측은 auth 소유 refresh session과 분리해 실패 상태와 last_login_at만 반영합니다. */
   @Test
-  void recordsPasswordLoginSuccessWithRefreshTokenAndAuditEvent() {
+  void recordsPasswordLoginSuccessMetricsWithoutWritingRefreshSession() {
     UUID accountId = registerMember("success-login@example.com", "Success Login");
     alignStoredTimestampsBefore(accountId, NOW.minusSeconds(120));
     Long internalAccountId = internalId(accountId);
@@ -64,18 +59,14 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
         PasswordLoginFailureReason.PASSWORD_MISMATCH,
         NOW.minusSeconds(60));
 
-    resultRecorder.recordSuccess(
-        new PasswordLoginSuccess(
-            accountId,
-            new StoredRefreshToken(
-                REFRESH_TOKEN_HASH, FAMILY_ID, NOW, NOW.plusSeconds(30L * 24 * 60 * 60))));
+    resultRecorder.recordSuccess(accountId, NOW);
 
     assertThat(
             jdbcTemplate.queryForObject(
-                "select token_hash from refresh_token where account_id = ?",
-                String.class,
+                "select count(*) from refresh_token where account_id = ?",
+                Integer.class,
                 internalAccountId))
-        .isEqualTo(REFRESH_TOKEN_HASH);
+        .isZero();
     assertThat(
             jdbcTemplate.queryForObject(
                 "select failed_login_count from account_password_credential where account_id = ?",
@@ -92,16 +83,6 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
             jdbcTemplate.queryForObject(
                 "select last_login_at from account where id = ?", Instant.class, internalAccountId))
         .isEqualTo(NOW);
-    assertThat(
-            jdbcTemplate.queryForObject(
-                """
-                select count(*)
-                from auth_event
-                where account_id = ? and event_type = 'PASSWORD_LOGIN' and result = 'SUCCESS'
-                """,
-                Integer.class,
-                internalAccountId))
-        .isOne();
   }
 
   /** browser session 로그인 성공은 refresh token 없이 실패 상태, last login과 감사 이벤트만 갱신합니다. */

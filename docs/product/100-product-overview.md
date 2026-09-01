@@ -30,9 +30,11 @@
 - 신고·제재 운영 정책의 상세
 
 제외 항목은 폐기한 기능이 아니라 아직 상세 제품 결정과 작업 범위가 확정되지 않은 영역입니다.
-현재 Carmunity와 관계가 미확정인 별도 제품 후보는 [AutoSquare 제품 후보](../work-items/backlog/2026/002-autosquare-mvp-candidate.md)가,
-횡단 architecture·privacy·운영 결정은
-[프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)이 소유합니다.
+현재 Carmunity와 관계가 미확정인 별도 제품 후보는
+[002 AutoSquare 제품 후보](../work-items/backlog/2026/002-autosquare-mvp-candidate.md), 횡단
+architecture·privacy·운영 질문은
+[001 프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)에서 추적합니다.
+확정된 현재 제품·architecture 기준은 각각의 영구 SOT에만 반영합니다.
 
 ## 관련 문서
 

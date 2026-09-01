@@ -7,7 +7,10 @@ Open
 ## 목적
 
 이 문서는 Account 인증/인가 기반에서 아직 작업 문서로 전환되지 않은 후보만 소유합니다.
-완료된 기능의 결정과 결과는 각 feature 문서와 영구 SOT가 소유하며, 이 문서에서 다시 결정 대기 상태로 표현하지 않습니다. 완료 뒤 원래 기준 미충족으로 다시 열린 작업은 아래 진행 중 분리 작업에서 상태만 연결합니다.
+완료된 기능의 현재 개념·정책·구조는 영구 SOT가 소유하고, 각 feature 문서는 작업 당시 결정
+과정과 구현 결과만 보존합니다. 이 backlog에서 완료된 결과를 다시 결정 대기 상태로 표현하지
+않습니다. 완료 뒤 원래 기준 미충족으로 다시 열린 작업은 아래 진행 중 분리 작업에서 상태만
+연결합니다.
 
 ## 완료된 분리 작업
 
@@ -33,14 +36,6 @@ Open
 | [011 관리자 초대](../../features/2026/011-admin-invitations.md) | invitation 생성 사실과 감사 event의 내구성 계약을 보완합니다. |
 
 ## 활성 Backlog
-
-### Auth/Account Persistence Owner 정리
-
-- `refresh_token`과 `auth_event`를 `account`·`auth`가 각각 별도 JPA entity와 repository로 쓰는 현재 이중 매핑을 제거합니다.
-- `auth` refresh token repository가 `account` table을 native SQL로 직접 읽는 우회도 제거하고 `account.api` 또는 선택한 단일 persistence owner의 공개 조회 계약으로 바꿉니다.
-- 로그인, 비밀번호 변경·재설정, rotation, logout과 reuse detection의 transaction 경계를 보존하면서 단일 물리 persistence owner와 공개 application 계약을 결정합니다.
-- 다른 module의 table·entity를 직접 공유하지 않고 공개 interface·DTO로 협력한다는 architecture 기준을 만족하게 합니다.
-- 완료 시 두 table의 JPA entity·repository owner가 하나인지, `auth`에 `account` table 직접 조회가 없는지, 모든 lifecycle test가 같은 경계를 통과하는지, Spring Modulith·ArchUnit과 전체 integration test가 통과하는지 검증합니다.
 
 ### 로그인 Abuse 대응
 
@@ -117,3 +112,4 @@ Open
 
 - **업무 범위**: [Account domain](../../../domain/100-account.md), [Account 인증 정책](../../../domain/110-account-auth-policy.md)
 - **현재 데이터 구조**: [Account 인증/인가 데이터 모델](../../../project/220-account-auth-data-model.md), [물리 Schema Reference](../../../project/schema/100-account-auth.md)
+- **Persistence owner 전환 작업**: [009 비카탈로그 DDD 보완](../../improvements/2026/009-non-catalog-ddd-hardening.md)

@@ -33,6 +33,13 @@ snapshot 변경을 추적하는 별도 lifecycle을 열지 않는다.
 
 정방향으로 모든 요구를 추적하고 역방향으로 모든 변경 artifact가 정당한 요구·결정에 연결되는지 확인한다.
 
+동일 역할·동일 표면에 둘 이상의 artifact·이름·구조·기술 경로가 있으면 후보를 보기 전에
+변경 전 SOT와 실제 source에서 전체 sibling inventory와 공통 선택 축을 독립 복원합니다.
+모든 sibling이 같은 축을 소비하는지, 다른 축은 mutation 전 독립 source가 요구한 필수 차이와
+영향·재검토 조건으로 닫혔는지 확인합니다. 후보가 함께 만든 test·work item·문서와 각 artifact의
+국소 가독성은 선택 admission이나 예외 근거가 아닙니다. 역할이 다른 객체, sibling 없는 국소
+선택과 source가 하나로 고정한 기계적 변환에는 동일 어휘·구조를 강제하지 않습니다.
+
 Baseline과 후보 사이에서 변경·삭제된 test·validator·정책 검사는 assertion이 강화·보존·
 완화됐는지 분류합니다. 기존 실패 조건을 허용하도록 assertion을 삭제·축소하거나 예외를
 추가한 변경은, 그 불변식을 대체하는 더 최신 사용자 결정 또는 독립 authoritative source가
@@ -44,6 +51,16 @@ Baseline과 후보 사이에서 변경·삭제된 test·validator·정책 검사
 Dependency closure와 보안·복구 상세 감사를 시작하기 전에 후보가 추가·변경한 관찰 효과를
 mutation 전의 원래 결과·제약·oracle과 독립 authoritative source로 역추적한다. 같은 작업에서
 후보가 만든 test·README·SOT·work item은 구현 evidence이지 요구 source가 아니다.
+
+원래 목표·성공 조건마다 후보 효과를 `충족 / 영향 없음 / 약화 / 미증명`으로 분류합니다.
+후보가 migration 비용·최소 변경·현재 구조 보존을 위해 목표를 약화했는데 사용자가 그 목표
+변경을 선택하지 않았다면 필수 실패입니다. 후보와 함께 만든 design·test·문서가 약화된 상태를
+일관되게 설명해도 원래 목적을 대체하지 않습니다.
+
+기존 committed 계약이 없던 도메인 소유권·모듈 경계·데이터 생명주기·공개 계약 변경은 첫
+production mutation의 baseline에 검증된 `Planned` checkpoint가 있었는지 Git parent와 work item
+상태에서 확인합니다. 같은 candidate나 뒤 commit의 plan으로 소급한 구현은 설계 준비도 실패로
+반환합니다.
 
 연결되지 않은 exact 감사·정규화·hardening·자동화가 있으면 그 효과의 내부 결함을 상세히
 열거해 더 완성하도록 만들지 않는다. `미승인 후보 효과` 하나로 묶어 실제 효과·부재한

@@ -2,4 +2,4 @@
 interface:
   display_name: "Git 마무리"
   short_description: "Git 범위를 발견하고 승인된 commit·push와 exact SHA를 검증"
-  default_prompt: "Use $git-finalize to verify the loaded control revision, request generation, frozen candidate, target state, prior specialist results, required follow-up verdicts, and task-owned residual before exact-path commit or push, then verify the resulting Git and exact-SHA evidence."
+  default_prompt: "Use $git-finalize to verify objective preservation, any required pre-existing Planned design checkpoint, the loaded control revision, request generation, frozen candidate, target state, specialist verdicts, and task-owned residual before exact-path commit or push, then verify the resulting Git and exact-SHA evidence."

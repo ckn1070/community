@@ -9,7 +9,6 @@ import com.ronams.carmunity.account.api.AccountAuthStatus;
 import com.ronams.carmunity.account.api.PasswordLoginAccount;
 import com.ronams.carmunity.account.api.PasswordLoginFailureReason;
 import com.ronams.carmunity.account.api.PasswordLoginResultRecorder;
-import com.ronams.carmunity.account.api.PasswordLoginSuccess;
 import com.ronams.carmunity.auth.internal.application.service.AuthenticatePasswordService;
 import com.ronams.carmunity.auth.internal.application.service.AuthenticatedPasswordAccount;
 import com.ronams.carmunity.auth.internal.application.service.SessionAccess;
@@ -57,7 +56,7 @@ class StagingSwaggerAuthenticationProviderTest {
         .containsExactlyInAnyOrder("ROLE_ADMIN", "SESSION_FULL", "PASSWORD_CHANGE_NOT_REQUIRED");
     assertThat(resultRecorder.interactiveSuccessAccountId).isEqualTo(ACCOUNT_ID);
     assertThat(resultRecorder.occurredAt).isEqualTo(NOW);
-    assertThat(resultRecorder.tokenSuccess).isNull();
+    assertThat(resultRecorder.tokenSuccessAccountPublicId).isNull();
   }
 
   /** ROLE_SUPER_ADMIN도 관리자 이상 권한으로 Swagger session을 만들 수 있습니다. */
@@ -123,13 +122,13 @@ class StagingSwaggerAuthenticationProviderTest {
 
   private static class FakeResultRecorder implements PasswordLoginResultRecorder {
 
-    private PasswordLoginSuccess tokenSuccess;
+    private UUID tokenSuccessAccountPublicId;
     private UUID interactiveSuccessAccountId;
     private Instant occurredAt;
 
     @Override
-    public void recordSuccess(PasswordLoginSuccess success) {
-      tokenSuccess = success;
+    public void recordSuccess(UUID accountPublicId, Instant occurredAt) {
+      tokenSuccessAccountPublicId = accountPublicId;
     }
 
     @Override

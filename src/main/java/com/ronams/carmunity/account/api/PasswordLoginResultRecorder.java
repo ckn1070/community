@@ -14,9 +14,10 @@ public interface PasswordLoginResultRecorder {
   /**
    * 로그인 성공 결과를 기록합니다.
    *
-   * @param success account public id와 refresh token hash 저장 값입니다.
+   * @param accountPublicId 로그인에 성공한 account public id입니다.
+   * @param occurredAt 로그인 성공 시각입니다.
    */
-  void recordSuccess(PasswordLoginSuccess success);
+  void recordSuccess(UUID accountPublicId, Instant occurredAt);
 
   /**
    * refresh token을 만들지 않는 browser session 로그인 성공을 기록합니다.

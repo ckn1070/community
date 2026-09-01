@@ -16,6 +16,9 @@ import com.ronams.carmunity.account.internal.application.port.in.RevokeAdminInvi
 import com.ronams.carmunity.auth.internal.application.port.in.CreatePasswordSessionUseCase;
 import com.ronams.carmunity.auth.internal.application.port.in.LogoutUseCase;
 import com.ronams.carmunity.auth.internal.application.port.in.RotateRefreshTokenUseCase;
+import com.ronams.carmunity.catalog.internal.application.port.in.GetCatalogModelDetailUseCase;
+import com.ronams.carmunity.catalog.internal.application.port.in.ListCatalogBrandsUseCase;
+import com.ronams.carmunity.catalog.internal.application.port.in.SearchCatalogModelsUseCase;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -74,7 +77,117 @@ class OpenApiContractTest {
               "403",
               "404",
               "409",
-              "500"));
+              "500"),
+          operation("get", "/api/v1/car/brands", "200", "405", "500"),
+          operation("get", "/api/v1/car/models", "200", "400", "405", "500"),
+          operation("get", "/api/v1/car/models/{carModelId}", "200", "400", "404", "405", "500"));
+
+  private static final Set<OperationKey> CATALOG_OPERATIONS =
+      Set.of(
+          new OperationKey("get", "/api/v1/car/brands"),
+          new OperationKey("get", "/api/v1/car/models"),
+          new OperationKey("get", "/api/v1/car/models/{carModelId}"));
+
+  private static final Map<String, Set<String>> CATALOG_DETAIL_NULLABLE_PROPERTIES =
+      Map.ofEntries(
+          Map.entry("CatalogModelDetailResponse", Set.of()),
+          Map.entry("ModelResponse", Set.of("brandNameEn", "nameEn", "summary")),
+          Map.entry("GenerationResponse", Set.of()),
+          Map.entry("ModelYearResponse", Set.of("releasedOn", "salesEndedOn")),
+          Map.entry(
+              "PowertrainResponse",
+              Set.of(
+                  "secondaryFuelType",
+                  "transmissionType",
+                  "transmissionGears",
+                  "systemMaxPowerKw",
+                  "systemMaxPowerPs",
+                  "systemMaxTorqueNm",
+                  "zeroToHundredSeconds",
+                  "topSpeedKmh",
+                  "maxAcChargeKw",
+                  "acChargeConnector",
+                  "acChargeMinutes",
+                  "acChargeFromPercent",
+                  "acChargeToPercent",
+                  "acChargePowerKw",
+                  "maxDcChargeKw",
+                  "dcChargeConnector",
+                  "fastChargeMinutes",
+                  "fastChargeFromPercent",
+                  "fastChargeToPercent",
+                  "fastChargePowerKw")),
+          Map.entry(
+              "ComponentResponse",
+              Set.of(
+                  "fuelType",
+                  "displacementCc",
+                  "cylinderCount",
+                  "aspirationType",
+                  "maxPowerKw",
+                  "maxPowerPs",
+                  "maxPowerRpm",
+                  "maxTorqueNm",
+                  "maxTorqueKgfM",
+                  "maxTorqueRpmFrom",
+                  "maxTorqueRpmTo",
+                  "capacityKwh",
+                  "usableCapacityKwh",
+                  "capacityAh",
+                  "voltageV",
+                  "capacityL",
+                  "capacityKg",
+                  "pressureBar",
+                  "manufacturerName",
+                  "cellManufacturerName",
+                  "productionCountryCode",
+                  "cellType",
+                  "chemistry")),
+          Map.entry(
+              "VariantResponse",
+              Set.of(
+                  "doorCount",
+                  "frontTrackMm",
+                  "rearTrackMm",
+                  "groundClearanceMm",
+                  "cargoCapacityL",
+                  "maxCargoCapacityL",
+                  "curbWeightKg",
+                  "grossVehicleWeightKg",
+                  "maxBrakedTowingCapacityKg",
+                  "maxUnbrakedTowingCapacityKg",
+                  "maxRoofLoadKg",
+                  "minimumTurningRadiusM",
+                  "wheelSizeInch",
+                  "frontTire",
+                  "rearTire",
+                  "frontSuspension",
+                  "rearSuspension",
+                  "steeringType",
+                  "frontBrake",
+                  "rearBrake")),
+          Map.entry(
+              "CertificationResponse",
+              Set.of(
+                  "temperatureCondition",
+                  "wheelSizeInch",
+                  "tireSpecification",
+                  "curbWeightKg",
+                  "efficiencyGrade",
+                  "cityEfficiency",
+                  "highwayEfficiency",
+                  "combinedEfficiency",
+                  "cityRangeKm",
+                  "highwayRangeKm",
+                  "combinedRangeKm",
+                  "co2GPerKm")),
+          Map.entry("ConfigurationResponse", Set.of("salesEndedOn", "price")),
+          Map.entry("PriceResponse", Set.of("priceAfterTaxBenefit")),
+          Map.entry("OptionResponse", Set.of("category", "priceAfterTaxBenefit")),
+          Map.entry("StandardFeatureResponse", Set.of("description")),
+          Map.entry("WarrantyResponse", Set.of("years", "distanceKm", "note")),
+          Map.entry("SafetyRatingResponse", Set.of("assessedOn", "note")),
+          Map.entry("MediaResponse", Set.of("alt")));
 
   private static final Set<OperationKey> PROTECTED_OPERATIONS =
       Set.of(
@@ -102,6 +215,9 @@ class OpenApiContractTest {
   @MockitoBean private CreatePasswordSessionUseCase createPasswordSessionUseCase;
   @MockitoBean private RotateRefreshTokenUseCase rotateRefreshTokenUseCase;
   @MockitoBean private LogoutUseCase logoutUseCase;
+  @MockitoBean private ListCatalogBrandsUseCase listCatalogBrandsUseCase;
+  @MockitoBean private SearchCatalogModelsUseCase searchCatalogModelsUseCase;
+  @MockitoBean private GetCatalogModelDetailUseCase getCatalogModelDetailUseCase;
 
   /** 새 API가 추가되면 operation 수와 응답 집합이 달라져 실제 계약 검토 없이 명세가 통과하지 못합니다. */
   @Test
@@ -172,6 +288,53 @@ class OpenApiContractTest {
         .isEqualTo("JWT");
   }
 
+  /** 카탈로그 목록·상세 응답은 대표 연식과 실제 nullable 값의 구분을 생성 schema에 유지합니다. */
+  @Test
+  void documentsCatalogResponseShapeAndNullability() throws Exception {
+    JsonNode document = generatedOpenApi();
+    JsonNode brandSchema = document.at("/components/schemas/CatalogBrandResponse");
+    assertThat(arrayValues(brandSchema.get("required")))
+        .contains("brandId", "name", "countryCode", "onSaleModelCount")
+        .doesNotContain("nameEn");
+    assertThat(arrayValues(brandSchema.at("/properties/nameEn/type")))
+        .containsExactlyInAnyOrder("string", "null");
+
+    JsonNode pageSchema = document.at("/components/schemas/CatalogModelPageResponse");
+    assertThat(arrayValues(pageSchema.get("required")))
+        .containsExactlyInAnyOrder("items", "page", "size", "totalElements", "totalPages");
+    JsonNode summarySchema = document.at("/components/schemas/CatalogModelSummaryResponse");
+    assertThat(arrayValues(summarySchema.get("required")))
+        .contains("modelId", "brandId", "name", "representativeModelYearId", "modelYear")
+        .doesNotContain("nameEn", "releasedOn", "startPrice", "priceBasis", "currencyCode");
+    assertThat(arrayValues(summarySchema.at("/properties/startPrice/type")))
+        .containsExactlyInAnyOrder("integer", "null");
+
+    JsonNode detailOperation = document.at("/paths/~1api~1v1~1car~1models~1{carModelId}/get");
+    assertThat(detailOperation.at("/parameters/0/name").stringValue()).isEqualTo("carModelId");
+    assertThat(
+            detailOperation
+                .at("/responses/200/content/application~1json/schema/$ref")
+                .stringValue())
+        .isEqualTo("#/components/schemas/CatalogModelDetailResponse");
+
+    CATALOG_DETAIL_NULLABLE_PROPERTIES.forEach(
+        (schemaName, nullableProperties) -> {
+          JsonNode schema = document.at("/components/schemas/" + schemaName);
+          Set<String> properties = fieldNames(schema.get("properties"));
+          assertThat(arrayValues(schema.get("required")))
+              .as("%s required fields", schemaName)
+              .containsExactlyInAnyOrderElementsOf(
+                  properties.stream()
+                      .filter(property -> !nullableProperties.contains(property))
+                      .collect(java.util.stream.Collectors.toSet()));
+          nullableProperties.forEach(
+              property ->
+                  assertThat(arrayValues(schema.at("/properties/" + property + "/type")))
+                      .as("%s.%s nullable type", schemaName, property)
+                      .contains("null"));
+        });
+  }
+
   private JsonNode generatedOpenApi() throws Exception {
     String body =
         mockMvc
@@ -192,7 +355,7 @@ class OpenApiContractTest {
             .orElseThrow()
             .getValue();
     JsonNode schema = successResponse.at("/content/application~1json/schema");
-    if (!schema.isMissingNode()) {
+    if (!schema.isMissingNode() && !CATALOG_OPERATIONS.contains(key)) {
       String componentName = schema.get("$ref").stringValue().replace("#/components/schemas/", "");
       JsonNode component = document.at("/components/schemas/" + componentName);
       assertThat(arrayValues(component.get("required")))

@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -42,27 +41,8 @@ public class InviteAdminService implements InviteAdminUseCase {
   private final AdminInvitationNotificationSender notificationSender;
   private final Clock clock;
 
-  /** 운영 기본 시간 기준으로 Spring bean을 구성합니다. */
-  @Autowired
-  public InviteAdminService(
-      AccountUniquenessPort accountUniquenessPort,
-      AuthRoleLookupPort authRoleLookupPort,
-      AdminInvitationTokenGeneratorPort tokenGeneratorPort,
-      AdminInvitationTokenHasher tokenHasher,
-      AdminInvitationStorePort invitationStorePort,
-      AdminInvitationNotificationSender notificationSender) {
-    this(
-        accountUniquenessPort,
-        authRoleLookupPort,
-        tokenGeneratorPort,
-        tokenHasher,
-        invitationStorePort,
-        notificationSender,
-        Clock.systemUTC());
-  }
-
   /** 테스트가 초대 발급과 만료 시각을 통제할 수 있도록 Clock을 외부에서 주입받습니다. */
-  InviteAdminService(
+  public InviteAdminService(
       AccountUniquenessPort accountUniquenessPort,
       AuthRoleLookupPort authRoleLookupPort,
       AdminInvitationTokenGeneratorPort tokenGeneratorPort,

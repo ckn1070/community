@@ -49,9 +49,13 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 ```text
 상위 결과 → 이번 라운드의 concrete 결과·완료 oracle
 → 활성 결정과 source → 포함·제외·복귀점
+→ 목표·성공 조건 → 선택한 기술 결정·후보 효과 → 충족·영향 없음과 독립 근거
 → raw batch 항목별 문장 기능·요청 효과·positive 권한 source 또는 미확정 사유
 → 모든 항목의 처분이 닫힌 batch admission
+→ 동일 역할 sibling·source inventory → 공통 선택 축·source-backed 예외 또는 해당 없음
 → 예정 artifact별 관찰 효과·실행 방식·blocking 여부·전문 owner 처분
+→ 검증별 candidate·exact oracle·최초 consumer → 기존 evidence 재사용 또는 무효화 근거
+→ build output·DB·report·cache의 공유 여부·단일 실행 owner·재실행 조건
 → 실제 control 기준선 R·요청 generation G·target candidate C·호출 전 상태 S0
 → 앞 phase의 전문 결과·candidate 제약·필수 후속 gate P
 → writer 단위·exact write set → 검토 phase와 현재 상태
@@ -69,6 +73,21 @@ Plan mode 결과는 조사 입력일 뿐 현재 구현이나 영구 SOT가 아�
 있지만 세 번째를 증명하지 않는다. 현재 구조를 대상으로 만든 test도 그 구조가 정확히
 연결됨을 증명할 뿐 구조 자체의 필수성을 증명하지 않는다. 세 번째가 현재 source와 동결
 결정에서 유일하게 닫히지 않으면 writer가 구조를 선택하지 않고 설계·계획 owner로 돌린다.
+
+선택한 기술안이 사용자 목표 하나라도 약화하거나 그 영향을 증명하지 못하면 변경량·migration
+비용·현재 구조 보존을 근거로 writer에게 넘기지 않습니다. 목표를 충족하는 대안과의 차이를
+설계 owner에 반환하고, 목표·범위 변경이 필요할 때에만 사용자 결정 라운드를 엽니다.
+
+기존 committed source에 exact 계약이 없는 도메인 소유권·모듈 경계·데이터 생명주기·공개
+계약 변경은 `$dev-plan`의 검증된 `Planned` checkpoint commit과 목표 보존 identity를 현재
+`HEAD`에서 복원한 뒤에만 첫 production mutation을 시작합니다. 같은 개발 candidate가 새로
+만든 plan·design은 이 선행 조건이나 원래 목표 source가 아닙니다.
+
+동일 역할·동일 표면의 artifact를 둘 이상 만들거나 바꾸면 작업 실행 workflow의 반복 선택
+기준선에서 전체 sibling과 공통 선택 축을 먼저 고정합니다. Writer는 Search에는 가독성,
+Detail에는 분리 편의처럼 sibling마다 다른 사후 기준을 만들지 않습니다. 다른 축은 독립
+source가 요구하는 필수 차이와 영향·재검토 조건이 mutation 전에 닫힌 경우만 소비합니다.
+역할이 다른 경계 객체나 sibling 없는 기계적 변경에는 이 gate를 확대하지 않습니다.
 
 원래 요구와 authoritative source로 이 계약을 유한하게 채우지 못하면 개발을 시작하지 않고
 Bootstrap 또는 실제 결정 owner로 돌아간다. 라운드 계약의 field 의미, 새 발견·차단 판정,
@@ -120,6 +139,10 @@ Reviewer 입력에는 입장 gate를 통과한 관찰 효과와 그 효과별 �
 만든 계약은 구현·test·문서 정합성의 검토 대상일 뿐 요구 source가 아니며, reviewer가
 입장되지 않은 효과를 발견하면 그 내부 결함을 열거해 보강하지 않고 하나의 미승인 효과로
 반환한다.
+
+반복 선택이 있으면 reviewer 입력에는 mutation 전 sibling·source inventory와 공통 선택 축,
+허용한 예외의 독립 근거를 포함합니다. 일부 파일이나 candidate와 함께 만든 test만 맞는지
+보지 않고 동일 역할 sibling 전체가 같은 축을 소비하는지 대조합니다.
 
 설계·문서 구조 proposal·도구 처분·전문 검증이 owner·topology·write set이나 필수 후속
 gate를 확정하면 그 결과 identity와 제약을 `P`로 writer·reviewer·Git 인계까지 보존한다.
@@ -231,6 +254,20 @@ inventory를 동기화한다. 완료하지 않은 구현을 결과로 쓰거나 
 5. 변경 문서의 source·owner·링크·현재 명령 대조
 6. 전체 diff, `git diff --check`와 Git 상태
 7. 수용 기준별 구현·test·문서 evidence
+
+첫 검증 command 전에 작업 실행 workflow의 소비 원장과 command admission을 이 목록에
+적용한다. 가장 좁은 test가 닫은 oracle, 기존 evidence가 아직 유효한 범위와 다음 consumer를
+먼저 고정하고, 후보 변경으로 무효화된 범위만 다시 실행한다. 표준 전체 검증은 동결 후보에
+남은 넓은 oracle의 producer로 한 번 배치하며, 작은 후속 수정이나 reviewer 변경만으로 반복하지
+않는다. 실패하면 같은 command를 즉시 반복하지 않고 candidate 결함·infrastructure·공유 resource
+충돌 중 다음 행동을 바꾸는 최소 진단부터 수행한다.
+
+같은 worktree의 build output, DB/schema, generated source, report나 cache를 읽고 쓰는 검증은
+파일을 수정하지 않는 reviewer라도 하나의 실행 owner가 직렬화한다. 병렬 실행은 source write
+set과 이 검증 resource·evidence가 모두 독립적일 때만 허용한다. 새 reviewer를 호출하기 전에는
+기존 review의 candidate·source·oracle을 대조하고, 이름만 다른 같은 감사를 추가하지 않는다.
+회고 행동 검증처럼 별도 owner가 서로 다른 필수 oracle을 소유하면 그 차이를 라운드 계약에
+남기고 별도 evidence로 유지한다.
 
 Java/Gradle 최종 명령, Docker preflight와 Sonar 기술 판정은
 [코드 품질 도구](../../../docs/tech-stack/310-code-quality-tools.md)를 그대로 사용한다.

@@ -174,6 +174,33 @@ Agent가 가진 source·권한만으로 기대 결과를 만들 수 있었는지
 Markdown을 바꾸면 해당 전문 skill을 함께 적용합니다. 사건 대상 artifact의 복구는
 별도 권한이 있을 때만 수행합니다.
 
+### 실행 회고의 review 상태 소비
+
+실행 회고가 evaluator·runner·문서 reviewer를 호출할 때에는
+[작업 실행 workflow의 실행 라운드 상태](../../../docs/workflow/100-work-execution-workflow.md#실행-라운드와-질문-수집)를
+설명으로만 참조하지 않고, 첫 호출 전에 다음 한 행을 현재 operation map의 실제 입력으로
+복원합니다.
+
+```text
+raw 사건 identity·통제 처분
+→ candidate digest·현재 phase·active review set
+→ correction 사용 여부·closure 사용 여부
+→ 허용되는 다음 전이
+```
+
+- 이 행을 현재 source에서 복원할 수 없거나 interruption·compaction·target drift로 candidate
+  identity가 달라졌으면 review를 호출하지 않습니다. 기존 candidate와 verdict를
+  `Invalidated`로 돌리고 사건·처분·후보를 다시 동결합니다.
+- Reviewer 결과는 finding일 뿐 다음 phase나 전체 회고 상태가 아닙니다. 현재 Agent가 결과
+  전체를 원래 사건·통제 처분·oracle에 대조하고 위 행을 갱신하기 전에는 writer나 다음
+  reviewer를 호출하지 않습니다.
+- Closure가 실패하면 같은 round에서 patch·추가 closure·다른 reviewer로 계속하지 않습니다.
+  후보와 원인 phase를 `Invalidated`로 돌리고, 실패 원인·통제 처분·전략을 다시 닫아
+  materially 다른 candidate dependency를 동결한 새 round만 시작할 수 있습니다.
+- 상태 질문과 진행 보고는 이 행을 지우거나 closure 횟수를 초기화하지 않습니다. 세션에서
+  복구가 불안정한 장기 회고는 `/tmp` 원장에 이 행만 보존하고 terminal 인계 뒤 삭제하며,
+  repository artifact나 회고별 verifier를 만들지 않습니다.
+
 명령형 실행 회고에서는 `원인 분석 완료`, `통제 처분 결정`, `통제 적용`, `행동 검증`과
 `Git 마무리`를 서로 다른 상태로 유지합니다. 분석·제안·review 판정이나 변경할 필요가
 없다는 설명은 뒤 상태를 대신하지 않습니다. 영향받은 기존 통제를 `유지`하려면 작업 실행

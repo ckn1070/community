@@ -10,6 +10,8 @@ import com.ronams.carmunity.account.internal.application.command.InviteAdminComm
 import com.ronams.carmunity.account.internal.application.port.in.InviteAdminUseCase;
 import com.ronams.carmunity.account.internal.application.service.AdminInvitationTokenHasher;
 import com.ronams.carmunity.notification.api.AdminInvitationNotificationSender;
+import com.ronams.carmunity.securityaudit.api.SecurityAuditAppender;
+import com.ronams.carmunity.securityaudit.api.SecurityAuditRecord;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
 import java.sql.Timestamp;
 import java.time.Instant;
@@ -30,7 +32,7 @@ class AdminInvitationCreationTransactionIntegrationTest extends PostgreSqlIntegr
   @Autowired private AdminInvitationTokenHasher tokenHasher;
   @Autowired private JdbcTemplate jdbcTemplate;
 
-  @MockitoSpyBean private AuthEventJpaRepository authEventRepository;
+  @MockitoSpyBean private SecurityAuditAppender securityAuditAppender;
   @MockitoBean private AdminInvitationNotificationSender notificationSender;
 
   /** 생성 감사 저장이 실패하면 기존 open 초대 회수와 새 초대 저장을 모두 rollback합니다. */
@@ -42,8 +44,8 @@ class AdminInvitationCreationTransactionIntegrationTest extends PostgreSqlIntegr
         createInvitation(
             inviterAccountId, "atomic-admin@example.com", tokenHasher.hash("previous-raw-token"));
     doThrow(new DataIntegrityViolationException("created event write failure"))
-        .when(authEventRepository)
-        .saveAndFlush(any(AuthEventJpaEntity.class));
+        .when(securityAuditAppender)
+        .append(any(SecurityAuditRecord.class));
     InviteAdminCommand command =
         new InviteAdminCommand(inviterPublicId, "atomic-admin@example.com", "ROLE_ADMIN");
 

@@ -13,7 +13,7 @@ Done
 - Resend reset notification과 `PASSWORD_RESET_BASE_URL` 계약을 추가했습니다.
 - 관련 focused test와 최종 Gradle 검증을 통과했습니다.
 - 전체 완료 여부: 예
-- 남은 책임: 이 작업의 비밀번호 재설정 완료 범위에는 없습니다. 현재 notification logging, 공용 `Clock` owner와 delivery/audit 실패 의미 결함은 [Bug 작업](../../bugs/2026/000-index.md)이 각각 소유합니다.
+- 남은 책임: 이 작업의 비밀번호 재설정 완료 범위에는 없습니다. 현재 notification logging, 공용 `Clock` owner와 delivery/audit 실패 의미 결함의 수정 상태는 [000 Bug 작업](../../bugs/2026/000-index.md)에서 각각 추적합니다.
 
 ## 범위
 

@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -508,6 +509,58 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             String.class);
 
     assertEquals(List.of("inet", "inet"), udtNames);
+  }
+
+  /** expand 기간에는 내부 id와 public id 쓰기가 서로 보완되고 불일치한 이중 입력은 거부됩니다. */
+  @Test
+  void synchronizesPublicAndInternalAccountIdentityDuringExpandMigration() {
+    UUID publicId = UUID.randomUUID();
+    Long accountId =
+        jdbcTemplate.queryForObject(
+            """
+            insert into account (public_id, email, email_normalized, status)
+            values (?, ?, ?, 'ACTIVE')
+            returning id
+            """,
+            Long.class,
+            publicId,
+            "identity-expand@example.com",
+            "identity-expand@example.com");
+
+    jdbcTemplate.update(
+        "insert into auth_event (account_id, event_type, result) values (?, 'PASSWORD_LOGIN', 'SUCCESS')",
+        accountId);
+    assertEquals(
+        publicId,
+        jdbcTemplate.queryForObject(
+            "select account_public_id from auth_event where account_id = ? order by id desc limit 1",
+            UUID.class,
+            accountId));
+
+    jdbcTemplate.update(
+        """
+        insert into refresh_token (
+            account_public_id, token_hash, family_id, issued_at, expires_at
+        ) values (?, ?, ?, now(), now() + interval '1 day')
+        """,
+        publicId,
+        "9".repeat(64),
+        UUID.randomUUID());
+    assertEquals(
+        accountId,
+        jdbcTemplate.queryForObject(
+            "select account_id from refresh_token where token_hash = ?",
+            Long.class,
+            "9".repeat(64)));
+
+    Long otherAccountId = createAccount("identity-other@example.com", "identity-other@example.com");
+    assertThrows(
+        DataAccessException.class,
+        () ->
+            jdbcTemplate.update(
+                "insert into auth_event (account_id, account_public_id, event_type, result) values (?, ?, 'PASSWORD_LOGIN', 'SUCCESS')",
+                otherAccountId,
+                publicId));
   }
 
   private Long createAccount(String email, String normalizedEmail) {
