@@ -129,10 +129,10 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         .containsEntry("sales_started_on", java.sql.Date.valueOf("2026-07-02"))
         .containsEntry("standard_feature_count", 69)
         .containsEntry("price_before_tax_benefit", 27_630_000L);
-    assertThat(seededK5.get("combined_efficiency").toString()).isEqualTo("12.600");
-    assertThat(seededK5.get("city_efficiency").toString()).isEqualTo("11.200");
-    assertThat(seededK5.get("highway_efficiency").toString()).isEqualTo("14.700");
-    assertThat(seededK5.get("co2_g_per_km").toString()).isEqualTo("132.00");
+    assertThat(seededK5.get("combined_efficiency")).hasToString("12.600");
+    assertThat(seededK5.get("city_efficiency")).hasToString("11.200");
+    assertThat(seededK5.get("highway_efficiency")).hasToString("14.700");
+    assertThat(seededK5.get("co2_g_per_km")).hasToString("132.00");
 
     assertThat(
             jdbcTemplate.queryForList(
@@ -515,6 +515,8 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
     long firstModelYearId = createMinimalModelYear("FIRST");
     long secondModelYearId = createMinimalModelYear("SECOND");
     long powertrainId = createMinimalPowertrain(firstModelYearId, "ICE");
+    UUID variantPublicId = UUID.randomUUID();
+    String variantCode = "CROSS-YEAR-" + UUID.randomUUID();
 
     assertThatThrownBy(
             () ->
@@ -525,10 +527,10 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         seating_capacity, length_mm, width_mm, height_mm, wheelbase_mm
                     ) VALUES (?, ?, ?, ?, ?, 'SEDAN', 5, 4800, 1850, 1450, 2850)
                     """,
-                    UUID.randomUUID(),
+                    variantPublicId,
                     secondModelYearId,
                     powertrainId,
-                    "CROSS-YEAR-" + UUID.randomUUID(),
+                    variantCode,
                     "잘못된 연식 연결"))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
@@ -537,6 +539,12 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
   @Test
   void rejectsIncompleteConditionalValues() {
     long modelYearId = createMinimalModelYear("CONDITIONAL");
+    UUID fastChargePublicId = UUID.randomUUID();
+    String fastChargeCode = "INVALID-CHARGE-" + UUID.randomUUID();
+    UUID acChargePublicId = UUID.randomUUID();
+    String acChargeCode = "INVALID-AC-CHARGE-" + UUID.randomUUID();
+    UUID iceChargePublicId = UUID.randomUUID();
+    String iceChargeCode = "INVALID-ICE-CHARGE-" + UUID.randomUUID();
 
     assertThatThrownBy(
             () ->
@@ -547,9 +555,9 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         primary_fuel_type, drivetrain_type, fast_charge_minutes
                     ) VALUES (?, ?, ?, '잘못된 충전 조건', 'BEV', 'ELECTRICITY', 'RWD', 18)
                     """,
-                    UUID.randomUUID(),
+                    fastChargePublicId,
                     modelYearId,
-                    "INVALID-CHARGE-" + UUID.randomUUID()))
+                    fastChargeCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     assertThatThrownBy(
@@ -561,9 +569,9 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         primary_fuel_type, drivetrain_type, ac_charge_minutes
                     ) VALUES (?, ?, ?, '잘못된 완속 충전 조건', 'BEV', 'ELECTRICITY', 'RWD', 455)
                     """,
-                    UUID.randomUUID(),
+                    acChargePublicId,
                     modelYearId,
-                    "INVALID-AC-CHARGE-" + UUID.randomUUID()))
+                    acChargeCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     assertThatThrownBy(
@@ -575,9 +583,9 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         primary_fuel_type, drivetrain_type, max_ac_charge_kw
                     ) VALUES (?, ?, ?, '충전할 수 없는 동력계통', 'ICE', 'GASOLINE', 'FWD', 11)
                     """,
-                    UUID.randomUUID(),
+                    iceChargePublicId,
                     modelYearId,
-                    "INVALID-ICE-CHARGE-" + UUID.randomUUID()))
+                    iceChargeCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     long powertrainId = createMinimalPowertrain(modelYearId, "ICE");
@@ -617,6 +625,8 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         .isInstanceOf(DataIntegrityViolationException.class);
 
     long variantId = createMinimalVariant(modelYearId, powertrainId);
+    String invalidStandardCode = "INVALID-STANDARD-" + UUID.randomUUID();
+    String invalidElectricCode = "INVALID-ELECTRIC-" + UUID.randomUUID();
     assertThatThrownBy(
             () ->
                 jdbcTemplate.update(
@@ -639,7 +649,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                     ) VALUES (?, ?, '인증 기준 없는 측정값', 'LIQUID_FUEL', ' ', 12.5, 'KM_PER_L', 130)
                     """,
                     variantId,
-                    "INVALID-STANDARD-" + UUID.randomUUID()))
+                    invalidStandardCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     assertThatThrownBy(
@@ -654,7 +664,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         5.0, 'KM_PER_KWH', 400)
                     """,
                     variantId,
-                    "INVALID-ELECTRIC-" + UUID.randomUUID()))
+                    invalidElectricCode))
         .isInstanceOf(DataIntegrityViolationException.class);
   }
 
@@ -662,6 +672,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
   @Test
   void rejectsRepresentativeConstraintViolations() {
     String duplicateCode = "DUPLICATE-" + UUID.randomUUID().toString().substring(0, 8);
+    UUID duplicateBrandPublicId = UUID.randomUUID();
     jdbcTemplate.update(
         "INSERT INTO car_brand (public_id, code, name_ko, country_code) VALUES (?, ?, '첫 브랜드', 'KR')",
         UUID.randomUUID(),
@@ -670,11 +681,13 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             () ->
                 jdbcTemplate.update(
                     "INSERT INTO car_brand (public_id, code, name_ko, country_code) VALUES (?, ?, '중복 브랜드', 'KR')",
-                    UUID.randomUUID(),
+                    duplicateBrandPublicId,
                     duplicateCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     long modelYearId = createMinimalModelYear("CONSTRAINT");
+    UUID invalidPowertrainPublicId = UUID.randomUUID();
+    String invalidPowertrainCode = "INVALID-" + UUID.randomUUID();
     assertThatThrownBy(
             () ->
                 jdbcTemplate.update(
@@ -684,9 +697,9 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         primary_fuel_type, drivetrain_type
                     ) VALUES (?, ?, ?, '잘못된 동력 형식', 'STEAM', 'OTHER', 'FWD')
                     """,
-                    UUID.randomUUID(),
+                    invalidPowertrainPublicId,
                     modelYearId,
-                    "INVALID-" + UUID.randomUUID()))
+                    invalidPowertrainCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     long powertrainId = createMinimalPowertrain(modelYearId, "ICE");
@@ -702,6 +715,8 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         .isInstanceOf(DataIntegrityViolationException.class);
 
     long variantId = createMinimalVariant(modelYearId, powertrainId);
+    UUID invalidConfigurationPublicId = UUID.randomUUID();
+    String invalidConfigurationCode = "INVALID-PERIOD-" + UUID.randomUUID();
     assertThatThrownBy(
             () ->
                 jdbcTemplate.update(
@@ -711,9 +726,9 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
                         sales_started_on, sales_ended_on
                     ) VALUES (?, ?, ?, '역전 기간', '2026-12-31', '2026-01-01')
                     """,
-                    UUID.randomUUID(),
+                    invalidConfigurationPublicId,
                     variantId,
-                    "INVALID-PERIOD-" + UUID.randomUUID()))
+                    invalidConfigurationCode))
         .isInstanceOf(DataIntegrityViolationException.class);
 
     long configurationId = createMinimalConfiguration(variantId);

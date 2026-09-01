@@ -27,25 +27,29 @@ class RefreshSessionTest {
   @Test
   void rotation된_session의_재전이를_거부한다() {
     RefreshSession rotated = issue().rotateTo(2L, ISSUED_AT.plusSeconds(10));
+    Instant retryAt = ISSUED_AT.plusSeconds(20);
 
-    assertThatThrownBy(() -> rotated.rotateTo(3L, ISSUED_AT.plusSeconds(20)))
+    assertThatThrownBy(() -> rotated.rotateTo(3L, retryAt))
         .isInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> rotated.revokeAt("LOGOUT", ISSUED_AT.plusSeconds(20)))
+    assertThatThrownBy(() -> rotated.revokeAt("LOGOUT", retryAt))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void logout은_활성_session을_폐기하고_중복_logout을_거부한다() {
     RefreshSession loggedOut = issue().revokeAt("LOGOUT", ISSUED_AT.plusSeconds(10));
+    Instant retryAt = ISSUED_AT.plusSeconds(20);
 
     assertThat(loggedOut.revokedReason()).isEqualTo("LOGOUT");
-    assertThatThrownBy(() -> loggedOut.revokeAt("LOGOUT", ISSUED_AT.plusSeconds(20)))
+    assertThatThrownBy(() -> loggedOut.revokeAt("LOGOUT", retryAt))
         .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
   void 만료된_session은_rotation할_수_없다() {
-    assertThatThrownBy(() -> issue().rotateTo(2L, EXPIRES_AT))
+    RefreshSession issued = issue();
+
+    assertThatThrownBy(() -> issued.rotateTo(2L, EXPIRES_AT))
         .isInstanceOf(IllegalStateException.class);
   }
 

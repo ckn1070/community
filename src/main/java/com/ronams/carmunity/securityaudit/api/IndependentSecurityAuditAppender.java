@@ -4,5 +4,5 @@ package com.ronams.carmunity.securityaudit.api;
 public interface IndependentSecurityAuditAppender {
 
   /** 별도 transaction으로 기록하고 저장 불가를 구조화된 결과로 반환합니다. */
-  SecurityAuditAppendResult appendIndependent(SecurityAuditRecord record);
+  SecurityAuditAppendResult appendIndependent(SecurityAuditRecord auditRecord);
 }

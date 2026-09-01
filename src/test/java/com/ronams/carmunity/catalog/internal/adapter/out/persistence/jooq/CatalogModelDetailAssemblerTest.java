@@ -4,7 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEFAULTS;
 import static org.mockito.Mockito.mock;
 
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Certification;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.Option;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.PowertrainComponent;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.SalesConfiguration;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail.StandardFeature;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +44,7 @@ class CatalogModelDetailAssemblerTest {
             powertrain -> {
               assertThat(powertrain.powertrainId()).isEqualTo(powertrainId);
               assertThat(powertrain.components())
-                  .extracting(component -> component.componentType())
+                  .extracting(PowertrainComponent::componentType)
                   .containsExactly("MOTOR", "BATTERY");
             });
   }
@@ -72,10 +76,10 @@ class CatalogModelDetailAssemblerTest {
               assertThat(configuration.configurationId()).isEqualTo(configurationId);
               assertThat(configuration.standardFeatures())
                   .singleElement()
-                  .extracting(feature -> feature.name())
+                  .extracting(StandardFeature::name)
                   .isEqualTo("충돌방지");
               assertThat(configuration.options())
-                  .extracting(option -> option.code())
+                  .extracting(Option::code)
                   .containsExactly("ADAS", "SOUND");
             });
   }
@@ -137,7 +141,7 @@ class CatalogModelDetailAssemblerTest {
             variant -> {
               assertThat(variant.variantId()).isEqualTo(variantId);
               assertThat(variant.certifications())
-                  .extracting(certification -> certification.conditionCode())
+                  .extracting(Certification::conditionCode)
                   .containsExactly("NORMAL", "LOW");
               assertThat(variant.configurations()).containsExactly(configuration);
             });
@@ -174,7 +178,7 @@ class CatalogModelDetailAssemblerTest {
   }
 
   private static CatalogProjectionRecord row(Map<String, Object> values) {
-    Record record =
+    Record row =
         mock(
             Record.class,
             invocation -> {
@@ -185,6 +189,6 @@ class CatalogModelDetailAssemblerTest {
               }
               return RETURNS_DEFAULTS.answer(invocation);
             });
-    return new CatalogProjectionRecord(record);
+    return new CatalogProjectionRecord(row);
   }
 }

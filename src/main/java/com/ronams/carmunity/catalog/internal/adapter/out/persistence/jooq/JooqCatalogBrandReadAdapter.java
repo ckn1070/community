@@ -69,12 +69,12 @@ final class JooqCatalogBrandReadAdapter implements CatalogBrandReadPort {
             brand.DISPLAY_ORDER)
         .orderBy(brand.DISPLAY_ORDER, brand.NAME_KO, brand.PUBLIC_ID)
         .fetch(
-            record ->
+            row ->
                 new CatalogBrandSummary(
-                    record.get(brand.PUBLIC_ID),
-                    record.get(brand.NAME_KO),
-                    record.get(brand.NAME_EN),
-                    record.get(brand.COUNTRY_CODE),
-                    record.get(onSaleModelCount)));
+                    row.get(brand.PUBLIC_ID),
+                    row.get(brand.NAME_KO),
+                    row.get(brand.NAME_EN),
+                    row.get(brand.COUNTRY_CODE),
+                    row.get(onSaleModelCount)));
   }
 }

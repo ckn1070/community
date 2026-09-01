@@ -148,7 +148,9 @@ class LogoutServiceTest {
     }
 
     @Override
-    public void issue(UUID accountPublicId, IssuedRefreshToken refreshToken) {}
+    public void issue(UUID accountPublicId, IssuedRefreshToken refreshToken) {
+      // Logout 테스트에서는 신규 session 발급 경로를 사용하지 않습니다.
+    }
 
     @Override
     public void rotate(
@@ -174,6 +176,8 @@ class LogoutServiceTest {
     }
 
     @Override
-    public void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt) {}
+    public void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt) {
+      // Logout 테스트에서는 credential 변경 경로를 사용하지 않습니다.
+    }
   }
 }

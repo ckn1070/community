@@ -47,17 +47,17 @@ class SecurityAuditJpaEntity {
   @Column(name = "occurred_at", nullable = false)
   private Instant occurredAt;
 
-  private SecurityAuditJpaEntity(SecurityAuditRecord record) {
-    this.accountPublicId = record.accountPublicId();
-    this.eventType = record.eventType().name();
-    this.result = record.result().name();
-    this.reasonCode = record.reasonCode();
-    this.identifierHash = record.identifierHash();
-    this.metadata = record.metadata();
-    this.occurredAt = record.occurredAt();
+  private SecurityAuditJpaEntity(SecurityAuditRecord auditRecord) {
+    this.accountPublicId = auditRecord.accountPublicId();
+    this.eventType = auditRecord.eventType().name();
+    this.result = auditRecord.result().name();
+    this.reasonCode = auditRecord.reasonCode();
+    this.identifierHash = auditRecord.identifierHash();
+    this.metadata = auditRecord.metadata();
+    this.occurredAt = auditRecord.occurredAt();
   }
 
-  static SecurityAuditJpaEntity from(SecurityAuditRecord record) {
-    return new SecurityAuditJpaEntity(record);
+  static SecurityAuditJpaEntity from(SecurityAuditRecord auditRecord) {
+    return new SecurityAuditJpaEntity(auditRecord);
   }
 }

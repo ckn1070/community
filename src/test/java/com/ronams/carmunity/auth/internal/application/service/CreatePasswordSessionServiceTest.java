@@ -82,7 +82,7 @@ class CreatePasswordSessionServiceTest {
             refreshTokenIssuer,
             lifecycleStore,
             resultRecorder,
-            record -> auditRecord = record);
+            capturedAuditRecord -> auditRecord = capturedAuditRecord);
   }
 
   /** ACTIVE 계정은 full session으로 access/refresh token을 받고 실패 횟수 초기화 저장 흐름까지 진행합니다. */
@@ -335,19 +335,29 @@ class CreatePasswordSessionServiceTest {
 
     @Override
     public void rotate(
-        RefreshSession currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt) {}
+        RefreshSession currentToken, IssuedRefreshToken replacementToken, Instant rotatedAt) {
+      // Session 생성 테스트에서는 rotation 경로를 사용하지 않습니다.
+    }
 
     @Override
-    public void revokeForLogout(RefreshSession currentToken, Instant loggedOutAt) {}
+    public void revokeForLogout(RefreshSession currentToken, Instant loggedOutAt) {
+      // Session 생성 테스트에서는 logout 경로를 사용하지 않습니다.
+    }
 
     @Override
-    public void revokeFamilyForReuse(RefreshSession reusedToken, Instant detectedAt) {}
+    public void revokeFamilyForReuse(RefreshSession reusedToken, Instant detectedAt) {
+      // Session 생성 테스트에서는 reuse 경로를 사용하지 않습니다.
+    }
 
     @Override
     public void revokeFamilyForRejectedAccount(
-        RefreshSession currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt) {}
+        RefreshSession currentToken, RefreshTokenRejectionReason reason, Instant rejectedAt) {
+      // Session 생성 테스트에서는 account 거부 경로를 사용하지 않습니다.
+    }
 
     @Override
-    public void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt) {}
+    public void revokeActiveSessionsForCredentialChange(UUID accountPublicId, Instant changedAt) {
+      // Session 생성 테스트에서는 credential 변경 경로를 사용하지 않습니다.
+    }
   }
 }

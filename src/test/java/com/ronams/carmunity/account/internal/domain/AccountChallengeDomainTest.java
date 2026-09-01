@@ -47,10 +47,10 @@ class AccountChallengeDomainTest {
             1L, 10L, NOW.plusSeconds(60), NOW.minusSeconds(30), null, null);
 
     EmailVerificationChallenge consumed = open.consumeAt(NOW);
+    Instant retryAt = NOW.plusSeconds(1);
 
     assertThat(consumed.stateAt(NOW)).isEqualTo(ChallengeState.CONSUMED);
-    assertThatThrownBy(() -> consumed.revokeAt(NOW.plusSeconds(1)))
-        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> consumed.revokeAt(retryAt)).isInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -59,10 +59,10 @@ class AccountChallengeDomainTest {
         new PasswordResetChallenge(1L, 10L, NOW.plusSeconds(60), NOW.minusSeconds(30), null, null);
 
     PasswordResetChallenge revoked = open.revokeAt(NOW);
+    Instant retryAt = NOW.plusSeconds(1);
 
     assertThat(revoked.stateAt(NOW)).isEqualTo(ChallengeState.REVOKED);
-    assertThatThrownBy(() -> revoked.consumeAt(NOW.plusSeconds(1)))
-        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> revoked.consumeAt(retryAt)).isInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -71,10 +71,10 @@ class AccountChallengeDomainTest {
         new AdminInvitation(UUID.randomUUID(), NOW.plusSeconds(3600), null, null);
 
     AdminInvitation accepted = open.acceptAt(NOW);
+    Instant retryAt = NOW.plusSeconds(1);
 
     assertThat(accepted.stateAt(NOW)).isEqualTo(ChallengeState.CONSUMED);
-    assertThatThrownBy(() -> accepted.revokeAt(NOW.plusSeconds(1)))
-        .isInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> accepted.revokeAt(retryAt)).isInstanceOf(IllegalStateException.class);
   }
 
   @Test

@@ -4,5 +4,5 @@ package com.ronams.carmunity.securityaudit.api;
 public interface SecurityAuditAppender {
 
   /** 보안 감사 사실을 현재 transaction에 참여시켜 저장합니다. */
-  void append(SecurityAuditRecord record);
+  void append(SecurityAuditRecord auditRecord);
 }

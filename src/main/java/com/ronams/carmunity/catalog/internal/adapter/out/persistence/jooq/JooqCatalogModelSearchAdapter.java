@@ -186,23 +186,23 @@ class JooqCatalogModelSearchAdapter implements CatalogModelSearchPort {
         .where(configuration.IS_PUBLISHED.isTrue());
   }
 
-  private CatalogModelSummary catalogModelSummary(CatalogProjectionRecord record) {
-    Long startPrice = record.getObject("start_price", Long.class);
-    String priceBasis = record.getString("price_basis");
+  private CatalogModelSummary catalogModelSummary(CatalogProjectionRecord row) {
+    Long startPrice = row.getObject("start_price", Long.class);
+    String priceBasis = row.getString("price_basis");
     return new CatalogModelSummary(
-        record.getObject("model_id", UUID.class),
-        record.getObject("brand_id", UUID.class),
-        record.getString("brand_name"),
-        record.getString("model_name"),
-        record.getString("model_name_en"),
-        record.getObject("representative_model_year_id", UUID.class),
-        record.getInt("model_year"),
-        record.getString("edition_name"),
-        enumSet(record.getObject("body_types", Object[].class), BodyType.class),
-        enumSet(record.getObject("propulsion_types", Object[].class), PropulsionType.class),
-        enumSet(record.getObject("fuel_types", Object[].class), FuelType.class),
-        SalesStatus.valueOf(record.getString("sales_status")),
-        record.getObject("released_on", LocalDate.class),
+        row.getObject("model_id", UUID.class),
+        row.getObject("brand_id", UUID.class),
+        row.getString("brand_name"),
+        row.getString("model_name"),
+        row.getString("model_name_en"),
+        row.getObject("representative_model_year_id", UUID.class),
+        row.getInt("model_year"),
+        row.getString("edition_name"),
+        enumSet(row.getObject("body_types", Object[].class), BodyType.class),
+        enumSet(row.getObject("propulsion_types", Object[].class), PropulsionType.class),
+        enumSet(row.getObject("fuel_types", Object[].class), FuelType.class),
+        SalesStatus.valueOf(row.getString("sales_status")),
+        row.getObject("released_on", LocalDate.class),
         startPrice,
         priceBasis == null ? null : CatalogPriceBasis.valueOf(priceBasis),
         startPrice == null ? null : "KRW");

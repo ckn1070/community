@@ -118,15 +118,15 @@ final class JooqCatalogModelDetailReadAdapter implements CatalogModelDetailReadP
                 .where(generation.MODEL_ID.eq(model.ID))
                 .and(configuration.IS_PUBLISHED.isTrue()))
         .fetchOptional(
-            record ->
+            row ->
                 new Model(
-                    record.get(model.PUBLIC_ID),
-                    record.get(brand.PUBLIC_ID),
-                    record.get(brand.NAME_KO),
-                    record.get(brand.NAME_EN),
-                    record.get(model.NAME_KO),
-                    record.get(model.NAME_EN),
-                    record.get(model.SUMMARY)));
+                    row.get(model.PUBLIC_ID),
+                    row.get(brand.PUBLIC_ID),
+                    row.get(brand.NAME_KO),
+                    row.get(brand.NAME_EN),
+                    row.get(model.NAME_KO),
+                    row.get(model.NAME_EN),
+                    row.get(model.SUMMARY)));
   }
 
   private List<CatalogModelYearSnapshot> findYears(UUID modelId, LocalDate asOf) {
@@ -175,21 +175,21 @@ final class JooqCatalogModelDetailReadAdapter implements CatalogModelDetailReadP
             modelYear.SALES_STARTED_ON,
             modelYear.PUBLIC_ID)
         .fetch(
-            record ->
+            row ->
                 new CatalogModelYearSnapshot(
-                    record.get(modelYear.ID),
+                    row.get(modelYear.ID),
                     new Generation(
-                        record.get(generation.PUBLIC_ID),
-                        record.get(generation.NAME),
-                        record.get(generation.CHANGE_TYPE)),
+                        row.get(generation.PUBLIC_ID),
+                        row.get(generation.NAME),
+                        row.get(generation.CHANGE_TYPE)),
                     new ModelYear(
-                        record.get(modelYear.PUBLIC_ID),
-                        record.get(modelYear.MODEL_YEAR).intValue(),
-                        record.get(modelYear.DISPLAY_NAME),
-                        record.get(modelYear.RELEASED_ON),
-                        record.get(modelYear.SALES_STARTED_ON),
-                        record.get(modelYear.SALES_ENDED_ON),
-                        SalesStatus.valueOf(record.get(salesStatus)))));
+                        row.get(modelYear.PUBLIC_ID),
+                        row.get(modelYear.MODEL_YEAR).intValue(),
+                        row.get(modelYear.DISPLAY_NAME),
+                        row.get(modelYear.RELEASED_ON),
+                        row.get(modelYear.SALES_STARTED_ON),
+                        row.get(modelYear.SALES_ENDED_ON),
+                        SalesStatus.valueOf(row.get(salesStatus)))));
   }
 
   private List<Powertrain> findPowertrains(Map<String, ?> parameters) {

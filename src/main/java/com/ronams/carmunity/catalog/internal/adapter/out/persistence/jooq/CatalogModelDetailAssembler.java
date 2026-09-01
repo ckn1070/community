@@ -33,6 +33,8 @@ import org.springframework.stereotype.Component;
 @Component
 final class CatalogModelDetailAssembler {
 
+  private static final String POWERTRAIN_ID = "powertrain_id";
+
   private final CatalogJsonConverter jsonConverter;
 
   CatalogModelDetailAssembler(CatalogJsonConverter jsonConverter) {
@@ -43,7 +45,7 @@ final class CatalogModelDetailAssembler {
     LinkedHashMap<UUID, PowertrainBuilder> builders = new LinkedHashMap<>();
     rows.forEach(
         row -> {
-          UUID powertrainId = row.getObject("powertrain_id", UUID.class);
+          UUID powertrainId = row.getObject(POWERTRAIN_ID, UUID.class);
           PowertrainBuilder builder =
               builders.computeIfAbsent(powertrainId, ignored -> new PowertrainBuilder(row));
           builder.addComponent(row);
@@ -120,10 +122,6 @@ final class CatalogModelDetailAssembler {
     return resultSet.getBigDecimal(column);
   }
 
-  private static FuelType fuelType(String value) {
-    return value == null ? null : FuelType.valueOf(value);
-  }
-
   private static final class PowertrainBuilder {
     private final UUID powertrainId;
     private final String name;
@@ -153,7 +151,7 @@ final class CatalogModelDetailAssembler {
     private final List<PowertrainComponent> components = new ArrayList<>();
 
     private PowertrainBuilder(CatalogProjectionRecord resultSet) {
-      powertrainId = resultSet.getObject("powertrain_id", UUID.class);
+      powertrainId = resultSet.getObject(POWERTRAIN_ID, UUID.class);
       name = resultSet.getString("powertrain_name");
       propulsionType = PropulsionType.valueOf(resultSet.getString("propulsion_type"));
       primaryFuelType = FuelType.valueOf(resultSet.getString("primary_fuel_type"));
@@ -244,6 +242,10 @@ final class CatalogModelDetailAssembler {
           fastChargePowerKw,
           components);
     }
+
+    private static FuelType fuelType(String value) {
+      return value == null ? null : FuelType.valueOf(value);
+    }
   }
 
   private static final class VariantBuilder {
@@ -281,7 +283,7 @@ final class CatalogModelDetailAssembler {
 
     private VariantBuilder(CatalogProjectionRecord resultSet) {
       variantId = resultSet.getObject("variant_id", UUID.class);
-      powertrainId = resultSet.getObject("powertrain_id", UUID.class);
+      powertrainId = resultSet.getObject(POWERTRAIN_ID, UUID.class);
       name = resultSet.getString("variant_name");
       bodyType = BodyType.valueOf(resultSet.getString("body_type"));
       roofType = resultSet.getString("roof_type");

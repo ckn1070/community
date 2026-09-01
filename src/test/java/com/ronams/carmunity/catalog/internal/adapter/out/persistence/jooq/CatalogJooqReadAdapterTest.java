@@ -292,62 +292,60 @@ class CatalogJooqReadAdapterTest extends PostgreSqlIntegrationTestSupport {
 
     assertThat(detail.model().modelId()).isEqualTo(bev.modelPublicId());
     assertThat(detail.selectedModelYear().modelYearId()).isEqualTo(bev.modelYearPublicId());
-    assertThat(detail.powertrains())
-        .singleElement()
-        .satisfies(
-            powertrain -> {
-              assertThat(powertrain.propulsionType()).isEqualTo(PropulsionType.BEV);
-              assertThat(powertrain.acChargeConnector()).isEqualTo("TYPE_2");
-              assertThat(powertrain.acChargeMinutes()).isEqualTo(455);
-              assertThat(powertrain.acChargeFromPercent()).isEqualTo(10);
-              assertThat(powertrain.acChargeToPercent()).isEqualTo(100);
-              assertThat(powertrain.acChargePowerKw()).isEqualByComparingTo("11");
-              assertThat(powertrain.dcChargeConnector()).isEqualTo("CCS_COMBO_2");
-              assertThat(powertrain.fastChargePowerKw()).isEqualByComparingTo("350");
-              assertThat(powertrain.components())
-                  .extracting(CatalogModelDetail.PowertrainComponent::componentType)
-                  .containsExactly("MOTOR", "BATTERY");
-              assertThat(powertrain.components())
-                  .filteredOn(component -> component.componentType().equals("BATTERY"))
-                  .singleElement()
-                  .extracting(CatalogModelDetail.PowertrainComponent::usableCapacityKwh)
-                  .isEqualTo(new java.math.BigDecimal("77.40"));
-            });
-    assertThat(detail.variants())
-        .singleElement()
-        .satisfies(
-            variant -> {
-              assertThat(variant.maxBrakedTowingCapacityKg()).isEqualTo(1800);
-              assertThat(variant.maxUnbrakedTowingCapacityKg()).isEqualTo(750);
-              assertThat(variant.maxRoofLoadKg()).isEqualTo(80);
-              assertThat(variant.minimumTurningRadiusM()).isEqualByComparingTo("5.75");
-              assertThat(variant.certifications())
-                  .singleElement()
-                  .satisfies(
-                      certification -> {
-                        assertThat(certification.conditionCode()).isEqualTo("NORMAL-20");
-                        assertThat(certification.certificationStandard()).isEqualTo("KOREA");
-                      });
-              assertThat(variant.configurations())
-                  .singleElement()
-                  .satisfies(
-                      configuration -> {
-                        assertThat(configuration.standardFeatures())
-                            .singleElement()
-                            .extracting(CatalogModelDetail.StandardFeature::name)
-                            .isEqualTo("충돌방지");
-                        assertThat(configuration.price().displayPrice()).isEqualTo(55_000_000L);
-                        assertThat(configuration.options())
-                            .singleElement()
-                            .satisfies(
-                                option -> {
-                                  assertThat(option.code()).isEqualTo("ADAS");
-                                  assertThat(option.displayPrice()).isEqualTo(1_000_000L);
-                                  assertThat(option.includedItems()).containsExactly("후측방 충돌방지");
-                                });
-                      });
-            });
+    assertThat(detail.powertrains()).singleElement().satisfies(this::assertCompleteBevPowertrain);
+    assertThat(detail.variants()).singleElement().satisfies(this::assertCompleteBevVariant);
     assertThat(executedCatalogQueryCount()).isEqualTo(5);
+  }
+
+  private void assertCompleteBevPowertrain(CatalogModelDetail.Powertrain powertrain) {
+    assertThat(powertrain.propulsionType()).isEqualTo(PropulsionType.BEV);
+    assertThat(powertrain.acChargeConnector()).isEqualTo("TYPE_2");
+    assertThat(powertrain.acChargeMinutes()).isEqualTo(455);
+    assertThat(powertrain.acChargeFromPercent()).isEqualTo(10);
+    assertThat(powertrain.acChargeToPercent()).isEqualTo(100);
+    assertThat(powertrain.acChargePowerKw()).isEqualByComparingTo("11");
+    assertThat(powertrain.dcChargeConnector()).isEqualTo("CCS_COMBO_2");
+    assertThat(powertrain.fastChargePowerKw()).isEqualByComparingTo("350");
+    assertThat(powertrain.components())
+        .extracting(CatalogModelDetail.PowertrainComponent::componentType)
+        .containsExactly("MOTOR", "BATTERY");
+    assertThat(powertrain.components())
+        .filteredOn(component -> component.componentType().equals("BATTERY"))
+        .singleElement()
+        .extracting(CatalogModelDetail.PowertrainComponent::usableCapacityKwh)
+        .isEqualTo(new java.math.BigDecimal("77.40"));
+  }
+
+  private void assertCompleteBevVariant(CatalogModelDetail.Variant variant) {
+    assertThat(variant.maxBrakedTowingCapacityKg()).isEqualTo(1800);
+    assertThat(variant.maxUnbrakedTowingCapacityKg()).isEqualTo(750);
+    assertThat(variant.maxRoofLoadKg()).isEqualTo(80);
+    assertThat(variant.minimumTurningRadiusM()).isEqualByComparingTo("5.75");
+    assertThat(variant.certifications())
+        .singleElement()
+        .satisfies(
+            certification -> {
+              assertThat(certification.conditionCode()).isEqualTo("NORMAL-20");
+              assertThat(certification.certificationStandard()).isEqualTo("KOREA");
+            });
+    assertThat(variant.configurations())
+        .singleElement()
+        .satisfies(
+            configuration -> {
+              assertThat(configuration.standardFeatures())
+                  .singleElement()
+                  .extracting(CatalogModelDetail.StandardFeature::name)
+                  .isEqualTo("충돌방지");
+              assertThat(configuration.price().displayPrice()).isEqualTo(55_000_000L);
+              assertThat(configuration.options())
+                  .singleElement()
+                  .satisfies(
+                      option -> {
+                        assertThat(option.code()).isEqualTo("ADAS");
+                        assertThat(option.displayPrice()).isEqualTo(1_000_000L);
+                        assertThat(option.includedItems()).containsExactly("후측방 충돌방지");
+                      });
+            });
   }
 
   /** 상세 configuration 상태도 자체 기간뿐 아니라 선택 연식의 종료 경계를 함께 적용합니다. */

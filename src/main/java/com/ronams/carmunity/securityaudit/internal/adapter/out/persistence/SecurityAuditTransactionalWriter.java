@@ -14,12 +14,12 @@ class SecurityAuditTransactionalWriter {
   private final SecurityAuditJpaRepository repository;
 
   @Transactional
-  void appendRequired(SecurityAuditRecord record) {
-    repository.save(SecurityAuditJpaEntity.from(record));
+  void appendRequired(SecurityAuditRecord auditRecord) {
+    repository.save(SecurityAuditJpaEntity.from(auditRecord));
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  void appendRequiresNew(SecurityAuditRecord record) {
-    repository.save(SecurityAuditJpaEntity.from(record));
+  void appendRequiresNew(SecurityAuditRecord auditRecord) {
+    repository.save(SecurityAuditJpaEntity.from(auditRecord));
   }
 }

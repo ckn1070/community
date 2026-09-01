@@ -18,20 +18,20 @@ class SecurityAuditPersistenceAdapter
   private final SecurityAuditTransactionalWriter writer;
 
   @Override
-  public void append(SecurityAuditRecord record) {
-    writer.appendRequired(record);
+  public void append(SecurityAuditRecord auditRecord) {
+    writer.appendRequired(auditRecord);
   }
 
   @Override
-  public SecurityAuditAppendResult appendIndependent(SecurityAuditRecord record) {
+  public SecurityAuditAppendResult appendIndependent(SecurityAuditRecord auditRecord) {
     try {
-      writer.appendRequiresNew(record);
+      writer.appendRequiresNew(auditRecord);
       return SecurityAuditAppendResult.APPENDED;
     } catch (RuntimeException exception) {
       log.error(
           "security audit append failed: eventType={}, accountPublicId={}",
-          record.eventType(),
-          record.accountPublicId(),
+          auditRecord.eventType(),
+          auditRecord.accountPublicId(),
           exception);
       return SecurityAuditAppendResult.FAILED;
     }

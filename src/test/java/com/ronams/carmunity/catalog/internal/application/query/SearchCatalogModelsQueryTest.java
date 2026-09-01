@@ -39,10 +39,12 @@ class SearchCatalogModelsQueryTest {
   /** 공백뿐인 검색어와 100 code point를 넘는 검색어를 유효한 filter로 만들지 않습니다. */
   @Test
   void rejectsBlankAndOverlongSearchText() {
+    String overlongSearchText = "가".repeat(101);
+
     assertThatThrownBy(() -> query("   ", 0L, null, 0, 20))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("검색어");
-    assertThatThrownBy(() -> query("가".repeat(101), 0L, null, 0, 20))
+    assertThatThrownBy(() -> query(overlongSearchText, 0L, null, 0, 20))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("검색어");
   }
