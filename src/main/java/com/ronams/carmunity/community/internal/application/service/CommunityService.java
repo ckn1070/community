@@ -2,6 +2,7 @@ package com.ronams.carmunity.community.internal.application.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.ronams.carmunity.account.api.CommunityAuthorProfileLookup;
+import com.ronams.carmunity.community.api.CommunityContentVisibility;
 import com.ronams.carmunity.community.internal.application.CommunityErrorCode;
 import com.ronams.carmunity.community.internal.application.CursorCodec;
 import com.ronams.carmunity.community.internal.domain.PostBody;
@@ -28,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
-public class CommunityService {
+public class CommunityService implements CommunityContentVisibility {
 
   private static final UUID FREE_BOARD_ID = UUID.fromString("ed710d1c-91f1-4266-a035-bba33a7f52cb");
   private final JdbcClient jdbc;
@@ -412,6 +413,68 @@ public class CommunityService {
     return result.toString();
   }
 
+  @Transactional
+  public Map<String, Object> react(UUID actor, UUID contentId, String type) {
+    if (!Set.of("LIKE", "DISLIKE").contains(type)) throw error(CommunityErrorCode.INVALID_REQUEST);
+    Long internal = internal(contentId);
+    jdbc.sql(
+            "INSERT INTO community_reaction(content_id,account_public_id,reaction_type) VALUES (:content,:actor,:type) ON CONFLICT(content_id,account_public_id) DO UPDATE SET reaction_type=EXCLUDED.reaction_type,updated_at=NOW()")
+        .param("content", internal)
+        .param("actor", actor)
+        .param("type", type)
+        .update();
+    return reactionState(internal, actor);
+  }
+
+  @Transactional
+  public void removeReaction(UUID actor, UUID contentId) {
+    jdbc.sql(
+            "DELETE FROM community_reaction WHERE content_id=(SELECT id FROM community_content WHERE public_id=:content) AND account_public_id=:actor")
+        .param("content", contentId)
+        .param("actor", actor)
+        .update();
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public void requireVisible(UUID contentId, String kind) {
+    int count =
+        jdbc.sql(
+                "SELECT COUNT(*) FROM community_content WHERE public_id=:id AND kind=:kind AND author_deleted_at IS NULL AND moderator_hidden_at IS NULL")
+            .param("id", contentId)
+            .param("kind", kind)
+            .query(Integer.class)
+            .single();
+    if (count != 1) throw error(CommunityErrorCode.CONTENT_NOT_FOUND);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public Map<String, Object> moderationSnapshot(UUID contentId, String kind) {
+    String sql =
+        "POST".equals(kind)
+            ? "SELECT c.public_id AS id,c.kind,p.title,p.body,c.created_at,c.edited_at,c.author_deleted_at,c.moderator_hidden_at FROM community_content c JOIN community_post p ON p.content_id=c.id WHERE c.public_id=:id AND c.kind='POST'"
+            : "SELECT c.public_id AS id,c.kind,m.body,c.created_at,c.edited_at,c.author_deleted_at,c.moderator_hidden_at FROM community_content c JOIN community_comment m ON m.content_id=c.id WHERE c.public_id=:id AND c.kind='COMMENT'";
+    Map<String, Object> snapshot =
+        jdbc.sql(sql).param("id", contentId).query().listOfRows().stream()
+            .findFirst()
+            .orElseThrow(() -> error(CommunityErrorCode.CONTENT_NOT_FOUND));
+    camelCase(snapshot);
+    return snapshot;
+  }
+
+  @Override
+  @Transactional
+  public void hide(UUID contentId) {
+    int changed =
+        jdbc.sql(
+                "UPDATE community_content SET moderator_hidden_at=COALESCE(moderator_hidden_at,NOW()),updated_at=NOW() WHERE public_id=:id")
+            .param("id", contentId)
+            .update();
+    if (changed == 0) throw error(CommunityErrorCode.CONTENT_NOT_FOUND);
+    mediaUsage.hide(contentId);
+  }
+
   private Map<String, Object> owned(UUID id, UUID actor, String kind) {
     Map<String, Object> state =
         jdbc
@@ -440,6 +503,27 @@ public class CommunityService {
         .stream()
         .findFirst()
         .orElseThrow(() -> error(CommunityErrorCode.CONTENT_FORBIDDEN));
+  }
+
+  private Long internal(UUID id) {
+    return jdbc.sql(
+            "SELECT id FROM community_content WHERE public_id=:id AND author_deleted_at IS NULL AND moderator_hidden_at IS NULL")
+        .param("id", id)
+        .query(Long.class)
+        .optional()
+        .orElseThrow(() -> error(CommunityErrorCode.CONTENT_NOT_FOUND));
+  }
+
+  private Map<String, Object> reactionState(Long contentId, UUID actor) {
+    Map<String, Object> state =
+        jdbc.sql(
+                "SELECT (SELECT reaction_type FROM community_reaction WHERE content_id=:content AND account_public_id=:actor) AS type,COUNT(*) FILTER(WHERE reaction_type='LIKE') AS like_count,COUNT(*) FILTER(WHERE reaction_type='DISLIKE') AS dislike_count FROM community_reaction WHERE content_id=:content")
+            .param("content", contentId)
+            .param("actor", actor)
+            .query()
+            .singleRow();
+    camelCase(state);
+    return state;
   }
 
   private Map<String, Object> comment(UUID id) {

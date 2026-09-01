@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -135,6 +136,20 @@ public class CommunityController {
     return ResponseEntity.ok().eTag(etag(result)).body(result);
   }
 
+  @PutMapping({"/posts/{contentId}/reaction", "/comments/{contentId}/reaction"})
+  public Map<String, Object> react(
+      @PathVariable UUID contentId,
+      @RequestBody ReactionWriteRequest request,
+      Principal principal) {
+    return service.react(actor(principal), contentId, request.type());
+  }
+
+  @DeleteMapping({"/posts/{contentId}/reaction", "/comments/{contentId}/reaction"})
+  public ResponseEntity<Void> removeReaction(@PathVariable UUID contentId, Principal principal) {
+    service.removeReaction(actor(principal), contentId);
+    return ResponseEntity.noContent().build();
+  }
+
   private UUID actor(Principal principal) {
     if (principal == null) throw new ApiException(CommunityErrorCode.CONTENT_FORBIDDEN);
     try {
@@ -163,4 +178,6 @@ public class CommunityController {
   public record PostWriteRequest(String title, JsonNode body) {}
 
   public record CommentWriteRequest(String body, UUID parentCommentId) {}
+
+  public record ReactionWriteRequest(String type) {}
 }
