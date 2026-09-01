@@ -2,17 +2,17 @@
 
 ## 현재 적용 상태
 
-해결 설계와 실행 계획 검증이 완료됐고, 다음 구현은 U1 공통 경계·schema부터 시작합니다.
+해결 설계를 기준으로 U1~U6와 I1 repository 후보를 구현했고 전체 local gate를 통과했습니다.
 
 | 구분 | 요약값 |
 | --- | --- |
-| 계획 단계 | 개발 준비 완료 |
+| 현재 상태 | 구현 진행 중 |
 | 제품 결정 | 사용자 확정 15개 |
 | 기술 결정 | Agent 결정 D1~D19 |
-| 계획 검증 | 통과, `Planned` checkpoint 완료 |
-| 다음 실행자 | 개발 Agent |
-| 정확한 다음 작업 | U1 module 공개 경계·Community 5-table additive schema의 실패 test 작성 |
-| 사용자 작업 | 개발을 시작하려면 별도 구현 요청 |
+| 계획 검증 | 통과 |
+| 현재 실행자 | 개발 Agent |
+| 현재 작업 | Local 검증 완료 후보의 기능별 Git 기록 |
+| 사용자 작업 | 현재 local 후보 검토 외 즉시 필요한 결정 없음 |
 
 ### 이번 보완의 핵심 계약
 
@@ -46,15 +46,17 @@ module·domain·API·data·transaction·security·media·notification·moderatio
   `ROLE_ADMIN` 또는 `ROLE_SUPER_ADMIN`을 추가로 요구합니다.
 - account의 외부 식별자는 UUID이고 표시 이름은 `account_profile`이 소유합니다. Community가
   account table을 직접 조회하거나 표시 이름 snapshot을 중복 저장하지 않습니다.
-- 현재 `notification` module은 이메일 발송만 구현했습니다. 서비스 안 알림 저장소는 아직
-  존재하지 않습니다.
+- 현재 `notification` module은 기존 이메일 발송과 Community 대화 transaction에 참여하는
+  서비스 안 inbox 공개 저장 계약을 함께 구현했습니다.
 - 현재 staging EC2 instance profile은 node의 ECR pull과 Load Balancer lifecycle만
   소유합니다. 애플리케이션의 일반 AWS 권한을 node role에 추가하지 않습니다.
 - 현재 application은 replica `1`이고 edge proxy·WAF·공유 rate limiter가 없습니다.
 - 기존 V7·V10을 직접 수정한 Auth Event migration 때문에 과거 checksum을 가진 지속 DB는
   Flyway validation과 기존 row 전환에 실패할 수 있습니다. Community migration은 이 결함을
   우회하거나 함께 고친 것으로 간주하지 않습니다.
-- Community, media와 moderation은 아직 구현 module이나 영구 domain SOT가 아닙니다.
+- Community, media와 moderation은 local 구현 module이며 현재 물리 schema는
+  [110 Community schema](../../../project/schema/110-community.md)가 요약합니다. Live 활성화 전까지
+  제품 공개 완료로 확대하지 않습니다.
 
 ## 목표 불변식
 
@@ -1102,9 +1104,9 @@ Issuer lifecycle은 다음을 고정합니다.
   아니면 capability가 자동으로 닫힌다고 했지만, 현재 application은 Kubernetes replica 수를
   읽는 권한·Port·health indicator가 없고 Deployment도 replica와 rollout 전략을 명시하지
   않습니다. 따라서 그 자동 차단은 구현 가능한 계약이 아니었습니다.
-- **현재 상태**: Community와 limiter는 아직 구현되지 않았습니다. 현재 Deployment는 Kubernetes
-  기본 replica `1`과 `RollingUpdate`를 사용하므로 평상시에는 Pod 하나가 실행되고 rollout 중에는
-  새 Pod가 준비될 때까지 기존 Pod와 잠시 함께 실행될 수 있습니다.
+- **현재 상태**: Community 공개 GET limiter와 명시적 `replicas: 1`·`RollingUpdate` manifest를
+  repository 후보에 구현했습니다. 평상시에는 Pod 하나가 실행되고 rollout 중에는 새 Pod가
+  준비될 때까지 기존 Pod와 잠시 함께 실행될 수 있습니다.
 - **보존하는 목표**: 공개 읽기와 image stream에는 각 요청을 실제 처리하는 Pod에서
   client·동시성·전달량 보호가 항상 적용돼야 합니다. 첫 범위는 배포 중의 짧은 중복보다 기존
   전체 API 가용성을 우선하고, 상시 다중 replica의 정확한 전체 상한은 공유 보호 계층 도입

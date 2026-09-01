@@ -12,6 +12,7 @@ Flyway migration 파일이 source of truth이고, 이 문서 그룹은 여러 mi
 ## 현재 문서
 
 - [100-account-auth.md](100-account-auth.md): account/auth 관련 table, column, constraint, index, check value, seed data의 현재 최종 상태입니다.
+- [110-community.md](110-community.md): community, notification inbox, moderation, media 관련 현재 최종 schema입니다.
 - [110-car-catalog.md](110-car-catalog.md): 자동차 제품 계층·동력 장치·판매 구성·가격·옵션·인증 11개 테이블의 현재 최종 상태입니다.
 
 ## 작성 기준

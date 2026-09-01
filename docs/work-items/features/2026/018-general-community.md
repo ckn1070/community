@@ -2,25 +2,20 @@
 
 ## 상태
 
-Planned
-
-## 계획 단계
-
-개발 준비 완료
+In Progress
 
 ## 현재 위치와 다음 작업
 
-결과 정의·해결 설계·실행 계획 검증이 완료됐습니다. 다음 개발은 U1 공통 경계·schema부터
-시작합니다.
+U1~U6와 I1의 repository 후보를 구현했고 전체 local gate를 통과했습니다.
 
 | 구분 | 요약값 |
 | --- | --- |
 | 제품 결정 | 사용자 확정 15개 |
 | 기술 결정 | Agent 결정 D1~D19 |
-| 계획 검증 | 통과, `Planned` 자격 충족 |
-| 다음 실행자 | 개발 Agent |
-| 정확한 다음 작업 | U1 module 공개 경계·Community 5-table additive schema의 실패 test부터 작성 |
-| 사용자 작업 | 개발을 시작하려면 별도 구현 요청 |
+| 계획 검증 | 통과 |
+| 현재 실행자 | 개발 Agent |
+| 현재 작업 | Local 검증 완료 후보의 기능별 Git 기록 |
+| 사용자 작업 | 현재 local 후보 검토 외 즉시 필요한 결정 없음 |
 | 외부 gate | A1 전에 별도 live 권한·Auth Event migration·AWS Block Public Access 대조 필요 |
 
 ### 실행 계획의 핵심 입력
@@ -54,16 +49,17 @@ Planned
 | 1. 결과 정의 | 완료 | 15개 제품 결정과 수용 기준을 사용자가 확정했습니다. |
 | 2. 해결 설계 | 완료 | D1~D19의 module·domain·API·DB·보안·운영 계약을 Agent 기술 결정으로 닫았습니다. |
 | 3. 실행 계획 | 완료 | 의미 단위, producer·consumer 의존성, TDD·전환·복구와 영구 SOT가 독립 검증을 통과했습니다. |
-| 4. 개발 | 다음 | 검증된 `Planned` checkpoint 뒤 공통 계약과 첫 게시글 slice부터 구현합니다. |
-| 5. 결과 검증·SOT | 후속 | 전체 local gate와 독립 구현 검증을 통과하고 실제 source를 영구 SOT에 반영합니다. |
+| 4. 개발 | 완료 후보 | U1~U6와 I1 repository source를 구현했고 자동 만료 삭제는 별도 파괴적 승인 전까지 제외했습니다. |
+| 5. 결과 검증·SOT | Local 통과 | 전체 396-test gate, module·format·coverage, script와 rendered manifest 검증을 통과했습니다. |
 | 6. Git·remote gate | 후속 | 별도 Git 권한에 따라 commit·push하고 exact SHA의 CI·Sonar를 확인합니다. |
 | 7. 기반 배포 | 조건부 | 명시적 live 변경 권한과 Auth Event migration gate를 충족한 뒤 capability off로 배포합니다. |
 | 8. 기능 활성화 | 조건부 | storage·OIDC·proxy·limiter·rollout live 검증 뒤 별도 GitOps 변경으로 전체 기능을 함께 엽니다. |
 | 9. 종료 | 후속 | 제품 수용 기준의 실제 동작, 복구 경계와 영구 SOT가 모두 닫히면 `Done`으로 전환합니다. |
 
-현재 `Planned` checkpoint까지 완료됐고 정확한 다음 단계는 개발입니다. 구현 요청이 들어오면
-개발 Agent가 U1의 실패 test부터 시작합니다. 외부 AWS·Kubernetes 상태 변경과 push 권한은
-이 계획 작성 요청에서 생기지 않았습니다.
+ServiceAccount, projected web identity token, media bucket·role·trusted proxy staging 설정은
+repository manifest에 반영했습니다. 실제 bucket·OIDC provider·IAM role·cluster issuer 생성과
+capability 활성화는 live 권한과 A1 검증이 필요한 별도 후속입니다. 외부 AWS·Kubernetes 상태
+변경과 push는 현재 실행 범위에 포함하지 않습니다.
 
 ## 결과 정의 종료와 설계 인계
 
@@ -539,7 +535,7 @@ U6 -> V1 전체 검증·영구 SOT -> Git·remote gate -> A1 capability-off 기�
 - 제품 결정과 Agent 기술 결정은 모두 닫혀 있으며 구현을 막는 미결정은 없습니다.
 - AWS account ID, ARN, bucket 존재 상태, trusted proxy의 live remote address와 Flyway checksum은
   선택 질문이 아니라 A1에서 authoritative source로 확인할 환경 값입니다.
-- 현재 요청은 실행 계획 작성·검증과 local checkpoint commit까지입니다. 개발, push,
+- 현재 요청은 구현·검증·연관 문서 동기화와 기능별 local commit까지입니다. Push와
   AWS·Kubernetes·staging mutation 권한은 포함하지 않습니다.
 
 ## 관련 문서

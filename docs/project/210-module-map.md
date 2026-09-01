@@ -9,8 +9,11 @@
 | --- | --- | --- |
 | `account` | 구현됨 | 인증 주체, profile, password credential, role assignment, verification challenge, admin invitation |
 | `auth` | 구현됨 | password session, JWT 발급·검증, refresh token lifecycle, logout, Bearer 인증 경계 |
+| `notification` | 구현됨 | 이메일 발송 공개 API와 Community 서비스 안 inbox, Resend adapter, transactional template, provider 오류 변환 |
+| `community` | 구현됨·비활성 | 게시판, 게시글·댓글 identity와 visibility, 반응, 공개 읽기·보호 쓰기 API |
+| `moderation` | 구현됨·비활성 | 사용자 신고, 관리자 신고 조회·종결과 Community 공개 hide 협력 |
+| `media` | 구현됨·비활성 | private 이미지 asset·usage·job, 검증·정리 worker와 S3 adapter |
 | `securityaudit` | 구현됨 | 인증·인가 보안 감사 append 계약과 `auth_event` 단일 persistence writer |
-| `notification` | 구현됨 | 이메일 발송 공개 API, Resend adapter, transactional template, provider 오류 변환 |
 | `catalog` | 조회 API 구현됨 | 신차 제품·사양·판매 정보의 읽기 전용 경계, 차체·동력 형식·연료·판매 상태 공개 enum과 브랜드·모델 목록·상세 application/persistence/Web adapter |
 | `shared` | 구현됨 | 여러 module이 공유하는 안정된 공개 계약과 기반 type. `shared.error`가 `ErrorCode`, `CommonErrorCode`, `ApiException`, `FieldErrorDetail` 계약을 소유합니다. |
 | `config` | 구현됨 | Spring MVC, Security, OpenAPI, request id, logging, 공통 예외 처리·HTTP `ProblemDetail` 변환과 애플리케이션 조립 |
@@ -32,6 +35,11 @@ account/auth -X-> securityaudit.internal
 
 account -> notification :: api
 account -X-> notification.internal
+
+community -> media :: api, notification :: api
+moderation -> community :: api
+community -X-> media.internal, notification.internal
+moderation -X-> community.internal
 
 account --(CredentialChanged 동기 event)--> auth session 폐기
 config TimeConfiguration --(Spring DI)--> account/auth/securityaudit Clock consumer
@@ -85,7 +93,7 @@ Context로 확정하지 않습니다.
 - 외부 기술을 Port로 대체해야 하는가
 - 공개 계약으로 협력할 수 있는가
 
-커뮤니티, member profile, moderation, media, listing은 현재 Java module이 아닙니다.
+member profile과 listing은 현재 Java module이 아닙니다.
 실제 기능 설계가 확정될 때 별도 module 또는 기존 module 소유 여부를 결정합니다.
 
 ## 관련 문서

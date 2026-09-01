@@ -198,7 +198,8 @@ Java module은 Bounded Context를 구현할 수 있는 구조적 수단이지만
 
 ## 영향
 
-- 실제 Java 최상위 package는 `account`, `auth`, `notification`, `shared`, `config`입니다.
+- 실제 Java 업무 package는 `account`, `auth`, `notification`, `community`, `moderation`, `media`,
+  `shared`이며 `config`가 애플리케이션 조립을 담당합니다.
 - module 간 협력은 공개 API 또는 named interface를 사용합니다.
 - state change, 권한, transaction, 외부 연동이 있는 흐름은 UseCase, Port, Adapter를 명확히 둡니다.
 - Spring Modulith은 module boundary 검증에 사용하며 독립 배포나 messaging을 자동 도입하지 않습니다.
