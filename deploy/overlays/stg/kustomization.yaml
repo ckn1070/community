@@ -25,4 +25,4 @@ images:
   - name: registry.invalid/car-community
     newName: 000000000000.dkr.ecr.ap-northeast-2.amazonaws.com/car-community
     # main e7286d7에서 게시됐으며 staging Swagger 관리자 접근 보호를 포함한 ARM64 runtime manifest입니다.
-    digest: sha256:9c7e42344919786870ff1f2bfda3813f74f327df6bd4cf2270a49d712e6017cb
+    digest: sha256:781c0aa78833a93849a1b8ab37f58dc7b05347a294be9c02488d4e3ec31b44bc
