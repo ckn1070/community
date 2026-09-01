@@ -4,14 +4,14 @@
 
 | 항목 | 현재 상태 |
 | --- | --- |
-| 활성 계획 단계 | 해결 설계 보완 |
-| 설계 전체 확정 상태 | 부분 재확정 대기입니다. 기존 확정 기준선은 보존하고 D16·D18의 공개 보호·활성화 계약만 다시 열었습니다. |
+| 활성 계획 단계 | 실행 계획 작성 |
+| 설계 전체 확정 상태 | 완료입니다. 기존 설계 기준선을 보존하고 D16·D18의 공개 보호·활성화 계약을 보완했습니다. |
 | 결과 정의 | 게시글 제목, 목록 페이지 이동과 알림 수신자를 포함한 15개 제품 결정이 사용자 확정 상태로 닫혔습니다. |
-| 개별 값 확정 상태 | D1~D15·D17·D19는 사용자 확정 상태입니다. D14·D19는 WebP를 첫 범위에서 제외하고 JDK ImageIO로 처리하는 JPEG·PNG·정적 GIF 입력 계약으로 닫혔습니다. D16·D18은 기존 목표를 유지하되 구현할 수 없던 replica 자동 판정을 제거한 보완 후보를 Agent가 선택했고 사용자 재확정을 기다립니다. |
-| 기술 선택 기준선 | 영향받지 않은 D1~D15·D17·D19는 대안과 근거를 갖춰 Agent가 선택하고 사용자가 확정한 설계 기준선입니다. D16·D18 후보는 아직 사용자 확정과 같은 뜻이 아닙니다. |
+| 개별 값 확정 상태 | D1~D19의 기술 계약은 Agent 기술 결정으로 닫혔습니다. D14·D19는 WebP를 첫 범위에서 제외하고 JDK ImageIO로 처리하는 JPEG·PNG·정적 GIF 입력 계약이며, D16·D18은 구현할 수 없던 replica 자동 판정과 `Recreate`를 제거한 계약입니다. |
+| 기술 선택 기준선 | 제품 결과 15개는 사용자 확정값이고, 이를 실현하는 D1~D19는 source·대안·trade-off로 닫은 Agent 기술 결정입니다. 기술 선택을 사용자 확정으로 귀속하지 않습니다. |
 | 보존과 보완 | 기존 결정과 영향받지 않은 설계는 유지하고, 제목·게시글 페이지 이동·대화 알림 수신자·Account 공개 UUID 관계와 첫 범위 미디어 3-table 결정에 직접 의존하는 계약만 보완했습니다. |
-| 현재 확인 대상 | D16·D18의 단일 확인 블록입니다. 첫 범위는 명시적 replica `1`과 `Recreate` rollout으로 deployment 전체의 local limiter 상한을 지키고 짧은 배포 중단을 수용할지 확인해야 합니다. |
-| 소비 gate | D16·D18 보완 후보가 검증되고 사용자 확정되기 전에는 해결 설계 gate를 통과하지 않으며 실행 계획을 작성하지 않습니다. |
+| 현재 확인 대상 | 사용자 확인 대상은 없습니다. 실행 계획은 명시적 replica `1`, `RollingUpdate`와 Pod별 local limiter 계약을 소비합니다. |
+| 소비 gate | 해결 설계가 닫혔으므로 실행 계획을 작성할 수 있습니다. 구현은 검증된 `Planned` checkpoint 뒤에만 시작합니다. |
 
 ## 문서 경계
 
@@ -86,9 +86,8 @@ module·domain·API·data·transaction·security·media·notification·moderatio
 
 ## 보존된 기술 선택 요약
 
-아래 표는 Agent가 기술적으로 채택한 선택 기준선입니다. `선택` 자체는 사용자 확정과 같은
-뜻이 아닙니다. 배포 행을 제외한 기존 기준선은 사용자 확정을 유지하고, 배포 행은 D16·D18
-보완 후보로 사용자 재확정을 기다립니다.
+아래 표는 Agent가 source·대안·trade-off로 닫은 기술 결정 기준선입니다. 제품 결과의 사용자
+확정과 기술 선택을 구분합니다.
 
 | 결정        | 기술 선택                                                                        | 보존하는 확장 경계                                    |
 | --------- | ---------------------------------------------------------------------------- | --------------------------------------------- |
@@ -103,7 +102,7 @@ module·domain·API·data·transaction·security·media·notification·moderatio
 | 서비스 안 알림  | notification 소유 inbox row를 대화 transaction에서 동기 저장하고 후보 수신자를 정책으로 정제        | 게시글별 알림 해제와 이메일·push를 후속 추가             |
 | 이미지       | JPEG·PNG·정적 GIF 입력, JPEG·PNG 정규화, 미디어 3-table과 private S3·비동기 worker | 새 decoder·관리자 action·개별 정합성 case를 후속 추가 |
 | 조회        | 게시글 번호 page와 대화·알림용 keyset cursor, author·반응 batch 조회                       | 검색·인기·추천 projection을 core write와 분리           |
-| 배포 재확정 후보 | additive Flyway, 기본 비활성 capability와 `replicas: 1`·`Recreate` singleton | application rollback 시 새 schema·object 보존, 다중 replica 전 shared limiter 선행 |
+| 배포 | additive Flyway, 기본 비활성 capability와 `replicas: 1`·`RollingUpdate` | application rollback 시 새 schema·object 보존, 상시 다중 replica 전 shared/edge limiter 재검토 |
 
 ## 설계 결정
 
@@ -1058,26 +1057,36 @@ Issuer lifecycle은 다음을 고정합니다.
   아니면 capability가 자동으로 닫힌다고 했지만, 현재 application은 Kubernetes replica 수를
   읽는 권한·Port·health indicator가 없고 Deployment도 replica와 rollout 전략을 명시하지
   않습니다. 따라서 그 자동 차단은 구현 가능한 계약이 아니었습니다.
-- **보존하는 목표**: 공개 읽기와 image stream에는 client·동시성·전달량 상한이 항상 적용돼야
-  하고, 다중 replica가 local limiter 상한을 곱하지 않아야 합니다.
+- **현재 상태**: Community와 limiter는 아직 구현되지 않았습니다. 현재 Deployment는 Kubernetes
+  기본 replica `1`과 `RollingUpdate`를 사용하므로 평상시에는 Pod 하나가 실행되고 rollout 중에는
+  새 Pod가 준비될 때까지 기존 Pod와 잠시 함께 실행될 수 있습니다.
+- **보존하는 목표**: 공개 읽기와 image stream에는 각 요청을 실제 처리하는 Pod에서
+  client·동시성·전달량 보호가 항상 적용돼야 합니다. 첫 범위는 배포 중의 짧은 중복보다 기존
+  전체 API 가용성을 우선하고, 상시 다중 replica의 정확한 전체 상한은 공유 보호 계층 도입
+  조건으로 분리합니다.
 
 | 후보 | 장점 | 비용·제외 이유 |
 | --- | --- | --- |
-| 명시적 `replicas: 1` + `Recreate` | 현재 local limiter를 deployment 전체 상한으로 만들고 새 DB·cluster API 권한이 필요 없음 | rollout 동안 기존 Pod 종료 뒤 새 Pod가 준비될 때까지 application 전체가 잠시 중단됨 |
+| 명시적 `replicas: 1` + `RollingUpdate`와 Pod별 local limiter | 평상시 Pod 하나를 유지하면서 rollout 중 기존 API 가용성을 보존하고 새 DB·cluster API 권한이 필요 없음 | rollout 중에는 최대 두 Pod가 각자 상한을 계산하므로 전체 이론 상한이 잠시 두 배가 됨 |
+| 명시적 `replicas: 1` + `Recreate` | rollout 중에도 local limiter 인스턴스를 하나로 제한 | Community뿐 아니라 인증을 포함한 application 전체가 중단되고 재시작 때 limiter 상태도 초기화됨 |
 | PostgreSQL 공유 limiter | RollingUpdate와 다중 replica에서도 전체 상한을 공유 | 모든 anonymous read에 DB write·정리 생명주기를 추가하고 image stream semaphore가 DB pool을 점유함 |
-| RollingUpdate 중 replica별 local limiter | 현재 배포 가용성을 유지하고 구현이 단순함 | rollout 중 client·egress 상한이 replica 수만큼 늘어나 확정한 보호 상한을 지키지 못함 |
 
-- **Agent 선택**: 첫 범위에는 Deployment의 `spec.replicas: 1`과
-  `spec.strategy.type: Recreate`를 명시하고 HPA와 같은 selector를 가진 다른 workload를
-  허용하지 않습니다. 이 값은 GitOps desired state와 manifest contract test가 소유합니다.
-- **선택 근거**: 현재 단일 node·단일 application 범위에서 정확한 abuse·비용 상한을 지키는
-  최소 구조입니다. 공유 limiter의 새 저장 생명주기와 Kubernetes read 권한을 미리 만들지
-  않으면서도 기본 RollingUpdate가 일시적으로 두 Pod를 띄우는 공백을 제거합니다.
-- **비용**: application image나 Pod template을 바꾸는 rollout에는 짧은 전체 중단이 생깁니다.
-  이 비용을 숨기지 않으며 무중단 배포가 제품·운영 요구가 되는 순간 공유 또는 edge limiter와
-  다중 replica 전환을 함께 다시 설계합니다.
-- **확정 상태**: Agent가 기술 후보로 선택했으며 사용자 재확정 전에는 실행 계획의 입력이
-  아닙니다.
+- **Agent 기술 결정**: 첫 범위에는 Deployment의 `spec.replicas: 1`,
+  `spec.strategy.type: RollingUpdate`, `maxSurge: 1`, `maxUnavailable: 0`을 명시합니다. HPA는
+  두지 않고 local limiter는 Pod별 보호 장치로 정의합니다. 이 값은 GitOps desired state와
+  manifest contract test가 소유합니다.
+- **선택 근거**: rollout 중 한도가 잠시 늘어날 가능성보다 배포할 때마다 기존 API 전체를
+  중단하는 영향이 더 큽니다. `RollingUpdate`는 새 Pod가 Ready인 동안만 최대 한 개를 추가해
+  가용성을 보존하고, 별도 공유 저장 생명주기나 Kubernetes 조회 권한을 미리 만들지 않습니다.
+- **감수하는 비용**: rollout 중 최대 두 Pod가 요청을 나눠 받으면 client별 요청량과 process별
+  이미지 상한의 이론적 합이 잠시 두 배가 됩니다. 이 구간은 현재 허용하며 deployment 전체의
+  정확한 상한이라고 표현하지 않습니다.
+- **배제한 대안**: `Recreate`는 짧은 중복 상한을 피하려고 application 전체를 중단시키면서도
+  새 Pod 시작 때 local limiter 상태가 초기화되므로 채택하지 않습니다. PostgreSQL 공유
+  limiter는 현재 단일 replica 범위에 비해 저장·정리·DB pool 비용이 큽니다.
+- **재검토 조건**: 상시 replica `2` 이상, HPA, local limiter 우회 abuse, 이미지 비용·자원
+  압박 또는 deployment 전체의 정확한 상한 요구 중 하나가 생기면 같은 Port 뒤의 shared/edge
+  limiter를 먼저 설계합니다.
 
 - 공개 GET과 image stream만 anonymous 접근을 허용하고 나머지 API는 현재 account policy를
   그대로 사용합니다.
@@ -1091,24 +1100,27 @@ Issuer lifecycle은 다음을 고정합니다.
   application log에 남기지 않습니다. 운영 log는 request ID, actor hash 또는 public UUID,
   use case, result, error code와 duration만 사용합니다.
 - Anonymous read와 image stream은 Community capability가 켜질 때 비활성화할 수 없는
-  application origin 보호 baseline을 사용합니다. singleton deployment에서 client key당
+  application origin 보호 baseline을 사용합니다. 각 Pod에서 client key당
   일반 공개 GET `60/minute`·burst `20`,
-  image GET `10/minute`·burst `4`, process 전체 image stream 동시 `8`개와 전달량
+  image GET `10/minute`·burst `4`, Pod 전체 image stream 동시 `8`개와 전달량
   `64 MiB/minute`를 상한으로 두고 초과 요청은 `Retry-After`가 있는 `429`로 거부합니다.
   Client key는 exact ALB ingress에서 append된 trusted `X-Forwarded-For` chain과 직접 peer를
   함께 검증해 만들며 임의 요청 header를 그대로 신뢰하지 않습니다.
 - 이 limiter는 공개 read use case 앞의 Port로 두어 delivery adapter를 교체할 수 있게 합니다.
-  현재 local limiter는 명시적 `replicas: 1`·`Recreate` desired state에서만 deployment 전체
-  상한입니다. Application에 Kubernetes list/watch 권한을 주거나 구현되지 않은 replica 자동
-  판정을 주장하지 않습니다. 대신 manifest contract test와 공개 전 live preflight가 exact
-  replica·strategy, HPA 부재와 Service의 Ready endpoint 하나를 검증합니다. 조건이 다르면
-  Community capability를 켜는 GitOps 변경을 진행하지 않습니다.
+  현재 local limiter는 deployment 전체가 아니라 Pod별 상한입니다. `replicas: 1`·
+  `RollingUpdate`에서는 평상시 위 수치가 전체 처리 상한과 같고, rollout 중 최대 두 Pod가
+  겹치면 이론적으로 일반 GET `120/minute`·burst `40`, image GET `20/minute`·burst `8`,
+  image stream 동시 `16`개와 `128 MiB/minute`까지 잠시 늘 수 있습니다. Application에
+  Kubernetes list/watch 권한을 주거나 구현되지 않은 replica 자동 판정을 주장하지 않습니다.
+  Manifest contract test는 exact desired replica·strategy와 HPA 부재를 검증하고, 공개 전 live
+  preflight는 rollout이 끝난 steady state에서 Ready endpoint가 하나인지 확인합니다. 조건이
+  다르면 Community capability를 켜는 GitOps 변경을 진행하지 않습니다.
 - 승인된 활성화 뒤 replica·strategy·selector drift는 Argo CD self-heal과 운영 검증의 실패로
   취급하고 Community capability를 끄는 forward fix 대상입니다. Cluster 관리자 권한으로
   desired state 밖의 matching Pod를 만드는 행위까지 application limiter가 방어한다고
   확대하지 않습니다.
-- 다중 replica 또는 RollingUpdate 전환은 같은 Port 뒤에 공유 또는 edge limiter를 두고
-  deployment 전체 상한과 origin 우회 차단을 검증한 뒤에만 허용합니다. Edge 후보는
+- 상시 다중 replica나 HPA 전환은 같은 Port 뒤에 공유 또는 edge limiter를 두고 deployment
+  전체 상한과 origin 우회 차단을 검증한 뒤에만 허용합니다. 이 전환 후보는
   [004 Infrastructure 진화 backlog](../../backlog/2026/004-infrastructure-evolution.md)에 남지만
   현재 공개의 선행 owner로 사용하지 않습니다. 현재 비용 상한은 위 요청·동시성·전달량
   제한이 소유하며 현재 activation은 별도 비용 결정에 의존하지 않습니다.
@@ -1167,9 +1179,10 @@ Issuer lifecycle은 다음을 고정합니다.
   worker도 새 job을 실행하지 않습니다. true인데 필수 bucket·region·role ARN·projected token
   path, decoder와 limiter 설정이 빠졌으면 application 시작을 실패시킵니다.
 - 최초 공개는 두 GitOps 변경으로 나눕니다. 기반 변경은 schema·code·private bucket·OIDC
-  identity·worker·metric과 명시적 `replicas: 1`·`Recreate`를 capability off 상태로 배포합니다.
+  identity·worker·metric과 명시적 `replicas: 1`·`RollingUpdate(maxSurge=1,
+  maxUnavailable=0)`를 capability off 상태로 배포합니다.
   이후 migration·runtime smoke, OIDC overlap/rollback, `DEAD` metric·structured event,
-  rendered manifest와 live Deployment·HPA·Service endpoint를 검증한 activation 변경만
+  rendered manifest와 rollout이 끝난 live Deployment·HPA·Service endpoint를 검증한 activation 변경만
   `carmunity.community.enabled=true`로 전환합니다. Image 없는 부분 기능을 먼저 공개해 현재
   제품 수용 기준을 축소하지 않습니다.
 - Runtime에서 저장소·decoder·필수 내부 health가 준비되지 않으면 Community route는
@@ -1327,8 +1340,9 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
   수렴합니다.
 - Security: anonymous는 공개 GET만 접근하고 full session/member/admin 경계가 현재 policy와
   일치합니다. Local limiter의 경계값과 trusted client key를 검증하고, rendered Deployment가
-  exact `replicas: 1`·`Recreate`이며 HPA가 없고 rollout 중 old/new Pod가 겹치지 않음을
-  manifest·cluster integration으로 확인합니다.
+  exact `replicas: 1`·`RollingUpdate(maxSurge=1,maxUnavailable=0)`이며 HPA가 없음을 확인합니다.
+  Cluster integration은 steady state의 Ready endpoint가 하나이고 rollout 중에는 old/new Pod가
+  최대 둘까지 겹치며 각 Pod의 limiter와 합산 이론 상한이 계약 범위를 넘지 않음을 확인합니다.
 - Media: JPEG·PNG·정적 GIF의 정상·손상 corpus, 위조 MIME, oversized/pixel bomb, WebP,
   animated GIF, SVG·BMP·TIFF·HEIC/HEIF·AVIF, checksum mismatch, 검증 전 원본과
   `HIDDEN_RETAINED|RELEASED` usage가 계약대로 허용 또는 차단됩니다.
@@ -1366,10 +1380,10 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 | Tool·외부 시스템 | 적용 | D14, D15, D19 |
 | 문서 | 적용 | 일반 문서는 제품 결과, 이 문서는 기술 목표, 구현 뒤 project/domain/schema SOT가 현재 사실을 각각 소유 |
 
-활성 제품 값 결정은 없습니다. D1~D15·D17·D19와 API·DB·검증 계약은 기존 사용자 확정을
-유지하고, D16·D18의 공개 보호·활성화 후보만 사용자 재확정을 기다립니다. 이 후보가 확정되면
-API class·method 이름, Flyway version, exact IAM resource name과 환경별 값은 실행 계획이
-source와 함께 결정할 구현 단위이며 제품 결과를 다시 여는 질문이 아닙니다.
+활성 제품 값 결정은 없습니다. 제품 결과 15개는 사용자 확정 상태이고 D1~D19와 API·DB·검증
+계약은 Agent 기술 결정으로 닫혔습니다. API class·method 이름, Flyway version, exact IAM
+resource name과 환경별 값은 실행 계획이 source와 함께 배치할 구현 단위이며 제품 결과를
+다시 여는 질문이 아닙니다.
 
 ## 관련 문서와 근거
 
