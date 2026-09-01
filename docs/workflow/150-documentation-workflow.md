@@ -41,9 +41,9 @@ source를 함께 따릅니다.
 
 | 깊이 | 실제 효과 | 문서 고유 검증 |
 | --- | --- | --- |
-| 국소 | 오탈자, 한 링크, source로 확정된 현재 값처럼 의미 owner와 구조가 유지됨 | 대상 전체, 직접 source, 인접 구조를 편집 전후 대조 |
+| 국소 | 오탈자, 한 링크, source로 확정된 현재 값처럼 의미 owner와 구조가 유지됨 | 변경 단위, 직접 source와 영향받는 인접 구조를 편집 전후 대조 |
 | 일반 | 한 문서 또는 연결된 소수 문서의 내용·outline이 바뀌지만 canonical owner와 topology는 유지됨 | 의미·구조 gate, 관련 source·문서 범위와 작성자 두 번째 source-first 대조 |
-| 중대한 final | canonical SOT·workflow·router·runbook의 신설·대규모 재작성, 문서 간 owner·관계 변경, 전체 적용·coverage 주장 | 일반 깊이와 동결 후보의 fresh 독립 final 감사 |
+| 중대한 final | canonical SOT·workflow·router·runbook의 신설·대규모 재작성, 문서 간 owner·관계 변경, 전체 적용·coverage 주장 | 작업 실행 workflow가 동결한 검증 대상·영향 범위의 fresh 독립 final 감사 |
 | 중대한 구조 | 다문서 병합·분리·이동·삭제, canonical entrypoint·번호 group·탐색 topology 변경, 광범위 corpus 개편 | actual filesystem 전수 분류, 작성 전 fresh proposal 감사와 동결 후보 final 감사 |
 
 모든 깊이에서 현재 Agent가 원래 요청과 source를 직접 복원하고 작성 뒤 두 번째로
@@ -385,8 +385,9 @@ actual source에서 복원할 수 있어야 합니다. 전체 적용을 주장�
 ## 6. 결과 gate: 작성자의 두 번째 source-first 대조
 
 모든 Markdown 변경은 편집 뒤 작성자의 기존 판단이나 완료표부터 보지 않고, 이 작업
-깊이에서 정한 source·문서 범위를 다시 수집해 두 번째로 대조합니다. 이 단계는 routine
-변경의 문서 검증 owner이며 독립 verifier 호출로 대체하지 않습니다.
+깊이와 작업 실행 workflow의 검증 대상 admission에서 정한 변경 단위·직접 영향 범위와
+source를 다시 수집해 두 번째로 대조합니다. 이 단계는 routine 변경의 문서 검증 owner이며
+독립 verifier 호출로 대체하지 않습니다.
 
 | 방향 | 확인할 내용 |
 | --- | --- |
@@ -499,10 +500,11 @@ link로 서로 이동할 수 있는지도 확인합니다. 두 corpus를 합쳐 
   walkthrough를 포함합니다. 명령·API 이름의 존재, link 정합성과 하위 test 성공만으로 실행
   coverage를 대신하지 않습니다.
 - reviewer는 작성 맥락·진단·기대 답을 받지 않은 fresh context에서 원래 목적과 source로
-  범위를 독립 복원합니다.
+  전달받은 검증 대상의 직접 영향 범위를 독립 대조합니다. 대상 밖으로 전체 감사를
+  확대해야 하면 감사하지 않고 작업 실행 workflow의 사전 보고·허락 gate로 반환합니다.
 - routine 국소·일반 변경에는 이 전문 축을 추가하지 않습니다.
 - 계획·개발 verifier의 일반 문서 축은 중대한 문서 final을 대체하지 않습니다. 해당
-  verifier가 `$verify-documentation final`의 독립 입력·전체 감사 축·verdict까지 명시적으로
+  verifier가 `$verify-documentation final`의 독립 입력·동결 대상 감사 축·verdict까지 명시적으로
   수행한 경우에만 같은 specialist phase를 이름만 바꾸어 중복하지 않습니다.
 
 독립 감사의 축과 `통과`·`실패`·`판정 불가` 판정은 verify-documentation이 소유합니다.

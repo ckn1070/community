@@ -13,6 +13,13 @@ description: "완성 후보인 개발 결과를 명시 작업 지시, Plan mode 
 
 `AGENTS.md`, 관련 workflow·router, 원래 지시, 확정 계획·work item·design과 현재 source를 읽는다. 구현에 동반된 문서·SOT·router가 있으면 `docs/100-documentation-guide.md`와 `docs/workflow/150-documentation-workflow.md`도 읽는다. `git status --short --branch`, 비교 기준과 검증 환경을 확인한다. 작업 시작 전에 존재한 negative contract test·validator·정책 검사와 그 authoritative owner를 baseline snapshot에 포함한다. 주석 변경을 검증하면 작업 시작 baseline과 최종 후보를 모두 snapshot에 포함한다. 검증 중 범위 안 artifact가 바뀌면 이전 동적 증거를 재사용하지 않는다.
 
+작업 실행 workflow가 검증 계기, exact 대상, 직접 영향 범위와 제외를 먼저 동결했는지
+확인한다. 최초 완료 후보는 현재 요청이 승인한 개발 결과 전체가 대상이며 repository 전체가
+아닙니다. 일부 수정·보완·correction은 변경된 관찰 효과와 그 효과 때문에 결과가 달라질 수
+있는 직접 consumer·dependency만 대상입니다. 전체 결과나 repository로 확대해야 한다고
+판단하면 감사를 시작하지 않고 이유·exact 범위·기존 verdict 영향을 반환해 사전 보고와
+사용자 허락을 요구합니다.
+
 감사 입력이 계속 바뀌거나 열린 계획 결정 때문에 기대 계약을 확정할 수 없으면 현재
 snapshot에서 판정할 수 없는 범위와 영향을 명시한다. verifier 안에서 설계를 만들거나
 snapshot 변경을 추적하는 별도 lifecycle을 열지 않는다.
@@ -47,7 +54,8 @@ admission source·원래 결과에 미치는 영향·효과 전체 제거라는 
 
 ## 3. dependency closure
 
-diff와 계획의 파일 목록을 넘어서 다음을 추적한다.
+동결된 검증 대상의 diff와 계획 파일 목록을 넘어서, 그 대상에서 직접 도달하는 다음 책임을
+추적한다.
 
 - entry point부터 domain·application·port·adapter·persistence와 side effect
 - validation, 권한 거부, error mapping과 wiring
@@ -65,7 +73,8 @@ diff와 계획의 파일 목록을 넘어서 다음을 추적한다.
 
 ## 4. 발견 포화
 
-첫 결함에서 수정으로 넘어가지 않고 다음 축을 `충족`, `미충족`, `미검증`, `해당 없음`으로 닫는다.
+첫 결함에서 수정으로 넘어가지 않고 다음 축 중 동결한 대상에서 도달 가능한 축을 `충족`,
+`미충족`, `미검증`, `영향 범위 밖`으로 닫는다.
 
 - 목적·범위·계획 충분성
 - 동작·wiring·외부 계약
@@ -82,7 +91,9 @@ diff와 계획의 파일 목록을 넘어서 다음을 추적한다.
 
 ## 5. 동적 검증
 
-현재 snapshot에서 가장 좁은 test, 필요한 통합·보안·data 검증, 표준 build·quality, source·문서 전체 재읽기, `git diff --check`와 Git 상태를 순서대로 확인한다. test 존재나 과거 로그를 현재 성공으로 사용하지 않는다.
+현재 snapshot에서 가장 좁은 test, 필요한 통합·보안·data 검증, 표준 build·quality,
+영향받는 source·문서의 재읽기, `git diff --check`와 Git 상태를 순서대로 확인한다. test
+존재나 과거 로그를 현재 성공으로 사용하지 않는다.
 
 도구의 self-test는 구현 동작의 증거로만 사용한다. 도구의 필요성·독립 oracle·순효과
 또는 형제 책임의 존치를 증명한 것으로 확대하지 않으며, 타당한 표준 검사와 같은
@@ -106,18 +117,19 @@ custom audit JSON과 self-consistency verifier를 만들지 않는다.
 
 ## 6. 판정 결과
 
-- **통과**: 모든 필수 요구·축과 동적 검증이 충족됐습니다.
+- **통과**: 동결한 대상의 모든 필수 요구·도달 가능한 축과 동적 검증이 충족됐습니다.
 - **실패**: 하나 이상의 필수 요구나 축이 미충족입니다.
 - **판정 불가**: 필수 근거·환경·결정이 없어 미검증입니다.
 
-발견은 모든 검토 축을 닫은 뒤 `기대 → 실제 → 재현 근거 → 영향 → 닫는 조건`으로 한
-묶음에 제공한다. 국소 구현 결함인지 제품·API·data·security·운영·module 결정이 필요한
-계획 결함인지 분류하되 verifier가 수정이나 결정을 수행하지 않는다.
+발견은 동결한 대상에서 도달 가능한 모든 검토 축을 닫은 뒤 `기대 → 실제 → 재현 근거 →
+영향 → 닫는 조건`으로 한 묶음에 제공한다. 국소 구현 결함인지 제품·API·data·security·
+운영·module 결정이 필요한 계획 결함인지 분류하되 verifier가 수정이나 결정을 수행하지
+않는다. 대상 밖에서 우연히 관찰한 문제는 후보 실패로 만들지 않고 별도로 반환한다.
 
 이 판정을 작업 실행 workflow에 인계한다. `$develop`·`$dev-plan` routing, 보완 가능 여부,
 후보 무효화와 closure 횟수는 작업 실행 workflow가 판정하며 이 skill은 그 lifecycle을
 다시 정의하지 않는다.
 
 [완료 및 작업 보고 워크플로우](../../../docs/workflow/140-completion-reporting-workflow.md)의
-검증 경로에는 판정, 요구별 필수 발견·공백, 실제 실행 검증 범위와 snapshot의 문서·SOT·
-Git 사실만 제공한다.
+검증 경로에는 판정, 검증 계기·동결 대상·직접 영향 범위·제외, 요구별 필수 발견·공백,
+범위 밖 관찰과 snapshot의 문서·SOT·Git 사실만 제공한다.

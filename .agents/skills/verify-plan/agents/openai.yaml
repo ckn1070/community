@@ -2,4 +2,4 @@
 interface:
   display_name: "계획 검증"
   short_description: "현재 계획 단계의 목적·권위·artifact를 독립 감사"
-  default_prompt: "Use $verify-plan to audit the candidate's current plan stage against the raw objective and repository sources, keep recommendation, selection, confirmation, and mutation authority distinct, reject inferred closure, unapproved writes, and duplicate confirmation false-blocks, and assess implementation readiness only for execution-plan candidates."
+  default_prompt: "Use $verify-plan to freeze the verification occasion and exact plan target first, audit every relevant axis reachable from that target, use the whole plan only for an initial completed plan or pre-development final confirmation, and keep recommendation, selection, confirmation, and mutation authority distinct."
