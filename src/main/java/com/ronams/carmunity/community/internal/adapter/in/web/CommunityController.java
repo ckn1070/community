@@ -87,6 +87,54 @@ public class CommunityController {
     return ResponseEntity.noContent().build();
   }
 
+  @GetMapping("/posts/{postId}/comments")
+  public Map<String, Object> comments(
+      @PathVariable UUID postId,
+      @RequestParam(required = false) String cursor,
+      @RequestParam(defaultValue = "0") int size) {
+    return service.comments(postId, null, cursor, size);
+  }
+
+  @GetMapping("/comments/{commentId}/replies")
+  public Map<String, Object> replies(
+      @PathVariable UUID commentId,
+      @RequestParam(required = false) String cursor,
+      @RequestParam(defaultValue = "0") int size) {
+    return service.comments(null, commentId, cursor, size);
+  }
+
+  @PostMapping("/posts/{postId}/comments")
+  public ResponseEntity<Map<String, Object>> createComment(
+      @PathVariable UUID postId,
+      @RequestHeader("Idempotency-Key") UUID key,
+      @RequestBody CommentWriteRequest request,
+      Principal principal) {
+    Map<String, Object> result =
+        service.createComment(
+            actor(principal), postId, key, request.body(), request.parentCommentId());
+    UUID id = (UUID) result.get("id");
+    return ResponseEntity.created(URI.create("/api/v1/comments/" + id))
+        .eTag(etag(result))
+        .body(result);
+  }
+
+  @DeleteMapping("/comments/{commentId}")
+  public ResponseEntity<Void> deleteComment(@PathVariable UUID commentId, Principal principal) {
+    service.deleteContent(actor(principal), commentId, "COMMENT");
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/comments/{commentId}")
+  public ResponseEntity<Map<String, Object>> updateComment(
+      @PathVariable UUID commentId,
+      @RequestHeader(HttpHeaders.IF_MATCH) String ifMatch,
+      @RequestBody CommentWriteRequest request,
+      Principal principal) {
+    Map<String, Object> result =
+        service.updateComment(actor(principal), commentId, version(ifMatch), request.body());
+    return ResponseEntity.ok().eTag(etag(result)).body(result);
+  }
+
   private UUID actor(Principal principal) {
     if (principal == null) throw new ApiException(CommunityErrorCode.CONTENT_FORBIDDEN);
     try {
@@ -113,4 +161,6 @@ public class CommunityController {
   }
 
   public record PostWriteRequest(String title, JsonNode body) {}
+
+  public record CommentWriteRequest(String body, UUID parentCommentId) {}
 }

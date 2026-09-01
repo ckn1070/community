@@ -1,3 +1,4 @@
 /** notification 모듈입니다. 외부 발송 provider, template, 발송 설정과 오류 변환을 소유합니다. */
-@org.springframework.modulith.ApplicationModule(allowedDependencies = {})
+@org.springframework.modulith.ApplicationModule(
+    allowedDependencies = {"shared :: pagination", "shared :: error"})
 package com.ronams.carmunity.notification;
