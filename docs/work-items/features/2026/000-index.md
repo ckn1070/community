@@ -19,4 +19,4 @@
 | 013 | Done | [013 Staging application GitOps delivery](013-autoscaling-safe-application-delivery.md) | - | Repository와 live 기술 delivery 완료, 기능 qualification은 선택 runbook으로 분리 |
 | 014 | Done | [014 Staging 외부 HTTPS ingress](014-staging-external-https-ingress.md) | [014 설계](014-staging-external-https-ingress-design.md) | LBC·ALB·ACM·Cloudflare DNS-only 외부 경로 구축 완료 |
 | 015 | Done | [015 API 운영 추적성](015-api-operational-traceability.md) | - | 정상·거부·실패 API 완료 이벤트와 고객 상관관계 자동화 |
-| 016 | Proposed | [016 차량 비연결 일반 커뮤니티](016-general-community.md) | [016 해결 설계](016-general-community-design.md) | 결과 정의 종료, 제목·페이지·알림·Account 관계를 반영한 해결 설계 후보 검토 |
+| 016 | Proposed | [016 차량 비연결 일반 커뮤니티](016-general-community.md) | [016 해결 설계](016-general-community-design.md) | D1~D11과 미디어 3-table 범위 확정, 나머지 해결 설계 후보 검토 |

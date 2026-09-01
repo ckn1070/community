@@ -6,12 +6,15 @@
 - **설계 전체 확정 상태**: 미확정입니다.
 - **결과 정의**: 게시글 제목, 목록 페이지 이동과 알림 수신자를 포함한 15개 제품 결정이
   사용자 확정 상태로 닫혔습니다.
-- **개별 값 확정 상태**: D1과 D2의 기술 선택만 사용자 확정 상태이고, D3~D19는 Agent 기술
-  선택 상태입니다. 개별 값 확정은 해결 설계 단계 전체 확정으로 전파하지 않습니다.
+- **개별 값 확정 상태**: D1~D11의 기술 선택과 D12의 첫 범위 미디어 3-table 구성이 사용자
+  확정 상태이고, D12의 나머지 계약과 D13~D19는 Agent 기술 선택 상태입니다. 개별 값 확정은
+  해결 설계 단계 전체 확정으로 전파하지 않습니다.
 - **기술 선택 기준선**: D1~D19는 대안과 근거를 갖춰 Agent가 선택해 보존한 설계
-  기준선입니다. D1·D2의 개별 값 확정 상태와 D3~D19의 미확정 상태를 구분합니다.
+  기준선입니다. D1~D11과 D12 미디어 table 범위의 개별 확정 상태를 나머지 기술 선택 및
+  해결 설계 단계 전체의 미확정 상태와 구분합니다.
 - **보존과 보완**: 기존 결정과 영향받지 않은 설계는 유지하고, 제목·게시글 페이지 이동·
-  대화 알림 수신자·Account 공개 UUID 관계에 직접 의존하는 계약만 보완했습니다.
+  대화 알림 수신자·Account 공개 UUID 관계와 첫 범위 미디어 3-table 결정에 직접 의존하는
+  계약만 보완했습니다.
 - **현재 확인 대상**: 제목과 preview, 게시글 번호 page, 알림 수신자 정책, Account 공개 UUID
   FK와 댓글 관계 field를 포함한 D1~D19 전체의 exact 해결 설계 후보입니다.
 - **소비 gate**: 이 후보의 독립 계획 검증이 통과하고 사용자님이 exact 후보를 확정해야 실행
@@ -91,8 +94,8 @@ module·domain·API·data·transaction·security·media·notification·moderatio
 ## 보존된 기술 선택 요약
 
 아래 표는 Agent 기술 선택 기준선입니다. `선택`은 기술적으로 채택한 후보값이고 사용자 확정과
-같은 뜻이 아닙니다. D1과 D2의 개별 값은 사용자 확정 상태이지만 이 표나 해결 설계 단계
-전체를 확정하지 않습니다.
+같은 뜻이 아닙니다. D1~D11과 D12의 첫 범위 미디어 3-table 구성은 사용자 확정 상태이지만
+이 표나 해결 설계 단계 전체를 확정하지 않습니다.
 
 | 결정        | 기술 선택                                                                        | 보존하는 확장 경계                                    |
 | --------- | ---------------------------------------------------------------------------- | --------------------------------------------- |
@@ -105,7 +108,7 @@ module·domain·API·data·transaction·security·media·notification·moderatio
 | 반응        | 콘텐츠·사용자 unique choice와 `LIKE`·`DISLIKE`                                      | 새 reaction type 추가와 별도 ranking projection     |
 | 신고        | moderation 소유 case와 Community 숨김 공개 계약                                       | 후속 계정 제재·감사·appeal을 moderation에 추가            |
 | 서비스 안 알림  | notification 소유 inbox row를 대화 transaction에서 동기 저장하고 후보 수신자를 정책으로 정제        | 게시글별 알림 해제와 이메일·push를 후속 추가             |
-| 이미지       | private S3 staging/serving prefix, 비동기 검증·재인코딩·정리 job                        | storage adapter·delivery adapter와 media 종류 교체 |
+| 이미지       | `media_asset`·`media_usage`·`media_job`, private S3와 비동기 검증·정리 worker              | 관리자 action·개별 정합성 case와 media 종류를 후속 추가 |
 | 조회        | 게시글 번호 page와 대화·알림용 keyset cursor, author·반응 batch 조회                       | 검색·인기·추천 projection을 core write와 분리           |
 | 배포        | additive Flyway와 capability fail-close                                       | application rollback 시 새 schema·object 보존     |
 
@@ -525,8 +528,8 @@ Server는 정규화 request hash와 생성 content UUID를 영구 저장합니�
 제목이나 본문만 바꾼 재전송도 충돌로 식별합니다. Media upload도
 owner·key·declared metadata·checksum hash를 같은 방식으로 보존하고
 재시도는 media UUID의 현재 상태로 멱등 처리합니다. 이 key의 재사용 범위는 전역이 아니라
-각 module의 resource·operation입니다. 따라서 Community content 생성, Media upload와 관리자
-Media job action은 서로 다른 저장 경계에서 같은 UUID 값을 사용할 수 있습니다.
+각 module의 resource·operation입니다. 따라서 Community content 생성과 Media upload는 서로
+다른 저장 경계에서 같은 UUID 값을 사용할 수 있습니다.
 
 #### 관리자
 
@@ -535,14 +538,9 @@ Media job action은 서로 다른 저장 경계에서 같은 UUID 값을 사용�
 | `GET` | `/api/v1/admin/community/reports` | open/closed report cursor page |
 | `GET` | `/api/v1/admin/community/reports/{reportId}` | report와 검토용 target snapshot |
 | `PATCH` | `/api/v1/admin/community/reports/{reportId}` | `HIDE_CONTENT` 또는 `DISMISS` resolution |
-| `PATCH` | `/api/v1/admin/media/jobs/{jobId}` | `DEAD` job을 `RETRY` 또는 object 부재 확인 뒤 `RESOLVED`로 종결 |
 
-두 관리자 `PATCH`는 최신 응답 `ETag`를 `If-Match`로 제출해야 하고, stale version은 `412`로
-거부합니다. Media job `PATCH`는 추가로 UUID `Idempotency-Key`를 요구합니다. Client는 응답을
-받지 못해 같은 action을 재시도할 때 동일한 key를 다시 보내야 하며, 같은 job에서 같은 key를
-다른 action에 재사용하면 `409`로 거부합니다. Media job handler는 version 검사보다 먼저
-`(job, key)`의 기존 action을 조회합니다. 같은 action이면 저장된 결과를 다시 반환하고, 다른
-action이면 `409`로 거부하며, 기존 action이 없을 때만 `If-Match`를 검사해 새 전이를 수행합니다.
+관리자 report `PATCH`는 최신 응답 `ETag`를 `If-Match`로 제출해야 하고 stale version은
+`412`로 거부합니다. 첫 범위에는 media job 재처리·강제 종결 API를 제공하지 않습니다.
 
 모든 오류는 현재 RFC 9457 Problem Details와 project error code를 사용합니다. 외부 식별자 형식,
 권한 부족, state conflict, media 미준비·소유 불일치와 stale version을 서로 다른 code로
@@ -603,7 +601,35 @@ store가 생기면 그 projection이 preview를 소비할 수 있지만 core wri
 `community_post`는 필수 제목, 목록용 본문 미리보기와 canonical body를 함께 소유합니다.
 제목과 preview는 자주 읽는 scalar이고 body는 versioned JSONB이므로 역할을 섞지 않습니다.
 
-이 설계에서 새로 만드는 table은 아래 12개입니다. 이 절은 각 table의 목적, column type,
+#### 첫 범위의 미디어 table 수
+
+- **사용자 의견 요약**: 이미지 기능에 다섯 table을 두는 것은 첫 버전에 과하며,
+  `media_job`이 실제로 언제·누가·왜 사용하는지 확인한 뒤 세 table만으로 충분하다고
+  판단했습니다.
+- **Agent 답변·판단 요약**: S3 작업은 PostgreSQL transaction과 함께 commit할 수 없으므로
+  검증·삭제·재시도를 잃지 않는 `media_job`은 필요합니다. 반면 관리자 재처리 이력과 S3·DB
+  불일치별 영구 case는 현재 제품·운영 범위가 아니고, 기존 asset/job 식별자와 상태를
+  참조해 나중에 추가할 수 있으므로 선행 구현할 이유가 없습니다.
+- **최종 반영**: 첫 범위는 `media_asset`, `media_usage`, `media_job`만 만듭니다. 관리자용
+  `media_job_action`과 개별 `media_reconciliation_issue`는 만들지 않으며, job은 자동 재시도
+  뒤 해결하지 못한 작업을 `DEAD`와 비민감 오류 code·log·metric으로 남깁니다.
+
+- 배경: 핵심 업로드·게시글 연결·비동기 복구는 유지하면서 아직 없는 관리자 복구 화면과
+  개별 장애 case lifecycle을 schema에 미리 고정하지 않아야 합니다.
+- 검토한 선택지: 미디어 상태를 한 table에 합치기, asset·usage·job 세 table, 여기에 관리자
+  action과 reconciliation issue를 더한 다섯 table
+- 선택: asset·usage·job 세 table을 사용합니다.
+- 선택 근거: 파일 상태, 게시글 사용 관계와 재시도할 외부 작업은 서로 다른 생명주기라
+  분리가 필요하지만, 현재 자동 worker 밖의 사람 중심 처리 생명주기는 필요하지 않습니다.
+- 영향: 첫 범위에는 `DEAD` job을 관리자가 requeue·강제 종결하는 API와 개별 불일치 목록·
+  종결 이력이 없습니다. 운영자는 log·metric으로 실패를 발견하고 원인을 교정합니다.
+- 배제한 대안: 한 table은 파일 사실·사용 관계·할 일을 섞어 삭제와 재시도 무결성을
+  약화합니다. 다섯 table은 현재 수용 기준에 없는 운영 기능까지 구현하게 합니다.
+- 재검토 조건: 관리자 재처리 화면이나 영구 감사가 필요하면 `media_job_action`을, 여러 S3·DB
+  불일치를 각각 배정·종결·추적해야 하면 `media_reconciliation_issue`를 additive migration으로
+  추가합니다.
+
+이 설계에서 새로 만드는 table은 아래 10개입니다. 이 절은 각 table의 목적, column type,
 필수·nullable 여부, PK·FK·unique와 상태 제약까지 확정합니다. Constraint·index의 물리 이름과
 Flyway version 번호는 의미를 바꾸지 않는 실행 계획 값이므로 여기서 정하지 않습니다.
 이 구조는 확정된 제품 결과와 D1~D9의 module·상태 소유권을 현재 PostgreSQL 규칙으로 변환한
@@ -622,9 +648,7 @@ notification_inbox    -- content public UUID를 참조하되 module 간 DB FK는
 
 media_asset
 ├── media_usage
-├── media_job
-│   └── media_job_action
-└── media_reconciliation_issue
+└── media_job
 ```
 
 내부 PK는 `BIGINT GENERATED BY DEFAULT AS IDENTITY`, API에서 직접 주소로 쓰는 resource ID는
@@ -829,55 +853,12 @@ media_job(
   public_id UUID UNIQUE,
   asset_id BIGINT NULL FK -> media_asset.id,
   type VARCHAR(40) CHECK (type IN ('VERIFY', 'DELETE_STAGING', 'DELETE_DELIVERY', 'RECONCILE')),
-  status VARCHAR(30) CHECK (status IN ('READY', 'RUNNING', 'RETRY', 'DONE', 'DEAD', 'RESOLVED')),
+  status VARCHAR(30) CHECK (status IN ('READY', 'RUNNING', 'RETRY', 'DONE', 'DEAD')),
   attempt_count INTEGER DEFAULT 0 CHECK (attempt_count >= 0),
   lease_owner VARCHAR(200) NULL,
   lease_until TIMESTAMPTZ NULL,
   next_attempt_at TIMESTAMPTZ NULL,
   last_error_code VARCHAR(100) NULL,
-  created_at TIMESTAMPTZ,
-  updated_at TIMESTAMPTZ,
-  version BIGINT
-)
-
-media_job_action(
-  id BIGINT PK IDENTITY,
-  public_id UUID UNIQUE,
-  job_id BIGINT FK -> media_job.id,
-  request_id UUID,
-  expected_job_version BIGINT CHECK (expected_job_version >= 0),
-  action_type VARCHAR(30) CHECK (action_type IN ('REQUEUE', 'RESOLVE')),
-  from_status VARCHAR(30) CHECK (from_status IN ('RUNNING', 'DEAD')),
-  to_status VARCHAR(30) CHECK (to_status IN ('RETRY', 'RESOLVED')),
-  actor_type VARCHAR(20) CHECK (actor_type IN ('SYSTEM', 'ADMIN')),
-  actor_account_public_id UUID NULL FK -> account.public_id ON DELETE RESTRICT,
-  action_code VARCHAR(100),
-  created_at TIMESTAMPTZ,
-  UNIQUE(job_id, request_id),
-  CHECK ((actor_type = 'ADMIN' AND actor_account_public_id IS NOT NULL)
-         OR (actor_type = 'SYSTEM' AND actor_account_public_id IS NULL)),
-  CHECK ((action_type = 'REQUEUE' AND from_status = 'DEAD'
-          AND to_status = 'RETRY' AND actor_type = 'ADMIN')
-         OR (action_type = 'RESOLVE' AND from_status = 'DEAD'
-             AND to_status = 'RESOLVED' AND actor_type = 'ADMIN')
-         OR (action_type = 'RESOLVE' AND from_status = 'RUNNING'
-             AND to_status = 'RESOLVED' AND actor_type = 'SYSTEM'))
-)
-
-media_reconciliation_issue(
-  id BIGINT PK IDENTITY,
-  public_id UUID UNIQUE,
-  asset_id BIGINT NULL FK -> media_asset.id,
-  object_scope VARCHAR(30) CHECK (object_scope IN ('STAGING', 'DELIVERY')),
-  object_key VARCHAR(512),
-  issue_type VARCHAR(50) CHECK (issue_type IN ('ORPHAN_OBJECT', 'MISSING_OBJECT', 'METADATA_MISMATCH')),
-  status VARCHAR(20) CHECK (status IN ('OPEN', 'RESOLVED')),
-  first_seen_at TIMESTAMPTZ,
-  last_seen_at TIMESTAMPTZ,
-  resolution_code VARCHAR(100) NULL,
-  resolved_by_type VARCHAR(20) NULL CHECK (resolved_by_type IN ('SYSTEM', 'ADMIN')),
-  resolved_by_account_public_id UUID NULL FK -> account.public_id ON DELETE RESTRICT,
-  resolved_at TIMESTAMPTZ NULL,
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ,
   version BIGINT
@@ -899,42 +880,22 @@ Media 상태 check는 다음을 함께 보장합니다.
   저장된 byte size·width·height는 모두 양수이고 D14의 상한을 넘을 수 없습니다.
 - `media_usage.ACTIVE`에는 hidden/released 시각이 없고, `HIDDEN_RETAINED`에는 hidden 시각,
   `RELEASED`에는 released 시각이 필수입니다.
-- `media_job.RUNNING`에만 lease owner·expiry가 필요하고, `RETRY`에는 next attempt가 필요합니다.
-  VERIFY·DELETE job은 asset FK가 필수이고 전체 prefix를 대조하는 RECONCILE job만 asset FK가
-  null일 수 있습니다. Resolution 주체·code·시각은 중복 column으로 job에 다시 저장하지 않고
-  아래 action row가 단일 owner가 됩니다.
-- `media_job_action`은 관리자의 `DEAD -> RETRY|RESOLVED`와 worker의 자동
-  `RUNNING -> RESOLVED`를 이전·다음 상태, 실행 주체, code와 시각으로 보존합니다. `REQUEUE`는
-  `DEAD -> RETRY`와 `ADMIN`만, `RESOLVE`는 `RUNNING|DEAD -> RESOLVED`만 허용합니다. `ADMIN`은
-  account UUID가 필수이고 `SYSTEM`은 null입니다. `(job_id, request_id)` unique로 같은
-  재처리 요청을 멱등 처리하며, action이 저장되지 않으면 job 상태도 바뀐 것으로
-  commit하지 않습니다.
-- 관리자 action의 `request_id`는 API의 UUID `Idempotency-Key`를 그대로 저장하고,
-  `expected_job_version`은 `If-Match`의 version입니다. Worker의 자동 `RUNNING -> RESOLVED`는
-  application source에 고정한 UUID v5 namespace
-  `1964ddf0-cb31-45d2-a559-f6bffc25c462`에서
-  `job public UUID + attempt_count + RESOLVE`를 이름으로 사용합니다. Worker는 claim 뒤 읽은
-  version을 `expected_job_version`으로 저장하므로 같은 claim의 DB 결과가 불확실해 재실행돼도
-  같은 request ID와 version을 사용합니다. 관리자 handler와 worker는 모두 상태·version 검사
-  전에 기존 `(job_id, request_id)` action을 먼저 조회해 같은 action이면 저장된 결과로
-  수렴시키고, action 내용이 다르면 conflict로 거부합니다.
-- Action insert trigger는 대상 job row를 `FOR UPDATE`로 잠그고 현재 status·version이
-  `from_status`·`expected_job_version`과 일치하는지 확인합니다. 이어 같은 transaction에서
-  `WHERE id = ? AND status = from_status AND version = ?` 조건으로 job을 `to_status`로 갱신합니다.
-  Deferred constraint trigger는 commit 직전에 action의 `to_status`와 실제 job status가 같고,
-  job version이 `expected_job_version + 1`이며 `RESOLVED` job에는 정확히 한 `RESOLVE` action이
-  있는지 다시 확인합니다. 이 두 trigger로
-  action만 저장되거나 job만 전이되는 우회 write를 차단합니다.
-- Reconciliation issue의 open 중복은 `(object_scope, object_key, issue_type) WHERE status = 'OPEN'`
-  partial unique index로 막습니다. `RESOLVED`에는 같은 처리 주체 조건을 적용합니다.
+- `media_job.RUNNING`에만 lease owner·expiry가 필요하고, `RETRY`에는 next attempt와
+  `last_error_code`, `DEAD`에는 `last_error_code`가 필요합니다. `DONE|DEAD`는 worker가 다시
+  claim하지 않는 terminal 상태입니다. VERIFY·DELETE job은 asset FK가 필수이고 전체 prefix를
+  대조하는 RECONCILE job만 asset FK가 null일 수 있습니다.
+- Worker는 `READY -> RUNNING -> DONE` 또는 실패 시 `RUNNING -> RETRY -> RUNNING`을 반복하고,
+  최대 attempt를 넘기면 `DEAD`로 전환합니다. claim한 worker가 종료되면 lease 만료 뒤 다른
+  worker가 같은 job을 다시 claim하며, 별도 action row 없이 job version과 조건부 update로
+  중복 완료를 막습니다.
 
 Worker와 cleanup 조회를 위한 주요 index는 `media_asset(status, reservation_expires_at, id)`,
 `media_job(status, next_attempt_at, created_at, id) WHERE status IN ('READY', 'RETRY')`,
-`media_job(lease_until, id) WHERE status = 'RUNNING'`, `media_job_action(job_id, created_at, id)`입니다.
+`media_job(lease_until, id) WHERE status = 'RUNNING'`입니다.
 Job을 만들 때는 `(asset_id, type) WHERE asset_id IS NOT NULL AND status IN
-('READY', 'RUNNING', 'RETRY', 'DEAD')` partial unique index로 같은 asset·type의 미종결 job
+('READY', 'RUNNING', 'RETRY')` partial unique index로 같은 asset·type의 미종결 job
 중복을 막습니다. `type WHERE type = 'RECONCILE' AND asset_id IS NULL AND status IN
-('READY', 'RUNNING', 'RETRY', 'DEAD')` partial unique index로 전체 prefix RECONCILE job도 동시에
+('READY', 'RUNNING', 'RETRY')` partial unique index로 전체 prefix RECONCILE job도 동시에
 하나만 열리게 합니다.
 
 ### D13. Transaction과 concurrency
@@ -947,6 +908,12 @@ Job을 만들 때는 `(asset_id, type) WHERE asset_id IS NOT NULL AND status IN
 | reaction | target visibility 확인, unique choice upsert/delete |
 | report | target visibility 확인, duplicate 방지 report insert |
 | report resolution | 관리자·report version 검증, Community hide, 관련 open report 종결, media usage를 `HIDDEN_RETAINED`로 전환 |
+| media job claim | `READY|RETRY` 또는 lease가 만료된 `RUNNING` job을 조건부 version update로 `RUNNING` 전환하고 새 lease owner·expiry 기록. 첫 VERIFY claim은 `UPLOADED -> VERIFYING`, 재획득은 기존 `VERIFYING`을 요구합니다. 첫 DELETE_DELIVERY claim은 non-released usage가 없음을 확인해 `READY -> DELETE_PENDING`, 재획득은 기존 `DELETE_PENDING`을 요구합니다. |
+| VERIFY 성공 | deterministic delivery object의 checksum을 확인한 뒤 같은 DB transaction에서 lease owner·job version·`VERIFYING` asset을 검증하고 asset을 `READY`, VERIFY job을 `DONE`으로 전환하며 `DELETE_STAGING` job 하나를 저장 |
+| VERIFY 영구 거부 | 같은 검증 경계에서 asset을 `REJECTED`, VERIFY job을 `DONE`으로 전환하고 `DELETE_STAGING` job 하나를 저장 |
+| DELETE_STAGING 성공 | S3 delete가 성공하거나 이미 object가 없음을 확인한 뒤 lease owner·job version을 검증해 job만 `DONE`으로 전환하고 asset의 논리 staging key와 상태는 바꾸지 않음 |
+| DELETE_DELIVERY 성공 | S3 delete가 성공하거나 이미 object가 없음을 확인한 뒤 lease owner·job version과 `DELETE_PENDING` asset을 검증해 asset을 `DELETED`, job을 `DONE`으로 함께 전환 |
+| RECONCILE 종료 | 안전한 object 수렴 뒤 lease owner·job version을 검증해 `DONE`, 자동 복구할 수 없는 불일치가 남으면 aggregate error code와 함께 `DEAD`로 전환 |
 
 DB transaction 안에서는 S3, email, push와 HTTP 같은 외부 I/O를 호출하지 않습니다.
 Notification inbox 저장은 외부 전송이 아닌 같은 datasource의 DB insert이므로 transaction에
@@ -960,7 +927,10 @@ Notification inbox 저장은 외부 전송이 아닌 같은 datasource의 DB ins
 - parent/root와 hide target은 읽고 검증하는 동안 필요한 row를 lock해 삭제·숨김과 새 reply가
   서로 통과하지 않게 합니다.
 - job lease가 만료되면 다른 worker가 다시 claim할 수 있고, S3 put/delete는 deterministic key와
-  상태 확인으로 idempotent하게 재실행합니다.
+  checksum·HEAD·object 부재 확인으로 idempotent하게 재실행합니다. 외부 효과 뒤 DB transaction이
+  실패하면 job은 기존 `RUNNING` 상태와 lease를 유지하고, 만료 뒤 새 worker가 같은 외부 효과를
+  재확인한 다음 위 조건부 transaction을 다시 시도합니다. 이전 lease owner의 늦은 완료는
+  owner·version 조건이 맞지 않아 asset이나 job을 갱신하지 못합니다.
 
 ### D14. Image upload, 검증과 전달
 
@@ -1112,21 +1082,22 @@ Issuer lifecycle은 다음을 고정합니다.
 - DB 저장 실패는 해당 use case 전체를 rollback합니다. S3 실패는 Community transaction을
   rollback시키지 않고 media job을 `RETRY`로 남깁니다.
 - Worker는 exponential backoff와 최대 attempt 뒤 `DEAD`로 전환합니다. Media module이
-  `DEAD`와 reconciliation issue의 canonical owner이며, 일반 API 성공이나 완료 metric으로
-  숨기지 않습니다.
+  job 상태와 `last_error_code`의 canonical owner이며 `DEAD`를 일반 API 성공이나 완료
+  metric으로 숨기지 않습니다. 첫 범위에는 `DEAD`를 application API로 다시 여는 전이가
+  없습니다.
 - READY DB update 전에 delivery put이 성공해 orphan object가 생겨도 deterministic key로 retry가
   수렴하고 periodic reconciliation이 DB asset/usage/job과 staging/delivery prefix 차이를
-  탐지하고 durable `media_reconciliation_issue`를 생성·갱신합니다.
-- 관리자는 최신 job `ETag`를 `If-Match`로 제출할 때만 `DEAD -> RETRY`로 requeue할 수
-  있습니다. Delete/reconcile job은 object HEAD/LIST로
-  부재를 확인한 경우에만 `RESOLVED`로 종결할 수 있고, non-released usage가 있거나 object
-  존재를 확인하지 못하면 종결을 거부합니다. Verify job의 비복구 입력은 asset을 `REJECTED`로 전환하고
-  staging cleanup job까지 저장한 뒤 `RESOLVED`로 닫습니다.
-- 관리자 Requeue·resolution은 API `Idempotency-Key`와 관리자 UUID를, worker의 자동
-  resolution은 job·attempt에서 결정적으로 만든 request ID와 `SYSTEM` 주체를
-  `media_job_action`에 이전/새 상태·시각·non-sensitive action code와 함께 남깁니다.
-  Open reconciliation issue는 대응 job이 `DONE` 또는 검증된 `RESOLVED`가 될 때만 함께
-  닫습니다.
+  탐지합니다. 참조가 없는 object 삭제처럼 안전한 수렴은 같은 `RECONCILE` job이 수행하고
+  `DONE`으로 닫습니다. Missing object나 metadata mismatch처럼 자동 복구가 안전하지 않은
+  불일치가 하나라도 남으면 job을 `DEAD`로 전환하고 비민감 aggregate error code와 건수만
+  structured event·metric으로 남깁니다. Object key는 log에 기록하지 않습니다.
+- Verify 입력이 영구적으로 잘못됐으면 asset을 `REJECTED`로 전환하고 staging cleanup job을
+  저장한 뒤 해당 VERIFY job을 `DONE`으로 닫습니다. 일시적 S3·decode 실패만 `RETRY`를 거쳐
+  최대 attempt 뒤 `DEAD`가 됩니다.
+- 운영자는 `DEAD` metric·event를 통해 원인을 조사하고 object·설정 같은 외부 원인을
+  교정합니다. 현재에는 관리자 requeue·강제 종결과 개별 불일치 관리 화면을 제공하지 않으며,
+  새 domain event나 다음 주기 reconciliation이 만드는 새 job은 이전 `DEAD` 기록을 덮어쓰지
+  않습니다.
 - Inbox insert가 실패하면 comment/reply도 rollback되므로 알림 없는 성공 대화를 만들지
   않습니다.
 - 표시 이름 batch 조회나 DB가 실패하면 content를 임의 `익명`으로 성공 응답하지 않고 공통
@@ -1153,8 +1124,9 @@ Issuer lifecycle은 다음을 고정합니다.
   기존 account/auth table은 변경하지 않고, 새 table 쪽에서 이미 unique인
   `account(public_id)`를 참조하는 FK만 추가합니다.
 - Runtime role에는 새 table DML만 부여하고 schema DDL은 기존 migration job이 소유합니다.
-- Community endpoint는 schema, media bucket, OIDC identity·overlap/rollback, worker와 DEAD
-  recovery, replica 수와 anonymous rate·egress 상한 capability가 모두 준비됐을 때만 활성화합니다.
+- Community endpoint는 schema, media bucket, OIDC identity·overlap/rollback, worker와 `DEAD`
+  metric·structured event를 통한 운영 통지, replica 수와 anonymous rate·egress 상한 capability가
+  모두 준비됐을 때만 활성화합니다.
   Image 없는 부분 기능을 먼저 공개해 현재 제품 수용 기준을 축소하지 않습니다.
 - Community migration 전에 대상 DB의 V7·V10 checksum과 `auth_event.event_type` 값 분포가
   현재 source와 일치해 기존 결함의 영향을 받지 않음을 증명하거나,
@@ -1275,6 +1247,8 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 | 게시글별 알림 해제 | Notification에 post·recipient preference를 추가해 후보 수신자를 filter | Community의 수신 후보와 기존 inbox row를 유지 |
 | 검색·인기·추천 | versioned body reader와 reaction source를 소비하는 cursor read projection 추가 | Core write와 현재 번호 page 계약 변경 불필요 |
 | 영상·파일 | media type별 검증 adapter와 새 body block 추가 | 기존 IMAGE asset과 v1 post block 해석 유지 |
+| 관리자 media job 재처리·감사 | `media_job_action`을 추가해 job·request·actor·상태 전이를 보존 | 기존 `media_job.public_id`와 terminal 상태를 참조해 additive 도입 가능 |
+| S3·DB 불일치 개별 추적 | `media_reconciliation_issue`를 추가해 발견·배정·종결 lifecycle을 소유 | 기존 RECONCILE job과 asset public UUID를 source로 사용 가능 |
 | 이메일·push | inbox source를 소비하는 delivery lifecycle 추가 | Community transaction과 기존 in-app read state 유지 |
 | 계정 제재·appeal | moderation case에 actor·decision·appeal lifecycle을 추가하고 `HIDDEN_RETAINED` media를 복원 또는 정책에 따라 파기 | Community는 effective hide와 private 원본 관계를 유지 |
 | CDN | stable media application URL 뒤 delivery/cache adapter 추가 | Post payload와 media UUID 유지. 숨김 직후 차단 요구를 유지하려면 cache purge·TTL 계약을 함께 재결정 |
@@ -1303,7 +1277,8 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 - Media: 위조 MIME, oversized/pixel bomb, SVG/GIF, checksum mismatch, 검증 전 원본과
   `HIDDEN_RETAINED|RELEASED` usage가 노출되지 않습니다.
 - Recovery: worker 중단·재시작, S3 일시 실패와 중복 job 실행이 object/DB 상태를 잃거나 중복
-  공개하지 않습니다.
+  공개하지 않습니다. Reconciliation의 안전한 자동 복구, 해결 불가능한 `DEAD`·error
+  code·metric과 terminal job 비재실행을 검증합니다.
 - Query: 실제 PostgreSQL에서 게시글 page 기본값·음수 page·size 하한/상한·전체 건수·전체 범위
   밖의 유효 page와 나머지 cursor 경계, 정렬, tombstone과 batch 조회가 N+1 없이 계약대로
   동작합니다.
@@ -1323,7 +1298,7 @@ write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombsto
 | 사용자·업무 | 적용 | 확정된 15개 제품 결과, 목표 불변식과 visibility·알림·신고 계약에 적용 |
 | API | 적용 | D10과 API payload 핵심 계약의 title·preview·tombstone projection |
 | Domain | 적용 | D2~D9 |
-| Data | 적용 | D12의 `community_post.title`, `body_preview`, body 무결성과 D13 |
+| Data | 적용 | D12의 10개 table, 미디어 3-table 범위와 무결성, D13 transaction |
 | 구조 | 적용 | D1, D19 |
 | Security·privacy | 적용 | D14~D16 |
 | 품질·성능 | 적용 | D11의 게시글 offset page, 나머지 keyset·batch 조회와 검증 가능성 계약 |
