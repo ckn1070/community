@@ -38,11 +38,27 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  servlet:
+    multipart:
+      max-file-size: 10485760B
+      max-request-size: 11534336B
+      file-size-threshold: 0
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
 carmunity:
+  community:
+    # 기반 배포와 사용자 공개 활성화를 분리합니다.
+    enabled: ${COMMUNITY_ENABLED:false}
+    cursor-hmac-secret: ${COMMUNITY_CURSOR_HMAC_SECRET:}
+    trusted-proxy-cidrs: ${COMMUNITY_TRUSTED_PROXY_CIDRS:}
+    media:
+      bucket: ${COMMUNITY_MEDIA_BUCKET:}
+      region: ${COMMUNITY_MEDIA_REGION:ap-northeast-2}
+      role-arn: ${COMMUNITY_MEDIA_ROLE_ARN:}
+      token-path: ${COMMUNITY_MEDIA_WEB_IDENTITY_TOKEN_PATH:/var/run/secrets/aws/serviceaccount/token}
   auth:
     jwt:
       issuer: ${AUTH_JWT_ISSUER:carmunity-api}

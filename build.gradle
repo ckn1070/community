@@ -49,6 +49,9 @@ dependencies {
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.81'
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'com.resend:resend-java:v4.15.0'
+	implementation platform('software.amazon.awssdk:bom:2.39.1')
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:sts'
 	implementation 'org.springframework.modulith:spring-modulith-api'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
 	compileOnly 'org.projectlombok:lombok'

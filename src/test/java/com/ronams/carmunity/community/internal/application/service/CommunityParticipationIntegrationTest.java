@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ronams.carmunity.media.api.PostMediaUsage;
 import com.ronams.carmunity.moderation.internal.application.ModerationErrorCode;
 import com.ronams.carmunity.moderation.internal.application.ModerationService;
 import com.ronams.carmunity.shared.error.ApiException;
@@ -16,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     properties = {
@@ -31,7 +29,6 @@ class CommunityParticipationIntegrationTest extends PostgreSqlIntegrationTestSup
   @Autowired CommunityService community;
   @Autowired ModerationService moderation;
   @Autowired JdbcClient jdbc;
-  @MockitoBean PostMediaUsage mediaUsage;
 
   private final ObjectMapper json = new ObjectMapper();
   private UUID author;

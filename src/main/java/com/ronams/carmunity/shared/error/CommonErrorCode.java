@@ -15,6 +15,7 @@ public enum CommonErrorCode implements ErrorCode {
       HttpStatus.METHOD_NOT_ALLOWED, "Method not allowed", "지원하지 않는 HTTP method입니다."),
   UNSUPPORTED_MEDIA_TYPE(
       HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", "지원하지 않는 Content-Type입니다."),
+  PAYLOAD_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "Payload too large", "요청 본문이 허용 크기를 초과했습니다."),
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", "예상하지 못한 서버 오류입니다.");
 
   private final HttpStatus status;

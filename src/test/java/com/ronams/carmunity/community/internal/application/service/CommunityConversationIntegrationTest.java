@@ -3,7 +3,6 @@ package com.ronams.carmunity.community.internal.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ronams.carmunity.media.api.PostMediaUsage;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
 import java.util.Map;
 import java.util.UUID;
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     properties = {
@@ -25,7 +23,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class CommunityConversationIntegrationTest extends PostgreSqlIntegrationTestSupport {
   @Autowired CommunityService service;
   @Autowired JdbcClient jdbc;
-  @MockitoBean PostMediaUsage mediaUsage;
   private final ObjectMapper json = new ObjectMapper();
   private UUID postAuthor;
   private UUID commenter;

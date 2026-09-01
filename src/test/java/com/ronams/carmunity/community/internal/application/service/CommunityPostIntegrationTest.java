@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ronams.carmunity.community.internal.application.CommunityErrorCode;
-import com.ronams.carmunity.media.api.PostMediaUsage;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
 import java.util.List;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     properties = {
@@ -31,7 +29,6 @@ class CommunityPostIntegrationTest extends PostgreSqlIntegrationTestSupport {
 
   @Autowired CommunityService service;
   @Autowired JdbcClient jdbc;
-  @MockitoBean PostMediaUsage mediaUsage;
 
   private final ObjectMapper json = new ObjectMapper();
   private UUID author;

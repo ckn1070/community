@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * Spring MVC 예외를 프로젝트 공통 Problem Details 응답으로 변환합니다.
@@ -88,6 +89,13 @@ public class ApiExceptionHandler {
       HttpMediaTypeNotSupportedException exception, WebRequest request) {
     return toResponseEntity(
         responseFactory.create(CommonErrorCode.UNSUPPORTED_MEDIA_TYPE, request));
+  }
+
+  /** multipart parser가 상한을 넘긴 요청을 controller 진입 전에 413으로 종료합니다. */
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  ResponseEntity<ProblemDetail> handleMaxUploadSizeExceeded(
+      MaxUploadSizeExceededException exception, WebRequest request) {
+    return toResponseEntity(responseFactory.create(CommonErrorCode.PAYLOAD_TOO_LARGE, request));
   }
 
   /**

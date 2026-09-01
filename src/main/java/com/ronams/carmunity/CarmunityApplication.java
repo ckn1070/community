@@ -3,10 +3,12 @@ package com.ronams.carmunity;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.modulith.Modulithic;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /** Spring Boot와 Spring Modulith가 사용하는 애플리케이션 루트입니다. */
 @Modulithic(sharedModules = "shared")
 @SpringBootApplication
+@EnableScheduling
 public class CarmunityApplication {
 
   /**

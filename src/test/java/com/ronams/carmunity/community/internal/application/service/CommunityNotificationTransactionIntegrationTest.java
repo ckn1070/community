@@ -8,7 +8,6 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.doThrow;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ronams.carmunity.media.api.PostMediaUsage;
 import com.ronams.carmunity.notification.api.CommunityConversationNotification;
 import com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport;
 import java.util.UUID;
@@ -32,7 +31,6 @@ class CommunityNotificationTransactionIntegrationTest extends PostgreSqlIntegrat
   @Autowired CommunityService service;
   @Autowired JdbcClient jdbc;
   @MockitoBean CommunityConversationNotification notifications;
-  @MockitoBean PostMediaUsage mediaUsage;
 
   private final ObjectMapper json = new ObjectMapper();
   private UUID postAuthor;
