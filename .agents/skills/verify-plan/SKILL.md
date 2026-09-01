@@ -15,9 +15,10 @@ description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 �
 `AGENTS.md`, 관련 workflow·router, 최초 요청과 확정 변경, work item·design, 관련 source와
 [작업 문서 생명주기](../../../docs/work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)를
 읽는다. 계획이 문서·SOT·router를 만들거나 바꾸면 `docs/100-documentation-guide.md`와
-`docs/workflow/150-documentation-workflow.md`도 읽는다. 최초 목적과 사용자 선택을 복원할
-authoritative input이 없으면 계획 문구로 추측하지 않고 판정 불가로 끝낸다. 후보 계획,
-후보가 갱신한 SOT·router와 이전 verifier 결론은 사용자 선택 source가 아니다.
+`docs/workflow/150-documentation-workflow.md`도 읽는다. 최초 목적, 사용자 선택과 단계 확정을
+복원할 authoritative input이 없으면 계획 문구로 추측하지 않고 판정 불가로 끝낸다. 후보
+계획, 후보가 갱신한 SOT·router와 이전 verifier 결론은 사용자 선택이나 단계 확정 source가
+아니다.
 
 `git status --short --branch`, 계획 문서와 핵심 source 상태를 확인한다. 검증 중 계획이나 판단 근거가 바뀌면 기존 결론을 재사용하지 않는다.
 
@@ -65,7 +66,7 @@ verifier는 자신의 identity와 실제 thread·handoff에서 이 값을 대조
 
 - 사용자가 exact 차원과 값을 긍정적으로 선택함
 - 외부 공식 계약·현재 저장소 source·사용자 상위 결정이 허용 값을 하나로 제한함
-- source·대안·trade-off에 근거한 Agent 소유 기술 결정
+- source·대안·trade-off에 근거해 Agent가 선택한 기술값
 - 프로젝트 외부 판단이 필요한 열린 사용자 결정
 - source가 없어 권위 분류 불가
 
@@ -73,12 +74,19 @@ verifier는 자신의 identity와 실제 thread·handoff에서 이 값을 대조
 인접 승인도 다른 결정에 전파하지 않는다. 사용자가 exact 추천 묶음을 승인한 경우에는 그
 묶음만 선택됨으로 기록한다.
 
+별도로 `exact 값·결정 블록 → 사용자 값 확정 source`와 각 계획 단계의 `현재 단계 결과 후보
+전체의 exact 범위 → 사용자 단계 확정 source → 다음 단계 전환`을 분리해 복원한다. 사용자
+선택, Agent 기술 선택, source 제약과 verifier 판정은 단계 확정을 대신하지 않는다. 특정
+결정에 직접 붙은 승인은 해당 결정만 값 확정하고 인접 결정이나 단계 전체로 전파하지 않는다.
+반대로 현재 단계 후보가 하나로 복원되는 상태에서 사용자가
+그 결과를 확정하고 다음 단계로 진행하라고 명시했으면 추가 재확인을 요구하지 않는다.
+
 ## 3. dependency closure와 검토 축
 
 계획의 파일 목록에 한정하지 않고 caller, 외부 계약, data, build, deployment, operations, test와 책임 문서를 추적한다. 다음 축을 `충족`, `미충족`, `미검증`, `해당 없음`으로 닫는다.
 
 - 최초 목적·범위와 양방향 추적성
-- 결정별 값·권위 source·사용자 선택 상태와 관련 문서 전체의 일치
+- 결정별 추천·선택 주체와 값, 확정 주체·범위·source 및 관련 문서 전체의 일치
 - 정상·실패·경계 동작과 기존 회귀
 - 구조·모듈·외부 계약
 - data·transaction·동시성
@@ -121,8 +129,9 @@ API path, HTTP method, field, enum과 표준 식별자처럼 exact 구현·검�
 `Planned`, `계획 확정` 또는 동등 의미로 기록하면 기술적으로 완전해도 필수 결함이다. Work
 item만이 아니라 design, router, product·project projection까지 같은 권위 상태인지 확인한다.
 반대로 사용자가 exact 값을 선택한 항목은 일반적인 확인 금지 문구를 이유로 다시 열지 않는다.
-Agent 소유 기술 결정은 source·대안·trade-off·재검토 조건과 독립 검증으로 감사하며, 사용자
-선택으로 잘못 귀속하거나 기술 선택 자체를 승인 질문으로 넘기지 않는다.
+Agent 소유 기술 선택은 source·대안·trade-off·재검토 조건과 독립 검증으로 감사하며, 사용자
+선택으로 잘못 귀속하거나 기술 선택 자체를 선택 질문으로 넘기지 않는다. 이 기술 선택이나
+검증을 사용자 단계 확정으로 소비하면 필수 결함이다.
 
 제품 표면과 무관한 축은 제외 이유를 남긴다. Best Practice는 이름난 패턴이 아니라 예방하는 실패, trade-off와 현재 source에 연결한다.
 
@@ -144,9 +153,9 @@ Agent 소유 기술 결정은 source·대안·trade-off·재검토 조건과 독
 `통과`는 현재 artifact가 자신의 단계·상태 계약을 충족한다는 뜻이다. 열린 사용자 결정이
 정확히 표시된 결과 정의 후보도 현재 단계 감사를 통과할 수 있지만 그 단계 closure나
 `Planned` 자격은 없다. `Planned` 자격은 실행 계획 또는 계획 완료 후보에서 모든
-사용자 소유 값의 사용자 선택 또는 독립 source 제약, Agent 소유 기술 결정의 근거·대안·
-trade-off와 계획 품질 통과가 함께 있을 때만 별도로 반환한다. Verifier verdict 자체는 사용자
-선택이나 상태 승격 권한이 아니다.
+사용자 소유 값의 사용자 선택 또는 독립 source 제약, Agent 소유 기술 선택의 근거·대안·
+trade-off, 계획 품질 통과와 exact 실행 계획 후보에 대한 사용자 확정이 함께 있을 때만
+별도로 반환한다. Verifier verdict 자체는 사용자 선택·단계 확정이나 상태 승격 권한이 아니다.
 
 ## 5. 판정 결과
 
