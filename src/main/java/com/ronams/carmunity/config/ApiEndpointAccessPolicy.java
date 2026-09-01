@@ -8,6 +8,11 @@ final class ApiEndpointAccessPolicy {
 
   private static final List<PublicOperation> PUBLIC_OPERATIONS =
       List.of(
+          new PublicOperation(HttpMethod.GET, "/api/v1/boards/free/posts"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/posts/{postId}"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/posts/{postId}/comments"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/comments/{commentId}/replies"),
+          new PublicOperation(HttpMethod.GET, "/api/v1/media/images/{mediaId}/content"),
           new PublicOperation(HttpMethod.POST, "/api/v1/members"),
           new PublicOperation(HttpMethod.POST, "/api/v1/auth/sessions"),
           new PublicOperation(HttpMethod.POST, "/api/v1/auth/sessions/refresh"),

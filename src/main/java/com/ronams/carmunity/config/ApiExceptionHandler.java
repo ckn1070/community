@@ -122,7 +122,11 @@ public class ApiExceptionHandler {
   }
 
   private ResponseEntity<ProblemDetail> toResponseEntity(ProblemDetail problemDetail) {
-    return ResponseEntity.status(problemDetail.getStatus()).body(problemDetail);
+    ResponseEntity.BodyBuilder response = ResponseEntity.status(problemDetail.getStatus());
+    if (problemDetail.getStatus() == 429) {
+      response.header("Retry-After", "1");
+    }
+    return response.body(problemDetail);
   }
 
   private void logUnexpectedException(Exception exception, WebRequest request) {
