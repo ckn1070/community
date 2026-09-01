@@ -36,7 +36,7 @@
 - `/api/**`는 기본적으로 Bearer JWT 인증을 요구합니다. 공개 API는 보안 설정에서 명시적으로만 엽니다.
 - 이메일 인증 요청/완료 API는 가입과 활성화 사이의 사용자가 호출해야 하므로 public API로 열지만, account 존재 여부와 발송 실패 세부사항은 status/body에 노출하지 않습니다.
 - 비밀번호 재설정 요청/완료 API는 로그인할 수 없는 사용자가 호출해야 하므로 public API로 열지만, account 존재 여부, account 상태, 발송 실패 세부사항은 status/body에 노출하지 않습니다.
-- 로그인과 두 복구 요청은 현재 계정 존재·상태에 따라 password 검증, DB 작업과 provider 호출 비용이 달라 timing 균일성까지 보장하지 않습니다. 이 보안 경계는 [계정 열거 timing Bug](../work-items/bugs/2026/009-authentication-enumeration-timing.md)가 소유합니다.
+- 로그인과 두 복구 요청은 현재 계정 존재·상태에 따라 password 검증, DB 작업과 provider 호출 비용이 달라 timing 균일성까지 보장하지 않습니다. 이 문서가 현재 보안 경계를 소유하고, timing 균일화의 수정 상태와 완료 조건은 [009 계정 열거 timing Bug](../work-items/bugs/2026/009-authentication-enumeration-timing.md)에서 추적합니다.
 - 비밀번호 변경 전 계정은 로그인은 가능하지만 `PUT /api/v1/auth/password` 외 인증이 필요한 일반·관리자 보호 API 접근은 차단합니다. `permitAll` public endpoint는 별도입니다.
 - Refresh token 재발급 시에는 token claim을 신뢰하지 않고 DB의 최신 account 상태, role, 비밀번호 변경 필요 여부를 다시 조회합니다.
 
@@ -205,7 +205,12 @@ Spring Security의 기본 `SCOPE_` prefix 변환은 사용하지 않습니다.
 
 현재 동일 공개 응답은 직접적인 계정 존재 노출만 막습니다. 부적격 요청은 조기에 반환하고 적격 요청은 token 저장과 동기 notification까지 수행하므로 timing side channel은 남아 있습니다.
 
-비밀번호 재설정 token TTL은 30분, 같은 account의 재요청 cooldown은 60초입니다. cooldown 중에는 기존 open token을 유지하고 새 token 발급·발송을 하지 않으며, cooldown 이후에는 기존 open token을 폐기한 뒤 새 token을 발급합니다. 현재 실행값은 `RequestPasswordResetService`가 소유하고 이 정책을 바꾸면 service 상수, 관련 test와 [비밀번호 재설정 설계](../work-items/features/2026/012-account-password-reset-design.md#d4-ttl과-cooldown)를 함께 확인합니다.
+비밀번호 재설정 token TTL은 30분, 같은 account의 재요청 cooldown은 60초입니다. cooldown 중에는
+기존 open token을 유지하고 새 token 발급·발송을 하지 않으며, cooldown 이후에는 기존 open
+token을 폐기한 뒤 새 token을 발급합니다. 이 문서가 현재 정책값을 소유하고
+`RequestPasswordResetService` 상수와 관련 test가 이를 구현합니다.
+[012 비밀번호 재설정 설계](../work-items/features/2026/012-account-password-reset-design.md#d4-ttl과-cooldown)는
+이 값을 선택한 당시 근거를 확인할 때만 사용합니다.
 
 ## 상태별 접근 예시
 
@@ -286,4 +291,4 @@ Controller에서 `if admin` 같은 권한 분기를 반복하지 않습니다.
 - **감사 이벤트 정책**: [Auth Event 정책](120-auth-event-policy.md)
 - **현재 데이터 구조**: [Account 인증/인가 데이터 모델](../project/220-account-auth-data-model.md)
 - **구현 기술 기준**: [Spring Security](../tech-stack/220-spring-security.md)
-- **구현 결과**: [이메일 인증](../work-items/features/2026/008-member-email-verification.md), [관리자 계정 기반](../work-items/features/2026/010-admin-account-foundation.md)
+- **최초 구현 기록**: [008 이메일 인증](../work-items/features/2026/008-member-email-verification.md), [010 관리자 계정 기반](../work-items/features/2026/010-admin-account-foundation.md)

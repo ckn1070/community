@@ -53,7 +53,7 @@
 
 - 선택: 일반 회원 자체 가입 시 account는 `PENDING`으로 생성합니다.
 - 왜 이 결론인가: 이메일 인증을 후속 흐름으로 연결하는 제품 방향에서는 가입 직후 완전 활성 상태인 `ACTIVE`보다, 이메일 확인이 필요한 상태인 `PENDING`이 도메인 의미에 맞습니다.
-- 구현 기준: 가입 API는 `PENDING` account, profile, password credential, `ROLE_MEMBER` role assignment를 생성합니다. 이메일 인증 완료 흐름은 [008-member-email-verification-design.md](008-member-email-verification-design.md)가 소유합니다.
+- 구현 기준: 가입 API는 `PENDING` account, profile, password credential, `ROLE_MEMBER` role assignment를 생성합니다. 현재 이메일 인증 완료 흐름과 상태 전이는 [110 Account 인증/인가 정책](../../../domain/110-account-auth-policy.md)이 소유하며, [008 이메일 인증 설계](008-member-email-verification-design.md)는 그 흐름을 선택한 당시 근거를 보존합니다.
 - 이메일 인증 연계: 인증 전에는 커뮤니티 쓰기 기능을 제한하고, 인증 메일 재발송과 이메일 인증 완료 흐름을 허용합니다.
 
 | 선택지 | 평가 | 선택 여부 |

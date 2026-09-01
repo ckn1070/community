@@ -34,7 +34,7 @@
 - 실패를 처리하는 최종 경계에서 한 번만 책임 있게 기록합니다.
 - 예상 가능한 4xx 오류는 기본적으로 `ERROR` stack trace를 남기지 않습니다.
 - 예상하지 못한 5xx 오류는 공통 예외 핸들러에서 `ERROR`로 기록합니다.
-- 현재 일반 `Exception`은 이 계약을 지키지만 5xx `ApiException`은 ERROR logging을 우회합니다. 구현 보완은 [5xx ApiException 공통 logging 누락](../work-items/bugs/2026/004-api-exception-5xx-logging.md)이 소유합니다.
+- 현재 일반 `Exception`은 이 계약을 지키지만 5xx `ApiException`은 ERROR logging을 우회합니다. 이 문서가 logging 기준과 현재 예외를 소유하고, 수정 상태는 [004 5xx ApiException 공통 logging 누락](../work-items/bugs/2026/004-api-exception-5xx-logging.md)에서 추적합니다.
 - 로그 level은 심각도가 아니라 운영자가 취해야 할 조치와 진단 필요성을 기준으로 정합니다.
 - 고객·업무 API인 `/api/**`는 결과와 무관하게 요청당 하나의 완료 이벤트를 `INFO`로 기록합니다.
 - 중요한 정상 상태 전이는 API 완료 이벤트와 별도의 `INFO` 업무 이벤트 또는 감사 이벤트로 남깁니다.
@@ -200,7 +200,12 @@ Actor/resource field:
 예외 메시지에 민감값이 포함될 수 있기 때문입니다.
 민감값을 마스킹하더라도 복구에 필요하지 않으면 수집하지 않는 것이 우선입니다.
 
-현재 이메일 인증과 관리자 초대의 provider 실패 logging은 이 기준을 완전히 충족하지 않습니다. 미완료 범위와 검증 조건은 [Notification provider exception logging 회귀](../work-items/bugs/2026/001-notification-provider-exception-logging.md)가 소유합니다. 5xx `ApiException`의 공통 logging 누락은 별도 [5xx ApiException 공통 logging 누락](../work-items/bugs/2026/004-api-exception-5xx-logging.md)이 소유합니다.
+현재 이메일 인증과 관리자 초대의 provider 실패 logging은 이 기준을 완전히 충족하지 않습니다.
+이 문서가 현재 기준과 알려진 불일치를 소유합니다. notification 회귀의 수정 상태·검증 조건은
+[001 Notification provider exception logging 회귀](../work-items/bugs/2026/001-notification-provider-exception-logging.md),
+5xx `ApiException`의 공통 logging 수정 상태는
+[004 5xx ApiException 공통 logging 누락](../work-items/bugs/2026/004-api-exception-5xx-logging.md)에서
+각각 추적합니다.
 
 ## 계층별 책임
 
@@ -298,6 +303,6 @@ Actor/resource field:
 
 - **구현 기반**: [Spring Boot](210-spring-boot.md), [Spring Security](220-spring-security.md)
 - **test 기준**: [테스트 스택](300-testing-stack.md)
-- **구현 결과**: [API 로깅 기반](../work-items/features/2026/004-api-logging-foundation.md)
-- **요청 추적 확장 결과**: [015 API 운영 추적성](../work-items/features/2026/015-api-operational-traceability.md)
+- **최초 구현 기록**: [004 API 로깅 기반](../work-items/features/2026/004-api-logging-foundation.md)
+- **요청 추적 확장 기록**: [015 API 운영 추적성](../work-items/features/2026/015-api-operational-traceability.md)
 - **공식·보안 기준**: [Spring Boot Logging](https://docs.spring.io/spring-boot/reference/features/logging.html), [OWASP Logging Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html), [OpenTelemetry Logs Data Model](https://opentelemetry.io/docs/specs/otel/logs/data-model/), [SLF4J Manual](https://www.slf4j.org/manual.html)

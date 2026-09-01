@@ -11,6 +11,7 @@
 | `auth` | 구현됨 | password session, JWT 발급·검증, refresh token lifecycle, logout, Bearer 인증 경계 |
 | `securityaudit` | 구현됨 | 인증·인가 보안 감사 append 계약과 `auth_event` 단일 persistence writer |
 | `notification` | 구현됨 | 이메일 발송 공개 API, Resend adapter, transactional template, provider 오류 변환 |
+| `catalog` | 조회 API 구현됨 | 신차 제품·사양·판매 정보의 읽기 전용 경계, 차체·동력 형식·연료·판매 상태 공개 enum과 브랜드·모델 목록·상세 application/persistence/Web adapter |
 | `shared` | 구현됨 | 여러 module이 공유하는 안정된 공개 계약과 기반 type. `shared.error`가 `ErrorCode`, `CommonErrorCode`, `ApiException`, `FieldErrorDetail` 계약을 소유합니다. |
 | `config` | 구현됨 | Spring MVC, Security, OpenAPI, request id, logging, 공통 예외 처리·HTTP `ProblemDetail` 변환과 애플리케이션 조립 |
 
@@ -34,6 +35,7 @@ account -X-> notification.internal
 
 account --(CredentialChanged 동기 event)--> auth session 폐기
 config TimeConfiguration --(Spring DI)--> account/auth/securityaudit Clock consumer
+catalog -> shared :: error
 ```
 
 - `auth`는 account의 인증 subject와 로그인 계측 경계를 공개 계약으로 사용합니다.
@@ -45,6 +47,13 @@ config TimeConfiguration --(Spring DI)--> account/auth/securityaudit Clock consu
   `auth_event`의 유일한 JPA mapping·writer를 소유합니다.
 - `notification`은 account 상태와 token lifecycle을 소유하지 않습니다.
 - 공용 UTC `Clock`은 `config.TimeConfiguration`만 생성하고 업무 module은 주입받습니다.
+- `catalog`는 다른 module의 내부 상태를 쓰지 않습니다. 공개 package는 검색 입력에 사용하는
+  차체·동력·연료·판매 상태 enum만 제공하고, 조회 use case·read model·port는
+  `internal.application`, projection SQL은 `internal.adapter.out.persistence`에 둡니다.
+  jOOQ 구현은 `internal.adapter.out.persistence.jooq`에서 조회 능력별 adapter와 상세 조립·JSON
+  변환 책임으로 분리합니다.
+  `internal.adapter.in.web.publicapi`는 세 공개 GET의 request·response mapping을 소유하고
+  공통 `ProblemDetail` 변환을 위해 `shared :: error` 공개 계약만 사용합니다.
 
 ### Persistence 소유권과 전환 상태
 
@@ -76,13 +85,15 @@ Context로 확정하지 않습니다.
 - 외부 기술을 Port로 대체해야 하는가
 - 공개 계약으로 협력할 수 있는가
 
-자동차 카탈로그, 커뮤니티, member profile, moderation, media, listing은 현재 Java module이 아닙니다.
+커뮤니티, member profile, moderation, media, listing은 현재 Java module이 아닙니다.
 실제 기능 설계가 확정될 때 별도 module 또는 기존 module 소유 여부를 결정합니다.
 
 ## 관련 문서
 
 - **현재 DDD 적용 판정**: [200 현재 프로젝트 아키텍처](200-current-architecture.md#현재-ddd-적용-판정)
 - **일반 배치 기준**: [210 Spring Boot 모듈 구조](../architecture/210-spring-boot-module-structure.md)
+- **자동차 카탈로그 업무 경계**: [130 자동차 카탈로그 도메인](../domain/130-car-catalog.md)
+- **자동차 카탈로그 물리 구조**: [110 자동차 카탈로그 Schema Reference](schema/110-car-catalog.md)
 - **제품 범위**: [200 기능 범위](../product/200-feature-scope.md)
 - **미확정 횡단 구조**: [001 프로젝트 횡단 열린 결정](../work-items/backlog/2026/001-project-open-decisions.md)
 - **후속 정리 작업**: [009 비카탈로그 DDD 보완](../work-items/improvements/2026/009-non-catalog-ddd-hardening.md)

@@ -58,6 +58,12 @@ public·protected 분류, 성공 response 필수 field, `Location` header와 공
 검증합니다. 새 API나 응답 변경이 이 집합을 바꾸면 표준 Gradle `test`와 `check`가 실패하므로
 실제 Controller·Security·오류 처리와 함께 명세 기대값을 검토해야 합니다.
 
+카탈로그의 세 GET도 같은 전체 operation 집합에 포함합니다. 모델 목록 parameter에는 첫 진입
+기본값(`ON_SALE`, `NAME_ASC`, page `0`, size `20`, 서울 현재 날짜)을 설명하고, 목록·상세
+response의 선택 값은 OpenAPI 3.1 union type에 `null`을 포함해 실제 JSON의 명시적 `null`과
+구분이 생기지 않게 합니다. 공개 조회의 고유 오류인 `400`·`404`·`405`는 Controller가,
+공통 `500`과 public 분류는 중앙 구성이 소유합니다.
+
 ## springdoc 기준
 
 springdoc-openapi 공식 문서는 Spring Boot 프로젝트의 설정, class 구조, annotation을 분석해 OpenAPI 문서를 생성한다고 설명합니다.
@@ -124,5 +130,5 @@ Spring Boot 4 지원은 springdoc v3 라인을 기준으로 확인합니다.
 - **web 구현 기반**: [Spring Boot](210-spring-boot.md)
 - **security scheme 기준**: [Spring Security](220-spring-security.md)
 - **DTO·domain 경계**: [경계와 매핑 규칙](../architecture/220-boundary-and-mapping-rules.md)
-- **구현 결과**: [OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)
-- **staging 접근 보호**: [008 Staging Swagger 관리자 접근 보호](../work-items/improvements/2026/008-staging-swagger-admin-access.md)
+- **응답 계약 구현 기록**: [007 OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)
+- **staging 접근 보호 작업 기록**: [008 Staging Swagger 관리자 접근 보호](../work-items/improvements/2026/008-staging-swagger-admin-access.md)

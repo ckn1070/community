@@ -209,7 +209,10 @@ raw token은 저장하지 않으므로 기존 초대를 그대로 재발송할 �
 | 일반회원 비밀번호 재설정 | 기존 account | account email로 보낸 password reset token | 기존 account password hash 변경 | 완료 당시 제외, 후속 [012](012-account-password-reset.md)에서 구현 |
 | emergency recovery | 최고 관리자 접근 불능 | 별도 운영 복구 절차 | 최고 관리자 접근 복구 | 제외, 별도 운영 설계 필요 |
 
-일반회원 비밀번호 재설정은 이 작업과 분리한 뒤 후속 [계정 비밀번호 재설정](012-account-password-reset.md)에서 구현했습니다. 현재 reset 계약은 해당 Result와 [Account 인증/인가 정책](../../../domain/110-account-auth-policy.md)이 소유합니다.
+일반회원 비밀번호 재설정은 이 작업과 분리한 뒤 후속
+[012 계정 비밀번호 재설정](012-account-password-reset.md)에서 구현했습니다. 현재 reset 계약은
+[110 Account 인증/인가 정책](../../../domain/110-account-auth-policy.md)이 소유하며, 012 Result는
+구현 결과와 검증 범위를 보존합니다.
 
 선택하지 않는 대안:
 

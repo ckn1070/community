@@ -8,8 +8,10 @@ Done
 
 이메일 인증 요청과 비밀번호 재설정 요청에서 notification provider 결과와 auth event
 persistence 결과를 서로 다른 실패 경계로 처리해 감사 데이터가 실제 업무 결과와 발송
-결과를 왜곡하지 않게 합니다. 관리자 초대 생성 event의 원자성과 provider 결과 분리는
-Feature 011이 소유합니다.
+결과를 왜곡하지 않게 합니다. 관리자 초대 생성 event의 현재 의미는
+[120 Auth Event 정책](../../../domain/120-auth-event-policy.md)이 소유하고,
+[011 관리자 초대](../../features/2026/011-admin-invitations.md)는 해당 구현 결과와 남은 작업을
+추적합니다.
 
 ## 기대 동작
 

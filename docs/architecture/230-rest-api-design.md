@@ -228,7 +228,7 @@ GET  /api/v1/posts/list
 
 ```text
 GET /api/v1/posts?authorId={memberId}&status=PUBLISHED&page=0&size=20&sort=createdAt,desc
-GET /api/v1/car-models?brand=hyundai&keyword=sonata
+GET /api/v1/car/models?q=sonata&brandId={brandId}&page=0&size=20&sort=NAME_ASC
 ```
 
 기준은 다음과 같습니다.
@@ -308,15 +308,32 @@ custom action을 사용할 때는 다음을 문서화합니다.
 
 생성 응답은 가능하면 `Location` header에 선택한 primary resource identifier를 포함합니다. HTTP `Location`은 생성 resource의 식별자를 전달하며 그 URI에 대한 `GET` 지원까지 자동으로 요구하지 않습니다. 조회 가능성을 프로젝트 계약으로 요구하려면 생성 API 전체에 일관되게 적용하고 권한·개인정보·404 노출을 함께 설계합니다.
 
-현재 회원가입은 `/api/v1/members/{memberId}`, 관리자 초대 생성은 `/api/v1/admin/invitations/{invitationId}`, 관리자 초대 수락은 `/api/v1/accounts/{accountId}`를 생성 resource identifier로 반환합니다. 세 path 모두 현재 같은 URI의 `GET` route를 제공하지 않습니다. 세 identifier의 resource 의미와 project-level 조회 정책은 [Account 후속 backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#생성-resource-uri-정책)가 소유합니다.
+현재 회원가입은 `/api/v1/members/{memberId}`, 관리자 초대 생성은
+`/api/v1/admin/invitations/{invitationId}`, 관리자 초대 수락은
+`/api/v1/accounts/{accountId}`를 생성 resource identifier로 반환합니다. 세 path 모두 현재 같은
+URI의 `GET` route를 제공하지 않으며, 이 문서에서 GET 가능성이나 project-level 조회 정책을
+확정하지 않습니다. 해당 미결정의 작업 전환과 완료 조건은
+[003 Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#생성-resource-uri-정책)에서
+추적합니다.
 
-`202 Accepted`는 서버가 요청을 접수했지만 해당 operation의 처리가 아직 끝나지 않았거나 최종 결과를 응답에서 확정하지 않는다는 뜻입니다. durable queue·outbox는 reliability 선택이지 status 자체의 필수 조건이 아닙니다. 현재 이메일 인증·비밀번호 재설정 요청은 response 전에 provider send API가 email id를 반환하지만 실제 delivery 성공·실패는 이후에 확정되므로 `202`를 사용합니다. provider 결과와 감사 저장의 내구성은 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)이 별도로 소유합니다.
+`202 Accepted`는 서버가 요청을 접수했지만 해당 operation의 처리가 아직 끝나지 않았거나 최종
+결과를 응답에서 확정하지 않는다는 뜻입니다. durable queue·outbox는 reliability 선택이지
+status 자체의 필수 조건이 아닙니다. 현재 이메일 인증·비밀번호 재설정 요청은 response 전에
+provider send API가 email id를 반환하지만 실제 delivery 성공·실패는 이후에 확정되므로
+`202`를 사용합니다. provider 결과와 감사 저장의 현재 의미는
+[120 Auth Event 정책](../domain/120-auth-event-policy.md)이 소유하며, 확인된 구현 결함과 수정
+조건은
+[005 Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)에서
+추적합니다.
 
 ## 실패 응답 Status Code
 
 실패 응답은 클라이언트가 후속 행동을 결정할 수 있게 구분합니다.
 
-아래는 목표 계약입니다. 현재 path type mismatch와 unsupported HTTP method 일부가 공통 handler의 generic 500으로 분류될 수 있으며, 구현 보완과 회귀 검증은 [Spring MVC framework 예외 분류 누락](../work-items/bugs/2026/007-spring-mvc-exception-classification.md)이 소유합니다.
+아래는 목표 계약입니다. 현재 path type mismatch와 unsupported HTTP method 일부가 공통
+handler의 generic 500으로 분류될 수 있으며, 이 불일치의 수정 상태와 회귀 검증은
+[007 Spring MVC framework 예외 분류 누락](../work-items/bugs/2026/007-spring-mvc-exception-classification.md)에서
+추적합니다.
 
 | 상황 | Status | 기준 |
 | --- | --- | --- |
@@ -399,7 +416,10 @@ validation 오류 예시:
 오류 code는 HTTP status를 대체하지 않습니다.
 HTTP status는 프로토콜 수준 의미를 표현하고, `code`는 프로젝트 도메인 또는 validation 오류를 세분화합니다.
 
-현재 프로젝트의 실제 오류 owner·mapping과 endpoint별 code는 이 일반 가이드가 복제하지 않습니다. [API 공통 기반 결과](../work-items/features/2026/003-api-common-foundation.md)와 현재 Web source에서 확인합니다.
+현재 프로젝트의 실제 오류 owner·mapping과 endpoint별 code는 이 일반 가이드가 복제하지
+않습니다. 현재 계약은 Web source와 생성 OpenAPI에서 확인하고,
+[003 API 공통 기반](../work-items/features/2026/003-api-common-foundation.md)은 최초 구현 결과와
+검증 범위를 보존하는 작업 기록으로만 사용합니다.
 
 ## Request와 Response 표현
 
@@ -601,6 +621,7 @@ API 설계 전 확인합니다.
 
 - **구조·경계 기준**: [헥사고날 아키텍처](200-hexagonal-architecture.md), [Spring Boot 모듈 구조](210-spring-boot-module-structure.md), [경계와 매핑 규칙](220-boundary-and-mapping-rules.md)
 - **구현 기술 기준**: [Spring Boot](../tech-stack/210-spring-boot.md), [Spring Security](../tech-stack/220-spring-security.md), [OpenAPI](../tech-stack/260-openapi.md)
-- **현재 미구현 API 문서 계약**: [Account 인증/인가 후속 기능 Backlog](../work-items/backlog/2026/003-account-auth-follow-up.md#openapi-보호-api-계약)
+- **현재 OpenAPI 계약**: [260 OpenAPI](../tech-stack/260-openapi.md)
+- **최초 OpenAPI 계약 구현 기록**: [007 OpenAPI 실제 응답 계약 동기화](../work-items/improvements/2026/007-openapi-response-contract.md)
 - **개발 검증 절차**: [TDD 워크플로우](../workflow/210-tdd-workflow.md)
-- **현재 오류 구현 결과**: [API 공통 기반](../work-items/features/2026/003-api-common-foundation.md)
+- **최초 오류 구현 기록**: [003 API 공통 기반](../work-items/features/2026/003-api-common-foundation.md)

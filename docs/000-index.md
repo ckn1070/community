@@ -42,7 +42,7 @@
 | `product` | 제품 목표와 기능 범위 |
 | `development` | 로컬 설치, 실행, 환경변수 주입 |
 | `workflow` | 작업을 수행하는 절차 |
-| `work-items` | 작업별 결과, 결정, 설계, 진행 상태 |
+| `work-items` | 작업별 결과, 결정 과정, 설계 과정과 진행 상태; 현재 개념은 영구 SOT로 연결 |
 | `operations` | 실제 환경의 실행·복구 절차와 scenario별 현재 live 상태 |
 
 문서 책임의 상세 기준은 [문서 정보 구조 가이드](100-documentation-guide.md)가 소유합니다.
@@ -54,6 +54,7 @@
   runbook, 외부 환경의 현재 live 상태와 재개 위치는 해당 operations scenario에서
   확인합니다.
 - 링크의 관계가 필요하면 현재 기준, 결정 근거, 구현 source, 작업 상태와 실행 절차 표시를 확인합니다.
-- 결정 이유가 필요할 때만 work item의 `-design`을 읽습니다.
+- 현재 구조·정책·제품 범위와 그 이유는 먼저 해당 영구 SOT에서 확인합니다. 작업 당시의
+  선택 과정·배제 대안·trade-off가 필요할 때만 work item의 `-design`을 읽습니다.
 - 과거 실패 증거가 필요할 때만 선택형 `-history`를 읽습니다.
 - 지시 원문, 승인 표현과 내부 사고 과정은 문서 탐색 대상이 아니며 repository에 저장하지 않습니다.

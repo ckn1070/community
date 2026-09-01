@@ -218,7 +218,11 @@ refresh token 재발급 시점에는 account 상태와 role을 다시 조회합�
 현재 expand 기간에는 compatibility를 위해 `account_id`도 유지하지만 application 계약에는
 노출하지 않습니다.
 이 경우 `identifier_hash`를 사용해 원문 이메일을 남기지 않고 실패 시도를 추적합니다.
-`identifier_hash`는 JWT secret과 다른 HMAC-SHA256 secret으로 계산해야 합니다. 현재 application은 각 secret의 최소 길이만 검증하고 두 값의 동일 여부는 거부하지 않으므로, 이 분리를 강제하는 후속 수정은 [Auth secret 분리 검증 누락](../work-items/bugs/2026/002-auth-secret-separation-validation.md)이 소유합니다.
+`identifier_hash`는 JWT secret과 다른 HMAC-SHA256 secret으로 계산해야 합니다. 현재 application은
+각 secret의 최소 길이만 검증하고 두 값의 동일 여부는 거부하지 않습니다. 이 문서가 분리
+정책을 계속 소유하며, 확인된 구현 결함의 수정 상태는
+[002 Auth secret 분리 검증 누락](../work-items/bugs/2026/002-auth-secret-separation-validation.md)에서
+추적합니다.
 원문 email, password, access token, refresh token은 auth event metadata에 남기지 않습니다.
 
 ## 관련 문서

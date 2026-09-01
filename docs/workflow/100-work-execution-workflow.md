@@ -25,6 +25,14 @@ mutation 전에 이 Bootstrap으로 다시 진입합니다. 먼저 현재 메시
 바꾸지 않습니다. 현재 generation에 positive source가 없으면 mutation admission은 닫힌
 상태로 유지합니다.
 
+현재 메시지의 `반영해`, `계속해`, `그 문서를 고쳐`처럼 실행 동사가 직접 선행 문맥의
+미완료 결과를 가리키면 그 현재 span 자체가 해당 결과를 이어 가는 positive source입니다.
+이때 직접 선행 문맥은 대상·기존 acceptance oracle·아직 닫히지 않은 결과를 복원하고,
+현재 메시지가 명시적으로 바꾼 의미만 갱신합니다. 피드백 한 건이나 국소 section 수정이
+끝났다는 이유로 원래 결과를 그 hunk로 축소하거나 checkpoint를 terminal로 만들지 않습니다.
+반대로 현재 메시지에 실행 동사가 없거나 다른 결과로 대체·제외한 경우에는 같은 주제와
+미완료 상태만으로 과거 권한을 부활시키지 않습니다.
+
 현재 메시지가 작업 주체·범위·권한·안전성·사실을 이의 제기하거나 그 판단의 이유를
 묻는다면 그 원자를 먼저 고정합니다. 같은 메시지에 상태 질문이 섞여 있어도 이의 대상의
 과거 실행 권한을 유지하는 근거로 사용하지 않으며, 해당 원자의 답변·검토를 닫기 전에
@@ -446,12 +454,35 @@ API 경로, module 경계, schema 정규화처럼 내부 기술 결과가 크거
 - 더 최신 사용자 원문이 값을 직접 취소·대체하면 그 차원만 갱신합니다. source에 접근할 수
   없어 대체 여부를 판정할 수 없으면 기존 값을 추측으로 바꾸지 않고 source 공백과 영향을
   밝힙니다.
+- 일반 default·관례는 같은 조건을 직접 비교해 선택한 구체적인 활성 기술 결정을 묵시적으로
+  대체하지 않습니다. 후발 source가 다른 값을 요구하면 기존 결정의 전제 중 무엇이 깨졌는지와
+  같은 대안 비교를 다시 열 근거를 먼저 표시하고, 그 전에는 exact 활성 값을 writer·reviewer에
+  그대로 인계합니다.
 - 활성 값이 없는 차원만 미확정 비교·추천 절차로 보냅니다. 이미 확정된 차원을 다시 후보로
   열거나, 비교 절차가 기준선 복원을 대신하게 하지 않습니다.
 
 이 기준선은 위 첫 실질 projection 전, 상태 변경의 첫 mutation 전, 전문 검증과 Git phase
 인계 전에 각각 대조합니다. 검증 입력에는 원래 기준선과 유효한 대체 source를 포함하며,
 reviewer는 같은 작업에서 만든 test·문서의 내부 일치만으로 활성 결정을 재정의하지 않습니다.
+
+### 반복 선택 기준선
+
+동일 역할·동일 표면에서 둘 이상의 artifact, 이름, 구조나 기술 경로를 선택하면 첫 대표
+mutation 전에 전체 sibling·source inventory와 공통 선택 축을 한 번 고정합니다. 각 sibling의
+국소 장점이나 작성 순서로 기준을 다시 고르지 않으며, 같은 축을 모든 sibling에 적용한 결과를
+writer admission에 포함합니다.
+
+다른 축을 사용하는 예외는 독립 authoritative source가 요구하는 필수 차이, 그 차이가 공통
+축으로 충족되지 않는 영향과 재검토 조건이 mutation 전에 닫힌 경우에만 허용합니다. 파일 크기,
+작성 편의, 사후 가독성과 후보가 함께 만든 test·work item·문서의 내부 일치는 예외 근거가
+아닙니다. 필수 차이를 증명하지 못하면 공통 축의 첫 대표 결과로 돌아가고 나머지 sibling으로
+확장하지 않습니다.
+
+이 gate는 같은 역할의 반복 선택에 적용합니다. Controller와 Request·Response·method처럼
+역할이 다르거나, sibling이 없는 국소 선택, authoritative source가 값 하나로 고정한 기계적
+변환에는 하나의 어휘·구조나 별도 설계 문서를 강제하지 않습니다. Reviewer는 후보를 보기 전에
+변경 전 SOT와 sibling inventory에서 공통 축과 예외를 독립 복원하고, 후보의 자기 일관성으로
+이 기준선을 새로 만들지 않습니다.
 
 여러 독립 조건이나 source가 있으면 세션 또는 `/tmp`의 활성 조건 원장에만 다음을
 연결합니다.
@@ -689,9 +720,17 @@ Git 명령 의미와 안전한 실행은 [커밋 워크플로우](300-commit-wor
 → 관찰 가능한 완료 oracle
 → 포함·제외와 권한
 → 의존 결과·다음 consumer
+→ 현재 실행자·사용자에게 필요한 입력 또는 행동 없음
 → 영구 SOT 또는 승격 불필요 근거
 → 복귀점
 ```
+
+현재 결과가 미완료이면 `다음 작업`만으로 책임을 표현하지 않습니다. 그 작업을 지금 수행할
+actor와 사용자가 제공해야 할 결정·입력·외부 행동을 분리합니다. 사용자 소유 항목이 0개이면
+`사용자 행동 없음`과 현재 Agent가 이어서 만들 exact 결과를 operation map에 함께 둡니다.
+이 상태에서 같은 결과의 중간 문서 수정, 검증, checkpoint commit이나 상태 projection은
+terminal이 아니며, 실제 blocker·사용자 소유 결정·현재 요청이 정한 결과 완료 중 하나가
+성립할 때까지 현재 실행자가 남은 안전한 단위로 복귀합니다.
 
 복귀점은 삽입된 현재 원자가 terminal 상태에 도달한 뒤 재개할 위치를 보존하는
 dependency metadata이며, 현재 실행할 다음 원자가 아닙니다. 현재 원자의 후보·계획·검증이
@@ -818,6 +857,22 @@ format·protocol·actor 같은 선행 선택의 권위 source가 아닙니다. �
 하나를 끝낸 뒤 다음 작업을 다시 묻지 않습니다.
 
 구현을 포함한 한 실행 라운드는 다음 phase를 순서대로 닫습니다.
+
+Test·build·review 같은 evidence producer를 실행하기 전에는 앞서 만든 소비 원장과 병렬
+경계를 실제 command admission으로 사용합니다. 각 실행은 `candidate identity → 닫을 exact
+oracle과 최초 consumer → 재사용할 기존 evidence 또는 무효화 근거 → 읽고 쓰는 build output·
+DB·report·cache → 실행 owner·재실행 조건`에 연결돼야 합니다. 이 연결이 없거나 같은 oracle을
+이미 유효한 evidence가 닫았으면 실행하지 않습니다. 같은 공유 검증 resource를 쓰는 command는
+actor가 read-only reviewer여도 직렬화하며, 병렬화하려면 source write set뿐 아니라 검증
+resource와 evidence identity까지 독립적이어야 합니다.
+
+후보 수정 뒤에는 기존 evidence가 실제로 무효화된 범위의 가장 좁은 검증부터 다시 시작합니다.
+표준 전체 검증은 동결 후보의 남은 넓은 oracle을 닫을 때 한 번 소비하고, 작은 수정·reviewer
+교체·명령 실패만으로 자동 반복하지 않습니다. 실패가 candidate 결함인지 infrastructure·공유
+resource 충돌인지 최소 진단으로 먼저 분리하고, 원인이 제거되지 않은 같은 명령 반복은 새
+evidence가 아닙니다. 서로 다른 specialist라도 candidate·source·oracle이 같으면 이름만 다른
+검토로 중복하지 않고, 독립 owner가 서로 다른 필수 oracle을 소유할 때만 별도 evidence로
+유지합니다.
 
 1. 동결한 결과·결정·제외·oracle 안에서 writer가 후보와 local evidence를 만듭니다.
 2. 모든 writer를 멈춘 뒤 최종 diff와 실제 caller에서 후보가 추가·변경한 관찰 효과를

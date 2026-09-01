@@ -55,7 +55,7 @@ Spring Framework는 MVC method validation과 Bean Validation을 지원합니다.
 - credential, token, password는 환경 변수나 안전한 secret store로 분리합니다.
 - 새 환경 변수 key와 `.env.example` 반영은 [../development/100-local-development.md](../development/100-local-development.md)의 값 주입 프로세스를 따릅니다.
 - 설정 묶음은 `@ConfigurationProperties` 클래스로 바인딩합니다.
-- 현재 notification email 설정은 동일 namespace의 여러 값을 `@Value`로 수동 조립하는 예외입니다. 정리 범위와 완료 조건은 [Notification 설정 properties 경계 정리](../work-items/improvements/2026/006-notification-configuration-properties.md)가 소유합니다.
+- 현재 notification email 설정은 동일 namespace의 여러 값을 `@Value`로 수동 조립하는 예외입니다. 이 문서가 `@ConfigurationProperties` 기준과 현재 예외를 소유하고, 정리 범위와 완료 조건은 [006 Notification 설정 properties 경계 정리](../work-items/improvements/2026/006-notification-configuration-properties.md)에서 추적합니다.
 - 외부 설정 우선순위를 고려해 profile별 값을 설계합니다.
 - 테스트 설정은 운영 설정과 분리합니다.
 

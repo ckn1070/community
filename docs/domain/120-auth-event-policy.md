@@ -258,4 +258,4 @@ object로 고정합니다. 생성 metadata에는 notification delivery 결과를
 - **현재 데이터 구조**: [Account 인증/인가 데이터 모델](../project/220-account-auth-data-model.md), [물리 schema](../project/schema/100-account-auth.md)
 - **물리 조회 구조**: [Account/Auth schema](../project/schema/100-account-auth.md)
 - **개발 절차**: [로컬 개발 환경](../development/100-local-development.md)
-- **결정·구현 결과**: [Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)
+- **결정·구현 기록**: [001 Auth Event Taxonomy 재설계](../work-items/improvements/2026/001-auth-event-taxonomy-redesign.md)

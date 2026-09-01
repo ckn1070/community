@@ -27,6 +27,13 @@
 
 이 유형은 의미 계약이지 파일 수를 늘리는 규칙이 아닙니다. 짧고 응집된 인접 정보는 한 파일에 둘 수 있고, 독자·행동·source·갱신 주기·보존 기간이 다르면 파일을 분리합니다.
 
+Decision/Design이 선택 과정과 배제 대안을 보존한다는 뜻은 현재 개념의 canonical owner가
+된다는 뜻이 아닙니다. 현재 시스템을 이해·사용·변경할 때 필요한 정의, 구조, 관계, 작동
+원리와 현재 선택 이유는 해당 `project`, `product`, `domain`, `architecture` 또는
+`tech-stack` Reference/SOT가 현재형으로 소유합니다. 작업 `-design`은 그 결과가 만들어진
+작업의 질문·대안·trade-off와 당시 목표 계약만 보존하며, 현재 개념을 확인하려는 독자를
+작업 문서로 보내지 않습니다.
+
 ## 목적별 기본 구조
 
 아래 구조는 유형별 독자 질문의 기본 순서이지 모든 문서에 강제하는 목차가
@@ -71,6 +78,9 @@ Reference/SOT의 설명 책임을 Procedure로 대신하지 않습니다. Proced
 6. 재검토 조건
 
 확정된 목표 계약은 포함할 수 있지만 개발 순서와 실행 결과를 반복하지 않습니다.
+작업 `-design`의 목표 계약은 계획·구현·검증의 입력이며 현재 구현의 영구 SOT가 아닙니다.
+구현 결과가 현재 기준이 되면 재사용되는 개념·구조·관계·불변식과 그 이해에 필요한 이유를
+책임 SOT로 승격하고, design은 그 SOT를 현재 기준으로 가리킵니다.
 
 ### Plan
 
@@ -204,12 +214,13 @@ Authoritative source에 안전한 진입점이 아직 없으면 명령을 지어
 | `product` | 제품 목표와 기능 범위 |
 | `development` | 로컬 설치와 실행 절차 |
 | `workflow` | 반복 가능한 작업 절차 |
-| `work-items` | 작업별 계획 또는 현재 결과와 결정 연결 |
+| `work-items` | 작업별 계획·현재 결과와 결정 과정; 현재 개념·구조·계약은 영구 SOT로 연결 |
 | `operations` | 실제 환경의 구축·복구·점검 절차와 scenario별 현재 live 상태 |
 
-Repository의 현재 구조·계약은 SOT, 결정 이유는 design, 개발 작업 상태는 work item,
-실행 명령은 runbook, 외부 환경의 현재 live 상태·재개 위치는 operations scenario가 각각
-소유합니다.
+Repository의 현재 구조·계약과 이를 이해·변경하는 데 필요한 현재 이유는 SOT, 선택 과정과
+배제 대안은 design, 개발 작업 상태는 work item, 실행 명령은 runbook, 외부 환경의 현재 live
+상태·재개 위치는 operations scenario가 각각 소유합니다. 특히 work item과 그 `-design`은
+현재 개념의 canonical owner가 될 수 없습니다.
 
 그룹 router는 문서 이름만 나열하지 않고 독자의 상황을 canonical owner로 연결합니다.
 특히 operations router는 최초 구축, 반복 운영, 변경, 장애·복구의 실제 보유 범위를
@@ -304,7 +315,8 @@ Runbook의 명령 syntax·정적 source 대조는 문서와 repository 계약의
 | 등급 | 저장 방식 | 위치 |
 | --- | --- | --- |
 | 현재 기준 | 현재형으로 정규화 | 책임 SOT |
-| 결정 기록 | 판단 구조만 보존 | design 또는 기술 SOT |
+| 현재 선택 이유 | 현재형으로 정규화 | 책임 SOT |
+| 작업 결정 기록 | 당시 선택 과정·대안·trade-off만 보존하고 현재 기준 SOT를 연결 | work item `-design` |
 | 작업 상태 | 현재 결과와 남은 책임만 유지 | work item |
 | 감사 증거 | Git으로 복원할 수 없는 최소 사건만 요약 | 선택형 history 또는 외부 감사 시스템 |
 | 비보존 | repository에 저장하지 않음 | 대화와 실행 중 세션 |

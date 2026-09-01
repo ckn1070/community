@@ -24,7 +24,8 @@ Done
 - local·production logging format
 - 민감정보 redaction과 architecture 검증
 
-업무 감사 이벤트의 taxonomy와 저장 정책은 domain 문서와 별도 개선 작업이 소유합니다.
+업무 감사 이벤트의 현재 taxonomy와 저장 정책은 domain SOT가 소유하고, 별도 개선 작업은
+해당 기준을 바꾸거나 구현하는 작업 상태만 추적합니다.
 
 ## 확정 결정 색인
 

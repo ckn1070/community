@@ -29,7 +29,12 @@
 | `auth_event.event_type` 초기 허용 목록 | `SIGN_UP`, `LOGIN_SUCCESS`, `LOGIN_FAILURE`, `LOGOUT`, `TOKEN_REFRESH`, `TOKEN_REUSE_DETECTED`, `PASSWORD_CHANGED`, `PASSWORD_RESET_REQUIRED`, `ROLE_GRANTED`, `ROLE_REVOKED`를 허용합니다. | `chk_auth_event_type`, migration/schema 테스트 |
 | `refresh_token.revoked_reason` 초기 허용 목록 | `LOGOUT`, `ROTATED`, `REUSE_DETECTED`, `PASSWORD_CHANGED`, `ACCOUNT_SUSPENDED`, `ADMIN_REVOKED`를 허용합니다. | `chk_refresh_token_revoked_reason`, migration/schema 테스트 |
 
-위 `auth_event.event_type` 목록은 최초 schema 설계 당시의 결정 기록입니다. 이후 [Auth Event Taxonomy 재설계](../../improvements/2026/001-auth-event-taxonomy-redesign.md)가 현재 taxonomy를 대체 소유하며, 현재 물리 허용값은 [Schema Reference](../../../project/schema/100-account-auth.md#auth_event)에서 확인합니다.
+위 `auth_event.event_type` 목록은 최초 schema 설계 당시의 결정 기록입니다. 이후
+[001 Auth Event Taxonomy 재설계](../../improvements/2026/001-auth-event-taxonomy-redesign.md)가
+taxonomy를 변경한 당시 결정과 구현 결과를 보존합니다. 현재 event 의미는
+[120 Auth Event 정책](../../../domain/120-auth-event-policy.md), 현재 물리 허용값은
+[100 Account 인증/인가 Schema Reference](../../../project/schema/100-account-auth.md#auth_event)가
+소유합니다.
 
 ## 관련 문서
 
