@@ -54,6 +54,27 @@ source를 함께 따릅니다.
 역할을 수행해도 각 phase의 독립 입력·감사 축·verdict가 실제 trace에 없으면 중대한 문서
 전문 감사가 수행된 것으로 판정하지 않습니다.
 
+### 문서 삭제 admission
+
+문서 전체 삭제나 이에 준하는 대규모 제거가 포함되면 구조 gate 전에 다음 순서로
+admission을 판정합니다.
+
+1. [문서 정보 구조 가이드의 보완과 삭제](../100-documentation-guide.md#보완과-삭제)에 따라
+   보완과 영향 범위 재검토를 기본 후보로 둡니다.
+2. 파일 존치나 정보의 고유성·Git 복원 가능성과 무관하게, 제거되는 핵심 독자 질문,
+   canonical owner 계약과 상태·결정 section 범위를 판정합니다. 그 범위의 모든 정보,
+   inbound link·consumer를 수집합니다.
+3. 목적·owner가 사라졌거나 대체 문서가 책임과 고유 정보를 완전히 이어받았는지, 또는
+   부분 보완으로는 현재 source와 양립시킬 수 없는지 증명합니다.
+4. 삭제하지 않는 대안, 삭제 뒤 owner·topology, 재작업과 복구를 사용자에게 설명하고
+   [작업 실행 워크플로우의 문서 삭제 권한](100-work-execution-workflow.md#문서-삭제-권한)이
+   현재 generation의 exact target에 결속됐는지 확인합니다.
+5. 위 조건이 하나라도 닫히지 않으면 파일과 link를 유지하고 `보존된 기준선`, `부분 재검토
+   대기` 또는 `전체 재검토 대기`로 표시합니다.
+
+삭제 승인은 보완 권한이나 구조 감사 verdict로 대신할 수 없습니다. 승인 전에 writer가
+삭제 patch를 만들거나 router에서 문서를 먼저 제거하지 않습니다.
+
 `누락 없이`, `전체 구조`, `전면 이관`처럼 집합 전체의 완결성이 결과이면 실제
 filesystem에서 대상 root와 include·exclude 범위를 수집합니다. 변경하지 않을 문서도
 판정 대상에 포함하되 inventory·coverage map은 작업 중 증거로만 사용하고 repository에

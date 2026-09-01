@@ -22,7 +22,10 @@
 
 1. Open backlog는 상단 `목적` 또는 `배경`, Proposed·Planned는 `상태`와 `계획 단계`, In Progress·Blocked·Done은 상단 `결과`, Closed backlog는 상단 처분 `결과`에서 현재 위치와 새 owner를 확인합니다.
 2. Proposed·Planned는 현재 계획 단계에 허용된 본문만 읽고, 다음 단계 section을 현재 결과로 추정하지 않습니다.
-3. 해결 설계 이후 본문이 연결한 경우에만 같은 번호의 `-design`을 읽습니다.
+3. 해결 설계 단계 이후에는 본문이 연결한 같은 번호의 `-design`을 읽습니다. 더 이른 단계라도
+   본문과 연도 router가 보존 기준선을 연결하면 design 첫 화면에서 현재 유효 범위·재검토
+   범위와 소비 gate를 확인합니다. 재검토 대기 계약을 현재 단계의 새 결과나 구현 입력으로
+   사용하지 않습니다.
 4. 과거 실패 증거가 필요할 때만 선택형 `-history`를 읽습니다.
 5. 실제 운영 명령은 연결된 operations runbook을 사용합니다.
 
