@@ -2,29 +2,25 @@
 
 ## 현재 적용 상태
 
-- **활성 계획 단계**: 결과 정의
+- **활성 계획 단계**: 해결 설계
 - **설계 전체 확정 상태**: 미확정입니다.
+- **결과 정의**: 게시글 제목, 목록 페이지 이동과 알림 수신자를 포함한 15개 제품 결정이
+  사용자 확정 상태로 닫혔습니다.
 - **개별 값 확정 상태**: D1과 D2의 기술 선택만 사용자 확정 상태이고, D3~D19는 Agent 기술
   선택 상태입니다. 개별 값 확정은 해결 설계 단계 전체 확정으로 전파하지 않습니다.
 - **기술 선택 기준선**: D1~D19는 대안과 근거를 갖춰 Agent가 선택해 보존한 설계
   기준선입니다. D1·D2의 개별 값 확정 상태와 D3~D19의 미확정 상태를 구분합니다.
-- **보존 기준선**: 기존 12개 제품 결정에 의존하는 설계 결정은 삭제하거나 다시 작성하지
-  않고 유지합니다.
-- **부분 재검토 대기**: 제목 결정에 직접 의존하는 D3의 제목·목록 preview, D10의 post
-  생성·수정·조회 payload, D11의 post 목록 projection, D12의 `community_post` 제목 관련
-  schema·validator와 `API payload 핵심 계약`의 Post write·response입니다.
-- **현재 유효**: 위 범위를 제외한 D1~D19 계약입니다. D4의 1단 답글 저장·표시 계약도 그대로
-  유효한 설계 후보로 보존합니다. 해결 설계 단계 전체가 확정되기 전에는 구현 입력으로
-  소비하지 않습니다.
-- **소비 gate**: 부분 재검토 대기 범위는 제목 결정이 닫히고 이 문서가 그 결정과 다시
-  정렬되기 전까지 구현·실행 계획의 입력으로 사용할 수 없습니다. 이후 모든 기술 선택을
-  반영·검증한 해결 설계 후보를 사용자님이 확정해야 실행 계획 단계로 넘어갈 수 있습니다.
+- **보존과 보완**: 기존 결정과 영향받지 않은 설계는 유지하고, 제목·게시글 페이지 이동·
+  대화 알림 수신자·Account 공개 UUID 관계에 직접 의존하는 계약만 보완했습니다.
+- **현재 확인 대상**: 제목과 preview, 게시글 번호 page, 알림 수신자 정책, Account 공개 UUID
+  FK와 댓글 관계 field를 포함한 D1~D19 전체의 exact 해결 설계 후보입니다.
+- **소비 gate**: 이 후보의 독립 계획 검증이 통과하고 사용자님이 exact 후보를 확정해야 실행
+  계획 단계로 넘어갈 수 있습니다. 그 전에는 구현 입력으로 소비하지 않습니다.
 
 ## 문서 경계
 
-이 문서는 [016 차량 비연결 일반 커뮤니티](016-general-community.md)에서 유지 중인 12개 제품
-결정을 구현 가능한 장기 기술 계약으로 변환합니다. 제목 결정 하나가 다시 열려 있으므로
-위에서 표시한 직접 consumer만 부분 재검토 대기입니다. 제품 범위, 제외 범위와 사용자 수용
+이 문서는 [016 차량 비연결 일반 커뮤니티](016-general-community.md)에서 확정한 15개 제품
+결정을 구현 가능한 장기 기술 계약으로 변환합니다. 제품 범위, 제외 범위와 사용자 수용
 기준은 일반 문서가 소유하고, 이 문서는 그 결과를 바꾸지 않는
 module·domain·API·data·transaction·security·media·notification·moderation·운영 구조만
 소유합니다.
@@ -81,7 +77,7 @@ module·domain·API·data·transaction·security·media·notification·moderatio
   -> media 검증 job이 decode·제한 검사·재인코딩
   -> READY image를 본문 block으로 claim하면서 게시글 공개
   -> 다른 회원이 최상위 댓글 또는 특정 댓글·답글에 응답
-  -> 같은 DB transaction에서 대상 사용자 inbox 알림 0개 또는 1개 저장
+  -> 같은 DB transaction에서 중복을 제거한 대상 사용자 inbox 알림 0개부터 2개 저장
   -> 반응은 사용자·콘텐츠당 한 선택만 유지
   -> 신고는 moderation case로 접수
   -> 관리자가 숨기면 원문 노출과 media 사용을 즉시 중단하고 report를 종결
@@ -108,9 +104,9 @@ module·domain·API·data·transaction·security·media·notification·moderatio
 | 작성자 표시    | account 공개 batch lookup으로 현재 표시 이름 조회                                        | profile 링크 추가 시 콘텐츠 schema 변경 불필요             |
 | 반응        | 콘텐츠·사용자 unique choice와 `LIKE`·`DISLIKE`                                      | 새 reaction type 추가와 별도 ranking projection     |
 | 신고        | moderation 소유 case와 Community 숨김 공개 계약                                       | 후속 계정 제재·감사·appeal을 moderation에 추가            |
-| 서비스 안 알림  | notification 소유 inbox row를 대화 transaction에서 동기 저장                            | 이메일·push worker가 inbox source를 후속 소비          |
+| 서비스 안 알림  | notification 소유 inbox row를 대화 transaction에서 동기 저장하고 후보 수신자를 정책으로 정제        | 게시글별 알림 해제와 이메일·push를 후속 추가             |
 | 이미지       | private S3 staging/serving prefix, 비동기 검증·재인코딩·정리 job                        | storage adapter·delivery adapter와 media 종류 교체 |
-| 조회        | read projection, opaque keyset cursor, author·반응 batch 조회                    | 검색·인기·추천 projection을 core write와 분리           |
+| 조회        | 게시글 번호 page와 대화·알림용 keyset cursor, author·반응 batch 조회                       | 검색·인기·추천 projection을 core write와 분리           |
 | 배포        | additive Flyway와 capability fail-close                                       | application rollback 시 새 schema·object 보존     |
 
 ## 설계 결정
@@ -184,9 +180,26 @@ community_content #205 (종류: 댓글, 작성자·삭제·숨김 상태)
 - 재검토 조건: 미래 콘텐츠 종류가 작성자·삭제·숨김·반응 규칙을 전혀 공유하지 않아 공통
   식별 행의 의미가 사라집니다.
 
-DB 내부 연결에는 identity `BIGINT`를 사용하고, API에 노출하는 콘텐츠 ID에는 추측하기 어려운
-UUID `public_id`를 사용합니다. 작성자는 account의 공개 UUID만 값으로 보존하며 Community가
-account table에 FK를 만들거나 직접 조회하지 않습니다.
+DB 내부 콘텐츠 연결에는 identity `BIGINT`를 사용하고, API에 노출하는 콘텐츠 ID에는 추측하기
+어려운 UUID `public_id`를 사용합니다.
+
+Account 관계는 다음처럼 결정합니다.
+
+- 배경: Community가 Account의 내부 PK와 persistence 조회에 결합되면 안 되지만, 존재하지 않는
+  account 식별자가 작성자·반응·알림 등에 저장되는 것도 막아야 합니다.
+- 검토한 선택지: Account 내부 `BIGINT` FK, 공개 UUID만 저장하고 FK 생략, 공개 UUID FK
+- 선택: 모든 account 관계는 공개 UUID를 저장하고 `account(public_id)`를 참조하는
+  `ON DELETE RESTRICT` FK를 사용합니다.
+- 선택 근거: JWT subject와 외부 식별자 경계를 유지하면서 같은 PostgreSQL이 제공하는 존재
+  무결성을 포기하지 않습니다. Account 탈퇴는 row 삭제가 아니라 `WITHDRAWN` 상태로 남으므로
+  콘텐츠 보존 정책과도 충돌하지 않습니다.
+- 영향: Account와 각 module schema 사이에 물리 FK 의존은 생기지만, FK는 존재 확인만 담당합니다.
+  Account 상태와 표시 이름은 계속 Account 공개 API로 조회하며 다른 module은 Account table을
+  직접 읽지 않습니다.
+- 배제한 대안: 내부 `BIGINT`는 Account persistence를 외부 module 계약으로 만들고, FK 없는
+  UUID는 아직 필요하지 않은 database 분리를 위해 현재 데이터 무결성을 미리 포기합니다.
+- 재검토 조건: Account와 Community가 별도 database/service로 실제 분리됩니다. 그때 FK를
+  제거하고 검증된 identity 복제 또는 event 기반 무결성으로 전환합니다.
 
 ### D3. 자유게시판과 게시글 본문 저장 방식
 
@@ -196,21 +209,31 @@ account table에 FK를 만들거나 직접 조회하지 않습니다.
 
 게시글 본문은 사용자가 작성한 순서대로 텍스트와 이미지를 배열한 JSON으로 저장합니다.
 여기서 block은 본문 조각 하나를 뜻하며, v1에서는 `TEXT`와 `IMAGE` 두 종류만 허용합니다.
+제목은 본문 schema version과 독립된 필수 plain-text scalar로 저장합니다. 목록의 본문
+미리보기는 본문 JSON 자체를 매번 읽어 만드는 대신 게시글을 쓸 때 TEXT block에서 함께 만든
+read projection으로 저장합니다.
 
 - 배경: 현재에는 자유게시판 하나만 필요하지만 이후 게시판을 추가할 수 있어야 하고, 본문
-  안에서 텍스트와 이미지가 놓인 순서를 잃지 않아야 합니다.
+  안에서 텍스트와 이미지가 놓인 순서를 잃지 않아야 합니다. 제목과 목록 미리보기는 body
+  format이 바뀌어도 같은 API 역할을 유지해야 합니다.
 - 검토한 선택지: 게시판 이름을 문자열 column에 반복 저장, board table 참조, 게시판마다
   별도 post table; Markdown 안에 이미지 token 삽입, 본문과 첨부 목록 분리, 순서가 있는
-  typed JSON block
+  typed JSON block; 제목을 body JSON 첫 block으로 저장, 별도 scalar로 저장; 목록 조회마다
+  JSON을 파싱해 preview 생성, 쓰기 transaction에서 preview projection 저장
 - 선택: `community_board`에 `free` 행을 만들고 모든 게시글이 board FK를 가집니다. 본문은
-  schema version과 순서가 있는 typed JSON block으로 저장합니다.
+  schema version과 순서가 있는 typed JSON block으로 저장합니다. 제목은 별도 `title`에,
+  목록 미리보기는 body에서 파생한 `body_preview`에 저장합니다.
 - 선택 근거: board 행 추가만으로 새 게시판을 만들 수 있고, JSON block은 사용자 HTML을
   실행하지 않으면서 텍스트·이미지 순서와 media UUID를 명시적으로 검증할 수 있습니다.
-- 비용: application이 JSON 구조를 검증하고 API 응답으로 변환해야 합니다.
+  제목을 body version에서 분리하면 미래 rich body migration이 제목 계약을 흔들지 않고,
+  write-side preview는 최신 목록이 최대 20,000자 JSON을 매 row마다 읽고 파싱하지 않게 합니다.
+- 비용: application이 JSON 구조를 검증하고 API 응답으로 변환하며, body 수정 transaction에서
+  `body_preview`를 반드시 함께 갱신해야 합니다.
 - 배제한 대안: Markdown token은 parser 규칙을 공개 API에 오래 결속하고, 본문과 첨부 목록을
-  분리하면 이미지가 본문 어디에 있었는지 잃습니다.
+  분리하면 이미지가 본문 어디에 있었는지 잃습니다. 제목을 body block으로 저장하면 제목
+  조회가 body version에 결속되고, read-time preview는 목록 비용과 body parser 의존을 키웁니다.
 - 재검토 조건: 협업 편집, 글자별 서식이나 embed처럼 본문 조각 사이의 복잡한 관계가 제품
-  범위로 확정됩니다.
+  범위로 확정되거나, 목록용 search/read store가 `body_preview`의 소유권을 인수합니다.
 
 v1 본문 계약은 다음과 같습니다.
 
@@ -233,10 +256,19 @@ v1 본문 계약은 다음과 같습니다.
   기존 v1 row의 일괄 migration을 새 서식 출시의 선행 조건으로 삼지 않습니다.
 - 구체적인 미래 서식 표현은 협업 편집, 글자별 서식이나 embed의 실제 제품 범위가 확정될 때
   비교합니다. 현재에는 v1 호환 reader와 기존 row의 지속 가독성만 장기 계약입니다.
-- 제목 필수 여부와 목록 주표시는 제품 결정 대기입니다. 제목을 body schema에 암묵적으로
-  넣거나, 현재 `title` 부재를 최종 schema 계약으로 소비하지 않습니다.
-- 제목 결정에 따라 목록 preview의 역할과 저장 여부를 다시 정합니다. 그 전까지 TEXT block
-  파생 preview는 확정된 목록 주표시 계약이 아닙니다.
+- 제목은 모든 Unicode whitespace run을 U+0020 한 칸으로 바꾸고 앞뒤 공백을 제거한 뒤
+  1~120 Unicode code point를 허용합니다. 대소문자와 문장부호는 보존하고 HTML·Markdown을
+  해석하지 않습니다. 120자는 목록 탐색성을 해치지 않으면서 일반 게시글의 설명력을
+  보존하는 초기 상한이며, 제목 중심 장문 콘텐츠가 별도 제품 형식으로 확정되면 형식별
+  정책으로 재검토합니다.
+- `body_preview`는 정규화된 TEXT block을 문서 순서대로 U+0020 한 칸으로 연결하고 앞뒤·연속
+  whitespace를 정리한 뒤 앞 200 Unicode code point를 저장합니다. IMAGE의 `alt`는 이미지
+  설명이지 본문 문장이므로 preview source에 넣지 않습니다. 본문에는 nonblank TEXT가 필수라
+  preview도 항상 nonblank입니다.
+- Preview는 body의 파생값이며 별도 수정 입력을 받지 않습니다. 생성과 body 수정은 같은
+  transaction에서 body와 preview를 함께 저장하고, 제목만 수정하면 기존 preview를 유지합니다.
+  향후 extractor가 달라지면 기존 body version reader로 재생성하는 additive backfill을
+  사용하며 기존 body row를 새 format으로 강제 변환하지 않습니다.
 
 ### D4. 화면은 1단으로 유지하면서 실제 답변 대상을 보존하는 방법
 
@@ -250,8 +282,15 @@ v1 본문 계약은 다음과 같습니다.
 └── 답글 C  (직접 대상 B, 묶음 기준 A)  화면에는 "B에게 답글"로 표시
 ```
 
-이 구조에서 `parent_comment_id`는 직접 답한 대상이고, `thread_root_comment_id`는 화면에서
-답글을 묶을 최초 댓글입니다.
+이 구조에서 세 관계의 역할은 다음과 같습니다.
+
+- `post_content_id`: 댓글·답글이 속한 게시글입니다. 게시글 행에서는 null이고 모든 댓글·
+  답글에서는 필수이며, 게시글별 대화 조회와 아래 두 관계가 같은 게시글에 속하는지 검증할
+  때 사용합니다.
+- `parent_comment_id`: 정확히 어느 댓글·답글에 직접 답했는지 나타냅니다. 최상위 댓글에서는
+  null입니다.
+- `thread_root_comment_id`: 현재 1단 화면에서 답글을 묶을 최초 댓글입니다. 최상위 댓글에서는
+  null이고 모든 답글에서는 최초 댓글을 가리킵니다.
 
 - 배경: 현재 UI는 1단만 보여 주지만 답글에 다시 답한 대상을 표시해야 하고, 미래에 다단
   대화를 제공할 가능성도 막지 않아야 합니다.
@@ -298,8 +337,9 @@ v1 본문 계약은 다음과 같습니다.
 - comment/reply도 같은 규칙을 사용합니다. 삭제된 leaf는 page에서 빠지고, 공개 후손의 root
   또는 parent context로 필요한 row만 tombstone으로 남습니다.
 - 수정은 게시글·댓글·답글에서 사용자가 작성하고 화면에 표시되는 field의 semantic 값이
-  실제로 달라질 때만 `edited_at`을 설정합니다. 제목을 제품이 선택하면 제목만 바뀐 수정도
-  같은 규칙을 사용합니다. Revision 원문은 저장하지 않습니다.
+  실제로 달라질 때만 `edited_at`을 설정합니다. 게시글은 정규화된 제목 또는 body의 semantic
+  값 중 하나만 달라져도 같은 규칙을 사용합니다. 파생 `body_preview`만의 재생성은 사용자
+  편집으로 표시하지 않으며 Revision 원문은 저장하지 않습니다.
 - 삭제·숨김 이후 수정, reaction, 새 reply와 새 report는 거부합니다. 다만 관리자가 먼저
   숨긴 콘텐츠를 작성자가 삭제하거나 작성자가 먼저 삭제한 콘텐츠의 open report를 관리자가
   숨김 종결하는 것은 허용해 두 원인의 사실을 모두 보존합니다. 기존 reaction과 report row는
@@ -377,10 +417,13 @@ count를 반환합니다.
 - 검토한 선택지: Community 내부 알림 table, 비동기 event만 발행, notification module의 동기
   inbox 공개 계약
 - 선택: notification module에 inbox aggregate와 `CommunityConversationNotificationStore`
-  공개 계약을 추가하고 댓글·답글 생성 transaction 안에서 호출합니다.
+  공개 계약을 추가하고 댓글·답글 생성 transaction 안에서 호출합니다. Community가 대화
+  관계에서 후보 수신자를 계산하고, Notification의 수신 정책이 자기 알림·구독 해제·중복을
+  제거한 뒤 inbox를 저장합니다.
 - 선택 근거: 외부 provider 호출 없이 같은 PostgreSQL transaction으로 대화와 inbox row를
   원자적으로 저장하며 기존 notification 책임을 채널 중립적인 알림 lifecycle로 확장합니다.
-- 비용: 현재 modular monolith transaction에 결합됩니다.
+- 비용: 현재 modular monolith transaction에 결합되고, 답글 하나가 최대 두 수신자의 inbox
+  write를 만듭니다.
 - 재검토 조건: module을 별도 database/service로 분리하거나 알림 throughput이 core write를
   방해합니다. 그때 transactional outbox와 idempotent consumer로 경계를 이동합니다.
 
@@ -389,22 +432,27 @@ count를 반환합니다.
 | 생성 종류 | 후보 수신자 |
 | --- | --- |
 | 최상위 댓글 | post 작성자 |
-| reply | direct parent 작성자 |
+| reply | post 작성자 + direct parent 작성자 |
 
-- actor와 candidate가 같으면 만들지 않습니다.
-- 동일 source comment UUID와 recipient UUID에는 inbox row 하나만 허용합니다. 따라서 direct
-  parent 작성자와 post 작성자가 같은 사용자여도 같은 생성 동작으로 중복되지 않습니다.
+- 후보 집합에서 actor 자신을 제거하고, 같은 account UUID를 하나로 합친 뒤 구독 정책을
+  적용합니다. 첫 범위에는 구독 설정이 없으므로 모든 후보를 구독 중으로 간주합니다.
+- 이후 게시글별 알림 해제를 추가할 때는 Notification이 `post UUID + recipient UUID`의
+  preference를 소유하고 같은 수신 정책 단계에서 제외합니다. Community의 대화 관계와 inbox
+  저장 계약은 바꾸지 않습니다.
+- 동일 source comment UUID와 recipient UUID에는 inbox row 하나만 허용합니다. 따라서 post
+  작성자와 direct parent 작성자가 같아도 같은 답글 알림은 하나만 생성됩니다.
 - notification은 `COMMUNITY_COMMENT` 또는 `COMMUNITY_REPLY`, recipient, actor, source comment
   UUID, post UUID, `created_at`, nullable `read_at`만 저장합니다.
-- Community table FK는 만들지 않습니다. 숨김·삭제 뒤 inbox에는 일반화된 문구와 stable post
-  route만 남고, route가 더 이상 공개되지 않으면 detail은 `404`가 됩니다.
+- Notification inbox에서 Community 콘텐츠를 가리키는 module 간 FK는 만들지 않습니다. 다만
+  recipient와 actor의 Account 공개 UUID FK는 유지합니다. 숨김·삭제 뒤 inbox에는 일반화된
+  문구와 stable post route만 남고, route가 더 이상 공개되지 않으면 detail은 `404`가 됩니다.
 - 이메일·push 발송 상태를 inbox row에 섞지 않습니다. 후속 채널은 inbox 생성 사실을 source로
   별도 delivery lifecycle을 가집니다.
 
 ### D10. HTTP API와 접근 제어
 
-Post 생성·수정·조회 payload의 제목 field는 부분 재검토 대기입니다. 아래 resource path,
-접근 제어, 멱등성·동시성 계약과 제목 외 payload는 현재 유효합니다.
+Post 생성·수정·조회 payload는 D3의 필수 `title`과 파생 `preview` 계약을 사용합니다. 제목과
+body만 write input이며 preview는 server가 생성하는 read-only field입니다.
 
 - 배경: 공개 읽기와 보호 쓰기를 같은 resource path에 제공하면서 향후 board를 추가해야
   합니다.
@@ -419,7 +467,7 @@ Post 생성·수정·조회 payload의 제목 field는 부분 재검토 대기�
 
 | Method | Path | 결과 |
 | --- | --- | --- |
-| `GET` | `/api/v1/boards/free/posts` | 최신 post page |
+| `GET` | `/api/v1/boards/free/posts?page={page}&size={size}` | 페이지 번호로 이동하는 최신 post page |
 | `GET` | `/api/v1/posts/{postId}` | post detail과 count |
 | `GET` | `/api/v1/posts/{postId}/comments` | 최신 top-level comment page |
 | `GET` | `/api/v1/comments/{commentId}/replies` | root 아래 reply 시간순 page |
@@ -432,8 +480,8 @@ UUID와 비공개 media는 `404`로 통일합니다.
 
 | Method | Path | 핵심 입력·결과 |
 | --- | --- | --- |
-| `POST` | `/api/v1/boards/free/posts` | `Idempotency-Key`와 v1 body block으로 생성, title 입력 계약은 재검토 대기, `201` |
-| `PATCH` | `/api/v1/posts/{postId}` | owner가 post 표현을 수정, body 계약은 유효하고 title 수정 계약은 재검토 대기, `200` |
+| `POST` | `/api/v1/boards/free/posts` | `Idempotency-Key`, 필수 `title`과 v1 body block으로 생성, `201` |
+| `PATCH` | `/api/v1/posts/{postId}` | owner가 `title` 또는 body를 부분 수정, `200` |
 | `DELETE` | `/api/v1/posts/{postId}` | owner 삭제, 반복 호출 포함 `204` |
 | `POST` | `/api/v1/posts/{postId}/comments` | `Idempotency-Key`, `parentCommentId` nullable, comment/reply 생성, `201` |
 | `PATCH` | `/api/v1/comments/{commentId}` | owner가 text 수정, `200` |
@@ -449,6 +497,20 @@ UUID와 비공개 media는 `404`로 통일합니다.
 | `GET` | `/api/v1/notifications` | 내 inbox page |
 | `PATCH` | `/api/v1/notifications/{notificationId}` | 내 notification `read=true`, `200` |
 
+Post 생성의 `title`과 `body`는 모두 필수입니다. Post `PATCH`는 absent field를 유지로 해석하고
+`title`이나 `body` 중 하나 이상을 요구하며 명시적 `null`은 `400`으로 거부합니다. 정규화 뒤
+semantic 값이 모두 같으면 version·`edited_at`을 바꾸지 않고 현재 표현을 `200`으로 반환합니다.
+제목은 D3의 whitespace 정규화 뒤 1~120 Unicode code point,
+body는 D3의 v1 contract로 검증합니다. Request DTO는 비정상적으로 큰 정규화 전 입력을
+막기 위해 title에 512 UTF-16 code unit 상한을 먼저 적용하고, domain value가 정규화 뒤
+code point와 120자 규칙을 최종 검증합니다. Application command에는 raw Web DTO가 아니라
+검증된 값만 전달합니다.
+
+Post detail response는 visible일 때 필수 `title`과 body를 반환합니다. Post 목록 item은 필수
+`title`과 `preview`를 반환하고 body JSON은 반환하지 않습니다. Tombstone detail은 대화
+context에 필요한 ID·visibility·시간만 반환하며 title·body·preview·author를 모두 노출하지
+않습니다. Tombstone post는 최신 목록에서 제외됩니다.
+
 post/comment 수정은 response `ETag`의 version을 `If-Match`로 요구하고 stale version은
 `412 Precondition Failed`로 처리합니다. 삭제는 body를 덮어쓰지 않고 독립
 `author_deleted_at`만 설정하므로 `If-Match`를 요구하지 않습니다. 관리자 숨김 뒤의 작성자
@@ -459,7 +521,9 @@ Post·comment/reply 생성의 `Idempotency-Key`는 UUID이며 actor와 operation
 Server는 정규화 request hash와 생성 content UUID를 영구 저장합니다. 같은 actor가 같은 key와
 같은 payload를 재전송하면 최초 status와 resource를 반환하고, 다른 payload나 operation에 key를
 재사용하면 `409`로 거부합니다. 따라서 response 유실 뒤 재시도도 content와 inbox 알림을 하나만
-만듭니다. Media upload도 owner·key·declared metadata·checksum hash를 같은 방식으로 보존하고
+만듭니다. Post 생성 hash에는 정규화된 title과 canonical v1 body를 모두 포함해 같은 key로
+제목이나 본문만 바꾼 재전송도 충돌로 식별합니다. Media upload도
+owner·key·declared metadata·checksum hash를 같은 방식으로 보존하고
 재시도는 media UUID의 현재 상태로 멱등 처리합니다. 이 key의 재사용 범위는 전역이 아니라
 각 module의 resource·operation입니다. 따라서 Community content 생성, Media upload와 관리자
 Media job action은 서로 다른 저장 경계에서 같은 UUID 값을 사용할 수 있습니다.
@@ -484,35 +548,60 @@ action이면 `409`로 거부하며, 기존 action이 없을 때만 `If-Match`를
 권한 부족, state conflict, media 미준비·소유 불일치와 stale version을 서로 다른 code로
 구분하되 내부 DB id, object key와 account 상태를 노출하지 않습니다.
 
-### D11. Pagination과 read model
+### D11. 페이지 번호 목록과 read model
 
-Post 목록 projection에서 제목과 본문 preview 중 무엇을 주표시·보조표시로 반환할지는 부분
-재검토 대기입니다. Keyset cursor, 정렬과 batch 조회 계약은 제목 결정과 무관하게 유효합니다.
+Post 목록 projection은 `community_post.title`을 주표시로, 같은 행의 `body_preview`를
+보조표시로 반환합니다. 목록 query는 body JSON을 select하거나 parse하지 않습니다. Preview는
+D3의 write-side 파생 계약이 소유하고 목록은 값을 재해석하지 않습니다.
 
-- 배경: post, comment, reply, notification과 report는 무제한 목록을 반환할 수 없고 grouped
-  reply의 정렬을 안정적으로 유지해야 합니다.
-- 검토한 선택지: offset page, 하나의 거대한 nested response, resource별 keyset cursor
-- 선택: `(created_at, internal_id)`를 tie-breaker로 하는 opaque keyset cursor를 사용합니다.
-  post/top-level comment는 내림차순, reply는 오름차순입니다.
-- 선택 근거: 앞쪽 insert와 삭제가 있어도 offset drift를 줄이고 현재 고정 정렬을 직접
-  표현합니다.
-- 비용: 임의 page number 이동을 제공하지 않습니다.
-- 재검토 조건: 관리자 임의 page 탐색이나 검색 engine이 별도 pagination 계약을 요구합니다.
+- 배경: 일반 게시판의 최신 글은 사용자가 원하는 페이지로 바로 이동할 수 있어야 합니다.
+  반면 댓글·답글·알림·신고 목록은 현재 페이지 번호가 제품 결과가 아니며, 새 항목이 생겨도
+  이어보기 경계가 흔들리지 않는 편이 중요합니다.
+- 검토한 선택지: 모든 목록의 offset page, 모든 목록의 keyset cursor, 제품 동작에 따라
+  게시글과 나머지 목록을 분리
+- 선택: 게시글 최신 목록은 `page`·`size` offset pagination과 전체 건수로 페이지 번호 이동을
+  제공합니다. Top-level comment, reply, notification과 report는 `(created_at, internal_id)`를
+  tie-breaker로 하는 keyset cursor를 유지합니다. Post·top-level comment는 내림차순, reply는
+  오름차순입니다.
+- 선택 근거: 게시글에서는 전통적인 게시판 탐색을 직접 제공하고, 임의 페이지 이동이 확정되지
+  않은 대화·inbox·관리 목록에는 insert·삭제에 강한 이어보기를 사용합니다.
+- 비용: 게시글 목록은 새 글이 추가되면 같은 페이지의 항목이 뒤로 밀릴 수 있고, 깊은 page의
+  `OFFSET`과 정확한 전체 건수 계산 비용이 커집니다. 서로 다른 목록이 pagination 형식을
+  하나로 통일하지 않습니다.
+- 재검토 조건: 게시글 수와 깊은 page 조회가 실제 성능 목표를 넘으면 번호 목록의 유지 범위와
+  snapshot 기준을 제품에서 다시 정하고, 검색·추천 feed에는 별도 cursor 조회를 추가합니다.
 
-기본/최대 page size는 post·top-level comment·notification·report `20/50`, reply `50/100`으로
+게시글 API의 `page`는 0부터 시작하고 화면의 1페이지와 대응합니다. `page`를 생략하면 `0`,
+`size`를 생략하면 `20`을 사용하며 `size`의 허용 범위는 `1..50`입니다. 음수 `page`, `0` 이하
+또는 `50` 초과 `size`는 보정하지 않고 `400 Bad Request`와 `INVALID_PAGINATION_PARAMETER`
+problem code로 거부합니다. 정렬은 `(created_at DESC, internal_id DESC)`로 고정해 client
+`sort` 입력을 받지 않습니다. 응답은 `items`, `number`, `size`, `totalElements`, `totalPages`,
+`first`, `last`를 포함하고 전체 page 범위를 넘는 유효한 양수 page는 빈 `items`와 현재 page
+metadata를 반환합니다. 목록과 전체 건수는 모두 visible post 조건을 사용합니다.
+
+Top-level comment·notification·report의 기본/최대 크기는 `20/50`, reply는 `50/100`으로
 시작하며 server configuration이 소유합니다. Cursor는 정렬 종류, `created_at`, internal ID와
-version을 서명한 opaque token으로 감싸 client가 내부 ID를 보거나 의존하지 못하게 합니다.
-Query predicate와 index는 항상 같은 `(created_at, internal_id)` 순서를 사용합니다.
+version을 서명한 URL-safe token으로 감쌉니다. 서명은 변조를 막고, opaque 계약은 client가
+내부 field의 형식이나 의미에 의존하지 못하게 합니다. Query predicate와 index는 항상 같은
+`(created_at, internal_id)` 순서를 사용합니다.
 
 변경 use case는 Domain model과 Port를 사용하고, 공개 목록·상세는 필요한 column만 읽는
 projection을 허용합니다. 한 page의 author display, 내 reaction과 reaction count는 각각 batch
-조회하며 JPA lazy loading으로 response를 조립하지 않습니다.
+조회하며 JPA lazy loading으로 response를 조립하지 않습니다. Post 목록 projection은 post UUID,
+board slug, title, preview, visibility, `createdAt`, nullable `editedAt`, author display,
+like/dislike count와 인증 사용자의 선택만 반환합니다. Public 최신 목록에는 visible post만
+포함하므로 title과 preview는 항상 non-null입니다.
+
+`body_preview` 중복 저장의 무결성은 post 생성·body 수정 use case가 body parser와 같은
+extractor를 호출하는 domain/application test로 고정하고, persistence integration test에서
+body와 preview가 같은 transaction에 commit되는지 확인합니다. 향후 별도 검색·feed read
+store가 생기면 그 projection이 preview를 소비할 수 있지만 core write row의 title과 body는
+계속 canonical source입니다.
 
 ### D12. 만들 DB table과 무결성
 
-`community_post`의 제목 column·필수성·길이·validator는 부분 재검토 대기입니다. 아래
-`body_schema_version`과 `body` 계약 및 다른 table의 schema는 현재 유효하며, code block에
-`title`이 없다는 사실을 제목 없음의 최종 결정으로 소비하지 않습니다.
+`community_post`는 필수 제목, 목록용 본문 미리보기와 canonical body를 함께 소유합니다.
+제목과 preview는 자주 읽는 scalar이고 body는 versioned JSONB이므로 역할을 섞지 않습니다.
 
 이 설계에서 새로 만드는 table은 아래 12개입니다. 이 절은 각 table의 목적, column type,
 필수·nullable 여부, PK·FK·unique와 상태 제약까지 확정합니다. Constraint·index의 물리 이름과
@@ -550,6 +639,11 @@ media_asset
 허용합니다. FK 삭제·갱신 동작은 현재 schema와 같이 PostgreSQL 기본 제한 동작을 사용하며,
 업무 삭제는 row 물리 삭제가 아니라 아래 상태·시각 변경으로 처리합니다.
 
+모든 account 공개 UUID column은 같은 PostgreSQL의 `account(public_id)`를
+`ON DELETE RESTRICT`로 참조합니다. 이 FK는 존재하지 않는 account 식별자의 저장과 account
+물리 삭제를 막는 무결성 경계일 뿐, 다른 module이 Account table을 조회하거나 상태 정책을
+소유할 권한이 아닙니다. Account 상태·표시 이름은 각 module의 공개 API로 확인합니다.
+
 #### Community 소유
 
 ```text
@@ -567,11 +661,11 @@ community_content(
   id BIGINT PK IDENTITY,
   public_id UUID UNIQUE,
   kind VARCHAR(20) CHECK (kind IN ('POST', 'COMMENT')),
-  account_public_id UUID,
+  account_public_id UUID FK -> account.public_id ON DELETE RESTRICT,
   board_id BIGINT NULL FK -> community_board.id,
-  post_content_id BIGINT NULL FK -> community_content.id,
-  parent_comment_id BIGINT NULL FK -> community_content.id,
-  thread_root_comment_id BIGINT NULL FK -> community_content.id,
+  post_content_id BIGINT NULL FK -> community_content.id,          -- 댓글·답글이 속한 게시글
+  parent_comment_id BIGINT NULL FK -> community_content.id,        -- 직접 답한 댓글·답글
+  thread_root_comment_id BIGINT NULL FK -> community_content.id,   -- 1단 화면에서 묶을 최초 댓글
   creation_request_id UUID,
   creation_request_hash CHAR(64),
   edited_at TIMESTAMPTZ NULL,
@@ -585,6 +679,8 @@ community_content(
 
 community_post(
   content_id BIGINT PK FK -> community_content.id,
+  title VARCHAR(120) NOT NULL,
+  body_preview VARCHAR(200) NOT NULL,
   body_schema_version SMALLINT CHECK (body_schema_version = 1),
   body JSONB
 )
@@ -597,7 +693,7 @@ community_comment(
 community_reaction(
   id BIGINT PK IDENTITY,
   content_id BIGINT FK -> community_content.id,
-  account_public_id UUID,
+  account_public_id UUID FK -> account.public_id ON DELETE RESTRICT,
   reaction_type VARCHAR(20) CHECK (reaction_type IN ('LIKE', 'DISLIKE')),
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ,
@@ -614,14 +710,25 @@ root가 top-level인지, `community_post`·`community_comment` subtype이 conten
 trigger가 우회 write와 race의 최종 backstop입니다. Parent/root/post와 creation request 값은
 생성 후 갱신하지 않습니다.
 
+`community_post.title`은 `char_length(title) BETWEEN 1 AND 120`, 앞뒤 U+0020 공백 없음,
+control character 없음과 연속 whitespace 없음 check를 둡니다. `body_preview`도
+`char_length(body_preview) BETWEEN 1 AND 200`, 앞뒤 공백·control character·연속 whitespace
+없음 check를 둡니다. Application은 모든 Unicode whitespace를 U+0020으로 정규화하고 Java
+`codePointCount`로 같은 상한을 검증합니다. DB check는 우회 write의 nonblank·저장 상한과
+control·앞뒤·연속 공백 오류를 방어하고, 전체 Unicode normalization의 단일 owner는 domain
+value로 유지합니다.
+
 `community_post.body`는 DB가 JSON object, `body_schema_version=1`과 `blocks` array 존재까지
 확인합니다. 각 block의 허용 field, TEXT 전체 20,000자, IMAGE 최대 10개와 nonblank TEXT 최소
-1개는 D3 계약을 읽는 application validator가 검증합니다. JSON 내부 전체를 SQL trigger로
-중복 구현하지 않습니다.
+1개는 D3 계약을 읽는 application validator가 검증합니다. JSON 내부 전체와 preview 파생
+알고리즘을 SQL trigger로 중복 구현하지 않습니다. Post 생성·body 수정 use case는 한
+transaction에서 body와 `body_preview`를 항상 함께 갱신하고 persistence adapter는 둘 중 하나만
+받는 write method를 공개하지 않습니다.
 
 주요 index는 다음 query 모양을 소유합니다.
 
-- post: `(board_id, created_at DESC, id DESC)` where kind is POST
+- visible post page·count: `(board_id, created_at DESC, id DESC)` where kind is POST and
+  `author_deleted_at IS NULL AND moderator_hidden_at IS NULL`
 - top-level comment: `(post_content_id, created_at DESC, id DESC)` where kind is COMMENT and parent is null
 - reply: `(thread_root_comment_id, created_at ASC, id ASC)` where kind is COMMENT and root is not null
 - reaction aggregate: `(content_id, reaction_type)`
@@ -636,9 +743,9 @@ moderation_report(
   public_id UUID UNIQUE,
   target_content_public_id UUID,
   target_kind VARCHAR(20) CHECK (target_kind IN ('POST', 'COMMENT')),
-  reporter_account_public_id UUID,
+  reporter_account_public_id UUID FK -> account.public_id ON DELETE RESTRICT,
   status VARCHAR(30) CHECK (status IN ('OPEN', 'CONTENT_HIDDEN', 'DISMISSED')),
-  resolved_by_account_public_id UUID NULL,
+  resolved_by_account_public_id UUID NULL FK -> account.public_id ON DELETE RESTRICT,
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ,
   resolved_at TIMESTAMPTZ NULL,
@@ -648,7 +755,8 @@ moderation_report(
 
 같은 reporter/target의 open 중복은 `status = 'OPEN'` partial unique index로 막고, open report
 조회는 `(status, created_at DESC, id DESC)` index를 사용합니다. `OPEN`이면 처리자·처리 시각이
-null이고 종결 상태이면 둘 다 필수라는 check를 둡니다. Community table FK는 만들지 않습니다.
+null이고 종결 상태이면 둘 다 필수라는 check를 둡니다. 신고 대상 Community 콘텐츠를 가리키는
+module 간 FK는 만들지 않지만 reporter와 처리자의 Account 공개 UUID FK는 유지합니다.
 
 #### Notification 소유
 
@@ -656,8 +764,8 @@ null이고 종결 상태이면 둘 다 필수라는 check를 둡니다. Communit
 notification_inbox(
   id BIGINT PK IDENTITY,
   public_id UUID UNIQUE,
-  recipient_account_public_id UUID,
-  actor_account_public_id UUID,
+  recipient_account_public_id UUID FK -> account.public_id ON DELETE RESTRICT,
+  actor_account_public_id UUID FK -> account.public_id ON DELETE RESTRICT,
   type VARCHAR(40) CHECK (type IN ('COMMUNITY_COMMENT', 'COMMUNITY_REPLY')),
   source_content_public_id UUID,
   post_public_id UUID,
@@ -665,13 +773,15 @@ notification_inbox(
   updated_at TIMESTAMPTZ,
   read_at TIMESTAMPTZ NULL,
   version BIGINT,
-  UNIQUE(recipient_account_public_id, source_content_public_id, type)
+  UNIQUE(recipient_account_public_id, source_content_public_id),
+  CHECK(recipient_account_public_id <> actor_account_public_id)
 )
 ```
 
 recipient inbox index는 `(recipient_account_public_id, created_at DESC, id DESC)`이고 unread
 query를 위해 `(recipient_account_public_id, created_at DESC, id DESC) WHERE read_at IS NULL`
-partial index를 둡니다. Community와 account table FK는 만들지 않습니다.
+partial index를 둡니다. Community content에는 module 간 FK를 만들지 않지만 recipient와 actor는
+위 account 공개 UUID FK를 사용합니다.
 
 #### Media 소유
 
@@ -679,7 +789,7 @@ partial index를 둡니다. Community와 account table FK는 만들지 않습니
 media_asset(
   id BIGINT PK IDENTITY,
   public_id UUID UNIQUE,
-  owner_account_public_id UUID,
+  owner_account_public_id UUID FK -> account.public_id ON DELETE RESTRICT,
   idempotency_key UUID,
   request_hash CHAR(64),
   status VARCHAR(30) CHECK (status IN ('RESERVED', 'UPLOADED', 'VERIFYING',
@@ -740,7 +850,7 @@ media_job_action(
   from_status VARCHAR(30) CHECK (from_status IN ('RUNNING', 'DEAD')),
   to_status VARCHAR(30) CHECK (to_status IN ('RETRY', 'RESOLVED')),
   actor_type VARCHAR(20) CHECK (actor_type IN ('SYSTEM', 'ADMIN')),
-  actor_account_public_id UUID NULL,
+  actor_account_public_id UUID NULL FK -> account.public_id ON DELETE RESTRICT,
   action_code VARCHAR(100),
   created_at TIMESTAMPTZ,
   UNIQUE(job_id, request_id),
@@ -766,7 +876,7 @@ media_reconciliation_issue(
   last_seen_at TIMESTAMPTZ,
   resolution_code VARCHAR(100) NULL,
   resolved_by_type VARCHAR(20) NULL CHECK (resolved_by_type IN ('SYSTEM', 'ADMIN')),
-  resolved_by_account_public_id UUID NULL,
+  resolved_by_account_public_id UUID NULL FK -> account.public_id ON DELETE RESTRICT,
   resolved_at TIMESTAMPTZ NULL,
   created_at TIMESTAMPTZ,
   updated_at TIMESTAMPTZ,
@@ -1040,7 +1150,8 @@ Issuer lifecycle은 다음을 고정합니다.
 - 새 table, constraint, index와 `free` board seed는 append-only Flyway migration으로 만듭니다.
   Seed는 `public_id=ed710d1c-91f1-4266-a035-bba33a7f52cb`, `slug=free`, `name=자유게시판`을
   고정해 환경마다 같은 공개 식별자와 표시 이름을 만듭니다.
-  기존 account/auth table을 Community 편의를 위해 변경하거나 공유 FK를 추가하지 않습니다.
+  기존 account/auth table은 변경하지 않고, 새 table 쪽에서 이미 unique인
+  `account(public_id)`를 참조하는 FK만 추가합니다.
 - Runtime role에는 새 table DML만 부여하고 schema DDL은 기존 migration job이 소유합니다.
 - Community endpoint는 schema, media bucket, OIDC identity·overlap/rollback, worker와 DEAD
   recovery, replica 수와 anonymous rate·egress 상한 capability가 모두 준비됐을 때만 활성화합니다.
@@ -1076,11 +1187,11 @@ Issuer lifecycle은 다음을 고정합니다.
 
 ### Post write
 
-아래 예시는 현재 유효한 body 계약만 나타냅니다. Title field의 존재·필수성·검증과 response
-projection은 제목 결정이 닫힌 뒤 이 계약에 추가하거나 제목 없음으로 확정합니다.
+Post 생성 request는 필수 `title`과 body를 받습니다.
 
 ```json
 {
+  "title": "주말 드라이브 코스를 추천해 주세요",
   "body": {
     "version": 1,
     "blocks": [
@@ -1091,10 +1202,36 @@ projection은 제목 결정이 닫힌 뒤 이 계약에 추가하거나 제목 �
 }
 ```
 
-Response는 post UUID, board slug, body, effective visibility, `createdAt`, nullable `editedAt`,
-author display, like/dislike count와 인증 사용자의 선택을 분리해 반환합니다. 제목과 목록
-preview field는 부분 재검토 대기입니다. Public response는 internal PK와 account UUID를
-포함하지 않습니다.
+Post 수정 request는 변경할 field만 보냅니다. 다음 예시는 제목만 수정하며, body만 보내거나
+두 field를 함께 보내는 것도 같은 endpoint에서 처리합니다.
+
+```json
+{
+  "title": "서울 근교 주말 드라이브 코스를 추천해 주세요"
+}
+```
+
+Visible post detail response는 post UUID, board slug, 필수 `title`, body, effective visibility,
+`createdAt`, nullable `editedAt`, author display, like/dislike count와 인증 사용자의 선택을 분리해
+반환합니다. Public response는 internal PK와 account UUID를 포함하지 않습니다.
+
+Post 목록 item은 다음 핵심 projection을 사용합니다.
+
+```json
+{
+  "id": "post-uuid",
+  "board": "free",
+  "title": "주말 드라이브 코스를 추천해 주세요",
+  "preview": "이번 주말에 서울에서 출발해 반나절 정도 다녀올 코스를 찾고 있습니다.",
+  "visibility": "VISIBLE",
+  "createdAt": "2026-09-01T10:00:00Z",
+  "editedAt": null
+}
+```
+
+작성자 표시와 reaction field는 위 예시에 생략했지만 D11 projection에 포함합니다. Preview는
+write input이 아니며 `body_preview`를 `preview`로 반환합니다. Tombstone detail은 `title`,
+`body`, `preview`와 author를 반환하지 않습니다.
 
 ### Comment write
 
@@ -1134,7 +1271,9 @@ preview field는 부분 재검토 대기입니다. Public response는 internal P
 | 다단 대화 UI | 저장된 parent chain으로 tree projection 추가 | 기존 root 기반 1단 projection을 계속 제공 가능 |
 | 공개 profile | account가 author 표시 DTO에 public profile link를 additive 제공 | Content는 같은 account 관계와 표시 batch 계약 유지 |
 | 새 reaction | reaction type과 별도 count/ranking projection 추가 | 사용자·target unique source row 유지 |
-| 검색·인기·추천 | post TEXT와 reaction source를 소비하는 read projection 추가 | Core write와 현재 latest cursor 변경 불필요 |
+| 글자 서식 | 새 body schema version과 parser·preview extractor 추가 | 제목 scalar와 v1 reader를 유지하고 기존 row를 강제 migration하지 않음 |
+| 게시글별 알림 해제 | Notification에 post·recipient preference를 추가해 후보 수신자를 filter | Community의 수신 후보와 기존 inbox row를 유지 |
+| 검색·인기·추천 | versioned body reader와 reaction source를 소비하는 cursor read projection 추가 | Core write와 현재 번호 page 계약 변경 불필요 |
 | 영상·파일 | media type별 검증 adapter와 새 body block 추가 | 기존 IMAGE asset과 v1 post block 해석 유지 |
 | 이메일·push | inbox source를 소비하는 delivery lifecycle 추가 | Community transaction과 기존 in-app read state 유지 |
 | 계정 제재·appeal | moderation case에 actor·decision·appeal lifecycle을 추가하고 `HIDDEN_RETAINED` media를 복원 또는 정책에 따라 파기 | Community는 effective hide와 private 원본 관계를 유지 |
@@ -1165,8 +1304,15 @@ preview field는 부분 재검토 대기입니다. Public response는 internal P
   `HIDDEN_RETAINED|RELEASED` usage가 노출되지 않습니다.
 - Recovery: worker 중단·재시작, S3 일시 실패와 중복 job 실행이 object/DB 상태를 잃거나 중복
   공개하지 않습니다.
-- Query: 실제 PostgreSQL에서 cursor 경계, 정렬, tombstone과 batch 조회가 N+1·offset drift 없이
+- Query: 실제 PostgreSQL에서 게시글 page 기본값·음수 page·size 하한/상한·전체 건수·전체 범위
+  밖의 유효 page와 나머지 cursor 경계, 정렬, tombstone과 batch 조회가 N+1 없이 계약대로
   동작합니다.
+- Notification: 답글의 post 작성자·direct parent 조합, 동일 수신자, actor 일치와 inbox insert
+  실패를 검증해 수신자 0~2개·자기 알림 제외·중복 방지·transaction rollback을 증명합니다.
+- Account relation: 모든 account 공개 UUID FK가 존재하지 않는 식별자와 account 물리 삭제를
+  막고, Account table 직접 조회 없이 공개 API로 표시 정책을 적용합니다.
+- Post 표현: Unicode 제목 경계값·whitespace 정규화, title-only/body-only PATCH, body와 preview의
+  원자적 갱신, 목록의 body JSON 미조회와 tombstone field 비노출을 각각 검증합니다.
 - Extension: 새 board, 새 reaction type과 vehicle relation spike가 기존 row migration이나
   public identifier 교체 없이 가능함을 schema/API review로 확인할 수 있습니다.
 
@@ -1174,21 +1320,22 @@ preview field는 부분 재검토 대기입니다. Public response는 internal P
 
 | 설계 표면 | 판정 | 닫힌 위치 |
 | --- | --- | --- |
-| 사용자·업무 | 부분 재검토 대기 | 제목·목록 표시만 일반 문서에서 결정 대기, 나머지는 목표 불변식과 visibility·알림·신고 계약에 적용 |
-| API | 부분 재검토 대기 | D10과 API payload 핵심 계약의 제목 의존 부분만 대기 |
+| 사용자·업무 | 적용 | 확정된 15개 제품 결과, 목표 불변식과 visibility·알림·신고 계약에 적용 |
+| API | 적용 | D10과 API payload 핵심 계약의 title·preview·tombstone projection |
 | Domain | 적용 | D2~D9 |
-| Data | 부분 재검토 대기 | D12의 `community_post` 제목 관련 schema·validator만 대기, 나머지 D12·D13 적용 |
+| Data | 적용 | D12의 `community_post.title`, `body_preview`, body 무결성과 D13 |
 | 구조 | 적용 | D1, D19 |
 | Security·privacy | 적용 | D14~D16 |
-| 품질·성능 | 부분 재검토 대기 | D11의 post 목록 제목·preview projection만 대기, 나머지 D11·D13과 검증 가능성 계약 적용 |
+| 품질·성능 | 적용 | D11의 게시글 offset page, 나머지 keyset·batch 조회와 검증 가능성 계약 |
 | 운영·복구 | 적용 | D17, D18 |
 | Tool·외부 시스템 | 적용 | D14, D15, D19 |
 | 문서 | 적용 | 일반 문서는 제품 결과, 이 문서는 기술 목표, 구현 뒤 project/domain/schema SOT가 현재 사실을 각각 소유 |
 
-활성 사용자 결정은 게시글 제목 하나입니다. 제목에 의존하지 않는 API field 이름,
-class·method 이름, Flyway version, exact IAM resource name과 환경별 값은 이 기술 계약을
-소비하는 실행 계획이 source와 함께 결정할 구현 단위이며 제품 결과를 다시 여는 질문이
-아닙니다.
+활성 사용자 값 결정은 없습니다. 현재 사용자 확인은 이 문서의 D1~D19와 API·DB·검증 계약을
+합친 exact 해결 설계 후보 전체입니다. API class·method 이름, Flyway version, exact IAM
+resource name과 환경별 값은 이 기술 계약을 소비하는 실행 계획이 source와 함께 결정할 구현
+단위이며 제품 결과를 다시 여는 질문이 아닙니다. 후보를 긍정하면 중복 확정 질문 없이 실행
+계획 단계로 전환합니다.
 
 ## 관련 문서와 근거
 
