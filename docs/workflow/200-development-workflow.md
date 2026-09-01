@@ -15,7 +15,9 @@
 
 ## 기본 절차
 
-1. 작업 실행 workflow가 확정한 결과 계약, 허용 표면과 dirty 경계를 입력으로 받습니다.
+1. 작업 실행 workflow가 현재 작업 문서와 source에서 확정한 의미 단위 지도, 결과 계약,
+   허용 표면과 dirty 경계를 입력으로 받습니다. 상위 기능명이나 전체 구현 목록을 한 단위로
+   축약하지 않습니다.
 2. 관련 코드, test와 현재 SOT를 읽고 호출 흐름과 책임 경계를 파악합니다.
 3. 설계 또는 기반 구조가 포함되면 [설계 워크플로우](110-design-workflow.md)를 먼저 통과합니다.
 4. 외부 도구나 저장소 내부 실행 script·verifier·hook의 도입·존치·제거, caller,
@@ -24,8 +26,11 @@
 5. 저장소 실행 script를 추가·변경하면
    [스크립트 엔지니어링 가이드](240-script-engineering-guideline.md)로 책임 경계, interface,
    안전성, 검증과 운영 계약을 확정합니다.
-6. 기능, 버그와 도메인 변경은 [TDD 워크플로우](210-tdd-workflow.md)로 가장 작은 실패 test부터 시작합니다.
-7. 기존 구조와 naming을 따라 확정된 목표를 충족하는 가장 작은 단위로 구현합니다.
+6. 기능, 버그와 도메인 변경은 [TDD 워크플로우](210-tdd-workflow.md)로 현재 의미 단위의
+   가장 작은 실패 test부터 시작합니다. 서로 다른 oracle·복구·revert 경계의 test와 구현을
+   한 Green 단위로 합치지 않습니다.
+7. 기존 구조와 naming을 따라 현재 의미 단위의 production 경로와 필수 test·설정·문서를
+   함께 구현하고 검증한 뒤 다음 단위로 넘어갑니다.
 8. 구현 중 새 설계나 계획 기반 결함이 드러나면 봉합하지 않고 관련 plan·design owner에
    인계하며, 영향 단위의 상태 전이는 작업 실행 workflow를 따릅니다.
 9. 변경 지점에 가까운 test부터 실행하고 완료 전 전체 검증 범위를 판단합니다.
@@ -34,6 +39,9 @@
 
 ## 구현 전 확인
 
+- 현재 작업 문서의 의미 단위·의존·합류점과 각 단위의 완료 oracle을 실제 source에
+  대조했습니다.
+- 현재 구현 단위의 write set, 실패 뒤 재시작 지점과 독립 revert 경계를 확인했습니다.
 - 현재 코드의 소유 모듈, 호출 흐름과 의존 방향을 확인했습니다.
 - 기능 구현, 작은 기반, 큰 기반 또는 혼합 작업으로 분류했습니다.
 - public API, DB, 보안, transaction과 외부 연동 설계가 필요한지 확인했습니다.
@@ -66,7 +74,9 @@
 
 ## 검증
 
-- 가장 좁고 빠른 test에서 변경 동작을 먼저 확인합니다.
+- 각 의미 단위는 그 단위의 가장 좁고 빠른 test에서 독립적으로 확인한 뒤, 직접 consumer와
+  합류하는 단위가 닫혔을 때 통합 검증을 수행합니다. 전체 build 성공으로 단위별 검증을
+  대신하지 않습니다.
 - API, Security, persistence와 migration은 실제 위험 경계에 맞는 slice 또는 integration test로 보강합니다.
 - Java/Gradle 최종 검증은 `../tech-stack/310-code-quality-tools.md`의 명령 계약을 사용합니다.
 - 코드 작업은 final exact SHA의 required CI와 Sonar 완료 점검을 terminal gate로

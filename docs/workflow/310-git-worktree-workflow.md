@@ -12,6 +12,8 @@ stage·commit·push와 history 복구는
 
 - primary repository와 source·target worktree의 exact path
 - source·target branch와 고정한 commit SHA
+- 현재 작업 문서에서 branch가 소유할 상위 결과, 의미 단위 지도와 각 단위의 예정 commit·
+  검증 경계
 - worktree 생성, target ref 통합, conflict 내용 수정, merge commit, worktree 제거,
   local branch 삭제별 허용 효과
 - 제외할 기존·다른 작업의 dirty·staged·untracked·ignored 상태
@@ -23,6 +25,10 @@ snapshot, journal, metadata ledger와 custom guard를 만들지 않습니다.
 
 worktree 하나에는 작업 실행 workflow가 확정한 독립 병렬 책임 하나와 branch 하나만
 둡니다. 다른 책임을 덧붙이거나 branch 전환으로 같은 worktree를 재사용하지 않습니다.
+Branch 이름이나 사용자가 말한 큰 feature 이름으로 책임을 추측하지 않습니다. 생성 전
+현재 work item·확정 plan을 직접 읽고, branch가 순서대로 수행할 의미 단위와 제외 범위,
+단위별 검증·commit 경계를 projection합니다. 이 지도가 없거나 서로 독립인 상위 책임이
+섞였으면 branch를 만들지 않고 작업 실행 workflow의 의미 단위 분해 gate로 돌아갑니다.
 
 변경 직전에 관련 worktree에서 다음을 다시 확인합니다.
 

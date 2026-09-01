@@ -12,6 +12,7 @@ discovery·closure는 [작업 실행 워크플로우](100-work-execution-workflo
 
 - exact repository, local branch·ref와 필요한 remote ref
 - stage, commit, push, history rewrite별 현재 권한
+- 현재 작업 문서와 source에서 확정·검증된 의미 단위 지도
 - Git에 반영할 결과 단위, exact path·hunk와 dependency 순서
 - local 검증을 마친 후보와 push 뒤 적용할 terminal gate
 - 제외할 기존·다른 작업의 staged·unstaged·untracked 상태
@@ -157,6 +158,13 @@ payload에 포함해 이 충돌을 해소하지 않습니다.
 작업 실행 워크플로우에서 확정한 결과 단위와 dependency 순서를 그대로 commit 경계에
 투영합니다. 파일 수나 요청 문장 수로 새 결과 단위를 만들지 않습니다.
 
+Stage 전에 현재 작업 문서의 의미 단위 지도와 최종 candidate를 다시 읽고, 각 단위의
+`관찰 결과·consumer·복구·검증 oracle·독립 revert → exact path·hunk` 대응을 먼저
+완성합니다. `애플리케이션`, `인프라`, `문서`, module 이름이나 상위 feature 이름처럼
+artifact 종류·배치 위치만 나타내는 묶음은 그 안의 모든 결과가 같은 의미 경계를 가진다는
+증거가 없으면 commit 단위가 아닙니다. 이 대응 없이 broad subject를 먼저 정하거나 전체
+diff를 한 commit으로 stage하지 않습니다.
+
 1. 한 commit은 하나의 유효한 결과 단위와 그 결과에 필수인 구현·호출·test·문서를
    포함합니다.
 2. exact path·hunk 전부를 그 결과에 연결하고, 반대로 결과에 필요한 hunk가 빠지지
@@ -170,6 +178,8 @@ payload에 포함해 이 충돌을 해소하지 않습니다.
    표현합니다.
 6. subject의 각 의미 구절과 staged hunk를 양방향으로 대조합니다. `A와 B`, `A·B`,
    `A 및 B`처럼 독립 결과를 병렬 나열해야 하면 확정된 결과 단위로 돌아갑니다.
+7. 각 commit의 직접 test와 문서는 그 commit이 만든 결과를 증명·설명해야 합니다. 뒤의
+   거대한 통합 commit이나 최종 build가 앞 commit의 누락된 oracle을 대신하지 않습니다.
 
 message는 최근 repository 이력을 대조한 Conventional Commit 형식을 사용합니다. type과
 선택적 scope는 표준 식별자를 유지하고, subject는 한국어 명사구로 작성합니다. `검토`,
