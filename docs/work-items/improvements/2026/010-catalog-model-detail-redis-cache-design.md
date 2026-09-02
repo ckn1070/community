@@ -6,19 +6,19 @@ Proposed
 
 ## 계획 단계
 
-결과 정의 U1 대기 / 해결 설계 부분 재검토
+해결 설계
 
 ## 현재 결론과 다음 행동
 
 | 구분         | 현재 내용                                                                                                                                                                                                                                         |
 | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 현재 결론      | Redis 기술 비교 후보는 보존 중이지만, DB 처리 한계 초과를 별도 오류로 구별해 재시도를 안내할지 U1이 제품 결과를 바꾸므로 [010 자동차 모델 상세 Redis cache 작업 본문](010-catalog-model-detail-redis-cache.md)의 결과 정의를 다시 열었습니다. |
+| 현재 결론      | U1-A를 반영해 DB 보호 한도 소진을 `503 Service Unavailable`과 재시도 정보로 구별하는 D5-C를 추가했습니다. 결과 정의는 닫혔고 D1~D12 전체 해결 설계 후보가 독립 검증을 기다립니다. |
 | 닫힌 선행 결과 | 대상 API 하나, 5분 freshness 상한, self-managed 단일 Redis instance, 효과별 ablation 비교와 저장소 구현 뒤 별도 권한의 staging 실증은 유지됩니다. Redis 장애 fallback은 기존 API 의미를 보존하고 DB schema는 바꾸지 않습니다. |
-| 선행 외부 gate | License owner가 공식 세 license 원문으로 하나를 기록하기 전에는 이 작업의 새 catalog model-detail cache Redis workload/image를 repository에 추가하거나 staging·production에 배포하지 않습니다. 기존 Argo CD 내부 Redis는 이번 mutation 범위가 아닌 별도 compliance 관찰입니다. |
-| 남은 gate    | 현재 결과 정의 후보는 fresh 독립 검증을 통과했습니다. 본문의 U1 선택과 결과 정의 closure 뒤 D5·API 영향을 재검증해야 합니다. 이 문서는 그 전까지 부분 재검토 대기 상태이며 구현 입력이 아닙니다. |
-| 현재 행동 주체   | 사용자가 작업 본문 첫 화면의 U1 제품 동작을 선택합니다. |
-| 사용자 차례     | `U1은 과부하를 구별하고 재시도를 안내하도록 반영해줘` 또는 `U1은 기존 일반 서버 오류 의미를 유지하도록 반영해줘`로 답합니다. |
-| 현재 행동 뒤 결과 | U1 선택으로 결과 정의를 닫은 뒤 영향받은 D5와 공개 오류 계약을 반영·재검증하고, 나머지 기술 후보의 사용자 단계 확정으로 돌아갑니다. |
+| 선행 외부 gate | License owner가 공식 세 license 원문으로 하나를 기록하기 전에는 이 작업의 새 catalog model-detail cache Redis workload/image를 repository에 추가하거나 staging·production에 배포하지 않습니다. 이 gate는 현재 설계 검증·사용자 확정을 막지 않으며, 기존 Argo CD 내부 Redis는 이번 mutation 범위가 아닌 별도 compliance 관찰입니다. |
+| 남은 gate    | D1~D12와 D5-C의 기술 선택·목표 보존·source 관계는 fresh 독립 검증을 통과했습니다. 사용자가 이 exact 해결 설계 후보를 확정해야 실행 계획으로 전환할 수 있습니다. |
+| 현재 행동 주체   | 사용자가 현재 문서의 D1~D12 전체 후보를 확정하거나 바꿀 결정 ID와 값을 지정합니다. |
+| 사용자 차례     | `현재 해결 설계 후보 전체를 그대로 확정해줘` 또는 바꿀 결정 ID와 값을 답합니다. |
+| 현재 행동 뒤 결과 | 사용자 확정 뒤 실행 계획을 엽니다. License 결정 전에는 후속 workload/image 구현·배포를 시작하지 않습니다. |
 
 ## 문서 책임과 설계 입력
 
@@ -84,7 +84,8 @@ R0은 사용자가 이미 고정한 Redis 도입 범위이지 비교표가 아�
 | D4-B  | Not-found 결과도 저장할 것인가                    | 같은 404 의미를 유지하면서 DB 재조회와 cache pollution을 다르게 부담합니다.                    | 성공 결과의 날짜 범위                                 |
 | D4-C  | 현재 변경 경로에서 stale을 어떻게 끝낼 것인가             | 현재 runtime writer 부재로 TTL·namespace가 파생되는 고정 제약이며 비교군이 아닙니다.            | 미래 writer event 설계                           |
 | D5-A  | 같은 key의 동시 miss를 어느 범위에서 합칠 것인가          | 모두 PostgreSQL 중복 조회를 줄이되 보호 범위와 coordination 비용이 다릅니다.                  | 서로 다른 key의 DB 동시성 |
-| D5-B  | Single-flight가 수용 한계에 닿으면 DB 부하를 어떻게 제한할 것인가 | 모두 cache miss의 정확성을 유지하되 DB 동시성·대기 상한을 다르게 만듭니다. | 처리 한계 초과를 별도 오류로 알릴지는 U1, 구체 HTTP 값은 U1 뒤 해결 설계 |
+| D5-B  | Single-flight가 수용 한계에 닿으면 DB 부하를 어떻게 제한할 것인가 | 모두 cache miss의 정확성을 유지하되 DB 동시성·대기 상한을 다르게 만듭니다. | 한도 소진 뒤 공개 오류는 D5-C |
+| D5-C  | 공유 DB 보호 한도 소진을 어떤 HTTP 오류로 알릴 것인가 | 모두 같은 server-side capacity 소진에서 요청을 실패시키고 재시도를 안내하되 실패 책임의 의미가 다릅니다. | DB 동시성 상한과 client별 rate limit 정책 |
 | D6-A  | Redis가 느리거나 실패할 때 요청을 어떻게 제한할 것인가        | 모두 DB fallback을 유지하되 반복 timeout·retry 부하를 다르게 만듭니다.                     | Circuit 구현 library |
 | D6-B  | 선택한 circuit 동작을 어떤 구현 경계로 제공할 것인가 | 같은 read/write breaker 동작을 만들되 상태 머신·Spring 결합·검증 책임이 다릅니다. | Circuit 사용 여부 |
 | D7-A  | 어떤 application client를 사용할 것인가           | 같은 Redis command 결과를 만드는 client 경계끼리 비교합니다.                             | Cache orchestration 방식                       |
@@ -109,7 +110,7 @@ R0 Redis 고정 입력
   -> D1 Redis 흐름의 소유자
        -> D2 DB transaction 경계
        -> D3 key·value 계약 -> D4-A admission -> D4-B negative cache -> D4-C stale 종료
-       -> D5-A 동시 miss -> D5-B DB 부하 상한 -> U1 공개 의미 -> HTTP 기술값 재검토
+       -> D5-A 동시 miss -> D5-B DB 부하 상한 -> D5-C 공개 오류 계약
        -> D6-A 장애 동작 -> D6-B circuit 구현
   -> D7-A client -> D7-B release line -> D7-C controller -> D7-D storage -> D7-E license
        -> D8 memory·eviction
@@ -132,6 +133,7 @@ R0 Redis 고정 입력
 | D4-C | 300초 이하 TTL jitter + incompatible namespace 변경 | 5분 stale 상한과 동시 만료 완화 | 5분보다 빠른 변경 반영은 보장하지 않음 | Runtime writer가 없어 event invalidation producer가 없음 |
 | D5-A | Process-local per-key single-flight | 현재 replica 1의 hot-key stampede 완화 | 다중 replica 전체 중복은 막지 못함 | 현재 범위에서 distributed coordination 없이 필요한 보호를 달성 |
 | D5-B | 공유 future + bounded DB source bulkhead | 같은-key waiter를 별도 누적하지 않고 DB 동시성을 안전 예산 안에 제한 | 포화 시 bounded 대기 뒤 U1의 공개 의미 발생 | Direct DB 우회로 stampede를 다시 만들지 않음 |
+| D5-C | `503 Service Unavailable` + `Retry-After` + `CATALOG_MODEL_DETAIL_CAPACITY_EXHAUSTED` | 일시적인 서버 처리 한계와 재시도 행동을 기존 요청 제한 오류와 구별 | 공개 API 오류 계약·문서·검증 추가 | U1-A를 HTTP 표준 의미와 기존 429 계약을 훼손하지 않고 구현 |
 | D6-A | 짧은 timeout + read/write circuit + DB fallback, retry 없음 | 반복 Redis 장애의 지연·client work 제한 | Breaker 상태와 threshold 운영 | Redis 장애를 API 장애로 확대하지 않는 필수 기준 |
 | D6-B | Resilience4j core programmatic API | Adapter 안에서 read/write 상태를 분리하고 검증된 상태 머신 사용 | Library dependency·upgrade 관리 | 자체 구현 오류와 global AOP 결합을 함께 피함 |
 | D7-A | Spring Data Redis + Lettuce | Spring 관리 client 경계 유지 | Raw client 세밀 제어는 사용하지 않음 | 필요한 기능을 만족하는 최소 추가 관리 표면 |
@@ -431,11 +433,48 @@ DB·대기 memory를 어떻게 제한해야 합니까?
 합류시키고 leader와 새 key만 DB permit을 소비합니다. In-flight key 수, DB permit과 대기 시간은
 Hikari pool·request timeout보다 작은 안전 예산으로 두며 exact 값은 실행 계획의 resource
 측정에서 동결합니다. 포화 요청을 DB로 직접 우회하지 않아 stampede를 다시 만들지 않는 대신,
-capacity를 넘는 요청은 bounded 대기 뒤 실패합니다. 그 상황을 별도 오류로 알리고 재시도를
-안내할지는 기술 bulkhead와 분리된 사용자 결정 U1이 소유하고, 구체적인 HTTP status·header·
-error code는 U1 뒤 해결 설계에서 REST 기준과 표준을 비교해 Agent가 선택합니다.
+capacity를 넘는 요청은 bounded 대기 뒤 D5-C의 공개 오류로 실패합니다. 별도 오류와 재시도
+안내는 사용자가 선택한 U1-A가 소유하고, 구체적인 HTTP status·header·error code는 D5-C가 소유합니다.
 DB connection pool·request timeout·memory 측정으로 bulkhead 없이도 안전 상한이 이미 보장되거나,
 다중 replica·외부 admission control이 source-load 상한을 소유하게 되면 이 결정을 다시 엽니다.
+
+### D5-C. DB 보호 한도 소진의 HTTP 계약
+
+**결정 질문:** D5-B의 DB source-load permit과 최대 대기 시간이 모두 소진된 같은 상황을
+어떤 HTTP 오류로 반환해야 U1-A의 일시 과부하·재시도 의미를 정확히 전달할 수 있습니까?
+두 후보는 같은 요청을 실패시키고 `Retry-After`를 제공할 수 있지만 실패 책임의 의미가 다릅니다.
+
+| 비교 축 | `429 Too Many Requests` | `503 Service Unavailable` |
+| --- | --- | --- |
+| 표준 의미 | 해당 client가 일정 시간에 너무 많은 요청을 보냈다는 요청 빈도 제한입니다. | 서버가 일시적인 과부하로 요청을 처리할 수 없다는 가용성 실패입니다. |
+| Client 행동 | 자신의 요청 속도를 낮추는 근거가 됩니다. | 서버가 제시한 시간 뒤 일시 실패를 재시도하는 근거가 됩니다. |
+| 기존 계약과의 충돌 | 현재 community rate limit의 429와 같은 의미가 되어 client 책임과 server DB capacity를 혼동합니다. | 기존 429를 유지하면서 catalog server capacity exhaustion을 별도로 분류합니다. |
+| `Retry-After` | 사용할 수 있지만 rate-limit 정책의 재시도 시점으로 해석됩니다. | RFC 9110이 일시적 과부하의 예상 회복 시간을 알리는 용도로 정의합니다. |
+| 관측·운영 | Client rate limit과 합산돼 원인별 capacity 판단이 흐려집니다. | 전용 오류 code·metric으로 DB 보호 동작과 일반 5xx를 구별할 수 있습니다. |
+| 현재 목표 판정 | 요청자별 quota가 아닌 공유 DB 처리 한계이므로 실제 실패 책임과 맞지 않습니다. | **U1-A의 일시 서버 과부하와 재시도 의미를 그대로 표현합니다.** |
+
+**선택: `503 Service Unavailable`, `Retry-After`, `CATALOG_MODEL_DETAIL_CAPACITY_EXHAUSTED`.** 현재 보호 한도는
+특정 client의 요청량을 판정하는 rate limiter가 아니라 모든 요청이 공유하는 server-side DB
+source capacity이므로 503을 사용합니다. 응답 body는 RFC 9457 `ProblemDetail` 형식을 유지하고,
+프로젝트 확장 field인 `code`에 위 catalog 전용 literal을 넣습니다. RFC 9457이 이 code를
+정의하는 것은 아닙니다.
+
+`Retry-After`는 delta-seconds로 제공합니다. 초기값은 현재 production Hikari 연결 획득 상한
+`1500ms`를 초 단위로 올림한 `2`초로 두고, D5-B의 더 짧은 permit 대기 상한 때문에 이 값이
+줄어들지 않게 합니다. 실행 계획은 구현 전에 current Hikari·request budget을 다시 확인해
+같은 규칙으로 초기값을 동결합니다. Staging 회복 분포는 그 초기값의 선행 입력이 아니라 구현
+후 qualification에서 동시 재시도와 회복 시간을 검증하고 다음 변경을 판단하는 증거입니다.
+
+현재 `ApiErrorResponseFactory`는 RFC 9457 body와 project `code`를 만들고,
+`ApiExceptionHandler`는 모든 429에만 `Retry-After: 1`을 붙입니다. 구현은 catalog capacity
+exception을 위 exact code로 변환하고 그 503에만 `Retry-After`를 연결해야 하며, 기존 모든
+503이나 429의 header 정책을 일괄 변경하지 않습니다. 구현 뒤에는
+[REST API 설계](../../../architecture/230-rest-api-design.md)의 실패 응답 표에 이 503 의미와
+재시도 계약을 영구 기준으로 승격합니다.
+
+공유 source capacity가 아니라 client·credential별 quota가 실패 원인이 되면 429를 다시
+비교합니다. 외부 gateway가 같은 capacity admission과 공개 오류를 소유하게 되면 application
+계약의 중복 여부를 다시 검토합니다.
 
 ## D6. 장애 격리와 fallback
 
@@ -962,6 +1001,7 @@ backup·관측 책임을 새로 비교합니다. PostgreSQL authoritative source
 | 큰 read 부하 | Hot detail 재사용, single-flight, LFU와 외부 부하 시험 | Unique-key miss·Redis 장애 시 capacity는 DB 기준선에 제한됩니다. |
 | 정확성과 5분 freshness | Query identity key, 300초 이하 TTL, corrupt fallback | Runtime writer가 생기면 active invalidation이 필요합니다. |
 | 장애 격리 | 짧은 timeout, circuit, retry 없음, readiness 분리 | Cache-enhanced peak 전체를 Redis 없이 보장하지는 않습니다. |
+| DB 보호 한도 초과 | 503, `Retry-After`, `CATALOG_MODEL_DETAIL_CAPACITY_EXHAUSTED`로 일시 과부하와 재시도 행동을 구별 | Retry hint가 동시 재시도를 유발하지 않는지 staging에서 검증·조정해야 합니다. |
 | 확장성과 유지보수성 | Catalog port·adapter, versioned document, DB source 분리 | 다중 replica 전에는 distributed concurrency를 재설계해야 합니다. |
 | 단일 node 비용 경계 | 무영속 replica 1, request·limit, maxmemory headroom | Node 자체가 application·Redis 공통 failure domain입니다. |
 | 보안 | 비공개 Service, NetworkPolicy, 최소 ACL, Secret, non-root | 현재 Pod network는 TLS로 암호화하지 않습니다. Production 승격 gate입니다. |
@@ -974,6 +1014,9 @@ backup·관측 책임을 새로 비교합니다. PostgreSQL authoritative source
 - **Application 경계**: [200 헥사고날 아키텍처](../../../architecture/200-hexagonal-architecture.md),
   [210 Spring Boot 모듈 구조](../../../architecture/210-spring-boot-module-structure.md),
   [220 경계와 매핑 규칙](../../../architecture/220-boundary-and-mapping-rules.md)
+- **현재 API 오류 계약**: [230 REST API 설계](../../../architecture/230-rest-api-design.md),
+  `ApiErrorResponseFactory`, `ApiExceptionHandler`, `CatalogErrorCode`,
+  `CommunityPublicRateLimitFilter`
 - **현재 runtime**: [120 EC2 Kubernetes node](../../../project/infrastructure/120-ec2-kubernetes-node.md),
   [150 Kubernetes cluster](../../../project/infrastructure/150-kubernetes-cluster.md),
   [220 GitOps Application Delivery](../../../project/infrastructure/220-gitops-application-delivery.md)
@@ -997,3 +1040,6 @@ backup·관측 책임을 새로 비교합니다. PostgreSQL authoritative source
   [k6 release](https://github.com/grafana/k6/releases)
 - **Circuit breaker 공식 근거**: [Resilience4j circuit breaker](https://resilience4j.readme.io/docs/circuitbreaker),
   [Resilience4j release](https://github.com/resilience4j/resilience4j/releases)
+- **HTTP 오류 공식 근거**: [RFC 9110 503 Service Unavailable](https://www.rfc-editor.org/rfc/rfc9110.html#name-503-service-unavailable),
+  [RFC 9110 Retry-After](https://www.rfc-editor.org/rfc/rfc9110.html#name-retry-after),
+  [RFC 6585 429 Too Many Requests](https://www.rfc-editor.org/rfc/rfc6585.html#section-4)
