@@ -25,6 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
 public class NotificationInboxController {
+  private static final String ACTOR_PARAMETER = "actor";
+  private static final String NOTIFICATION_PAGE_AFTER_CURSOR =
+      "SELECT id AS cursor_id,public_id AS id,type,source_content_public_id,post_public_id,created_at,read_at,version FROM notification_inbox WHERE recipient_account_public_id=:actor AND (created_at,id)<(:createdAt,:internalId) ORDER BY created_at DESC,id DESC LIMIT :limit";
+  private static final String NOTIFICATION_PAGE_FIRST =
+      "SELECT id AS cursor_id,public_id AS id,type,source_content_public_id,post_public_id,created_at,read_at,version FROM notification_inbox WHERE recipient_account_public_id=:actor ORDER BY created_at DESC,id DESC LIMIT :limit";
   private final JdbcClient jdbc;
   private final CursorTokens cursors;
 
@@ -36,13 +41,9 @@ public class NotificationInboxController {
       @RequestParam(defaultValue = "20") int size) {
     if (size < 1 || size > 50) throw invalidRequest();
     CursorTokens.Position position = decode(cursor);
-    String boundary = position == null ? "" : " AND (created_at,id)<(:createdAt,:internalId)";
     var query =
-        jdbc.sql(
-                "SELECT id AS cursor_id,public_id AS id,type,source_content_public_id,post_public_id,created_at,read_at,version FROM notification_inbox WHERE recipient_account_public_id=:actor"
-                    + boundary
-                    + " ORDER BY created_at DESC,id DESC LIMIT :limit")
-            .param("actor", actor(principal))
+        jdbc.sql(position == null ? NOTIFICATION_PAGE_FIRST : NOTIFICATION_PAGE_AFTER_CURSOR)
+            .param(ACTOR_PARAMETER, actor(principal))
             .param("limit", size + 1);
     if (position != null)
       query =
@@ -76,14 +77,14 @@ public class NotificationInboxController {
     jdbc.sql(
             "UPDATE notification_inbox SET read_at=COALESCE(read_at,NOW()),updated_at=NOW(),version=CASE WHEN read_at IS NULL THEN version+1 ELSE version END WHERE public_id=:id AND recipient_account_public_id=:actor")
         .param("id", notificationId)
-        .param("actor", actor)
+        .param(ACTOR_PARAMETER, actor)
         .update();
     Map<String, Object> result =
         jdbc
             .sql(
                 "SELECT public_id AS id,type,source_content_public_id,post_public_id,created_at,read_at,version FROM notification_inbox WHERE public_id=:id AND recipient_account_public_id=:actor")
             .param("id", notificationId)
-            .param("actor", actor)
+            .param(ACTOR_PARAMETER, actor)
             .query()
             .listOfRows()
             .stream()

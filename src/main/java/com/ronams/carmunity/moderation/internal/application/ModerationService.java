@@ -18,6 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
 public class ModerationService {
+  private static final String ACTOR_PARAMETER = "actor";
+  private static final String HIDE_CONTENT = "HIDE_CONTENT";
+  private static final String REPORT_PAGE_AFTER_CURSOR =
+      "SELECT id AS cursor_id,public_id AS id,target_content_public_id,target_kind,status,created_at,resolved_at,version FROM moderation_report WHERE status=:status AND (created_at,id)<(:createdAt,:internalId) ORDER BY created_at DESC,id DESC LIMIT :limit";
+  private static final String REPORT_PAGE_FIRST =
+      "SELECT id AS cursor_id,public_id AS id,target_content_public_id,target_kind,status,created_at,resolved_at,version FROM moderation_report WHERE status=:status ORDER BY created_at DESC,id DESC LIMIT :limit";
+  private static final String TARGET_PARAMETER = "target";
   private final JdbcClient jdbc;
   private final CommunityContentVisibility visibility;
   private final CursorTokens cursors;
@@ -30,26 +37,22 @@ public class ModerationService {
       jdbc.sql(
               "INSERT INTO moderation_report(public_id,target_content_public_id,target_kind,reporter_account_public_id,status) VALUES(:id,:target,:kind,:actor,'OPEN')")
           .param("id", id)
-          .param("target", target)
+          .param(TARGET_PARAMETER, target)
           .param("kind", kind)
-          .param("actor", actor)
+          .param(ACTOR_PARAMETER, actor)
           .update();
     } catch (DuplicateKeyException exception) {
       throw new ApiException(ModerationErrorCode.REPORT_ALREADY_OPEN, exception);
     }
-    return detail(id);
+    return detailView(id);
   }
 
   @Transactional(readOnly = true)
   public Map<String, Object> list(String status, String cursor, int size) {
     if (size < 1 || size > 50) throw new ApiException(ModerationErrorCode.INVALID_RESOLUTION);
     CursorTokens.Position position = decode(cursor);
-    String boundary = position == null ? "" : " AND (created_at,id)<(:createdAt,:internalId)";
     var query =
-        jdbc.sql(
-                "SELECT id AS cursor_id,public_id AS id,target_content_public_id,target_kind,status,created_at,resolved_at,version FROM moderation_report WHERE status=:status"
-                    + boundary
-                    + " ORDER BY created_at DESC,id DESC LIMIT :limit")
+        jdbc.sql(position == null ? REPORT_PAGE_FIRST : REPORT_PAGE_AFTER_CURSOR)
             .param("status", status)
             .param("limit", size + 1);
     if (position != null)
@@ -77,6 +80,10 @@ public class ModerationService {
 
   @Transactional(readOnly = true)
   public Map<String, Object> detail(UUID id) {
+    return detailView(id);
+  }
+
+  private Map<String, Object> detailView(UUID id) {
     Map<String, Object> result =
         jdbc
             .sql(
@@ -96,29 +103,29 @@ public class ModerationService {
 
   @Transactional
   public Map<String, Object> resolve(UUID actor, UUID id, long version, String resolution) {
-    if (!"HIDE_CONTENT".equals(resolution) && !"DISMISS".equals(resolution))
+    if (!HIDE_CONTENT.equals(resolution) && !"DISMISS".equals(resolution))
       throw new ApiException(ModerationErrorCode.INVALID_RESOLUTION);
-    Map<String, Object> report = detail(id);
-    String status = "HIDE_CONTENT".equals(resolution) ? "CONTENT_HIDDEN" : "DISMISSED";
+    Map<String, Object> report = detailView(id);
+    String status = HIDE_CONTENT.equals(resolution) ? "CONTENT_HIDDEN" : "DISMISSED";
     int changed =
         jdbc.sql(
                 "UPDATE moderation_report SET status=:status,resolved_by_account_public_id=:actor,resolved_at=NOW(),updated_at=NOW(),version=version+1 WHERE public_id=:id AND status='OPEN' AND version=:version")
             .param("status", status)
-            .param("actor", actor)
+            .param(ACTOR_PARAMETER, actor)
             .param("id", id)
             .param("version", version)
             .update();
     if (changed == 0) throw new ApiException(ModerationErrorCode.PRECONDITION_FAILED);
-    if ("HIDE_CONTENT".equals(resolution)) {
+    if (HIDE_CONTENT.equals(resolution)) {
       UUID target = (UUID) report.get("targetContentPublicId");
       visibility.hide(target);
       jdbc.sql(
               "UPDATE moderation_report SET status='CONTENT_HIDDEN',resolved_by_account_public_id=:actor,resolved_at=NOW(),updated_at=NOW(),version=version+1 WHERE target_content_public_id=:target AND status='OPEN'")
-          .param("actor", actor)
-          .param("target", target)
+          .param(ACTOR_PARAMETER, actor)
+          .param(TARGET_PARAMETER, target)
           .update();
     }
-    return detail(id);
+    return detailView(id);
   }
 
   private CursorTokens.Position decode(String cursor) {
