@@ -144,6 +144,14 @@ Operations router와 runbook은 기술 구성요소보다 운영자가 처한 �
 특수 하위 절로 두며, 실제 trigger·actor·완료·복구가 독립해 같은 문서에 두면 단일
 목적이 깨지는 예외만 별도 runbook 후보입니다.
 
+공용 Procedure는 독자가 변경 대상을 입력하면 source에서 실제 resource·owner·consumer를
+찾아 동일한 상태 전이와 완료 조건을 적용하는 절차입니다. 현재 구현된 한 대상만 실행할 수
+있다는 이유로 그 대상의 발급·폐기·외부 확인 같은 전용 lifecycle을 공용 본문에 편입하지
+않습니다. Provider·resource·변수 이름을 동급의 다른 대상으로 치환했을 때 단계·actor·완료·
+복구를 다시 써야 하는 내용은 공통 절차가 아니라 전용 owner의 책임입니다. 공용 Procedure는
+그 내용을 복제하지 않고 전용 owner로 handoff하며, 전용 owner가 없으면 현재 공통 단계가
+끝나는 지점과 미구현 상태를 표시합니다.
+
 자동화 script·workflow가 내부에서 수행하는 설치 순서, artifact 가공과 구현 선택은 그
 자동화의 Reference/README 또는 구현 source가 소유합니다. Runbook에는 사람이 자동화를
 시작·관찰·중단·재개·복구하기 위해 알아야 하는 입력, 명령, 상태와 결과만 둡니다. 반대로

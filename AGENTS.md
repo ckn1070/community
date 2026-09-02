@@ -84,7 +84,11 @@ workflow와 history를 기본으로 읽지 않습니다.
   성립하지 않고 실행 시 authoritative source에서도 조회할 수 없을 때만 필요한 최소값을
   둡니다. 그 밖의 값은 canonical source나 실제 환경에서 실행 시 확인하며, 편의·예시·한
   문서에서의 완결성을 이유로 복제 owner와 갱신 책임을 만들지 않습니다. Secret 값은
-  문서에 기록하지 않습니다.
+  문서에 기록하지 않습니다. 공용 Procedure는 실행 대상을 입력으로 받아 같은 절차를
+  반복 적용할 수 있어야 하며, 현재 구현된 한 provider·resource·변수의 전용 lifecycle을
+  공용 절차의 본문이나 분기로 편입하지 않습니다. 대상 이름을 동급의 다른 대상으로
+  바꿨을 때 본문을 다시 작성해야 하면 공용 Procedure가 아니므로, 공용 owner에는
+  source 기반 발견·공통 상태 전이·전용 owner로의 handoff만 남깁니다.
 - 실패나 누락을 발견하면 사건의 명사를 규칙으로 추가하지 않습니다. 작업 실행
   워크플로우의 통제 생애주기로 첫 단절과 기존 방어를 먼저 판정합니다.
 - 완료·검증된 방어 범위의 재발은 [심화 회고](.agents/skills/deep-retrospective/SKILL.md),
