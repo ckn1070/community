@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: car-community-catalog-redis
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: car-community-catalog-redis
+      app.kubernetes.io/component: catalog-cache
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: car-community
+              app.kubernetes.io/component: api
+      ports:
+        - protocol: TCP
+          port: 6379

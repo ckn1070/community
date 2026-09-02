@@ -6,3 +6,6 @@ resources:
   - deployment.yaml
   - migration-job.yaml
   - service.yaml
+  - catalog-redis-deployment.yaml
+  - catalog-redis-service.yaml
+  - catalog-redis-network-policy.yaml

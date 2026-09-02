@@ -68,6 +68,22 @@ spec:
                 secretKeyRef:
                   name: car-community-db-runtime
                   key: DB_PASSWORD
+            - name: REDIS_HOST
+              value: car-community-catalog-redis
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-catalog-redis-application
+                  key: REDIS_USERNAME
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: car-community-catalog-redis-application
+                  key: REDIS_PASSWORD
+            - name: CATALOG_MODEL_DETAIL_CACHE_ENABLED
+              value: "false"
             - name: AUTH_JWT_HMAC_SECRET
               valueFrom:
                 secretKeyRef:
@@ -128,6 +144,13 @@ spec:
             capabilities:
               drop:
                 - ALL
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
           volumeMounts:
             - name: tmp
               mountPath: /tmp

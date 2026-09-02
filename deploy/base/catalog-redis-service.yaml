@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: car-community-catalog-redis
+  labels:
+    app.kubernetes.io/name: car-community-catalog-redis
+    app.kubernetes.io/component: catalog-cache
+    app.kubernetes.io/part-of: car-community
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: car-community-catalog-redis
+    app.kubernetes.io/component: catalog-cache
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP
