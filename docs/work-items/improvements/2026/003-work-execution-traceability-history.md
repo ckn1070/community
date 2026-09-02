@@ -1075,3 +1075,49 @@ retrospective와 git-finalize에는 영구 통제의 local commit 예외, 거절
 보고했을 뿐 commit 권한을 다시 묻지 않았을 것입니다. 배포·문서 선택처럼 명사를 바꿔도
 정의된 값은 묻지 않되, source가 제한하지 못하는 실제 사용자 소유 결정은 과잉 차단하지
 않아야 합니다.
+
+## 계획 checkpoint를 검증하고도 local commit 없이 종료한 재발
+
+### 사건과 영향
+
+첫 사건에서는 안정된 계획 문서가 검증 뒤 working tree에만 남았고 후속 rewrite에서 일부
+결정이 소실됐습니다. 이를 막기 위해 계획 checkpoint의 exact-path local commit 상시 예외를
+영구화하고 검증했습니다. 이후 Community Kafka 계획에서 결과 정의의 독립 closure까지
+통과했지만 Agent는 `commit·push 없음`을 정상 상태로 보고하고 종료했습니다. 해당 계획은
+나중에 `a39b6107` checkpoint로 복구됐지만, 후속 복구가 당시의 절차 위반을 소급해 없애지는
+않습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+두 사건의 공통 최초 단절은 `검증된 안정 계획 상태 → Git consumer 인계`입니다. 첫 사건 뒤
+`5925b071`에서 별도 요청 없는 local checkpoint, exact path, commit object와 잔여 dirty
+검증을 도입했고 후속 통합·복귀 통제도 추가했습니다. 재발 당시 이 규칙은 canonical source에
+존재했고 Agent도 읽었지만, 독립 closure 결과를 `Required-Pending` 같은 실행 상태로 만들지
+않아 `$git-finalize` 호출보다 사용자 보고가 먼저 실행됐습니다.
+
+직접 오류는 commit 없이 정상 종료한 것이고, 상태 오류는 검증 통과를 checkpoint 완료로
+간주한 것이며, routing 오류는 계획 상시 예외가 `$git-finalize`의 discovery trigger에 없었던
+것입니다. Interface 공백은 같은 candidate·HEAD·exact path·제외 dirty가 검증 actor에서 Git
+actor와 보고 actor까지 전달되지 않은 것이고, 이전 검증 오류는 정적 규칙의 존재와 예상 답을
+실제 live consumer invocation으로 확대한 것입니다. 2차 시스템 root는 규칙 부재가 아니라
+`검증 완료 → Git 실행 → commit 증거 → 보고`의 fail-closed 전이가 없었던 데 있습니다.
+
+### 통제 처분과 남은 위험
+
+기존 checkpoint 상시 예외와 exact-path 검증은 유지합니다. Workflow/100이 checkpoint 상태와
+금지 전이를 소유하고, `$dev-plan`이 `Required-Pending`을 생산하며, `$git-finalize`와 commit
+workflow가 실제 commit 증거를 반환하고, reporting workflow가 pending 상태의 종료를
+거부하도록 consumer를 결속했습니다. Root가 제거됐다면 Community Kafka 계획의 독립 closure
+직후 local checkpoint가 먼저 생성·검증되고 그 뒤에만 다음 계획 행동이나 사용자 보고가
+가능했을 것입니다.
+
+Canonical 통제와 필수 consumer는 `72207104`에서 exact-path local commit으로 적용됐습니다.
+이 commit object는 현재 통제 적용과 이번 Git actor invocation의 증거일 뿐, 미래 계획 요청의
+routing·closure 소비나 그 checkpoint 뒤 plan·report consumer invocation을 증명하지 않습니다.
+
+독립 evaluator가 동결한 regression, 이름을 바꾼 계획 transfer와 읽기 전용 false-block을
+후보 검증 기준으로 사용합니다. Isolated fixture는 해당 입력에서의 모델링된 통제 효과만
+증명합니다. 현재 회고의 writer·reviewer invocation과 이후 생성할 실제 local commit object는
+각각의 직접 source로만 판정하며 이 문서 후보가 Git invocation을 미리 증명하지 않습니다.
+미래 계획 actor가 실제로 이 전이를 호출하는지도 그 live invocation 전까지 완료로 확대하지
+않습니다.

@@ -6,6 +6,23 @@
 규칙·field·fixture·verifier를 추가하지 않는 구조를 만듭니다. 공통 책임은 한 owner에
 모으고 전문 workflow·skill은 실제 차이만 소유합니다.
 
+## 현재 설계 결론과 실행 gate
+
+현재 활성 결론은 [결정 38](#결정-38-계획-checkpoint는-검증-뒤-종료보다-먼저-git-consumer가-닫습니다)이며,
+canonical 통제와 필수 consumer 반영 및 독립 문서 감사는 완료했습니다. 현재 작업 전체
+상태는 [work item 본문](003-work-execution-traceability.md)이 소유하며 `In Progress`입니다.
+
+| 구분 | 현재 상태와 actor·행동 |
+| --- | --- |
+| 닫힌 결과 | 기존 exact-path checkpoint 예외를 유지하면서 `Required-Pending`의 fail-closed consumer를 [작업 실행 workflow](../../../workflow/100-work-execution-workflow.md#계획-checkpoint의-fail-closed-전이), [`$dev-plan`](../../../../.agents/skills/dev-plan/SKILL.md#6-계획-문서-checkpoint), [`$git-finalize`](../../../../.agents/skills/git-finalize/SKILL.md#3-local-git-orchestration)와 [완료 보고 workflow](../../../workflow/140-completion-reporting-workflow.md#1-보고-입력)에 반영했습니다. Kafka 전용 규칙이나 새 문서 유형은 만들지 않았습니다. |
+| 검증 결과 | Regression·renamed transfer의 checkpoint 효과와 읽기 전용 false-block은 모델링된 fixture에서 통과했습니다. Canonical 7경로의 독립 final 문서 감사도 통과했습니다. |
+| 남은 gate | 실제 미래 계획 요청의 routing과 closure 소비, commit 뒤 다음 plan·report consumer invocation은 아직 관찰하지 않아 `검증 불가`입니다. 모델링된 효과나 이번 통제 commit으로 채우지 않습니다. |
+| 지금 actor | 사용자 입력은 필요하지 않습니다. 다음으로 검증된 안정 계획 checkpoint를 만드는 `$dev-plan` actor가 같은 candidate·HEAD·exact path·제외 dirty를 `Required-Pending`으로 인계하고 실제 Git·보고 증거를 남깁니다. |
+| 다음 전환 | 해당 live invocation이 통과하면 그 전이만 직접 증거로 닫습니다. 같은 불변식이 다시 실패하면 현재 통제 완료 주장을 무효화하고 심화 회고로 돌아갑니다. |
+
+현재 상태와 세부 규칙은 위 canonical owner가 소유하며 이 design은 선택·근거·재검토 조건만
+보존합니다.
+
 ## 결정 1. 공통 lifecycle은 한 owner만 둡니다
 
 ### 배경
@@ -1439,6 +1456,38 @@ checkout에서 branch를 직접 만들고 전환해 사용자의 main 관찰 상
 비용을 늘려 배제했습니다. 모든 미증명을 사용자에게 묻는 안도 source 접근 장애와 사용자
 결정을 혼동하므로 배제했습니다. 정의된 값을 다시 묻거나, 실제 사용자 소유 결정이 Agent
 판단으로 채워지면 source coverage와 첫 질문 consumer를 함께 다시 검토합니다.
+
+## 결정 38. 계획 checkpoint는 검증 뒤 종료보다 먼저 Git consumer가 닫습니다
+
+### 배경
+
+계획 문서의 안정 checkpoint를 별도 요청 없이 local commit한다는 규칙과 권한은 이미
+존재했습니다. 첫 실패 뒤 이 규칙을 영구 owner에 반영하고 검증까지 했지만, 이후 Agent가
+같은 규칙을 실제로 읽고도 계획 검증 완료를 곧바로 사용자 보고로 넘겨 `commit 없음`을
+정상 상태처럼 종료했습니다. 규칙의 존재와 권한 판정은 닫혔지만, 검증 결과를 Git actor가
+반드시 소비하고 commit 증거를 보고 actor가 확인하는 전이 identity가 없었습니다.
+
+### 선택
+
+- 검증된 안정 계획 상태는 `Not-Required / Required-Pending / Committed / Blocked` 중 하나로
+  관리합니다.
+- `Required-Pending`은 같은 candidate digest, lifecycle 상태, fixed-base `HEAD`, exact
+  path·hunk, 제외 dirty와 `push 없음` 경계를 `$git-finalize`에 즉시 전달합니다.
+- 실제 commit object·parent·tree·patch와 잔여 dirty만 `Committed`를 만들 수 있습니다.
+  실제 분리 불가나 Git 실행 차단만 공통 blocker gate를 거쳐 `Blocked`를 만듭니다.
+- `Required-Pending`에서는 `$git-finalize` handoff만 허용하고 사용자 대기, 다른 phase
+  handoff, 다음 rewrite와 terminal 보고를 금지합니다. `commit 요청 없음`을 미수행 사유로
+  사용할 수 없습니다.
+- Checkpoint는 복구 지점일 뿐 계획 완료가 아니므로 `Committed` 뒤 원래 계획 oracle로
+  복귀해 남은 설계 작업이나 실제 사용자 결정을 계속 판정합니다.
+
+### 대안과 재검토 조건
+
+기존 문구를 한 번 더 강조하는 안은 실제로 읽고도 소비하지 않은 재발을 막지 못해
+배제했습니다. 모든 문서 변경을 자동 commit하는 안은 질문·검토와 일반 문서 권한을 침범하므로
+배제했습니다. 앞으로 `Required-Pending` 상태에서 종료하거나, 계획이 아닌 읽기 전용 질문에서
+Git mutation을 만들거나, checkpoint 뒤 계획 완료로 잘못 승격하면 상태 producer·Git
+consumer·보고 gate를 함께 다시 검토합니다.
 
 ## 서로 다른 first-break family의 owner
 

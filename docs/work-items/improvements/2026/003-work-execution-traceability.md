@@ -61,6 +61,12 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
 - 실행 회고의 행동 verdict는 통제 처분·canonical owner 효과·증거 등급·Git 자격과 전체
   상태를 하나의 closure identity로 Git과 보고 phase에 전달합니다. History·상태 문서와
   commit은 canonical 통제 적용이나 actual invocation 공백을 대신하지 않습니다.
+- 검증된 안정 계획 checkpoint는 `Required-Pending`에서 Git consumer로 즉시 인계합니다.
+  실제 commit 증거 또는 공통 blocker 없이 사용자 대기·다른 phase handoff·rewrite·terminal
+  보고를 허용하지 않고, local checkpoint 뒤에는 원래 계획 oracle로 복귀합니다.
+- 위 checkpoint 통제와 필수 consumer는 canonical 7경로의 독립 final 문서 감사와 모델링된
+  regression·renamed transfer·false-block 검증을 거쳐 local 기준에 적용했습니다. 실제 미래
+  계획 invocation은 아래 미완료 결과와 분리합니다.
 - 반복 이의 뒤 기술 설명은 선택 span과 원래 질문 축을 exact section owner·정보 수명·
   빈 환경 재생 효과에 결속합니다. 복합 artifact 전체의 참인 책임이나 인접한 사실로 선택
   문장의 위치·중복·필요성 질문을 바꾸어 방어하지 않습니다.
@@ -98,6 +104,11 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
 - 공통 통제의 현재 후보가 올바른 답을 생성한다는 것과 실제 장기 actor·다른 branch·live
   환경에서 영향 전에 호출된다는 것은 별도 증거입니다. 관찰하지 않은 전이는 `검증 불가`로
   유지합니다.
+- 계획 checkpoint 재발 통제는 독립 evaluator가 먼저 동결한 regression·renamed transfer·
+  읽기 전용 false-block으로 모델링된 효과를 검증합니다. 문서 후보는 현재 회고의 Git·보고
+  invocation을 미리 증명하지 않으며, 이후의 실제 commit object·보고와 미래 `$dev-plan` live
+  invocation을 각각 구분합니다. 관찰하지 않은 미래 호출을 이번 local commit으로 완료했다고
+  선언하지 않습니다.
 - 반복 consumer 통제는 독립 evaluator가 먼저 동결한 두 사건의 regression·renamed transfer와,
   독립 source·oracle을 가진 실제 다중 consumer false-block을 통과했습니다. 분리된
   producer→대표 reviewer→expansion actor fixture에서도
