@@ -97,7 +97,7 @@ public class ModerationService {
     UUID targetId = (UUID) result.get("target_content_public_id");
     String targetKind = (String) result.get("target_kind");
     camelCase(result);
-    result.put("target", visibility.moderationSnapshot(targetId, targetKind));
+    result.put(TARGET_PARAMETER, visibility.moderationSnapshot(targetId, targetKind));
     return result;
   }
 
