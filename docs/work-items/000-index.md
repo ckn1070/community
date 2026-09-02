@@ -22,7 +22,10 @@ canonical owner가 될 수 없습니다.
 
 ## 읽는 방법
 
-1. Open backlog는 상단 `목적` 또는 `배경`, Proposed·Planned는 `상태`·`계획 단계`·`달성할 결과`, In Progress·Blocked·Done은 상단 `결과`, Closed backlog는 상단 처분 `결과`에서 현재 위치와 새 owner를 확인합니다.
+1. Open backlog는 상단 `목적` 또는 `배경`, Proposed·Planned는 `상태`·`계획 단계` 바로 뒤의
+   `현재 결론과 다음 행동`, planning-Blocked는 `상태` 바로 뒤의 같은 첫 화면에서 현재
+   위치·닫힌 결과·actor·사용자 차례와 다음 전환을 확인합니다. In Progress·Done은 상단
+   `결과`, Closed backlog는 상단 처분 `결과`에서 현재 위치와 새 owner를 확인합니다.
 2. Proposed·Planned는 현재 계획 단계에 허용된 본문만 읽고, 다음 단계 section을 현재 결과로 추정하지 않습니다.
 3. 범위와 확정 결정 색인을 확인합니다. 해결 설계 단계 이후에는 본문이 연결한 같은 번호의
    `-design`을 읽습니다. 더 이른 단계라도

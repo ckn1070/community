@@ -101,20 +101,26 @@ Reference/SOT의 설명 책임을 Procedure로 대신하지 않습니다. Proced
 
 - 현재 단계와 현재 결론
 - 닫힌 결과와 아직 닫히지 않은 gate
-- 각 미완료 gate의 canonical owner가 판정한 실제 상태. 이 문서에서 별도 상태 vocabulary를
-  만들거나 `검증 불가`·`판정 불가` 같은 결과를 다른 상태로 낮추지 않음
-- 지금 행동할 actor와 그 actor가 수행할 exact 행동
-- 사용자 입력이 지금 필요하면 exact 질문, 선택지 전체와 결과 차이, 추천·근거와 응답 형식
-- Agent 검증·보완처럼 사용자보다 먼저 닫을 gate가 있으면 그 actor·행동, 사용자 차례가 되는
-  조건과 그때 사용할 응답 방식
+- 다음 안정 handoff에 남을 gate identity와 canonical terminal 상태. 이 문서에서 별도 상태
+  vocabulary를 만들거나 `검증 불가`·`판정 불가` 같은 결과를 다른 상태로 낮추지 않음
+- 모든 선행 gate와 필수 checkpoint 뒤 처음 행동할 안정 actor와 그 actor의 exact 행동
+- 그 안정 actor가 사용자이면 exact 질문, 선택지 전체와 결과 차이, 추천·근거와 응답 형식
 - 현재 행동 뒤 만들어질 결과와 다음 단계 전환 조건
 
 상세 결정과 근거는 해당 section이 소유하고 첫 화면은 그 exact 범위로 연결합니다. 독자가
 현재 행동을 알아내기 위해 하단 section이나 다른 문서를 먼저 찾아가게 하지 않습니다. 모든
 gate가 닫혔으면 완료 결론과 다음 허용 행동만 표시하며, 새 선택지·재확인이나 응답 형식을
-만들지 않습니다. 계획 후보 작성, 검증 시작·결과, 피드백에 따른 재검토, 사용자 확정과 단계
-전환으로 결론·gate 상태·actor·다음 행동 중 하나가 바뀌면 사용자 검토나 다음 actor 인계 전에
-같은 변경에서 첫 화면을 현재 상태로 교체합니다. 과거 상태를 뒤에 누적하지 않습니다.
+만들지 않습니다. 검증·checkpoint가 닫힌 exact candidate의 결론·gate 상태·안정 actor·다음
+행동 중 하나가 바뀌면 사용자 검토나 다음 actor 인계 전에 같은 변경에서 첫 화면을 새
+handoff 상태로 교체합니다. 과거 상태나 live review 이력을 뒤에 누적하지 않습니다.
+
+여기서 계획 artifact의 `현재 상태`는 다음 actor에게 인계할 수 있는 마지막 검증·checkpoint
+상태입니다. Worktree의 Writing·Frozen·review·correction 문서는 아직 인계 candidate이며,
+첫 화면에는 모든 필수 gate와 checkpoint가 닫혔을 때 다음 actor가 처음 소비할 안정 상태를
+투영합니다. Review 중 실제 actor·phase·finding은 작업 실행 receipt가 소유하고 문서에
+누적하지 않습니다. Candidate가 검증에 실패하면 그 첫 화면을 현재 사실로 보고하거나
+사용자에게 인계하지 않습니다. 통과한 exact candidate와 필수 local checkpoint를 확인한 뒤에만
+첫 화면이 다음 actor의 현재 진입점이 됩니다.
 
 ### Procedure
 
