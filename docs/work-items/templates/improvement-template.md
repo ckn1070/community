@@ -1,5 +1,9 @@
 # 개선명
 
+> 비기준 호환 reference입니다. 새 문서와 실질 변경에는
+> [공통 계획 템플릿](work-item-plan-template.md)과 필요 시
+> [공통 설계 결정 템플릿](work-item-design-template.md)을 사용합니다.
+
 ## 상태
 
 Proposed

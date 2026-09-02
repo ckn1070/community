@@ -18,7 +18,7 @@ canonical owner가 될 수 없습니다.
 - [improvements](improvements/000-index.md): 기존 시스템, 구조, workflow 개선
 - [spikes](spikes/000-index.md): 제한 시간 안에 불확실성을 줄이는 조사
 - [backlog](backlog/000-index.md): 아직 실행 작업으로 전환되지 않은 후보
-- [templates](templates/000-index.md): 작업 유형별 최소 문서 골격
+- [templates](templates/000-index.md): 계획 lifecycle별 구조·철학·서술방식 기준
 
 ## 읽는 방법
 
@@ -41,6 +41,7 @@ canonical owner가 될 수 없습니다.
 
 - 상태, 결과, 범위, 결정, 검증을 대화 없이 복원할 수 있어야 합니다.
 - Proposed·Planned는 [작업 문서 생명주기](100-work-item-lifecycle.md#계획-단계와-최소-artifact)의 현재 단계 artifact만 만들고 선행 closure 전에 다음 단계 상세를 쓰지 않습니다.
+- Feature·Bug·Improvement·Spike는 category별 형식이 아니라 [공통 계획·설계 템플릿](templates/000-index.md)을 사용합니다.
 - `In Progress`·`Blocked`·`Done`과 `Closed`는 상단 `결과` 한 곳만 현재 상태를 소유합니다.
 - 기술적 결정은 작업 당시의 질문·대안·trade-off를 보존하고 현재 기준은 영구 SOT로
   연결합니다. 실행 날짜·dirty 상태·반복 commit 기록은 Git으로 돌립니다.

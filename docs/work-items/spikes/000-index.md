@@ -11,4 +11,4 @@ Spike는 구현을 시작하기 전 제한 시간 안에 기술 불확실성을 
   붙입니다.
 - 현재 등록된 Spike 문서는 없습니다.
 
-템플릿: [spike-template.md](../templates/spike-template.md)
+계획 lifecycle 기준: [공통 계획·설계 템플릿](../templates/000-index.md)
