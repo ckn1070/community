@@ -1,5 +1,5 @@
 # Git 마무리 스킬의 UI 표시 메타데이터를 정의합니다.
 interface:
   display_name: "Git 마무리"
-  short_description: "승인된 commit·push·remote branch 정리와 결과 검증"
-  default_prompt: "Use $git-finalize to verify objective preservation, the loaded control revision, request generation, frozen candidate, target state, specialist verdicts, and task-owned residual before exact-path commit, push, or expected-SHA remote branch deletion, then verify the resulting Git evidence."
+  short_description: "의미 단위 commit·push·remote branch 정리와 결과 검증"
+  default_prompt: "Use $git-finalize to split verified permanent-rule and other local changes by semantic result before exact-path commit, and perform only separately authorized push or expected-SHA remote branch deletion, then verify the resulting Git evidence."

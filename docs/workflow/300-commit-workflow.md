@@ -96,6 +96,10 @@ index에 올리는 stage는 commit을 만들기 위한 불가피한 선행 효�
 dirty와 commit 뒤 index에만 남길 변경까지 stage할 권한이 아닙니다. 반대로 stage만 요청한
 경우에는 commit 권한이 생기지 않습니다.
 
+작업 실행 워크플로우의 영구 규칙 변경 상시 예외가 적용되면, 검증된 영구 owner와 필수
+consumer 변경의 stage·local commit을 operation map에 결속합니다. 별도 `commit` 표현을 다시
+요구하지 않지만 push·새 branch·PR과 다른 작업 변경에는 이 예외를 확대하지 않습니다.
+
 ### 변경 처분과 recovery state
 
 Git 상태를 깨끗하게 보이게 만드는 것과 작업 결과를 마무리하는 것은 다릅니다. 현재
@@ -202,6 +206,12 @@ diff를 한 commit으로 stage하지 않습니다.
    `A 및 B`처럼 독립 결과를 병렬 나열해야 하면 확정된 결과 단위로 돌아갑니다.
 7. 각 commit의 직접 test와 문서는 그 commit이 만든 결과를 증명·설명해야 합니다. 뒤의
    거대한 통합 commit이나 최종 build가 앞 commit의 누락된 oracle을 대신하지 않습니다.
+
+영구 규칙 변경도 파일 종류나 `규칙 변경`이라는 상위 이름으로 한 commit에 합치지 않습니다.
+각 규칙의 적용 조건·관찰 결과, 최초 consumer, 실패 뒤 재시작·복구 지점과 독립 revert
+경계로 나누고, 같은 규칙을 함께 성립시키는 canonical owner·adapter·skill metadata는 그
+규칙의 한 결과 단위에 둡니다. 서로 독립적으로 유지·되돌릴 수 있는 기존 작업과 새 규칙은
+같은 요청에서 함께 commit하더라도 별도 commit으로 기록합니다.
 
 ### 분할 반증 gate
 

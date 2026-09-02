@@ -1,6 +1,6 @@
 ---
 name: git-finalize
-description: "검증된 local 변경을 exact path의 Conventional Commit으로 기록하고, 승인된 exact branch push 또는 검증된 통합 완료 branch의 remote 삭제를 실행·확인하는 Git orchestration adapter다. Code push 뒤에는 해당 SHA의 required CI와 Sonar revision·Quality Gate·Open issues를 확인한다. 사용자가 stage, commit, push, Git 마무리 또는 완료 branch 정리를 요청했을 때 사용한다. skill 이름이나 호출은 Git 권한을 만들지 않으며 질문·감사·상태 확인만 요청됐으면 read-only discovery만 수행한다. PR, history rewrite, image publish·ECR과 production 적용은 각각 별도 요청일 때만 범위에 포함한다."
+description: "검증된 local 변경을 의미 단위별 exact path의 Conventional Commit으로 기록하고, 승인된 exact branch push 또는 검증된 통합 완료 branch의 remote 삭제를 실행·확인하는 Git orchestration adapter다. 사용자가 stage, commit, push, Git 마무리, 완료 branch 정리 또는 저장소 규칙의 영구화를 요청했을 때 사용한다. Code push 뒤에는 해당 SHA의 required CI와 Sonar revision·Quality Gate·Open issues를 확인한다. skill 이름이나 호출은 Git 권한을 만들지 않으며 질문·감사·상태 확인만 요청됐으면 read-only discovery만 수행한다. PR, history rewrite, image publish·ECR과 production 적용은 각각 별도 요청일 때만 범위에 포함한다."
 ---
 
 # Git 마무리
@@ -57,6 +57,11 @@ fixed base 자체인 경우도 유효하며, 같은 staged candidate나 뒤 comm
 ## 3. Local Git orchestration
 
 operation map에 stage·commit이 있으면 커밋 workflow를 순서대로 실행한다.
+
+작업 실행 workflow의 영구 규칙 변경 상시 예외가 적용됐으면 별도 `commit` 표현이 없어도
+검증된 영구 owner와 필수 consumer를 의미 단위별 local commit까지 닫는다. 규칙마다 적용
+조건·관찰 결과·consumer·복구·revert 경계를 대조하고, 서로 독립적인 기존 작업이나 다른
+규칙을 상위 `영구화` 이름으로 합치지 않는다. 이 예외는 push·새 branch·PR 권한이 아니다.
 
 첫 Git mutation 전에 커밋 workflow의 분할 반증 gate를 실행한다. 예정 subject와 상위 작업명을
 입력에서 제외하고 final diff의 실제 consumer·재시작·복구·revert 경계에서 가장 이른 유효

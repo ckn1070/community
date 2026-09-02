@@ -760,16 +760,20 @@ workflow의 삭제 admission으로 인계합니다. 허락 전에는 기존 파�
 필요하면 영향받은 부분을 `재검토 대기`로 표시합니다. 사용자가 작업 프로세스 보완이나
 문서 수정 전체를 요청했더라도 삭제 효과를 따로 명시하지 않았다면 이 권한은 없습니다.
 
-저장소의 상시 예외는 다음 두 가지뿐입니다.
+저장소의 상시 예외는 다음 세 가지뿐입니다.
 
 - `$dev-plan`이 계획 자체를 결과로 작성하거나, 승인된 구현 결과의 불가피한 선행
   dependency로 설계 closure를 먼저 만들어야 할 때 검증된 계획 checkpoint와 필수 router를
   exact path로 local commit합니다.
 - 사용자가 재발 방지 회고의 실행을 명시적으로 요청했을 때 통제 owner 변경만
   exact path로 local commit합니다.
+- 사용자가 규칙·통제·workflow·skill을 저장소의 영구 기준으로 변경하라고 명시했을 때
+  검증된 영구 owner와 필수 consumer 변경을 의미 단위별 exact path로 local commit합니다.
+  `영구화`, `앞으로 적용`처럼 저장소 기준으로 계속 사용하라는 뜻이 명확해야 하며, 일반
+  문서·설정 변경이나 일회성 작업을 이 예외로 확대하지 않습니다.
 
-두 예외 모두 다른 작업 변경, plan이 선행하는 production mutation, 사건 대상 artifact
-복구와 push 권한을 만들지 않습니다.
+세 예외 모두 각 결과의 의미 단위 지도와 검증을 생략하지 않으며, 다른 작업 변경, plan이
+선행하는 production mutation, 사건 대상 artifact 복구와 push 권한을 만들지 않습니다.
 
 상시 예외를 적용하면 해당 효과를 첫 mutation 전에 끝나는 내부 판정으로만 두지 않습니다.
 사용자 원문 원자, 선택한 예외, exact 효과·path와 제외 효과를 operation map에 결속하고,
