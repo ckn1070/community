@@ -77,8 +77,8 @@ Proposed/결과 정의
 ### 기준 템플릿과 편차 gate
 
 Feature·Bug·Improvement·Spike의 계획 본문은
-[공통 계획 템플릿](templates/work-item-plan-template.md), 조건을 충족해 분리하는 같은 번호의
-`-design`은 [공통 설계 결정 템플릿](templates/work-item-design-template.md)을 사용합니다.
+[공통 계획 템플릿](templates/plan-template.md), 조건을 충족해 분리하는 같은 번호의
+`-design`은 [공통 설계 결정 템플릿](templates/design-template.md)을 사용합니다.
 두 템플릿은 이 lifecycle에서 생성되는 계획 artifact의 구조·철학·서술방식에 대한 절대
 기준입니다. Category별 문서는 별도 형식을 만들지 않고 공통 본문의 조건부 질문만 채웁니다.
 

@@ -2,8 +2,8 @@
 
 템플릿은 작업 category가 아니라 문서 lifecycle로 선택합니다.
 
-- 계획 본문: [work-item-plan-template.md](work-item-plan-template.md)
-- 조건부 설계 결정 문서: [work-item-design-template.md](work-item-design-template.md)
+- 계획 본문: [plan-template.md](plan-template.md)
+- 조건부 설계 결정 문서: [design-template.md](design-template.md)
 - 계획 전 Open 후보: [backlog-template.md](backlog-template.md)
 
 앞의 두 문서는 Feature·Bug·Improvement·Spike가 함께 사용하는 구조·철학·서술방식의 절대
