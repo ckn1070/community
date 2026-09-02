@@ -17,11 +17,12 @@ public record PostTitle(String value) {
   private static String normalize(String source) {
     StringBuilder result = new StringBuilder();
     boolean pendingSpace = false;
-    for (int offset = 0; offset < source.length(); ) {
+    int offset = 0;
+    while (offset < source.length()) {
       int codePoint = source.codePointAt(offset);
       offset += Character.charCount(codePoint);
       if (Character.isWhitespace(codePoint) || Character.isSpaceChar(codePoint)) {
-        pendingSpace = result.length() > 0;
+        pendingSpace = !result.isEmpty();
       } else {
         if (pendingSpace) {
           result.append(' ');

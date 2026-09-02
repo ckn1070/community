@@ -82,7 +82,7 @@ class CommunityConversationIntegrationTest extends PostgreSqlIntegrationTestSupp
     assertThat(cursor).isNotBlank();
     assertThat((java.util.List<?>) first.get("items")).hasSize(1);
     assertThat((java.util.List<?>) second.get("items")).hasSize(1);
-    assertThat(first.get("items")).isNotEqualTo(second.get("items"));
+    assertThat(first).doesNotContainEntry("items", second.get("items"));
   }
 
   private UUID account(String name) {

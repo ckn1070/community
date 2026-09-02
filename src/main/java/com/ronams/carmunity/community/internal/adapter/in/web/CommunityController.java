@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
 public class CommunityController {
+  private static final String TITLE_FIELD = "title";
 
   private final CommunityService service;
 
@@ -66,9 +67,9 @@ public class CommunityController {
       @RequestBody JsonNode request,
       Principal principal) {
     if (!request.isObject()
-        || (!request.has("title") && !request.has("body"))
-        || (request.has("title")
-            && (request.get("title").isNull() || !request.get("title").isTextual()))
+        || (!request.has(TITLE_FIELD) && !request.has("body"))
+        || (request.has(TITLE_FIELD)
+            && (request.get(TITLE_FIELD).isNull() || !request.get(TITLE_FIELD).isTextual()))
         || (request.has("body") && request.get("body").isNull())) {
       throw new ApiException(CommunityErrorCode.INVALID_REQUEST);
     }
@@ -77,7 +78,7 @@ public class CommunityController {
             actor(principal),
             postId,
             version(ifMatch),
-            request.has("title") ? request.get("title").textValue() : null,
+            request.has(TITLE_FIELD) ? request.get(TITLE_FIELD).textValue() : null,
             request.get("body"));
     return ResponseEntity.ok().eTag(etag(result)).body(result);
   }

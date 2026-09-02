@@ -15,7 +15,8 @@ class PostTitleTest {
   @Test
   void countsUnicodeCodePointsAndRejectsOver120() {
     assertThat(new PostTitle("🚗".repeat(120)).value()).hasSize(240);
-    assertThatThrownBy(() -> new PostTitle("🚗".repeat(121)))
+    String oversizedTitle = "🚗".repeat(121);
+    assertThatThrownBy(() -> new PostTitle(oversizedTitle))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }

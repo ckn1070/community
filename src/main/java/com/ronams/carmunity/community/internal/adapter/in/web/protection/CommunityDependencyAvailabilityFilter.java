@@ -22,6 +22,7 @@ public class CommunityDependencyAvailabilityFilter extends OncePerRequestFilter 
     this.media = media;
   }
 
+  @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
     String path = request.getRequestURI();
     return !path.startsWith("/api/v1/boards/")
@@ -32,6 +33,7 @@ public class CommunityDependencyAvailabilityFilter extends OncePerRequestFilter 
         && !path.startsWith("/api/v1/admin/community/");
   }
 
+  @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws ServletException, IOException {

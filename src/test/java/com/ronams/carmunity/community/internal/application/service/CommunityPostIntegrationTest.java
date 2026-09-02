@@ -47,7 +47,7 @@ class CommunityPostIntegrationTest extends PostgreSqlIntegrationTestSupport {
     UUID postId = (UUID) created.get("id");
 
     assertThat(created).containsEntry("title", "첫 제목").containsEntry("version", 0L);
-    assertThat(service.createPost(author, requestId, "첫 제목", body).get("id")).isEqualTo(postId);
+    assertThat(service.createPost(author, requestId, "첫 제목", body)).containsEntry("id", postId);
     List<?> listedPosts = (List<?>) service.listPosts(0, 20, null).get("items");
     assertThat(
             listedPosts.stream().map(item -> ((Map<?, ?>) item).get("id")).anyMatch(postId::equals))

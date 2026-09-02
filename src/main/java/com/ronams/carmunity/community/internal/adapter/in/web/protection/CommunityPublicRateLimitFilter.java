@@ -128,7 +128,8 @@ public class CommunityPublicRateLimitFilter extends OncePerRequestFilter {
   }
 
   private static final class Bucket {
-    private final double capacity, perSecond;
+    private final double capacity;
+    private final double perSecond;
     private double tokens;
     private long last;
 
@@ -142,7 +143,7 @@ public class CommunityPublicRateLimitFilter extends OncePerRequestFilter {
       tokens = Math.min(capacity, tokens + (now - last) / 1_000_000_000.0 * perSecond);
       last = now;
       if (tokens < 1) return false;
-      tokens--;
+      tokens -= 1.0;
       return true;
     }
   }

@@ -59,8 +59,8 @@ class CommunityNotificationTransactionIntegrationTest extends PostgreSqlIntegrat
         .when(notifications)
         .store(any(UUID.class), anySet(), any(UUID.class), any(UUID.class), anyBoolean());
 
-    assertThatThrownBy(
-            () -> service.createComment(commenter, postId, UUID.randomUUID(), "저장되면 안 됨", null))
+    UUID requestId = UUID.randomUUID();
+    assertThatThrownBy(() -> service.createComment(commenter, postId, requestId, "저장되면 안 됨", null))
         .isInstanceOf(IllegalStateException.class);
 
     assertThat(

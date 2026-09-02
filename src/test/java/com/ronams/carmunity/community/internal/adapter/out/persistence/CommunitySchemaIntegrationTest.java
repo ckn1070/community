@@ -40,20 +40,18 @@ class CommunitySchemaIntegrationTest extends PostgreSqlIntegrationTestSupport {
   @Test
   @Transactional
   void rejectsUnknownAccountAndInvalidPostShape() {
-    assertThatThrownBy(
-            () ->
-                jdbc.sql(
-                        """
-                        INSERT INTO community_content
-                          (public_id, kind, account_public_id, board_id,
-                           creation_request_id, creation_request_hash)
-                        VALUES (:publicId, 'POST', :accountId, NULL, :requestId, :hash)
-                        """)
-                    .param("publicId", UUID.randomUUID())
-                    .param("accountId", UUID.randomUUID())
-                    .param("requestId", UUID.randomUUID())
-                    .param("hash", "a".repeat(64))
-                    .update())
-        .isInstanceOf(RuntimeException.class);
+    var invalidInsert =
+        jdbc.sql(
+                """
+                INSERT INTO community_content
+                  (public_id, kind, account_public_id, board_id,
+                   creation_request_id, creation_request_hash)
+                VALUES (:publicId, 'POST', :accountId, NULL, :requestId, :hash)
+                """)
+            .param("publicId", UUID.randomUUID())
+            .param("accountId", UUID.randomUUID())
+            .param("requestId", UUID.randomUUID())
+            .param("hash", "a".repeat(64));
+    assertThatThrownBy(invalidInsert::update).isInstanceOf(RuntimeException.class);
   }
 }
