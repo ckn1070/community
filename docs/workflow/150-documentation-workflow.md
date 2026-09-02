@@ -161,8 +161,18 @@ checkpoint가 닫힌 exact candidate의 결론·gate 상태·안정 actor·다�
 artifact path·baseline, 문서 유형·상태·현재 또는 차단 전 단계, lifecycle이 허용한 artifact와
 section, heading별 독자 질문·상세 owner·순서, 안정 first-screen field, 결정별 기존 권위와
 추천·선택·값 확정·source 제약·Agent 기술 선택·단계 확정 상태, 활성 질문과 닫힌 결정,
-보존·rollback·router projection, 금지한 다음 단계 section을 연결합니다. 새 schema나 별도
-repository artifact를 만들지 않고 기존 Frozen candidate identity에 이 관계를 결속합니다.
+보존·rollback·router projection, 금지한 다음 단계 section을 연결합니다. 또한 원문·source·
+후보·추천 결과에 등장하는 모든 독립 변경값을 먼저 나열하고, 각 값을 하나의 결정 축 ID와
+권위·상태·owner·consumer·재검토 조건과 권위별 표현에 연결합니다. 열린 사용자 결정은 활성
+카드, Agent 기술 선택은 비교 결정 block, 사용자 확정 요구는 고정 입력·닫힌 결과, source
+파생은 source 파생 block, 입력 부재는 gate block으로 둡니다. `다른 값을 고정한 채 이 값만
+바꿔도 유효한 후보나 다른 영향 경계가 남는가`가 분리 기준입니다. 여러 축을 한 block에서
+함께 질문하는 것은 열린 사용자 결정 카드끼리만 허용하며 한 카드로 합치지 않습니다.
+불가분으로 유지한 tuple은 개별 변경이 source·논리상 성립하지 않는 근거와 권위별 oracle을 map에
+남깁니다. 비교 결정·활성 카드는 공통 질문·option set, 사용자 확정 요구·고정 입력은
+authoritative 요구·적용 범위, source 파생은 source·파생 규칙, 입력 부재 gate는 부족 입력·
+입력 owner·획득/재개 조건·처음 막는 consumer로 증명합니다. 새 schema나 별도 repository
+artifact를 만들지 않고 기존 Frozen candidate identity에 이 관계를 결속합니다.
 
 초안에서 독자가 다시 `그 말은 무엇인가`라고 물을 가능성이 있는 명사를 표시하고, 각 명사는
 다음 중 하나로 닫습니다.
@@ -224,7 +234,12 @@ direct directory의 실제 문서 inventory
     차례의 조건과 응답 방식·다음 전환을 설명할 수 있는지 대조합니다. 사용자 입력이 현재
     필요하면 선택할 값·차이·추천·영향도 같은 첫 화면에서 복원해야 합니다. 미정의 용어나
     하단 section·다른 문서 link가 이 의미를 대신 운반하면 구조 gate를 통과하지 않습니다.
-13. Work item은 [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)에서
+13. 사용자 검토용 Plan·Decision·Design의 각 결정 ID가 하나의 독립 변경값만 소유하고 권위에
+    맞는 표현을 사용하는지 확인합니다. 제목·대표 비교표가 하나여도 prose·요약·목표 계약에서
+    별도 선택값을 고정하거나, 후보마다 owner·consumer·재검토 조건이 둘 이상이면 축을
+    나눕니다. 같은 주제나 구현 단위라는 이유로 묶지 않습니다. 열린 사용자 축은 같은 활성 block 안의 별도
+    카드로 인접 배치하고, 다른 축은 고정 입력·비교 결정·source 파생·gate block으로 분리합니다.
+14. Work item은 [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)에서
     현재 단계, 허용 artifact와 선행 closure를 확인합니다. 선행 결과에 따라 달라지는 다음
     단계 문서·section·후보 상세가 있으면 exact write target에서 제외합니다.
 

@@ -85,6 +85,24 @@ source·공식 근거·대표 정상 경로·대표 반례로 확인한다. 전�
 
 ## 4. 결정 소유권과 결정 카드
 
+결정 ID나 기능명을 원자 단위로 먼저 만들지 않는다. 최초 사용자 요구, authoritative source,
+실제 후보와 추천 결과에 등장하는 결과값·default·owner·경계·표현·저장 위치·version·운영
+수단을 inventory하고 다음 분리 질문을 각 값에 적용한다.
+
+> 다른 값을 모두 고정한 채 이 값만 바꿔도 유효한 후보가 되거나, 다른 consumer·영향·재검토
+> 조건이 생기는가?
+
+하나라도 성립하면 별도 결정 축과 별도 ID다. 같은 기능·계층·구현 단위에 있고 한 번에 답할
+수 있다는 사실은 결합 근거가 아니다. 열린 사용자 결정만 활성 카드, Agent 기술 선택은 비교
+결정 block, 사용자 확정 요구는 고정 입력·닫힌 결과, source 파생은 source 파생 block, 입력
+부재는 gate block으로 표현한다. 여러 열린 사용자 축은 하나의 활성 결정 block과 결합 응답
+형식에 함께 둘 수 있지만, 각 축은 질문·대안·권위·선택·영향을 소유하는 별도 카드여야 한다.
+둘 이상의 값을 하나로 유지하려면 한 값만 바꾼 조합이 source나 논리상 성립하지 않는다는
+불가분 근거를 structure map에 기록한다. 비교 결정·활성 카드는 하나의 공통 질문·option set·
+owner·consumer·재검토 조건, 사용자 확정 요구·고정 입력은 하나의 authoritative 요구·적용
+범위·consumer·재검토 조건, source 파생은 하나의 source·파생 규칙·consumer·재검토 조건,
+입력 부재 gate는 하나의 부족 입력·입력 owner·획득/재개 조건·처음 막는 consumer를 가져야 한다.
+
 결과에 의미 있는 차이를 만드는 값은 다음 권위 중 하나로 분류한다. 계획 문서 작성 요청,
 상세화 요청, 검증·commit·push 요청, 계획을 잘 작성해 달라는 평가와 `계획을 확정해` 같은
 artifact 상태 지시는 그 안에 포함된 사용자 소유 추천값의 선택을 뜻하지 않는다.
@@ -284,6 +302,11 @@ writer·reviewer·Git actor와 phase는 작업 실행 receipt에만 둔다.
 hierarchy·first-screen·owner·보존 map은 `$documentation`이 그 순서로 한 correction batch에서
 고친다. 새 map·digest를 하나의 Frozen candidate로 만든 뒤 closure를 한 번 수행한다.
 
+Structure map은 `원문·source·후보의 독립 변경값 → 결정 축 ID → 권위·상태 → 권위별 표현·owner·
+consumer·재검토 조건`을 빠짐없이 연결한다. 역방향으로도 추천·선택·목표 계약과 prose에
+들어갈 모든 세부값이 축 ID 또는 고정 입력·source 파생 계약 하나에 연결되어야 한다. 이
+양방향 대조가 닫히기 전에는 heading이나 카드 수를 동결하지 않는다.
+
 Structure closure receipt와 exact map·digest가 없거나 stale이면 content writer를 호출하지
 않는다. Closure 뒤 단일 `$documentation` writer는 동결된 heading, 두 열 first-screen field,
 활성 결정 block, 결정 권위·상태와 보존 관계를 추가·삭제·재배치하지 않고 값과 설명만 채운다.
@@ -368,6 +391,11 @@ Checkpoint commit은 계획 작업의 복구 지점이지 완료 판정이 아�
 - 값 선택만 있는 읽기 전용 논의에서 artifact writer를 호출하거나 mutation 권한을 만들지
   않았는가
 - 결정 카드가 상세 절 없이 질문·대안 차이·추천·응답 형식을 전달하는가
+- 하나의 카드·비교표·요약 문장이 `그리고`, `/`, 복합 명사로 독립 변경값을 함께 선택하거나,
+  카드 prose가 axis inventory에 없는 default·owner·경계·표현·위치·version·운영 수단을
+  은근히 확정하지 않았는가
+- 모든 추천·선택·세부값이 정확히 하나의 축 ID 또는 고정 입력·source 파생 계약으로 역추적되고,
+  한 값을 단독 변경할 수 있는데도 같은 카드에 남은 예가 없는가
 - work item 본문과 `-design`을 포함한 모든 계획 목적 artifact의 첫 화면에서 현재 결론,
   닫힌 결과, 다음 안정 handoff의 남은 gate terminal 상태, 안정 actor·exact 행동, 사용자
   차례의 조건·응답 방식과 다음 전환을 복원할 수 있는가. 선행 검증의 live 행동을 첫 화면에

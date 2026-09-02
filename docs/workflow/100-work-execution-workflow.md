@@ -1389,6 +1389,26 @@ plan-structure round Closed
   시작 전에 `검증 불가` 또는 `Invalidated`를 반환합니다. Content writer가 heading,
   first-screen field, 활성 결정 block이나 결정 권위·상태를 바꾸면 structure verdict도
   `Invalidated`입니다.
+- Structure map은 writer가 붙인 D/R 번호를 원자 단위로 신뢰하지 않습니다. 최초 사용자
+  요구, authoritative source, 선택 후보와 추천 결과의 모든 값을 `다른 값을 고정한 채 이
+  값만 바꿔도 유효한 후보·다른 consumer·다른 재검토 조건이 생기는가`로 대조해 독립 결정
+  축을 먼저 복원합니다. 성립하면 주제·계층·같은 구현 block·한 번의 응답 여부와 무관하게
+  별도 ID로 분리하고, 각 축을 `사용자 확정 요구 / source 파생 계약 / Agent 기술 선택 /
+  열린 사용자 결정 / 입력 부재 gate` 중 하나와 그 권위에 맞는 단일 표현에 1:1로 연결합니다.
+  열린 사용자 결정만 활성 카드, Agent 기술 선택은 비교 결정 block, 사용자 확정 요구는
+  고정 입력·닫힌 결과, source 파생은 source 파생 block, 입력 부재는 gate block으로 둡니다.
+- 여러 열린 사용자 축은 하나의 활성 결정 block이나 응답 형식으로 함께 제시할 수 있지만 한
+  카드·비교표로 합칠 수 없습니다. 둘 이상의 값을 하나의 결정으로 유지하려면 한 값만 바꾼
+  후보가 source나 논리상 성립하지 않는다는 불가분 근거를 기록합니다. 비교 결정·활성 카드는
+  하나의 공통 질문·option set·owner·consumer·재검토 조건, 사용자 확정 요구·고정 입력은
+  하나의 authoritative 요구·적용 범위·consumer·재검토 조건, source 파생은 하나의 source·
+  파생 규칙·consumer·재검토 조건, 입력 부재 gate는 하나의 부족 입력·입력 owner·획득/재개
+  조건·처음 막는 consumer를 가져야 합니다. 같은 기능명, 함께 구현됨, 비용·편의와 상관관계는
+  불가분 근거가 아닙니다.
+- Structure map은 `원문·source·후보의 독립 축 → ID·권위·권위별 표현`과 `모든 추천·선택·세부값
+  → 축 ID 또는 고정·파생 source`를 양방향으로 닫습니다. Content가 map에 없는 default,
+  소유자, 경계, 표현·저장 위치, version·호환성, 운영 수단이나 다른 선택값을 추가하면 prose
+  상세로 보지 않고 숨은 결정 축으로 판정해 structure verdict를 `Invalidated`로 바꿉니다.
 - Closure 실패 뒤에는 원인·구조 map·대표 결과를 다시 계획할 `$dev-plan`만 다음 actor로
   허용합니다. 새 Frozen 없이 reviewer나 writer를 바꾸어 같은 round를 반복하지 않습니다.
 - 통과한 안정 candidate가 복구 지점이면 사용자 대기보다 local checkpoint를 먼저 닫습니다.

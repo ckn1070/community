@@ -152,18 +152,28 @@ canonical owner입니다. 한 결정 카드는 두 artifact에 복제하지 않�
 `응답 방식`은 같은 결정 ID와 canonical owner의 exact anchor를 가리켜 첫 화면에서 바로
 도달하게 합니다. Companion이 없으면 본문이 유일한 owner입니다.
 
-각 카드는 결정할 질문, 사용자 소유 근거, 배경·제약, 실제 2~3개 대안, 비교 축·차이,
-추천·이유, 영향·위험·재검토 조건을 소유합니다. 모든 활성 카드를 한 줄로 답할 exact 형식은
-canonical block 끝의 `결합 응답 형식` 한 곳만 소유합니다. 응답 뒤 결과와 단계 전환은 두
+각 카드는 하나의 독립 변경값에 대한 결정할 질문, 사용자 소유 근거, 배경·제약, 실제 2~3개
+대안, 비교 축·차이, 추천·이유, 영향·위험·재검토 조건을 소유합니다. 모든 활성 카드를 한 줄로
+답할 exact 형식은 canonical block 끝의 `결합 응답 형식` 한 곳만 소유합니다. 응답 뒤 결과와 단계 전환은 두
 artifact의 상단 표에 같은 안정 상태로 투영합니다. 이미 값이 확정된 결정은 활성 block에
 다시 넣지 않습니다. 본문 소유의 제품 결과·범위·수용 결정은 같은 ID의 결정 색인과 닫힌
 상세 block에 질문, 실제 대안·비교축, `선택`, 보존 목표·결정적 차이·감수 비용,
 영향·비보증과 재검토 조건을 남깁니다. 장기 기술 결정은 `-design`의 닫힌 block만 상세를
 소유하고 본문은 그 anchor를 가리킵니다.
 
+카드 ID를 먼저 정한 뒤 그 안에 세부값을 모으지 않습니다. 원문·source·후보·추천 결과에서
+독립적으로 달라질 수 있는 값을 먼저 복원하고 각 값에 별도 ID를 부여합니다. 다른 값을
+고정한 채 한 값만 바꿔도 유효한 후보, 다른 owner·consumer 또는 다른 재검토 조건이 남으면
+별도 ID입니다. 열린 사용자 결정만 별도 활성 카드로 두고, Agent 기술 선택은 비교 결정 block,
+사용자 확정 요구는 고정 입력·닫힌 결과, source 파생은 source 파생 block, 입력 부재는 gate
+block으로 둡니다. 여러 활성 카드를 같은 block과 결합 응답 형식에 담는 것은 질문 cadence일
+뿐 하나의 결정을 뜻하지 않습니다. 두 값을 한 ID로 유지하려면 개별 변경 후보가 source나
+논리상 성립하지 않는 불가분 관계를 structure map에 증명해야 합니다.
+
 상세 작성 전에는 [작업 실행 workflow의 plan-structure round](../workflow/100-work-execution-workflow.md#사용자-결정-계획-문서의-구조-선행-round)에서
-현재 단계 body·design의 heading, 독자 질문, first-screen field, 결정 권위·상태와 보존 관계를
-동결합니다. Structure closure 뒤 content writer는 이 골격을 추가·삭제·재배치하지 않습니다.
+현재 단계 body·design의 heading, 독자 질문, first-screen field, 독립 결정 축 inventory,
+결정 권위·상태와 보존 관계를 동결합니다. Structure closure 뒤 content writer는 이 골격을
+추가·삭제·재배치하거나 축에 없는 선택값을 prose로 추가하지 않습니다.
 
 상태 전환, rollback, 완료 정규화와 design 정리 중 문서 전체 또는 핵심 독자 질문·canonical
 owner 계약·상태나 결정 section 묶음을 실질적으로 없애면 `삭제에 준하는 대규모 제거`입니다.
