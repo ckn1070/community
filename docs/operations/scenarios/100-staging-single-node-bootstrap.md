@@ -209,7 +209,7 @@ Application prerequisite 확인·적용, GitHub App 설치와 최초 desired sta
     stdin·SSH 명령으로 EC2의
     `/home/ubuntu/car-community-scripts/bootstrap/application/200-apply-application-prerequisites.sh`
     를 `sudo -n` 실행합니다.
-  - **완료**: `100` 성공 뒤 `200`을 실행해 Namespace와 네 Secret을 적용하고 총 5개
+  - **완료**: `100` 성공 뒤 `200`을 실행해 Namespace와 다섯 Secret을 적용하고 총 6개
     resource의 postcondition을 확인했습니다. GitOps `200`은 이 단계와 별개의 최초 연결
     작업입니다.
 - [x] **Staging local desired state 확정·render** — [350 Application delivery 최초 bootstrap](../350-application-delivery-bootstrap-runbook.md#1-현재-private-repository의-gitops-경로-준비)
@@ -398,7 +398,7 @@ live postcondition을 근거로만 완료합니다. 모든 세부 명령과 roll
 - VPC·EC2·ECR/IAM·RDS가 각 runbook의 live postcondition을 충족합니다.
 - Kubernetes 단일 node와 network smoke가 완료됩니다.
 - 승인된 Git 반영과 `main` CI·Sonar Gate, image publish와 node exact digest pull이 성공합니다.
-- Argo CD Core, runtime·migrator DB role, Namespace·네 Secret과 Git-managed ConfigMap이
+- Argo CD Core, runtime·migrator DB role, Namespace·다섯 Secret과 Git-managed ConfigMap이
   연결됩니다.
 - 최초 full sync가 `Synced`·`Healthy`, runtime Pod Ready로 끝납니다.
 - New node profile·providerID·public subnet role tag·ACM·LBC prerequisite가 live 검증됩니다.

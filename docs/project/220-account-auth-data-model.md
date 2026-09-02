@@ -74,7 +74,7 @@ admin_invitation ── auth_role
 재시도 세부와 API 접근 조건은 반복하지 않습니다. 이메일 인증 요청과 비밀번호 재설정 요청은
 [Notification 결과와 감사 저장 실패 혼합](../work-items/bugs/2026/005-notification-audit-result-separation.md)에서
 provider 결과와 독립 감사 append 결과를 분리했으며, audit gap 복구는
-[Security Audit 장애 복구](../operations/550-security-audit-failure-recovery-runbook.md)가 소유합니다.
+[570 Security Audit 장애 복구](../operations/570-security-audit-failure-recovery-runbook.md)가 소유합니다.
 
 `refresh_token`은 `auth`, `auth_event`는 `securityaudit`만 JPA mapping·writer를 가집니다.
 `account`의 비밀번호 변경·재설정은 `CredentialChanged`를 동기 발행하고 `auth` listener가 같은

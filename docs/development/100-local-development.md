@@ -52,6 +52,7 @@ Staging bootstrap key는 Spring local runtime key와 분리합니다.
 | `STG_DB_MIGRATOR_PASSWORD` | Migrator role의 비밀번호입니다. |
 | `STG_AUTH_JWT_HMAC_SECRET` | Staging JWT HS256용 32 bytes 이상 secret입니다. |
 | `STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET` | Staging login identifier hash용 별도 32 bytes 이상 secret입니다. |
+| `STG_COMMUNITY_CURSOR_HMAC_SECRET` | Staging Community cursor 서명용 별도 32 bytes 이상 secret입니다. |
 | `STG_RESEND_API_KEY` | Staging Kubernetes notification Secret의 Resend provider credential입니다. |
 
 Runtime과 migrator username은 bootstrap script에 각각 `carmunity_runtime`과
@@ -68,8 +69,9 @@ credential 소비 경계를 유지합니다.
 volume에 넣지 않습니다. Runbook이 정한 allow-list와 순서로 필요한 값만 SSH stdin에
 전달하고, remote script는 argument·log에 값을 출력하지 않습니다. RDS master password는
 RDS가 관리하는 Secrets Manager의 현재 값을 실행 시점에 일회성으로 사용하며 `.env`의 장기
-key로 추가하지 않습니다. Resend key 교체는
-[540 Application 환경변수·Secret 변경의 Resend API key 교체](../operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체)를
+key로 추가하지 않습니다. Community Secret 준비와 기능 활성화는
+[560 Community 기능 활성화](../operations/560-community-feature-activation-runbook.md), Resend key 교체는
+[550 Resend API key 교체](../operations/550-resend-api-key-rotation-runbook.md)를
 따릅니다.
 
 실제 secret이 있는 `.env`는 symlink가 아닌 현재 사용자 소유 regular file, mode `0600`으로
@@ -106,6 +108,7 @@ typeset +x \
   DB_PASSWORD STG_DB_RUNTIME_PASSWORD STG_DB_MIGRATOR_PASSWORD \
   AUTH_JWT_HMAC_SECRET AUTH_LOGIN_IDENTIFIER_HMAC_SECRET \
   STG_AUTH_JWT_HMAC_SECRET STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET \
+  COMMUNITY_CURSOR_HMAC_SECRET STG_COMMUNITY_CURSOR_HMAC_SECRET \
   RESEND_API_KEY STG_RESEND_API_KEY SONAR_TOKEN
 ```
 
