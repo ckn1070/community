@@ -162,9 +162,9 @@ public class MediaService {
   public record MediaContent(byte[] bytes, String mediaType) {
     @Override
     public boolean equals(Object candidate) {
-      return candidate instanceof MediaContent other
-          && java.util.Arrays.equals(bytes, other.bytes)
-          && java.util.Objects.equals(mediaType, other.mediaType);
+      return candidate instanceof MediaContent(byte[] otherBytes, String otherMediaType)
+          && java.util.Arrays.equals(bytes, otherBytes)
+          && java.util.Objects.equals(mediaType, otherMediaType);
     }
 
     @Override
