@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
 public class MediaCleanupWorker {
+  private static final String LEASE_PARAMETER = "lease";
   private final JdbcClient jdbc;
   private final MediaObjectStorage storage;
   private final TransactionTemplate transactions;
@@ -59,7 +60,7 @@ public class MediaCleanupWorker {
       jdbc.sql(
               "UPDATE media_job SET status=CASE WHEN attempt_count>=8 THEN 'DEAD' ELSE 'RETRY' END,lease_owner=NULL,lease_until=NULL,next_attempt_at=NOW()+(LEAST(1800,30*POWER(2,GREATEST(attempt_count-1,0)))::TEXT||' seconds')::INTERVAL,last_error_code='DELETE_FAILED',updated_at=NOW(),version=version+1 WHERE id=:id AND lease_owner=:lease")
           .param("id", job.get("id"))
-          .param("lease", lease)
+          .param(LEASE_PARAMETER, lease)
           .update();
     }
   }
@@ -71,7 +72,7 @@ public class MediaCleanupWorker {
               int changed =
                   jdbc.sql(
                           "UPDATE media_job SET status='RUNNING',lease_owner=:lease,lease_until=NOW()+INTERVAL '2 minutes',attempt_count=attempt_count+1,updated_at=NOW(),version=version+1 WHERE id=:id AND ((status IN ('READY','RETRY') AND (next_attempt_at IS NULL OR next_attempt_at<=NOW())) OR (status='RUNNING' AND lease_until<NOW()))")
-                      .param("lease", lease)
+                      .param(LEASE_PARAMETER, lease)
                       .param("id", job.get("id"))
                       .update();
               if (changed == 0) return 0;
@@ -85,7 +86,7 @@ public class MediaCleanupWorker {
               }
               return changed;
             });
-    return result == null ? 0 : result;
+    return java.util.Objects.requireNonNull(result, "media cleanup claim result");
   }
 
   private void complete(Map<String, Object> job, String lease, boolean delivery) {
@@ -101,7 +102,7 @@ public class MediaCleanupWorker {
         jdbc.sql(
                 "UPDATE media_job SET status='DONE',lease_owner=NULL,lease_until=NULL,updated_at=NOW(),version=version+1 WHERE id=:id AND lease_owner=:lease AND status='RUNNING'")
             .param("id", job.get("id"))
-            .param("lease", lease)
+            .param(LEASE_PARAMETER, lease)
             .update();
     if (jobChanged != 1) throw new IllegalStateException("media cleanup lease가 만료되었습니다.");
   }

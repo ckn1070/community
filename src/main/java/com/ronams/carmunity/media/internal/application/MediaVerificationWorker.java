@@ -19,6 +19,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
 public class MediaVerificationWorker {
+  private static final String ASSET_ID_COLUMN = "asset_id";
+  private static final String LEASE_PARAMETER = "lease";
   private final JdbcClient jdbc;
   private final MediaObjectStorage storage;
   private final TransactionTemplate transactions;
@@ -44,14 +46,14 @@ public class MediaVerificationWorker {
               int jobChanged =
                   jdbc.sql(
                           "UPDATE media_job SET status='RUNNING',lease_owner=:lease,lease_until=NOW()+INTERVAL '2 minutes',attempt_count=attempt_count+1,updated_at=NOW(),version=version+1 WHERE id=:id AND ((status IN ('READY','RETRY') AND (next_attempt_at IS NULL OR next_attempt_at<=NOW())) OR (status='RUNNING' AND lease_until<NOW()))")
-                      .param("lease", lease)
+                      .param(LEASE_PARAMETER, lease)
                       .param("id", jobId)
                       .update();
               if (jobChanged == 0) return false;
               int assetChanged =
                   jdbc.sql(
                           "UPDATE media_asset SET status='VERIFYING',updated_at=NOW(),version=version+1 WHERE id=:id AND status IN ('UPLOADED','VERIFYING')")
-                      .param("id", job.get("asset_id"))
+                      .param("id", job.get(ASSET_ID_COLUMN))
                       .update();
               if (assetChanged != 1) throw new IllegalStateException("VERIFY asset 상태가 올바르지 않습니다.");
               return true;
@@ -81,7 +83,7 @@ public class MediaVerificationWorker {
       jdbc.sql(
               "UPDATE media_job SET status=CASE WHEN attempt_count>=8 THEN 'DEAD' ELSE 'RETRY' END,lease_owner=NULL,lease_until=NULL,next_attempt_at=NOW()+(LEAST(1800,30*POWER(2,GREATEST(attempt_count-1,0)))::TEXT||' seconds')::INTERVAL,last_error_code='VERIFY_FAILED',updated_at=NOW(),version=version+1 WHERE id=:id AND lease_owner=:lease")
           .param("id", jobId)
-          .param("lease", lease)
+          .param(LEASE_PARAMETER, lease)
           .update();
     }
   }
@@ -93,17 +95,17 @@ public class MediaVerificationWorker {
   private void persistRejection(Map<String, Object> job, Long jobId, String lease) {
     jdbc.sql(
             "UPDATE media_asset SET status='REJECTED',updated_at=NOW(),version=version+1 WHERE id=:id AND status='VERIFYING'")
-        .param("id", job.get("asset_id"))
+        .param("id", job.get(ASSET_ID_COLUMN))
         .update();
     jdbc.sql(
             "UPDATE media_job SET status='DONE',lease_owner=NULL,lease_until=NULL,last_error_code='INVALID_IMAGE',updated_at=NOW(),version=version+1 WHERE id=:id AND lease_owner=:lease")
         .param("id", jobId)
-        .param("lease", lease)
+        .param(LEASE_PARAMETER, lease)
         .update();
     jdbc.sql(
             "INSERT INTO media_job(public_id,asset_id,type,status) VALUES(:id,:asset,'DELETE_STAGING','READY') ON CONFLICT DO NOTHING")
         .param("id", UUID.randomUUID())
-        .param("asset", job.get("asset_id"))
+        .param("asset", job.get(ASSET_ID_COLUMN))
         .update();
   }
 
@@ -124,13 +126,13 @@ public class MediaVerificationWorker {
             .param("width", image.getWidth())
             .param("height", image.getHeight())
             .param("hash", sha(delivery))
-            .param("id", job.get("asset_id"))
+            .param("id", job.get(ASSET_ID_COLUMN))
             .update();
     int jobChanged =
         jdbc.sql(
                 "UPDATE media_job SET status='DONE',lease_owner=NULL,lease_until=NULL,updated_at=NOW(),version=version+1 WHERE id=:id AND lease_owner=:lease AND status='RUNNING'")
             .param("id", jobId)
-            .param("lease", lease)
+            .param(LEASE_PARAMETER, lease)
             .update();
     if (assetChanged != 1 || jobChanged != 1) {
       throw new IllegalStateException("VERIFY 완료 상태가 충돌했습니다.");
@@ -138,7 +140,7 @@ public class MediaVerificationWorker {
     jdbc.sql(
             "INSERT INTO media_job(public_id,asset_id,type,status) VALUES(:id,:asset,'DELETE_STAGING','READY') ON CONFLICT DO NOTHING")
         .param("id", UUID.randomUUID())
-        .param("asset", job.get("asset_id"))
+        .param("asset", job.get(ASSET_ID_COLUMN))
         .update();
   }
 

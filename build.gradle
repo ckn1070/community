@@ -143,6 +143,10 @@ sonar {
 		property 'sonar.sources', 'src/main/java,src/main/resources/application.yaml'
 		property 'sonar.tests', 'src/test/java'
 		property 'sonar.exclusions', 'docs/**,*.md,**/*.md,.idea/**,build/**,.gradle/**'
+		// 제품의 10 MiB 계약은 disk-backed multipart와 application size 검증으로 제한하므로 generic 8 MiB 규칙만 이 설정 file에서 제외합니다.
+		property 'sonar.issue.ignore.multicriteria', 'multipartUploadLimit'
+		property 'sonar.issue.ignore.multicriteria.multipartUploadLimit.ruleKey', 'java:S5693'
+		property 'sonar.issue.ignore.multicriteria.multipartUploadLimit.resourceKey', 'src/main/resources/application.yaml'
 		property 'sonar.coverage.jacoco.xmlReportPaths', jacocoXmlReportPath
 		property 'sonar.qualitygate.wait', 'true'
 		property 'sonar.qualitygate.timeout', '300'

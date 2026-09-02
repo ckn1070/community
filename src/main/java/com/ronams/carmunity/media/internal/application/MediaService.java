@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,11 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(prefix = "carmunity.community", name = "enabled", havingValue = "true")
 public class MediaService {
   private static final int MAX_BYTES = 10 * 1024 * 1024;
+  private static final String GIF_MEDIA_TYPE = "image/gif";
+  private static final String JPEG_MEDIA_TYPE = "image/jpeg";
+  private static final String PNG_MEDIA_TYPE = "image/png";
+  private static final Set<String> SUPPORTED_MEDIA_TYPES =
+      Set.of(JPEG_MEDIA_TYPE, PNG_MEDIA_TYPE, GIF_MEDIA_TYPE);
   private final JdbcClient jdbc;
   private final MediaObjectStorage storage;
   private final MediaAssetReservationStore reservations;
@@ -72,30 +79,44 @@ public class MediaService {
   }
 
   private void validateSignature(Path file, String type) {
-    if (type == null || !java.util.Set.of("image/jpeg", "image/png", "image/gif").contains(type))
+    if (type == null || !SUPPORTED_MEDIA_TYPES.contains(type)) {
       throw new ApiException(MediaErrorCode.INVALID_IMAGE);
+    }
     try {
       try (var input = ImageIO.createImageInputStream(file.toFile())) {
         var readers = ImageIO.getImageReaders(input);
-        if (!readers.hasNext()) throw new ApiException(MediaErrorCode.INVALID_IMAGE);
+        if (!readers.hasNext()) {
+          throw new ApiException(MediaErrorCode.INVALID_IMAGE);
+        }
         var reader = readers.next();
         reader.setInput(input, true, true);
-        String format = reader.getFormatName().toLowerCase(java.util.Locale.ROOT);
-        String detected =
-            "jpeg".equals(format) || "jpg".equals(format)
-                ? "image/jpeg"
-                : "png".equals(format) ? "image/png" : "gif".equals(format) ? "image/gif" : "";
+        String detected = mediaType(reader.getFormatName().toLowerCase(Locale.ROOT));
         if (!type.equals(detected)
-            || ("image/gif".equals(detected) && reader.getNumImages(true) != 1))
+            || (GIF_MEDIA_TYPE.equals(detected) && reader.getNumImages(true) != 1)) {
           throw new ApiException(MediaErrorCode.INVALID_IMAGE);
+        }
         var image = reader.read(0);
         reader.dispose();
-        if (image == null || (long) image.getWidth() * image.getHeight() > 24_000_000L)
+        if (image == null || (long) image.getWidth() * image.getHeight() > 24_000_000L) {
           throw new ApiException(MediaErrorCode.INVALID_IMAGE);
+        }
       }
     } catch (java.io.IOException e) {
       throw new ApiException(MediaErrorCode.INVALID_IMAGE, e);
     }
+  }
+
+  private String mediaType(String format) {
+    if ("jpeg".equals(format) || "jpg".equals(format)) {
+      return JPEG_MEDIA_TYPE;
+    }
+    if ("png".equals(format)) {
+      return PNG_MEDIA_TYPE;
+    }
+    if ("gif".equals(format)) {
+      return GIF_MEDIA_TYPE;
+    }
+    return "";
   }
 
   private String sha(byte[] bytes) {
@@ -138,5 +159,22 @@ public class MediaService {
     return result;
   }
 
-  public record MediaContent(byte[] bytes, String mediaType) {}
+  public record MediaContent(byte[] bytes, String mediaType) {
+    @Override
+    public boolean equals(Object candidate) {
+      return candidate instanceof MediaContent other
+          && java.util.Arrays.equals(bytes, other.bytes)
+          && java.util.Objects.equals(mediaType, other.mediaType);
+    }
+
+    @Override
+    public int hashCode() {
+      return 31 * java.util.Arrays.hashCode(bytes) + java.util.Objects.hashCode(mediaType);
+    }
+
+    @Override
+    public String toString() {
+      return "MediaContent[bytes=" + bytes.length + " bytes, mediaType=" + mediaType + "]";
+    }
+  }
 }

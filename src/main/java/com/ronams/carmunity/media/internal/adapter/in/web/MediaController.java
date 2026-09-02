@@ -6,6 +6,7 @@ import com.ronams.carmunity.media.internal.application.MediaService;
 import com.ronams.carmunity.shared.error.ApiException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.Principal;
 import java.util.Map;
 import java.util.UUID;
@@ -30,15 +31,32 @@ public class MediaController {
       @RequestPart("file") MultipartFile file,
       Principal principal)
       throws java.io.IOException {
-    Path temporary = Files.createTempFile("community-upload-", ".bin");
+    Path temporaryDirectory =
+        Files.createTempDirectory(
+            "community-upload-",
+            PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rwx------")));
     try {
-      file.transferTo(temporary);
-      return ResponseEntity.accepted()
-          .body(
-              service.upload(
-                  actor(principal), key, temporary, Files.size(temporary), file.getContentType()));
+      Path temporary =
+          Files.createFile(
+              temporaryDirectory.resolve("payload.bin"),
+              PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
+      try {
+        try (var input = file.getInputStream()) {
+          Files.copy(input, temporary, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+        return ResponseEntity.accepted()
+            .body(
+                service.upload(
+                    actor(principal),
+                    key,
+                    temporary,
+                    Files.size(temporary),
+                    file.getContentType()));
+      } finally {
+        Files.deleteIfExists(temporary);
+      }
     } finally {
-      Files.deleteIfExists(temporary);
+      Files.deleteIfExists(temporaryDirectory);
     }
   }
 

@@ -61,8 +61,8 @@ class MediaUploadIntegrationTest extends PostgreSqlIntegrationTestSupport {
                   .query(Long.class)
                   .single())
           .isEqualTo(1);
-      assertThatThrownBy(
-              () -> service.upload(actor, requestId, second, Files.size(second), "image/png"))
+      long secondSize = Files.size(second);
+      assertThatThrownBy(() -> service.upload(actor, requestId, second, secondSize, "image/png"))
           .isInstanceOf(ApiException.class)
           .extracting(exception -> ((ApiException) exception).errorCode().code())
           .isEqualTo("IDEMPOTENCY_KEY_REUSED");
@@ -108,10 +108,9 @@ class MediaUploadIntegrationTest extends PostgreSqlIntegrationTestSupport {
     UUID actor = account();
     Path source = image(0x123456);
     try {
-      assertThatThrownBy(
-              () ->
-                  service.upload(
-                      actor, UUID.randomUUID(), source, Files.size(source), "image/webp"))
+      UUID requestId = UUID.randomUUID();
+      long sourceSize = Files.size(source);
+      assertThatThrownBy(() -> service.upload(actor, requestId, source, sourceSize, "image/webp"))
           .isInstanceOf(ApiException.class)
           .extracting(exception -> ((ApiException) exception).errorCode().code())
           .isEqualTo("INVALID_IMAGE");
