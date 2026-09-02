@@ -63,5 +63,5 @@ persistence 결과를 서로 다른 실패 경계로 처리해 감사 데이터�
 - **현재 event 의미와 gap**: [Auth Event 정책](../../../domain/120-auth-event-policy.md)
 - **관리자 초대 내구성 경계**: [다시 연 관리자 초대/수락](../../features/2026/011-admin-invitations.md)
 - **현재 실행 source**: `RequestMemberEmailVerificationService`, `RequestPasswordResetService`, `InviteAdminService`
-- **감사 누락 복구**: [Security Audit 장애 복구](../../../operations/550-security-audit-failure-recovery-runbook.md)
+- **감사 누락 복구**: [570 Security Audit 장애 복구](../../../operations/570-security-audit-failure-recovery-runbook.md)
 - **관련 기능**: [이메일 인증](../../features/2026/008-member-email-verification.md), [다시 연 관리자 초대](../../features/2026/011-admin-invitations.md), [비밀번호 재설정](../../features/2026/012-account-password-reset.md)

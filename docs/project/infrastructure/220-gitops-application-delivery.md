@@ -92,7 +92,7 @@ repository read 권한을 분리해야 할 때 별도 GitOps repository를 다�
 | `selfHeal` | 사람이 만든 live drift를 Git 상태로 복구 | 활성 |
 | `allowEmpty` | Empty render를 정상 목표로 허용 | 비활성, 잘못 빈 overlay의 전체 삭제를 차단 |
 | Namespace owner | Target namespace 생성 책임 | Application bootstrap이 먼저 생성하고 Argo CD는 생성하지 않음 |
-| Notification rollout annotation | Secret operation이 current `resourceVersion`을 기록하는 Pod template field | Exact annotation ignore + `RespectIgnoreDifferences=true` |
+| Application Secret rollout annotation | Community·notification Secret operation이 각 current `resourceVersion`을 기록하는 Pod template field | Exact annotation ignore + `RespectIgnoreDifferences=true` |
 | `Synced` | Live resource가 target Git revision과 일치 | 배포 완료에 필요하지만 health를 대신하지 않음 |
 | `Healthy` | Resource health assessment가 정상 | `Synced`와 함께 필요 |
 | Condition 없음 | Repository·render·permission 등 오류가 없음 | 완료에 필요 |
@@ -184,7 +184,7 @@ Controller·repository·image·manifest 원인을 확인하고 Git 목표 또는
 
 - Argo CD Core exact version·digest가 Ready입니다.
 - Non-empty valid `deploy/overlays/stg`가 `main`에 승인돼 있습니다.
-- Runtime·migrator DB role과 Git 밖 Namespace·네 Secret이 준비돼 있습니다.
+- Runtime·migrator DB role과 Git 밖 Namespace·다섯 Secret이 준비돼 있습니다.
 - Actual DB URL·pinned RDS CA와 notification 공개 설정이 staging overlay에 승인돼 있습니다.
 - Read-only GitHub App과 project-scoped repository Secret이 있습니다.
 - AppProject와 `car-community-stg` Application의 최초 fresh sync가 성공했습니다.
@@ -193,14 +193,14 @@ Controller·repository·image·manifest 원인을 확인하고 Git 목표 또는
 GitHub App private key와 notification provider credential 변경은 deployment PR 자체가 아니라
 각각 별도 change lifecycle입니다. Notification Secret 변경은 새 Pod rollout·Ready와 실제
 email smoke 뒤 기존 provider key를 폐기합니다. 실행 절차는
-[Application notification credential 변경](../../operations/540-application-notification-credential-runbook.md),
+[550 Resend API key 교체](../../operations/550-resend-api-key-rotation-runbook.md),
 GitHub App rotation 원리는
 [Repository credential rotation](330-argocd-repository-credential-rotation.md)이 소유합니다.
 
 ## Repository capability 경계
 
 현재 repository capability에는 image publish workflow, application prerequisite,
-notification credential operation, Service·Deployment·단일 Migration PreSync Job,
+Community·notification Secret operation, Service·Deployment·단일 Migration PreSync Job,
 staging NodePort·Ingress manifest, Argo·LBC bootstrap·rotation script와 contract test가
 포함됩니다. Digest 변경 PR workflow와 그 Git write credential은 구현하지 않았습니다.
 
@@ -226,7 +226,9 @@ Repository capability와 live 실행 완료는 서로 다른 사실입니다. �
 - **Staging external HTTPS 최초 절차**:
   [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
 - **Notification provider credential 변경**:
-  [Application notification credential 변경](../../operations/540-application-notification-credential-runbook.md)
+  [550 Resend API key 교체](../../operations/550-resend-api-key-rotation-runbook.md)
+- **Community Secret 준비와 기능 활성화**:
+  [560 Community 기능 활성화](../../operations/560-community-feature-activation-runbook.md)
 - [Argo CD automated sync](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)
 - [Argo CD AppProject](https://argo-cd.readthedocs.io/en/stable/operator-manual/project-specification/)
 - [Argo CD repository Secret](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#repositories)

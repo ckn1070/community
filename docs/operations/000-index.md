@@ -35,7 +35,9 @@ Runbook의 각 단계는 [150 문서화 워크플로우의 Procedure 실행 계�
 | 일반 사용자에게 cluster-admin kubeconfig 배포 | [Admin kubeconfig 배포](510-kubernetes-admin-kubeconfig-runbook.md) |
 | GitHub App private key 교체 | [Argo CD repository credential 교체](520-argocd-repository-credential-rotation-runbook.md) |
 | Sonar 분석 token 교체 | [Sonar token 교체](530-sonar-token-rotation-runbook.md) |
-| Resend API key 교체·notification key 추가 또는 폐기 | [Application notification credential 변경](540-application-notification-credential-runbook.md) |
+| Application 환경변수·Secret 추가·변경 | [540 Application 환경변수·Secret 변경](540-application-environment-and-secret-change-runbook.md) |
+| Resend API key를 교체하고 이전 key를 폐기 | [550 Resend API key 교체](550-resend-api-key-rotation-runbook.md) |
+| Community cursor Secret을 준비하고 route를 활성화해 Swagger 노출 확인 | [560 Community 기능 활성화](560-community-feature-activation-runbook.md) |
 
 ## `100` 최초 AWS 구축과 EC2 공통 실행 준비
 
@@ -101,8 +103,10 @@ Super Admin 운영 준비를, `370`은 외부 HTTPS 공개를 소유합니다.
 | 선택한 사용자에게 admin credential 배포 | [Admin kubeconfig 배포](510-kubernetes-admin-kubeconfig-runbook.md) |
 | 최초 연결 뒤 GitHub App private key rotation | [Argo CD repository credential 교체](520-argocd-repository-credential-rotation-runbook.md) |
 | 최초 설정 뒤 Sonar 분석 token rotation | [Sonar token 교체](530-sonar-token-rotation-runbook.md) |
-| 최초 bootstrap 뒤 notification credential 변경 | [Application notification credential 변경](540-application-notification-credential-runbook.md) |
-| Security Audit 독립 append 실패의 누락 범위·복구 가능성 판정 | [Security Audit 장애 복구](550-security-audit-failure-recovery-runbook.md) |
+| 최초 bootstrap 뒤 Application 환경변수·Secret 추가·변경 | [540 Application 환경변수·Secret 변경](540-application-environment-and-secret-change-runbook.md) |
+| 기존 Resend API key 교체·검증·폐기 | [550 Resend API key 교체](550-resend-api-key-rotation-runbook.md) |
+| Community capability-off gate부터 route·Swagger 활성화와 rollback | [560 Community 기능 활성화](560-community-feature-activation-runbook.md) |
+| Security Audit 독립 append 실패의 누락 범위·복구 가능성 판정 | [570 Security Audit 장애 복구](570-security-audit-failure-recovery-runbook.md) |
 
 ## Platform 진단
 

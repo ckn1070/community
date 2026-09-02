@@ -2,6 +2,9 @@
 
 작업 유형에 맞는 `Proposed/결과 정의`의 최소 골격만 복사합니다.
 해당하지 않는 선택 섹션은 제거하고 workflow 전문을 작업 문서에 복사하지 않습니다.
+각 template의 `현재 결론과 다음 행동`을 actual source로 먼저 채워 구조 candidate를 만들고,
+`plan-structure` closure 전에는 상세 prose를 작성하지 않습니다. 사용자 입력이 다음 안정
+행동일 때만 활성 결정 block을 유지하며, 닫힌 결정은 결정 색인으로 옮기고 다시 묻지 않습니다.
 
 - [feature-template.md](feature-template.md)
 - [bug-template.md](bug-template.md)

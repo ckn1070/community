@@ -1,4 +1,4 @@
-# Security Audit 장애 복구
+# 570 Security Audit 장애 복구
 
 이 runbook은 `IndependentSecurityAuditAppender`가 `FAILED`를 반환하거나
 `security audit append failed` 구조화 로그가 발생했을 때 감사 누락 범위와 복구 가능성을

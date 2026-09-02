@@ -78,7 +78,7 @@ notification public value와 ECR exact digest를 반영했고 다음 상태를 l
 - Actual Secret value는 mode `0600` local `.env`에서 허용된 값만 NUL-delimited SSH stdin으로
   EC2 bootstrap·operation script에 전달하며 Git·CLI argument·log·EC2 영구 file에 남기지
   않습니다.
-- External Secrets·Secrets Manager application 연동 전까지 application `200`이 네 Secret을
+- External Secrets·Secrets Manager application 연동 전까지 application `200`이 다섯 Secret을
   최초 생성하고, notification key 교체는 전용 operation이 새 Pod rollout·Ready를 확인합니다.
 
 ### Workload와 GitOps
@@ -107,7 +107,7 @@ provider 성공으로 간주하지 않고
 [430 Application 기능 qualification](../../../operations/430-application-functional-qualification-runbook.md)의
 실제 수신·token confirmation·DB `ACTIVE`·test data cleanup까지 확인합니다. 기존과 다른 old
 provider key가 실제로 있을 때만
-[540 Notification credential 변경](../../../operations/540-application-notification-credential-runbook.md)의
+[550 Resend API key 교체](../../../operations/550-resend-api-key-rotation-runbook.md)의
 새 key 검증·폐기 절차를 적용합니다.
 
 ## 영구 SOT
@@ -123,7 +123,7 @@ provider key가 실제로 있을 때만
 - [350 Application delivery 최초 bootstrap](../../../operations/350-application-delivery-bootstrap-runbook.md)
 - [420 GitOps 배포·rollback](../../../operations/420-gitops-deployment-and-rollback-runbook.md)
 - [430 Application 기능 qualification](../../../operations/430-application-functional-qualification-runbook.md)
-- [540 Notification credential 변경](../../../operations/540-application-notification-credential-runbook.md)
+- [550 Resend API key 교체](../../../operations/550-resend-api-key-rotation-runbook.md)
 
 ## 관련 문서
 

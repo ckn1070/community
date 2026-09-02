@@ -1,6 +1,6 @@
 ---
 name: verify-plan
-description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 목적, 확정 결정과 관련 코드·문서·설정·데이터·운영 source부터 독립 검증할 때 사용한다. 계획 수립·수정 자체, 구현 결과 검증이나 반복적인 아이디어 탐색에는 사용하지 않는다."
+description: "사용자 결정·단계 확정용 개발 계획의 content 작성 전 구조 map 또는 완성 후보를 구현 전에 최초 사용자 목적, 확정 결정과 관련 코드·문서·설정·데이터·운영 source부터 독립 검증할 때 사용한다. structure mode는 lifecycle 골격·first-screen·권위·보존 관계를, content mode는 그 closure를 소비한 최종 내용을 감사한다. 계획 수립·수정 자체, 구현 결과 검증이나 반복적인 아이디어 탐색에는 사용하지 않는다."
 ---
 
 # 계획 검증
@@ -36,11 +36,22 @@ closure만 감사 범위로 연다. 선행 단계가 닫히기 전에 생성된 
 section·후보 상세는 내용 품질과 무관한 필수 결함이다. 다음 단계에서만 필요한 검토 축은
 현재 후보의 누락으로 판정하지 않고 `해당 없음`으로 닫는다.
 
+호출 receipt의 `audit domain`은 `structure` 또는 `content`로 고정한다.
+
+- `structure`는 상세 prose 작성 전의 map·대표 골격만 감사한다. Lifecycle artifact·section,
+  heading별 독자 질문·owner·순서, 두 열 first-screen field와 안정 handoff, 결정 identity별
+  권위·활성/닫힘 상태, 카드 7개 field와 단일 결합 응답 형식, body·design·router·rollback
+  보존 관계를 확인한다. 추천 결론과 기술 내용의 옳고 그름은 이 domain에서 판정하지 않는다.
+- `content`는 exact `structure` closure receipt와 같은 map·digest가 있을 때만 시작한다.
+  누락·stale이면 `판정 불가`, writer가 heading·first-screen field·활성 결정 block·결정
+  권위나 상태를 바꿨으면 `Invalidated`로 반환한다. 구조가 유지된 후보에 한해 아래 전체
+  dependency·내용 축을 감사하며, 같은 Frozen 후보의 final content round는 한 번만 수행한다.
+
 ### 실행 라운드 admission
 
 Writer가 만든 후보의 discovery·closure로 위임받은 검증은 작업 실행 workflow의 review
 state를 content audit보다 먼저 소비한다. 호출 입력에는 operation generation, round id,
-`discovery|closure`, candidate identity·digest, 예정 reviewer identity, active writer 수,
+`structure|content` audit domain, `discovery|closure`, candidate identity·digest, 예정 reviewer identity, active writer 수,
 앞선 reviewer terminal 상태, correction 처분과 이전 closure verdict가 있어야 한다. 현재
 verifier는 자신의 identity와 실제 thread·handoff에서 이 값을 대조하고, 누락·불일치·stale을
 호출자의 설명으로 보충하지 않는다.

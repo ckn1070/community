@@ -2,4 +2,4 @@
 interface:
   display_name: "문서화"
   short_description: "저장소 Markdown의 canonical source·구조 동기화"
-  default_prompt: "Use $documentation to route this repository Markdown change through canonical owner and operator-lifecycle discovery, source-first authoring, and the required specialist final for major owner or topology changes."
+  default_prompt: "Use $documentation to route this repository Markdown change through canonical owner and operator-lifecycle discovery and source-first authoring. For a current-stage plan artifact handed to the user for value selection or stage confirmation, return to $dev-plan before mutation and write content only against an exact closed plan-structure map and digest; require the fresh specialist final for major owner or topology changes."

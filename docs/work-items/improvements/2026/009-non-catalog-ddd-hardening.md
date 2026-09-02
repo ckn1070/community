@@ -304,7 +304,7 @@ Bug 003 목표 계약 ─> 작업 6 config Clock provider
 - 실제 module·의존·writer 예외: `docs/project/210-module-map.md`
 - lifecycle·transaction·schema: `docs/project/220-account-auth-data-model.md`, `docs/project/schema`
 - staging qualification 조회·cleanup: `docs/operations/430-application-functional-qualification-runbook.md`
-- audit 장애 분류·복구: 신규 `docs/operations/550-security-audit-failure-recovery-runbook.md`와 operations router
+- audit 장애 분류·복구: `docs/operations/570-security-audit-failure-recovery-runbook.md`와 operations router
 - 업무 언어·상태 전이: `docs/domain/100-account.md`, `110-account-auth-policy.md`,
   `120-auth-event-policy.md`와 필요한 security audit domain 문서
 - 일반 DDD 개념과 workflow gate는 변경하지 않고 실제 구현이 결함을 드러낼 때만 별도 수정합니다.

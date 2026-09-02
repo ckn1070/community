@@ -547,3 +547,4 @@ U6 -> V1 전체 검증·영구 SOT -> Git·remote gate -> A1 capability-off 기�
 - **현재 module 상태**: [210 모듈 지도](../../../project/210-module-map.md)
 - **보존된 기술 기준선**: [018 일반 커뮤니티 해결 설계](018-general-community-design.md)
 - **계획 단계와 artifact 기준**: [100 작업 문서 생명주기](../../100-work-item-lifecycle.md#계획-단계와-최소-artifact)
+- **활성화 운영 절차**: [560 Community 기능 활성화](../../../operations/560-community-feature-activation-runbook.md)

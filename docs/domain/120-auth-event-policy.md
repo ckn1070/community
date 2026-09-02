@@ -180,7 +180,7 @@ event가 상태 변경과 원자적이라고 일반화하지 않습니다.
 결과를 기록하지 않습니다. Delivery 결과를 장기 보존하려면 생성 이벤트와 다른 taxonomy·
 저장·복구 계약이 필요합니다. 이메일 인증 요청과 비밀번호 재설정 요청의 독립 append는
 저장 실패를 `FAILED`로 반환하므로 provider 결과를 바꾸지 않습니다. Audit gap 판정과 복구는
-[Security Audit 장애 복구](../operations/550-security-audit-failure-recovery-runbook.md)가 소유합니다.
+[570 Security Audit 장애 복구](../operations/570-security-audit-failure-recovery-runbook.md)가 소유합니다.
 
 ## Metadata 기준
 
