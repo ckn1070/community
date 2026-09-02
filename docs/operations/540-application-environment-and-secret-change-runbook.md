@@ -104,6 +104,9 @@ Secret-backed target에 전용 Procedure가 없거나 그 Procedure가 현재 �
 지원하지 않으면 live 값을 출력하거나 `kubectl edit`, 임의 patch, Secret 삭제·재생성,
 bootstrap 재실행으로 우회하지 않습니다. 필요한 target 전용 입력 검증, 동시성, rollout,
 직접 기능 검증과 rollback을 canonical operation으로 먼저 구현·검증한 뒤 router에 연결합니다.
+Catalog Redis 역할별 Secret은 이 공용 절차에서 값을 만들지 않고
+[580 Catalog Redis 활성화·credential](580-catalog-redis-activation-and-credential-runbook.md)으로
+handoff합니다.
 
 ## 3. Git-managed 값 변경과 배포
 

@@ -11,13 +11,13 @@ application desired state를 소유합니다. 구성요소의 작동 원리와 �
 
 | 경로 | 소유하는 내용 | 소비자·변경 주체 |
 | --- | --- | --- |
-| `base/` | Deployment, Service와 PreSync Migration Job의 환경 공통 구조 | Staging overlay가 조합하고 GitOps pull request가 변경 |
+| `base/` | Application·단일 무영속 Catalog Redis Deployment, private Service·NetworkPolicy와 PreSync Migration Job의 환경 공통 구조 | Staging overlay가 조합하고 GitOps pull request가 변경 |
 | `overlays/stg/` | Namespace, exact ECR digest, 공개 application 설정, `production,staging` application profile, NodePort patch와 public Ingress | `car-community-stg` Argo CD Application이 `main`에서 render·sync |
 | `overlays/stg/pre-sync/` | Git으로 관리하는 DB URL과 pinned RDS CA ConfigMap | Migration Job과 runtime Deployment가 mount·참조 |
 
 AppProject와 Application 자체, repository credential은
 `scripts/bootstrap/gitops`가 최초 bootstrap desired state로 소유합니다. Namespace와
-runtime·migrator·auth·notification Secret은 Git 밖 bootstrap 입력이며 이 directory에
+runtime·migrator·auth·notification·Catalog Redis application/server Secret은 Git 밖 운영 입력이며 이 directory에
 저장하지 않습니다.
 
 ## 변경 경계
@@ -29,6 +29,16 @@ runtime·migrator·auth·notification Secret은 Git 밖 bootstrap 입력이며 �
 - Argo CD 최초 연결 뒤 manifest 변경과 rollback은 review된 Git 변경으로 수행합니다.
   Live resource를 직접 수정해 Git desired state와 다른 장기 상태를 만들지 않습니다.
 - Secret actual value, local `.env`, kubeconfig와 cloud credential은 commit하지 않습니다.
+- Catalog Redis는 PostgreSQL 원본을 대체하지 않는 replica 1 cache입니다. `Recreate`,
+  `emptyDir`, persistence off, `384mb` maxmemory와 `allkeys-lfu`, 512Mi container limit을
+  사용하며 ClusterIP 밖으로 노출하지 않습니다. Application은 application ACL Secret만,
+  Redis Pod는 ACL file·probe credential을 가진 server Secret만 소비합니다.
+- Image는 Redis 공식 Docker Library의 8.2 extended line ARM64 manifest를 full digest로
+  고정합니다. Redis Open Source 8은 RSALv2 또는 SSPLv1 중 선택할 수 있으며 이 배포는
+  RSALv2 조건과 image에 포함된 license·notice를 보존합니다.
+- `catalog-redis-network-policy.yaml`은 같은 Namespace의 application Pod에서 오는 6379/TCP
+  ingress만 허용하고 Redis egress를 허용하지 않습니다. AppProject의 `NetworkPolicy`
+  permission은 overlay 밖 bootstrap owner에서 먼저 적용해야 합니다.
 - Application Deployment만 `production,staging` profile을 사용해 관리자용 Swagger를
   활성화합니다. PreSync Migration Job은 web endpoint가 필요 없으므로 `production`을
   유지합니다.
@@ -51,4 +61,6 @@ kubectl kustomize deploy/overlays/stg
 workload 성공을 증명하지 않습니다. Target server-side dry-run, pull request merge,
 Argo CD revision·health와 Pod image 확인은
 [420 GitOps 배포·rollback runbook](../docs/operations/420-gitops-deployment-and-rollback-runbook.md)의
-현재 절차를 따릅니다.
+현재 절차를 따릅니다. Catalog Redis의 credential·flag 순서와 부분 실패 재개는
+[580 Catalog Redis 활성화·credential](../docs/operations/580-catalog-redis-activation-and-credential-runbook.md)이
+소유합니다.

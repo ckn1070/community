@@ -34,6 +34,18 @@ format 검사를 실행합니다. commit 범위는 `git diff --cached`로, 남�
 | `DB_URL` | PostgreSQL JDBC URL입니다. |
 | `DB_USERNAME` | PostgreSQL application 계정입니다. |
 | `DB_PASSWORD` | PostgreSQL application 비밀번호입니다. |
+| `REDIS_HOST`·`REDIS_PORT` | 선택적 catalog Redis endpoint입니다. 생략하면 `localhost:6379`입니다. |
+| `REDIS_USERNAME`·`REDIS_PASSWORD` | 인증을 켠 local Redis의 application ACL credential입니다. |
+| `REDIS_CONNECT_TIMEOUT`·`REDIS_COMMAND_TIMEOUT` | Redis 연결·command 대기 상한입니다. 둘 다 기본값은 `100ms`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_ENABLED` | 모델 상세 cache-aside 활성화 flag입니다. 기본값은 `false`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_TTL`·`CATALOG_MODEL_DETAIL_CACHE_TTL_JITTER` | Cache 기본 TTL과 아래 방향 random jitter입니다. 기본값은 각각 `5m`, `30s`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_MAX_ENTRY_BYTES` | 직렬화한 cache document의 최대 크기입니다. 기본값은 `1048576`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_MAX_IN_FLIGHT_KEYS`·`CATALOG_MODEL_DETAIL_CACHE_MAX_SOURCE_LOADS` | 동시에 조정할 miss key와 PostgreSQL source load 상한입니다. 기본값은 각각 `64`, `8`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_SOURCE_WAIT_TIMEOUT` | Permit과 같은 key 결과를 기다리는 상한입니다. 기본값은 `100ms`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_WINDOW_SIZE`·`CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_MINIMUM_CALLS` | Redis read/write circuit의 sliding window와 판정 시작 최소 호출 수입니다. 기본값은 각각 `20`, `10`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_FAILURE_RATE`·`CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_SLOW_RATE` | Circuit을 여는 실패율·slow-call 비율 임계치입니다. 기본값은 각각 `50`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_SLOW_DURATION`·`CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_OPEN_DURATION` | Slow-call 기준과 open 유지 시간입니다. 기본값은 각각 `100ms`, `5s`입니다. |
+| `CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_HALF_OPEN_CALLS` | Half-open에서 허용할 시험 호출 수입니다. 기본값은 `2`입니다. |
 | `AUTH_JWT_ISSUER` | access token issuer입니다. |
 | `AUTH_JWT_ACCESS_TOKEN_TTL` | access token TTL입니다. |
 | `AUTH_JWT_HMAC_SECRET` | HS256 서명·검증 secret입니다. 32 bytes 이상이어야 합니다. |
@@ -54,6 +66,25 @@ Staging bootstrap key는 Spring local runtime key와 분리합니다.
 | `STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET` | Staging login identifier hash용 별도 32 bytes 이상 secret입니다. |
 | `STG_COMMUNITY_CURSOR_HMAC_SECRET` | Staging Community cursor 서명용 별도 32 bytes 이상 secret입니다. |
 | `STG_RESEND_API_KEY` | Staging Kubernetes notification Secret의 Resend provider credential입니다. |
+| `STG_CATALOG_REDIS_APPLICATION_PASSWORD` | Staging application ACL 비밀번호 입력입니다. |
+| `STG_CATALOG_REDIS_OPERATION_PASSWORD` | Cluster에 저장하지 않는 staging 진단 ACL 비밀번호 입력입니다. |
+| `STG_CATALOG_REDIS_PROBE_PASSWORD` | Redis Pod probe 전용 ACL 비밀번호 입력입니다. |
+
+로컬에서 cache 경로를 직접 실행할 때는 application과 같은 patch·architecture의 공식 image를
+고정 digest로 시작합니다. 이 local 명령은 개발자 machine의 loopback에만 노출하며 staging
+ACL·Secret 절차를 대신하지 않습니다.
+
+```bash
+docker run --rm --name car-community-catalog-redis \
+  -p 127.0.0.1:6379:6379 \
+  redis:8.2.9-alpine3.22@sha256:77dcf738f8eba3ca2c7a26a5a1756e1259a7eca7451234f766eca3bc4a46790e \
+  redis-server --save '' --appendonly no --maxmemory 384mb --maxmemory-policy allkeys-lfu
+```
+
+별도 shell에서 `.env`의 `CATALOG_MODEL_DETAIL_CACHE_ENABLED=true`로 application을 실행합니다.
+기능을 끄면 Redis command 없이 기존 PostgreSQL 경로로 돌아갑니다. 실제 ACL·credential 생성,
+활성화와 복구는 [580 Catalog Redis 활성화·credential](../operations/580-catalog-redis-activation-and-credential-runbook.md)을
+따릅니다.
 
 Runtime과 migrator username은 bootstrap script에 각각 `carmunity_runtime`과
 `carmunity_migrator`로 고정하고, staging JDBC URL도 staging manifest와 bootstrap

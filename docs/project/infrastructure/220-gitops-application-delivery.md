@@ -25,7 +25,7 @@ credential을 소유하지 않습니다.
 | `car-community`의 `deploy/**` commit | 승인된 manifest·environment overlay·image digest | GitOps PR reviewer·merge |
 | Argo Application status | Git 목표와 live resource의 sync·health 관찰 | Argo controller가 계산 |
 | Kubernetes live resource | 현재 실행 상태 | Argo controller가 Git 목표로 수렴 |
-| Git 밖 prerequisite resource | Namespace와 runtime·migrator·auth·notification Secret | Local `.env` 허용값을 전달한 bootstrap operator |
+| Git 밖 prerequisite resource | Namespace와 runtime·migrator·auth·notification·Community Secret, Catalog Redis application/server Secret | Local `.env` 허용값을 전달한 bootstrap·credential operator |
 | Argo bootstrap desired state | AppProject와 `car-community-stg` Application spec | `scripts/bootstrap/gitops/manifests`의 Git-tracked YAML·최초 bootstrap operator |
 | Git-managed application 설정 | DB URL·pinned RDS CA, notification 공개 설정 ConfigMap | GitOps PR reviewer·Argo controller |
 | Git-managed ingress intent | Staging NodePort patch, host·listener·target·TLS policy Ingress | GitOps PR reviewer·Argo controller |
@@ -124,11 +124,38 @@ Ingress는 `stg-api.example.com`, HTTP→HTTPS, certificate host discovery와 TL
 소유하지만 controller release·IAM·certificate·DNS를 소유하지 않습니다. HPA·Cluster
 Autoscaler 자체는 현재 manifest에 포함하지 않습니다.
 
-현재 manifest는 Kubernetes 기본 1 replica를 사용하고 resource·rollout·restart probe 수치를
-추측해 고정하지 않습니다. Migration Job은 작업의 무한 대기를 막기 위한 deadline `300s`와
-retry `0`만 명시합니다. 최초 live 배포 뒤 `kubectl top`, startup 시간, OOM·throttling과 RDS
-`max_connections` 대비 `최대 replica × Hikari pool`을 측정한 별도 변경에서 resource와 HPA
-정책을 결정합니다.
+Catalog 모델 상세 cache는 같은 overlay의 replica 1 Redis Deployment·ClusterIP Service와
+NetworkPolicy로 배치합니다. Redis는 `emptyDir`와 persistence off를 사용하며 PostgreSQL이
+계속 authoritative source입니다. Application은 cache flag 기본값 `false`와 application ACL
+Secret만 소비하고 Redis Pod는 별도 server ACL·probe Secret만 소비합니다. Redis readiness는
+인증된 `PING`으로 확인하지만 application readiness에는 Redis를 포함하지 않습니다.
+
+역할별 credential과 최소 권한 경계는 다음과 같습니다.
+
+| 역할 | Plaintext·hash 저장 위치 | 소비자 | 허용 경계 |
+| --- | --- | --- | --- |
+| `application` | Username·plaintext는 application Secret, hash는 server Secret의 ACL file | Application Pod | 모델 상세 v1 key의 `GET`·TTL 포함 `SET`·`DEL`, `PING` |
+| `operation` | Plaintext는 cluster 밖 운영자 입력, hash만 server Secret의 ACL file | Redis Pod 안에서 stdin 인증한 운영자 | 같은 prefix의 `TTL`, `INFO commandstats`·`INFO stats`, `PING`; `MEMORY PURGE`·`LATENCY RESET` 등 나머지는 거부 |
+| `probe` | Username·plaintext와 hash 모두 server Secret | Redis probe | `PING` |
+| `default` | Credential 없음 | 없음 | 비활성화 |
+
+Application과 Redis가 서로의 Secret을 참조하지 않으며 operation plaintext는 Kubernetes에
+저장하지 않습니다. 역할별 credential 생성·rotation, flag 활성화와 복구 절차는
+[580 Catalog Redis 활성화·credential](../../operations/580-catalog-redis-activation-and-credential-runbook.md)이
+소유합니다.
+
+현재 Redis ACL은 인증·command 권한만 제공하고 packet을 암호화하지 않습니다. Application과
+Redis 사이 plaintext cluster network는 single-node staging에만 허용한 계약이며 production
+transport로 승격하지 않습니다. 다중 node, 신뢰하지 않는 workload, 외부 network hop,
+production 승격 또는 전송 암호화 요구가 생기면 server TLS를 최소 후보로 certificate 발급·
+rotation·client trust lifecycle을 먼저 다시 설계합니다.
+
+Application과 Redis는 단일 4 GiB node의 무제한 점유를 막는 request·limit을 갖습니다.
+Redis는 동시 old/new memory 점유를 피하려고 `Recreate`를 사용하고 application은 기존
+RollingUpdate를 유지합니다. Migration Job은 작업의 무한 대기를 막기 위한 deadline `300s`와
+retry `0`만 명시합니다. Live `kubectl top`, startup 시간, OOM·throttling과 RDS
+`max_connections` 대비 `최대 replica × Hikari pool` 관찰로 resource 상향이나 HPA가 필요해지면
+별도 설계에서 Redis HA·connection·DB fallback capacity까지 함께 다시 결정합니다.
 
 Pod·Node autoscaling과 그에 결합되는 metric·log 후보의 상태와 도입 순서는
 [004 Infrastructure evolution backlog](../../work-items/backlog/2026/004-infrastructure-evolution.md)가
@@ -184,7 +211,8 @@ Controller·repository·image·manifest 원인을 확인하고 Git 목표 또는
 
 - Argo CD Core exact version·digest가 Ready입니다.
 - Non-empty valid `deploy/overlays/stg`가 `main`에 승인돼 있습니다.
-- Runtime·migrator DB role과 Git 밖 Namespace·다섯 Secret이 준비돼 있습니다.
+- Runtime·migrator DB role과 Git 밖 Namespace·기존 application Secret, Catalog Redis 역할별
+  credential에서 파생한 application/server Secret이 준비돼 있습니다.
 - Actual DB URL·pinned RDS CA와 notification 공개 설정이 staging overlay에 승인돼 있습니다.
 - Read-only GitHub App과 project-scoped repository Secret이 있습니다.
 - AppProject와 `car-community-stg` Application의 최초 fresh sync가 성공했습니다.
@@ -200,7 +228,7 @@ GitHub App rotation 원리는
 ## Repository capability 경계
 
 현재 repository capability에는 image publish workflow, application prerequisite,
-Community·notification Secret operation, Service·Deployment·단일 Migration PreSync Job,
+Community·notification·Catalog Redis Secret operation, Service·Deployment·NetworkPolicy·단일 Migration PreSync Job,
 staging NodePort·Ingress manifest, Argo·LBC bootstrap·rotation script와 contract test가
 포함됩니다. Digest 변경 PR workflow와 그 Git write credential은 구현하지 않았습니다.
 
@@ -229,6 +257,8 @@ Repository capability와 live 실행 완료는 서로 다른 사실입니다. �
   [550 Resend API key 교체](../../operations/550-resend-api-key-rotation-runbook.md)
 - **Community Secret 준비와 기능 활성화**:
   [560 Community 기능 활성화](../../operations/560-community-feature-activation-runbook.md)
+- **Catalog Redis credential·활성화·복구**:
+  [580 Catalog Redis 활성화·credential](../../operations/580-catalog-redis-activation-and-credential-runbook.md)
 - [Argo CD automated sync](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)
 - [Argo CD AppProject](https://argo-cd.readthedocs.io/en/stable/operator-manual/project-specification/)
 - [Argo CD repository Secret](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#repositories)

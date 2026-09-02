@@ -20,11 +20,11 @@ artifact를 소비하므로 특정 기술 bootstrap에 종속되지 않습니다
 | 시작 directory | Local은 `car-community` repository root, EC2는 제한 없음 |
 | 무엇을 | 고정 inventory 검증→archive·checksum 생성→`scp`→EC2 checksum·entry 검증→압축 해제·mode 검증 순서로 수행합니다. |
 | 왜 | Repository 전체와 credential을 복사하지 않고, 여러 lifecycle이 공유하는 exact 실행 artifact만 같은 byte·경로·mode로 준비하기 위해서입니다. |
-| 완료·재개 | EC2의 열일곱 file 유형·mode 검사가 모두 성공하면 완료입니다. 실패하면 변경하지 않은 앞 단계는 유지하고 archive 생성 또는 EC2 검증 경계에서 다시 시작합니다. |
+| 완료·재개 | EC2의 열아홉 file 유형·mode 검사가 모두 성공하면 완료입니다. 실패하면 변경하지 않은 앞 단계는 유지하고 archive 생성 또는 EC2 검증 경계에서 다시 시작합니다. |
 
 ## 전달 대상과 실행 경계
 
-다음 열네 executable과 세 readable source를 archive로 묶되 생애주기 경로를 유지합니다.
+다음 열여섯 executable과 세 readable source를 archive로 묶되 생애주기 경로를 유지합니다.
 
 - `bootstrap/kubernetes/100-prepare-host.sh`
 - `bootstrap/kubernetes/200-install-containerd.sh`
@@ -41,7 +41,9 @@ artifact를 소비하므로 특정 기술 bootstrap에 종속되지 않습니다
 - `bootstrap/application/100-provision-database-access.sh`
 - `bootstrap/application/200-apply-application-prerequisites.sh`
 - `lib/application-secret.sh`
+- `operations/application/reconcile-community-secret.sh`
 - `operations/application/reconcile-notification-secret.sh`
+- `operations/application/reconcile-catalog-redis-secrets.sh`
 - `operations/gitops/rotate-private-gitops-repository-credential.sh`
 
 Application source, Dockerfile, 문서, local contract test와 credential은 archive에 넣지
@@ -49,9 +51,9 @@ Application source, Dockerfile, 문서, local contract test와 credential은 arc
 [100 Infrastructure overview의 실행 artifact 전달 경계](../project/infrastructure/100-infrastructure-overview.md#실행-artifact-전달-경계)가
 소유합니다.
 
-열일곱 file 사이의 source 관계와 archive 밖 repository file을 읽지 않는 구현 의존성 경계는
+열아홉 file 사이의 source 관계와 archive 밖 repository file을 읽지 않는 구현 의존성 경계는
 [Repository script 목차의 EC2 전달 archive 구현 의존성](../../scripts/README.md#ec2-전달-archive-구현-의존성)이
-소유합니다. 이 절차는 그 계약에 따라 repository 전체를 EC2에 clone하지 않고 열일곱 file만
+소유합니다. 이 절차는 그 계약에 따라 repository 전체를 EC2에 clone하지 않고 열아홉 file만
 전달합니다.
 
 Archive를 한 번 전달해도 각 script의 실행 dependency는 바뀌지 않습니다.
@@ -79,7 +81,7 @@ Local 명령은 `scripts` directory가 바로 아래에 보이는 `car-community
 | 실행 위치 | Local terminal |
 | 시작 directory | `car-community` repository root |
 
-정확한 열네 executable과 세 readable source가 있고 local 수정이 섞이지 않았는지 확인합니다.
+정확한 열여섯 executable과 세 readable source가 있고 local 수정이 섞이지 않았는지 확인합니다.
 
 ```bash
 # 1. 전달 대상 file 유형·권한 검증
@@ -103,7 +105,9 @@ test -x scripts/bootstrap/application/100-provision-database-access.sh &&
 test -x scripts/bootstrap/application/200-apply-application-prerequisites.sh &&
 test -r scripts/lib/application-secret.sh &&
 test ! -x scripts/lib/application-secret.sh &&
+test -x scripts/operations/application/reconcile-community-secret.sh &&
 test -x scripts/operations/application/reconcile-notification-secret.sh &&
+test -x scripts/operations/application/reconcile-catalog-redis-secrets.sh &&
 test -x scripts/operations/gitops/rotate-private-gitops-repository-credential.sh &&
 printf '%s\n' 'Local script 실행 권한 확인 완료'
 
@@ -126,7 +130,9 @@ git status --short -- \
   scripts/bootstrap/application/100-provision-database-access.sh \
   scripts/bootstrap/application/200-apply-application-prerequisites.sh \
   scripts/lib/application-secret.sh \
+  scripts/operations/application/reconcile-community-secret.sh \
   scripts/operations/application/reconcile-notification-secret.sh \
+  scripts/operations/application/reconcile-catalog-redis-secrets.sh \
   scripts/operations/gitops/rotate-private-gitops-repository-credential.sh
 ```
 
@@ -137,7 +143,7 @@ git status --short -- \
 | --- | --- |
 | `test -x <path>` | 해당 path가 존재하고 현재 사용자가 실행할 수 있는 file인지 확인합니다. |
 | `&&` | 앞의 검사가 성공했을 때만 다음 검사를 실행합니다. 하나라도 실패하면 마지막 완료 문구가 출력되지 않습니다. |
-| `printf` | 열네 executable과 세 readable source 검사가 모두 성공했음을 화면에 명시적으로 출력합니다. |
+| `printf` | 열여섯 executable과 세 readable source 검사가 모두 성공했음을 화면에 명시적으로 출력합니다. |
 | `git status --short` | 선택한 script의 Git 변경 상태를 짧은 형식으로 출력합니다. |
 | Option separator `--` | 뒤의 값을 Git option이 아니라 확인할 file path로 고정합니다. |
 
@@ -166,7 +172,9 @@ COPYFILE_DISABLE=1 tar --no-xattrs -czf /tmp/car-community-scripts.tar.gz \
   bootstrap/application/100-provision-database-access.sh \
   bootstrap/application/200-apply-application-prerequisites.sh \
   lib/application-secret.sh \
+  operations/application/reconcile-community-secret.sh \
   operations/application/reconcile-notification-secret.sh \
+  operations/application/reconcile-catalog-redis-secrets.sh \
   operations/gitops/rotate-private-gitops-repository-credential.sh
 
 # 2. 생성한 archive entry 조회
@@ -186,7 +194,7 @@ tar -tzf /tmp/car-community-scripts.tar.gz
 | `-z` | gzip으로 압축합니다. |
 | `-f /tmp/car-community-scripts.tar.gz` | 바로 다음 값을 결과 archive 경로로 사용합니다. Local 임시 전달 artifact이므로 `/tmp`에 둡니다. |
 | `-C scripts` | Script를 선택하기 전에 repository의 script root로 이동해 archive 안에 `bootstrap`·`verify`·`operations` 생애주기 경로를 보존합니다. |
-| `tar -tzf` | 전송 전에 archive 경로를 나열합니다. 위에서 선택한 열일곱 file만 있고 `._*` 항목이 없어야 합니다. macOS `tar`는 자신이 만든 확장 속성 header를 경고 없이 읽을 수 있으므로 이 목록만으로 `--no-xattrs` 적용을 대신 검증하지 않습니다. |
+| `tar -tzf` | 전송 전에 archive 경로를 나열합니다. 위에서 선택한 열아홉 file만 있고 `._*` 항목이 없어야 합니다. macOS `tar`는 자신이 만든 확장 속성 header를 경고 없이 읽을 수 있으므로 이 목록만으로 `--no-xattrs` 적용을 대신 검증하지 않습니다. |
 | `\` | 하나의 긴 shell 명령을 다음 줄에서 계속 작성합니다. |
 
 목록에 `._*` 같은 추가 항목이 있으면 checksum을 만들거나 전송하지 않습니다.
@@ -278,7 +286,7 @@ tar -tzf /tmp/car-community-scripts.tar.gz
 | 표현 | 의미와 선택 이유 |
 | --- | --- |
 | `sha256sum --check <file>` | Checksum file을 읽어 현재 archive의 digest와 비교합니다. `OK`가 아니면 압축을 풀지 않습니다. |
-| `tar -t` | 압축을 풀기 전에 archive 안의 열일곱 file 이름을 나열합니다. 추가 항목이 없어야 하고 알 수 없는 extended header 경고가 없어야 합니다. |
+| `tar -t` | 압축을 풀기 전에 archive 안의 열아홉 file 이름을 나열합니다. 추가 항목이 없어야 하고 알 수 없는 extended header 경고가 없어야 합니다. |
 | `-z` | gzip 압축을 읽습니다. |
 | `-f` | 바로 다음 값을 읽을 archive로 지정합니다. |
 
@@ -320,7 +328,9 @@ chmod 0755 \
   /home/ubuntu/car-community-scripts/bootstrap/load-balancer/100-install-aws-load-balancer-controller.sh \
   /home/ubuntu/car-community-scripts/bootstrap/application/100-provision-database-access.sh \
   /home/ubuntu/car-community-scripts/bootstrap/application/200-apply-application-prerequisites.sh \
+  /home/ubuntu/car-community-scripts/operations/application/reconcile-community-secret.sh \
   /home/ubuntu/car-community-scripts/operations/application/reconcile-notification-secret.sh \
+  /home/ubuntu/car-community-scripts/operations/application/reconcile-catalog-redis-secrets.sh \
   /home/ubuntu/car-community-scripts/operations/gitops/rotate-private-gitops-repository-credential.sh
 
 # 4. Read-only source mode 적용
@@ -363,13 +373,15 @@ test -x /home/ubuntu/car-community-scripts/bootstrap/application/100-provision-d
 test -x /home/ubuntu/car-community-scripts/bootstrap/application/200-apply-application-prerequisites.sh &&
 test -r /home/ubuntu/car-community-scripts/lib/application-secret.sh &&
 test ! -x /home/ubuntu/car-community-scripts/lib/application-secret.sh &&
+test -x /home/ubuntu/car-community-scripts/operations/application/reconcile-community-secret.sh &&
 test -x /home/ubuntu/car-community-scripts/operations/application/reconcile-notification-secret.sh &&
+test -x /home/ubuntu/car-community-scripts/operations/application/reconcile-catalog-redis-secrets.sh &&
 test -x /home/ubuntu/car-community-scripts/operations/gitops/rotate-private-gitops-repository-credential.sh &&
 printf '%s\n' 'EC2 script 실행 권한 확인 완료'
 ```
 
 `test -x`는 고정 EC2 절대 경로의 각 script가 존재하고 실행 가능한지를 확인합니다.
-`&&`로 연결했으므로 열일곱 file 검사가 모두 exit code `0`일 때만
+`&&`로 연결했으므로 열아홉 file 검사가 모두 exit code `0`일 때만
 `EC2 script 실행 권한 확인 완료`가 출력됩니다.
 
 Checksum 불일치, 예상하지 않은 archive 항목 또는 file 누락이 있으면 script를 실행하지
