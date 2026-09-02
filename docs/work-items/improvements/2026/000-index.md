@@ -11,7 +11,7 @@
 | 007 | Done | [OpenAPI 실제 응답 계약 동기화](007-openapi-response-contract.md) | - | 실제 응답 schema·보안·공통 오류와 생성 OpenAPI 자동 동기화 |
 | 008 | Done | [Staging Swagger 관리자 접근 보호](008-staging-swagger-admin-access.md) | [설계](008-staging-swagger-admin-access-design.md) | staging 전용 Swagger를 기존 관리자 계정 Form Login으로 보호 |
 | 009 | Done | [비카탈로그 DDD 보완](009-non-catalog-ddd-hardening.md) | [설계](009-non-catalog-ddd-hardening-design.md) | refresh·security audit 단일 writer와 필요한 전술 모델·구조 gate 구현 완료 |
-| 010 | Proposed | [010 자동차 모델 상세 Redis cache 도입](010-catalog-model-detail-redis-cache.md) | [010 비교·설계](010-catalog-model-detail-redis-cache-design.md) | Redis 설치·application 결합 실행 계획 독립 검증 완료, 사용자 exact 후보 확정 대기 |
+| 010 | Planned | [010 자동차 모델 상세 Redis cache 도입](010-catalog-model-detail-redis-cache.md) | [010 비교·설계](010-catalog-model-detail-redis-cache-design.md) | Redis 설치·application 결합 실행 계획 확정, 구현 시작 직전 |
 
 ## 관련 문서
 

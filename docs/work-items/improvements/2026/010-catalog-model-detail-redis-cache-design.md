@@ -2,26 +2,26 @@
 
 ## 상태
 
-Proposed
+Planned
 
 ## 계획 단계
 
-실행 계획
+계획 완료
 
 ## 현재 결론과 다음 행동
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 단계 | `Proposed / 실행 계획` |
+| 현재 단계 | `Planned / 계획 완료` |
 | 현재 결론 | D1~D10·D12의 선택과 비교 근거를 실행 계획의 고정 입력으로 사용합니다. Redis 설치·application 결합에 필요한 내부 보호 계약은 유지하고 별도 시험 체계는 제거했습니다. |
-| 닫힌 결과 | 대상 API, PostgreSQL 원본성, 최대 5분 stale, explicit cache-aside, single-flight·DB bulkhead·503, timeout·circuit·fallback, 단일 Redis runtime·보안·복구 결정을 확정했습니다. Redis 8의 사용 license는 RSALv2로 선택했습니다. |
-| 남은 gate | Content·문서 독립 검증을 통과한 [실행 계획](010-catalog-model-detail-redis-cache.md)의 exact 후보를 사용자가 확정해야 합니다. |
-| 지금 actor | 사용자 |
-| 지금 할 일 | 확정한 D1~D10·D12와 T1~T6·수용 기준의 연결이 논의한 범위를 그대로 보존하는지 확인합니다. |
-| 사용자 차례 | 실행 계획 전체 확정 또는 변경할 결정·작업 ID와 값을 답합니다. |
-| 응답 방식 | `실행 계획 전체 확정` 또는 `D번호/T번호: 변경 내용` |
-| 이 행동 뒤 결과 | 전체 확정과 동시에 두 문서를 `Planned / 계획 완료`로 전환할 수 있습니다. |
-| 다음 단계 전환 | 사용자가 exact 후보 전체를 확정하면 곧바로 `Planned / 계획 완료`가 됩니다. 이후 별도 개발 요청으로 repository 구현을 시작하며 live staging 적용은 별도 권한이 필요합니다. |
+| 닫힌 결과 | 대상 API, PostgreSQL 원본성, 최대 5분 stale, explicit cache-aside, single-flight·DB bulkhead·503, timeout·circuit·fallback, 단일 Redis runtime·보안·복구 결정을 확정했습니다. Redis 8의 사용 license는 RSALv2로 선택했고, 이 결정들을 소비하는 [실행 계획](010-catalog-model-detail-redis-cache.md)도 사용자가 확정했습니다. |
+| 남은 gate | 계획 단계의 남은 gate가 없습니다. 구현에 필요한 사용자 소유 결정도 없습니다. |
+| 지금 actor | 없음 — 계획 작업이 완료됐습니다. |
+| 지금 할 일 | 없음 — 이 문서의 결정과 목표 계약을 구현 입력으로 보존합니다. |
+| 사용자 차례 | 사용자 작업 없음. 구현을 시작하려면 별도 개발 요청만 하면 됩니다. |
+| 응답 방식 | 추가 확정 응답은 필요하지 않습니다. |
+| 이 행동 뒤 결과 | D1~D10·D12와 연결된 T1~T6가 구현 직전의 동결된 입력으로 유지됩니다. |
+| 다음 단계 전환 | 별도 개발 요청이 들어오면 `Planned` baseline을 소비해 repository 구현을 시작합니다. Live staging 적용은 별도 권한이 필요합니다. |
 
 ## 문서 책임과 설계 입력
 
