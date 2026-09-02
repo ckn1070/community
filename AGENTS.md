@@ -121,6 +121,9 @@ payload를 두지 않습니다.
 
 - Git 상태 변경은 작업 실행 워크플로우에서 권한을 확정한 뒤 커밋 워크플로우로
   수행합니다. stage, commit과 push 권한은 서로 대체하지 않습니다.
+- 새 작업 branch나 병렬 작업 공간 요청은 현재 checkout에서 branch를 생성·전환하지 않고
+  [310 Git Worktree 워크플로우](docs/workflow/310-git-worktree-workflow.md)의 `$parallel-start`
+  경로로만 수행합니다.
 - 구현·검증 phase는 Git index·ref를 직접 변경하지 않습니다. 같은 요청에 commit이
   포함돼 있어도 후보를 동결한 뒤 별도 Git phase로 전환해
   [Git 마무리](.agents/skills/git-finalize/SKILL.md)를 호출합니다.

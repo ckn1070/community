@@ -1382,6 +1382,34 @@ DDD 완료로 확대하지 않습니다.
 positive source를 계속 요구합니다. 질문을 직접 답했는데도 독립 실행이 막히거나, 직접 답
 전에 실행 약속이 다시 나오면 batch 분리와 첫 출력 consumer를 다시 엽니다.
 
+## 결정 36. 새 작업 branch는 격리 worktree helper로만 생성합니다
+
+### 배경
+
+Worktree workflow는 현재 checkout의 branch 전환 금지와 bundled helper를 이미 규정했습니다.
+하지만 `$parallel-start`의 discovery trigger가 병렬 작업·새 worktree 표현에 치우쳐 있어
+`새 브랜치 파서 작업`을 일반 Git branch 요청으로 분류할 수 있었습니다. 그 결과 current
+checkout에서 branch를 직접 만들고 전환해 사용자의 main 관찰 상태와 병렬 작업 기반을
+동시에 훼손했습니다.
+
+### 선택
+
+- 새 작업 branch, 브랜치를 파서 작업, 병렬 작업 공간과 새 worktree 요청은 모두
+  `$parallel-start`로 route합니다.
+- 생성은 bundled helper의 dry-run과 실행으로만 수행하며 primary checkout의 branch·HEAD·
+  index·worktree 상태를 보존합니다.
+- 현재 checkout의 `git switch -c`, `git checkout -b`, `git branch`와 branch rename을
+  작업 branch 생성의 대체 경로로 사용하지 않습니다.
+- Naming·base·branch·path 충돌은 수동 ref mutation으로 우회하지 않고 blocker로 반환합니다.
+  기존 branch의 조회·통합·삭제·명시 이름 변경은 각각의 exact Git 효과로 별도 판정합니다.
+
+### 대안과 재검토 조건
+
+사용자가 `worktree`라는 단어를 말한 경우에만 adapter를 호출하는 안은 같은 표현 누락을
+재현하므로 배제했습니다. 모든 branch 동작을 parallel-start로 보내는 안은 기존 branch
+관리 요청을 오분류하므로 생성 요청에만 한정했습니다. 작업 branch 생성이 current checkout을
+다시 바꾸거나 기존 branch 관리가 과잉 차단되면 trigger와 생성·관리 경계를 다시 검토합니다.
+
 ## 서로 다른 first-break family의 owner
 
 모든 과거 사건을 하나의 막연한 원인으로 합치지 않습니다.

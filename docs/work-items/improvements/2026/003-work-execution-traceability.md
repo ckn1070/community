@@ -52,6 +52,9 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
   부분 실행하지 않고 논의를 닫은 새 generation에서만 batch를 재개합니다.
 - `ANSWER_ONLY` batch는 질문의 대상·술어를 첫 실질 명제에서 직접 닫고, 독립된 현재
   `EXECUTE` 원자가 없으면 실행 약속이나 정정 작업으로 전환하지 않습니다.
+- 새 작업 branch 요청은 `$parallel-start`의 bundled helper만 소비합니다. Branch만
+  언급돼도 primary checkout의 ref를 직접 생성·전환하지 않으며, preflight 실패를 수동
+  Git 명령이나 이름 변경으로 우회하지 않습니다.
 - 실행 회고의 행동 verdict는 통제 처분·canonical owner 효과·증거 등급·Git 자격과 전체
   상태를 하나의 closure identity로 Git과 보고 phase에 전달합니다. History·상태 문서와
   commit은 canonical 통제 적용이나 actual invocation 공백을 대신하지 않습니다.

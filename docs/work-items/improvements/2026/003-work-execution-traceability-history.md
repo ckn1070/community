@@ -1011,3 +1011,35 @@ live invocation으로 확대한 이전 검증입니다. 2차 시스템 root는 �
 제거됐다면 이유 질문에는 이유를 첫 명제로 답하고 그 generation에서 정정 작업을 시작하지
 않았을 것입니다. 명사를 배포나 문서 검토로 바꾼 질문도 같고, 독립된 명시 실행 원자가 같은
 메시지에 있으면 그 질문을 답한 뒤 exact 실행은 막지 않아야 합니다.
+
+## 새 작업 branch를 primary checkout에서 직접 생성·전환한 재발
+
+### 사건과 영향
+
+사용자는 새 branch에서 계획 작업을 시작하라고 했고 저장소의 병렬 작업 절차는 별도
+worktree 사용을 요구했습니다. Agent는 primary checkout에서 branch를 직접 생성하고
+checkout했습니다. 사용자가 보고 있던 main checkout이 바뀌었고 독립 작업 공간이라는
+요청의 전제가 깨졌으며, 사용자는 기존 절차를 다시 설명해야 했습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+최초 단절은 `새 작업 branch 요청 → 생성 adapter routing`입니다. 현재 worktree의 branch
+전환 금지는 `6aeadabd2`부터 workflow/310에 있었고 bundled helper와 `$parallel-start`도
+canonical 경로였습니다. 그러나 skill trigger는 병렬 작업·독립 공간·새 worktree 표현만
+명시해, branch라는 표현만 있는 요청을 일반 Git mutation으로 우회할 여지를 남겼습니다.
+
+다섯 단계의 원인은 primary checkout에서 직접 branch를 만든 명령 선택, branch 생성과
+worktree 생성을 별개로 본 분류, `브랜치 파서 작업`을 parallel-start trigger가 소비하지
+않은 routing 공백, preflight·source 보존 oracle이 호출되지 않은 실행 경로, 규칙의 존재를
+실제 ref mutation 전 invocation으로 검증하지 않은 완료 판단입니다. 2차 시스템 root는
+`작업 branch 생성 표현 → parallel-start → bundled helper`가 하나의 강제 interface가 아니었던
+것입니다.
+
+### 통제 처분과 남은 위험
+
+기존 source checkout 보존·helper mechanics는 유지하고, workflow/310의 생성 routing과
+`$parallel-start` discovery trigger를 강화했습니다. Root가 제거됐다면 같은 요청은 current
+checkout을 그대로 둔 채 helper dry-run으로 입장했을 것입니다. `fix branch 만들어서 작업`도
+같이 처리하되, 기존 branch를 조회·통합·삭제하거나 명시적으로 이름만 바꾸는 요청은 작업
+branch 생성으로 오분류하지 않아야 합니다. 당시 생성된 branch의 삭제나 Kafka 계획 재개는
+이번 통제 변경 권한에 포함되지 않습니다.
