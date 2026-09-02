@@ -58,7 +58,7 @@ runbook의 완료 결과를 확인하고, 마지막으로 실패하거나 아직
 | 5 | [Kubelet ECR credential provider 설치](330-kubelet-ecr-credential-provider-installation-runbook.md) | 실행 중 kubelet의 provider 구성 |
 | 6 | [Private ECR exact digest pull 점검](410-private-ecr-image-pull-verification-runbook.md) | Node instance profile로 실제 pull·실행 성공 |
 | 7 | [Argo CD Core 설치](340-argocd-core-installation-runbook.md) | Headless Core component와 CRD Ready |
-| 8 | [Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md) | Runtime·migrator DB role, Git 밖 Namespace·네 Secret, Git-managed ConfigMap, read-only GitHub App credential, AppProject와 최초 Application `Synced`·`Healthy` |
+| 8 | [Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md) | Runtime·migrator DB role, Git 밖 Namespace·다섯 Secret, Git-managed ConfigMap, read-only GitHub App credential, AppProject와 최초 Application `Synced`·`Healthy` |
 | 선택 9 | [Super Admin 최초 bootstrap](360-super-admin-bootstrap-runbook.md) | 최초 `ROLE_SUPER_ADMIN`, 초기 password 변경 `204`와 새 password 로그인 `201` |
 | 10 | [370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md) | Node platform role, LBC, ACM certificate, ALB·healthy target과 `stg-api.example.com` DNS-only HTTPS 경로 |
 

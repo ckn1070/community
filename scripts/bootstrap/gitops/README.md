@@ -57,7 +57,7 @@ request는 `330s`입니다. 다른 namespace owner, full 설치, 다른 image ve
 | repository | `https://github.com/example-org/car-community.git`, `main`, `deploy/overlays/stg` |
 | 선언형 source | `manifests/car-community-appproject.yaml`, `manifests/car-community-stg-application.yaml` |
 | 직접 변경 | Repository Secret, application-controller StatefulSet Pod template generation annotation, Git에 추적된 AppProject·Application manifest의 server-side apply |
-| sync | `enabled`, `prune`, `selfHeal`, `allowEmpty: false`, notification rollout annotation ignore + `RespectIgnoreDifferences=true` |
+| sync | `enabled`, `prune`, `selfHeal`, `allowEmpty: false`, Community·notification Secret rollout annotation ignore + `RespectIgnoreDifferences=true` |
 | 성공 | 새 credential consumer rollout과 fresh reconcile 뒤 condition 없음, `Synced`·`Healthy` |
 
 `car-community-gitops-repository`는 Kubernetes Repository Secret의 resource 이름이며 별도 Git

@@ -128,6 +128,9 @@ test_tracked_manifests_define_restricted_project_and_application() {
   assert_file_excludes "${application_path}" '/spec/replicas' \
     "현재 HPA가 없으므로 replica field 예외를 선반영하면 안 됩니다."
   assert_file_contains "${application_path}" \
+    '        - /spec/template/metadata/annotations/car-community.io~1community-secret-resource-version' \
+    "Community operation의 rollout annotation을 Argo CD diff에서 제외해야 합니다."
+  assert_file_contains "${application_path}" \
     '        - /spec/template/metadata/annotations/car-community.io~1notification-secret-resource-version' \
     "Notification operation의 rollout annotation을 Argo CD diff에서 제외해야 합니다."
   assert_file_contains "${application_path}" '      - RespectIgnoreDifferences=true' \

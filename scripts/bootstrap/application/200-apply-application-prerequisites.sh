@@ -175,7 +175,6 @@ apply_resources() {
   local migrator_password_encoded
   local jwt_secret_encoded
   local identifier_secret_encoded
-  local community_cursor_secret_encoded
 
   cat <<EOF | apply_yaml_stream
 apiVersion: v1
@@ -192,7 +191,6 @@ EOF
   migrator_password_encoded="$(base64_no_wrap "${MIGRATOR_PASSWORD}")"
   jwt_secret_encoded="$(base64_no_wrap "${AUTH_JWT_HMAC_SECRET}")"
   identifier_secret_encoded="$(base64_no_wrap "${AUTH_LOGIN_IDENTIFIER_HMAC_SECRET}")"
-  community_cursor_secret_encoded="$(base64_no_wrap "${COMMUNITY_CURSOR_HMAC_SECRET}")"
 
   cat <<EOF | apply_yaml_stream
 apiVersion: v1
@@ -230,19 +228,13 @@ type: Opaque
 data:
   AUTH_JWT_HMAC_SECRET: ${jwt_secret_encoded}
   AUTH_LOGIN_IDENTIFIER_HMAC_SECRET: ${identifier_secret_encoded}
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ${COMMUNITY_SECRET}
-  namespace: ${APPLICATION_NAMESPACE}
-  labels:
-    app.kubernetes.io/managed-by: ${FIELD_MANAGER}
-type: Opaque
-data:
-  COMMUNITY_CURSOR_HMAC_SECRET: ${community_cursor_secret_encoded}
 EOF
 
+  application_secret_apply_community \
+    "${FIELD_MANAGER}" \
+    "${APPLICATION_NAMESPACE}" \
+    "${FIELD_MANAGER}" \
+    "${COMMUNITY_CURSOR_HMAC_SECRET}"
   application_secret_apply_notification \
     "${SECRET_FIELD_MANAGER}" \
     "${APPLICATION_NAMESPACE}" \
@@ -263,6 +255,10 @@ verify_resources() {
     "${APPLICATION_NAMESPACE}" \
     "${FIELD_MANAGER}" \
     "${RESEND_API_KEY}"
+  application_secret_verify_community \
+    "${APPLICATION_NAMESPACE}" \
+    "${FIELD_MANAGER}" \
+    "${COMMUNITY_CURSOR_HMAC_SECRET}"
 }
 
 cleanup() {

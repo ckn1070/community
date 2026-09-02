@@ -31,7 +31,7 @@ Source→image→GitOps→cluster actor와 자동화·수동 경계는
 - `deploy/overlays/stg`가 존재하고 non-empty resource를 render합니다.
 - `deploy/overlays/stg/kustomization.yaml`의 `images[].digest`가 application image reference를
   소유합니다.
-- Runtime·migrator DB role과 Git 밖 Namespace·네 Secret, Git의 actual DB URL·RDS CA·notification
+- Runtime·migrator DB role과 Git 밖 Namespace·다섯 Secret, Git의 actual DB URL·RDS CA·notification
   ConfigMap source가 준비됐습니다.
 - `main` 변경은 pull request review 뒤 merge하는 운영 정책을 따릅니다. 현재 GitHub branch
   protection이 이를 강제하지 않으므로 운영자가 direct push와 force push를 사용하지
