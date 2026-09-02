@@ -24,6 +24,16 @@ skill 이름, helper 출력과 branch metadata는 이 입력이나 권한을 만
 Git object·ref·index와 `git worktree` 등록 상태를 authoritative source로 사용하고 별도
 snapshot, journal, metadata ledger와 custom guard를 만들지 않습니다.
 
+사용자가 새 작업 branch 생성, `브랜치 파서 작업`, 병렬 작업 시작 또는 현재 작업과 분리된
+공간을 요청하면 생성 효과는 `$parallel-start`의 bundled helper로만 입장합니다. Primary
+checkout에서 `git switch -c`, `git checkout -b`, `git branch` 또는 branch rename으로 작업
+branch를 만들거나 그 branch로 전환하는 경로는 허용하지 않습니다. 사용자가 branch 이름만
+말하고 worktree를 생략해도 이 routing은 바뀌지 않습니다.
+
+Helper preflight가 naming·base·branch·path 충돌로 실패하면 현재 checkout이나 ref를 직접
+바꾸어 우회하지 않고 그 blocker를 반환합니다. 명시적인 기존 branch 조회·통합·삭제·이름
+변경은 이 생성 routing으로 확대하지 않고 각각 현재 요청의 exact Git 효과로 판정합니다.
+
 worktree 하나에는 작업 실행 workflow가 확정한 독립 병렬 책임 하나와 branch 하나만
 둡니다. 다른 책임을 덧붙이거나 branch 전환으로 같은 worktree를 재사용하지 않습니다.
 Branch 이름이나 사용자가 말한 큰 feature 이름으로 책임을 추측하지 않습니다. 생성 전

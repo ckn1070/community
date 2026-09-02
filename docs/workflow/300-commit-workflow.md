@@ -100,6 +100,13 @@ dirty와 commit 뒤 index에만 남길 변경까지 stage할 권한이 아닙니
 consumer 변경의 stage·local commit을 operation map에 결속합니다. 별도 `commit` 표현을 다시
 요구하지 않지만 push·새 branch·PR과 다른 작업 변경에는 이 예외를 확대하지 않습니다.
 
+`$dev-plan`이 검증된 안정 상태를 `Required-Pending`으로 인계하면 계획 checkpoint 상시 예외를
+소비해 같은 candidate digest·lifecycle 상태·fixed-base `HEAD`·exact path·hunk만 stage하고
+local commit합니다. Commit object·parent·tree·full patch와 잔여 dirty를 확인한 뒤에만
+`Committed`로 반환합니다. 실제 분리 불가나 Git 실행 차단은 공통 blocker gate의 증거와 함께
+`Blocked`로 반환하며, 별도 commit 요청 부재나 push 미승인은 local checkpoint의 미실행
+근거가 아닙니다. 이 예외는 push·새 branch·PR 권한을 만들지 않습니다.
+
 ### 변경 처분과 recovery state
 
 Git 상태를 깨끗하게 보이게 만드는 것과 작업 결과를 마무리하는 것은 다릅니다. 현재

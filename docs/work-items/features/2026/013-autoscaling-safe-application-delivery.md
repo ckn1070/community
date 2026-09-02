@@ -107,7 +107,7 @@ provider 성공으로 간주하지 않고
 [430 Application 기능 qualification](../../../operations/430-application-functional-qualification-runbook.md)의
 실제 수신·token confirmation·DB `ACTIVE`·test data cleanup까지 확인합니다. 기존과 다른 old
 provider key가 실제로 있을 때만
-[540 Notification credential 변경](../../../operations/540-application-notification-credential-runbook.md)의
+[540 Application 환경변수·Secret 변경의 Resend API key 교체](../../../operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체)의
 새 key 검증·폐기 절차를 적용합니다.
 
 ## 영구 SOT
@@ -123,7 +123,7 @@ provider key가 실제로 있을 때만
 - [350 Application delivery 최초 bootstrap](../../../operations/350-application-delivery-bootstrap-runbook.md)
 - [420 GitOps 배포·rollback](../../../operations/420-gitops-deployment-and-rollback-runbook.md)
 - [430 Application 기능 qualification](../../../operations/430-application-functional-qualification-runbook.md)
-- [540 Notification credential 변경](../../../operations/540-application-notification-credential-runbook.md)
+- [540 Application 환경변수·Secret 변경의 Resend API key 교체](../../../operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체)
 
 ## 관련 문서
 
