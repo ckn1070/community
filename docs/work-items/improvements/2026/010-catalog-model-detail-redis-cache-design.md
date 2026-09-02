@@ -1,36 +1,22 @@
 # 자동차 모델 상세 Redis cache 설계
 
-## 상태
+## 구현 결과와 설계 보존
 
-Planned
-
-## 계획 단계
-
-계획 완료
-
-## 현재 결론과 다음 행동
-
-| 구분 | 현재 내용 |
-| --- | --- |
-| 현재 단계 | `Planned / 계획 완료` |
-| 현재 결론 | D1~D10·D12의 선택과 비교 근거를 실행 계획의 고정 입력으로 사용합니다. Redis 설치·application 결합에 필요한 내부 보호 계약은 유지하고 별도 시험 체계는 제거했습니다. |
-| 닫힌 결과 | 대상 API, PostgreSQL 원본성, 최대 5분 stale, explicit cache-aside, single-flight·DB bulkhead·503, timeout·circuit·fallback, 단일 Redis runtime·보안·복구 결정을 확정했습니다. Redis 8의 사용 license는 RSALv2로 선택했고, 이 결정들을 소비하는 [실행 계획](010-catalog-model-detail-redis-cache.md)도 사용자가 확정했습니다. |
-| 남은 gate | 계획 단계의 남은 gate가 없습니다. 구현에 필요한 사용자 소유 결정도 없습니다. |
-| 지금 actor | 없음 — 계획 작업이 완료됐습니다. |
-| 지금 할 일 | 없음 — 이 문서의 결정과 목표 계약을 구현 입력으로 보존합니다. |
-| 사용자 차례 | 사용자 작업 없음. 구현을 시작하려면 별도 개발 요청만 하면 됩니다. |
-| 응답 방식 | 추가 확정 응답은 필요하지 않습니다. |
-| 이 행동 뒤 결과 | D1~D10·D12와 연결된 T1~T6가 구현 직전의 동결된 입력으로 유지됩니다. |
-| 다음 단계 전환 | 별도 개발 요청이 들어오면 `Planned` baseline을 소비해 repository 구현을 시작합니다. Live staging 적용은 별도 권한이 필요합니다. |
+- D1~D10·D12의 선택과 비교 근거는 [작업 본문](010-catalog-model-detail-redis-cache.md)의
+  application cache·단일-node Redis·credential Procedure 구현 결과에 반영됐습니다.
+- 구현·검증 결과와 별도 live 운영 경계는 작업 본문이 소유하며, 이 문서는 확정된 선택·배제 대안·
+  trade-off와 재검토 조건만 보존합니다.
+- 이후 이 계약을 바꿔야 하는 새 사용자 소유 결정이 생기면 영향을 받는 변경을 새 작업에서
+  다시 설계합니다.
 
 ## 문서 책임과 설계 입력
 
 이 문서는 장기 복원해야 할 기술 결정, 대안, 목표 계약과 재검토 조건을 소유합니다. 구현
-작업 순서, test 명령과 live 운영 명령은 소유하지 않습니다. 구현 뒤 실제 현재 기준은 catalog,
-Spring Boot, Redis, Kubernetes, local development와 운영 runbook의 각 영구 SOT로
-승격합니다.
+작업 순서, test 명령과 live 운영 명령은 소유하지 않습니다. 구현된 현재 기준은 catalog,
+Spring Boot, Redis, Kubernetes, local development와 운영 runbook의 각 영구 SOT가
+소유합니다.
 
-현재 source는 다음 제약을 만듭니다.
+설계 당시 source는 다음 제약을 만들었습니다.
 
 - `GetCatalogModelDetailService`가 read-only transaction 안에서
   `CatalogModelDetailReadPort`를 호출하고, jOOQ adapter가 모델·연식·동력계통·판매 구성·변형
@@ -99,6 +85,7 @@ R0은 사용자가 이미 고정한 Redis 도입 범위이지 비교표가 아�
 | D8    | 제한된 memory에서 어떤 entry를 제거할 것인가           | 모두 memory 상한을 지키되 write 거부와 hot data 보존 결과가 다릅니다.                       | Pod request·limit의 exact 수치                  |
 | D9-A  | Application·운영·probe 권한을 어떻게 격리할 것인가     | 같은 private Redis의 접근·command 권한 방식끼리 비교합니다.                             | Packet 암호화                                   |
 | D9-B  | Pod 사이 전송을 어떤 수준으로 보호할 것인가               | 같은 client/server traffic의 인증·암호화 수준끼리 비교합니다.                            | NetworkPolicy·ACL의 권한 범위                     |
+| D9-C  | 역할별 credential을 어떤 실행 경계에서 수렴할 것인가       | 같은 두 Secret·ACL 목표 상태를 만드는 수동·재사용·전용 실행 경계를 비교합니다.          | Flag 전환·rollout·기능 smoke                     |
 | D10   | Redis를 필수 dependency로 만들지 않으면서 어떤 최소 진단을 남길 것인가 | 모두 서비스 결과를 관찰하되 readiness 결합·노출·운영 표면이 다릅니다. | 별도 시험·수집 platform |
 | D12-A | 잘못된 cache logic을 운영자가 어떻게 disable할 것인가 | 같은 DB-only 종료 상태를 만드는 운영 경로끼리 비교합니다. | D6가 소유하는 request timeout·fallback |
 | D12-B | Production topology를 지금 확정할 수 있는가        | 필수 SLO·예산·운영 입력 부재를 판정하는 gate이며 아직 기술 비교군이 아닙니다. | 현재 staging runtime 선택 |
@@ -114,7 +101,7 @@ R0 Redis 고정 입력
        -> D6-A 장애 동작 -> D6-B circuit 구현
   -> D7-A client -> D7-B release line -> D7-C controller -> D7-D storage -> D7-E license
        -> D8 memory·eviction
-       -> D9-A network·credential -> D9-B transport
+       -> D9-A network·credential -> D9-B transport -> D9-C credential operation
   -> D10 최소 health·log·counter
   -> D6 request 우회 -> D12-A operator disable -> D12-B production gate
 ```
@@ -143,6 +130,7 @@ R0 Redis 고정 입력
 | D8  | `maxmemory` + `allkeys-lfu` + container headroom                     | Memory 상한과 hot entry 보존                                          | Cold entry eviction                | Cache write보다 node 생존을 우선하는 필수 기준                      |
 | D9-A | ClusterIP + NetworkPolicy + 역할별 ACL·Secret + non-root | Public 노출과 credential 침해 범위 축소 | ACL·Secret lifecycle 운영 증가 | 같은 cluster 안에서도 최소 권한이 필수 |
 | D9-B | Staging 한정 ACL + 평문 cluster network | 현재 single-node에서 certificate 체계를 추가하지 않음 | Packet 암호화가 없고 production 승격 불가 | 현재 failure domain 대비 운영 비용, 명시적 재검토 gate |
+| D9-C | NUL-delimited stdin을 받는 전용 remote operations entrypoint | 두 Secret·ACL을 값 비노출·fail-close로 재수렴 | Script·contract test·전달 inventory 유지 | Credential Procedure의 반복 조립과 부분 실패를 한 실행 owner가 집행 |
 | D10 | Readiness 분리 + 최소 health·log·low-cardinality counter | Redis 실패가 Pod traffic 제외로 번지지 않으면서 설치·결합 결과를 구분 | 상시 dashboard·세밀한 장기 분석은 제공하지 않음 | 지금 필요한 것은 runtime 동작 확인이며 새 관리 endpoint는 불필요 |
 | D12-A | GitOps flag-off | 감사 가능한 DB-only 전환 | Sub-minute disable 보장 없음 | 기존 delivery owner 재사용 |
 | D12-B | Production 승격 보류 | 근거 없는 HA·비용 확정 방지 | 현재 production topology 미정 | SLO·RTO/RPO·예산·on-call 입력이 없음 |
@@ -303,8 +291,8 @@ field 누락과 JSON decode 실패는 corrupt로 분류해 best-effort 삭제 �
 
 `StringRedisTemplate`의 UTF-8 key/value와 명시적 Jackson mapping을 사용합니다. Spring Data
 Redis의 기본 Java native serialization과 Jackson default typing은 사용하지 않습니다. 한 entry의
-저장 상한은 구현 T2에서 실제 상세 fixture의 serialized byte와 T5의 Redis memory 예산을 대조해
-typed configuration으로 동결합니다. 상한을 넘으면 저장하지 않고 결과만 반환하며, 분할 전 API graph·memory·CPU 비용을
+저장 상한은 Redis memory 예산과 분리된 typed configuration으로 제한합니다. 상한을 넘으면
+저장하지 않고 결과만 반환하며, 분할 전 API graph·memory·CPU 비용을
 다시 측정합니다. 최초 범위에서는 압축과 부분 cache를 추가하지 않습니다.
 
 ## D4. Freshness와 invalidation
@@ -412,8 +400,9 @@ DB·대기 memory를 어떻게 제한해야 합니까?
 
 **선택: bounded in-flight key와 DB source-load bulkhead.** 같은-key 요청은 shared future에
 합류시키고 leader와 새 key만 DB permit을 소비합니다. In-flight key 수, DB permit과 대기 시간은
-Hikari pool·request timeout보다 작은 안전 예산으로 두며 exact 값은 구현 T1·T3에서 current
-pool·request budget을 확인해 typed configuration으로 동결합니다. 포화 요청을 DB로 직접 우회하지 않아 stampede를 다시 만들지 않는 대신,
+Hikari pool·request timeout보다 작은 안전 예산의 typed configuration으로 제한합니다.
+현재 값은 application 설정과 [Local 개발](../../../development/100-local-development.md)이
+소유합니다. 포화 요청을 DB로 직접 우회하지 않아 stampede를 다시 만들지 않는 대신,
 capacity를 넘는 요청은 bounded 대기 뒤 D5-C의 공개 오류로 실패합니다. 별도 오류와 재시도
 안내는 사용자가 선택한 U1-A가 소유하고, 구체적인 HTTP status·header·error code는 D5-C가 소유합니다.
 DB connection pool·request timeout·memory 측정으로 bulkhead 없이도 안전 상한이 이미 보장되거나,
@@ -442,15 +431,14 @@ source capacity이므로 503을 사용합니다. 응답 body는 RFC 9457 `Proble
 
 `Retry-After`는 delta-seconds로 제공합니다. 초기값은 현재 production Hikari 연결 획득 상한
 `1500ms`를 초 단위로 올림한 `2`초로 두고, D5-B의 더 짧은 permit 대기 상한 때문에 이 값이
-줄어들지 않게 합니다. 실행 계획은 구현 전에 current Hikari·request budget을 다시 확인해
-같은 규칙으로 초기값을 동결합니다.
+줄어들지 않게 합니다. 이 값은 cache의 짧은 대기 상한이 아니라 기존 DB 연결 획득 상한을
+기준으로 선택한 재시도 안내입니다.
 
-현재 `ApiErrorResponseFactory`는 RFC 9457 body와 project `code`를 만들고,
-`ApiExceptionHandler`는 모든 429에만 `Retry-After: 1`을 붙입니다. 구현은 catalog capacity
-exception을 위 exact code로 변환하고 그 503에만 `Retry-After`를 연결해야 하며, 기존 모든
-503이나 429의 header 정책을 일괄 변경하지 않습니다. 구현 뒤에는
+`ApiErrorResponseFactory`는 RFC 9457 body와 project `code`를 만들고,
+`ApiExceptionHandler`는 명시적으로 retry-after를 소유한 catalog capacity 503에만 `2`초를
+붙입니다. 기존 429의 `Retry-After: 1`과 다른 503 정책은 바꾸지 않습니다.
 [REST API 설계](../../../architecture/230-rest-api-design.md)의 실패 응답 표에 이 503 의미와
-재시도 계약을 영구 기준으로 승격합니다.
+재시도 계약을 영구 기준으로 승격했습니다.
 
 공유 source capacity가 아니라 client·credential별 quota가 실패 원인이 되면 429를 다시
 비교합니다. 외부 gateway가 같은 capacity admission과 공개 오류를 소유하게 되면 application
@@ -657,12 +645,12 @@ container OOM을 막을 수 없으므로 별도 request·limit와 allocator head
 Dedicated Redis에는 `maxmemory`와 `allkeys-lfu`를 적용합니다. 모든 entry에 TTL이 있지만 hot
 모델을 빈도 기반으로 보존하고, memory가 찼을 때 application write가 cache 때문에 실패하지
 않게 cold key를 제거합니다. `maxmemory`는 container limit에서 allocator fragmentation,
-client buffer와 process overhead의 확인된 상한을 뺀 값보다 작게 둡니다. Exact 비율과 값은
-구현 T5에서 current node allocatable과 process headroom을 확인한 뒤 manifest 후보에 동결합니다.
+client buffer와 process overhead를 위한 headroom을 남깁니다. 현재 초기값은 manifest와
+[GitOps Application Delivery](../../../project/infrastructure/220-gitops-application-delivery.md)가
+소유하며 live 사용량 검증을 완료한 운영 sizing으로 해석하지 않습니다.
 
-Redis와 application 모두 CPU·memory request·limit를 갖습니다. Exact 값은 live node allocatable,
-control-plane·Argo·application 사용량과
-entry size·cardinality를 대조해 구현 T5에서 동결하며, 다음 조건을 동시에 만족하지 않으면
+Redis와 application 모두 CPU·memory request·limit를 갖습니다. 실제 활성화 전에 live node allocatable,
+control-plane·Argo·application 사용량과 entry size·cardinality를 대조하며, 다음 조건을 동시에 만족하지 않으면
 staging 활성화를 중단합니다.
 
 - Node system·control-plane 여유를 뺀 뒤 application과 Redis request가 schedulable합니다.
@@ -723,12 +711,13 @@ production으로 복사하지 않습니다.
 - Calico NetworkPolicy는 application Pod에서 Redis TCP port로 들어오는 traffic만 허용하고
   Redis의 불필요한 egress는 차단합니다. DNS나 외부 API가 필요하지 않은 server 특성을
   유지합니다.
-- 현재 AppProject allow-list에는 `NetworkPolicy`가 없으므로 구현 T5에는 GitOps permission 확장이
-  필요합니다. Repository 변경과 live 적용 권한은 분리합니다.
+- 설계 시점 AppProject allow-list에 없던 `NetworkPolicy`를 Redis desired state의 소비 권한으로
+  추가했습니다. Repository 변경과 live 적용 권한은 분리합니다.
 - Redis default user는 끄고 application, operation 진단, probe user를 분리합니다. Application
   user는 catalog model-detail key prefix와 client handshake, `GET`, TTL을 포함한 `SET`, corrupt
   처분용 `DEL`, `PING`의 검증된 최소 command만 사용합니다. 진단 user는 key value 조회 없이
-  `INFO`·latency·memory 상태만 읽고, probe user는 `PING`만 허용합니다. `CONFIG`, `FLUSH*`,
+  prefix의 `TTL`, `INFO commandstats`·`INFO stats`와 `PING`만 사용하고, probe user는 `PING`만 허용합니다.
+  `MEMORY PURGE`, `LATENCY RESET`, `CONFIG`, `FLUSH*`,
   module·script·replication 관리 command는 허용하지 않습니다.
 - Plaintext password는 Git에 두지 않습니다. Application과 Redis server가 서로 필요한 값만
   읽도록 다음 두 Secret 책임을 분리합니다.
@@ -740,14 +729,38 @@ production으로 복사하지 않습니다.
 - Probe는 Secret key에서 `REDISCLI_AUTH` 환경변수로 password를 받고 고정 probe username으로
   `redis-cli PING`을 호출합니다. Pod spec command argument와 log에는 plaintext를 넣지 않습니다.
 - Credential 생성·rotation·제거는 다른 application Secret과 분리되고 flag-off 상태로
-  복구 가능해야 합니다. Exact actor·순서·완료 증거는 T5·T6와 기존 Secret 운영 owner가
-  소유합니다.
+  복구 가능해야 합니다. Exact actor·순서·완료 증거는
+  [580 Catalog Redis 활성화·credential](../../../operations/580-catalog-redis-activation-and-credential-runbook.md)이 소유합니다.
 - Redis container도 `runAsNonRoot`, `allowPrivilegeEscalation: false`, read-only root filesystem,
   `RuntimeDefault` seccomp와 capability drop을 적용합니다. Health probe는 password를 command
   argument나 log에 넣지 않습니다.
 
 현재 신뢰 경계와 TLS의 한계·재검토 조건은 D9-B가 소유하며, NetworkPolicy나 ACL이 전송
 암호화를 제공한다고 해석하지 않습니다.
+
+### D9-C. 역할별 credential을 어떤 실행 경계에서 수렴할 것인가
+
+**결정 질문:** 실제 값을 argument·log·Git에 노출하지 않으면서 두 Secret과 ACL file을
+같은 입력으로 재수렴하려면 어떤 실행 경계를 사용해야 합니까?
+
+| 비교 축 | Runbook의 긴 shell block | 기존 단일 Secret helper에 결합 | 전용 remote operations entrypoint |
+| --- | --- | --- | --- |
+| 실패 전파 | 복사한 shell option과 마지막 command에 따라 앞선 실패가 가려질 수 있습니다. | 서로 다른 consumer·ACL hash 계약을 일반 helper가 떠안습니다. | `set -euo pipefail`, lock과 두 postcondition을 한 owner가 집행합니다. |
+| Secret 노출 | `kubectl --from-literal` argument나 YAML 확인 출력에 값이 드러날 수 있습니다. | 기존 helper를 크게 일반화해야 합니다. | 세 값을 NUL-delimited stdin으로 받고 base64/hash manifest를 stdin apply하며 값을 출력하지 않습니다. |
+| 재실행·부분 실패 | 운영자가 중간 artifact와 재개 지점을 해석해야 합니다. | 기존 notification/community 생애주기와 실패 경계가 섞입니다. | 두 Secret만 같은 field manager로 재수렴하고 둘 다 검증돼야 성공합니다. |
+| 현재 목표 판정 | 재사용 가능한 Procedure 기준과 fail-close를 충족하지 못합니다. | 책임·변경 주기가 다른 기존 helper를 과도하게 확장합니다. | **Redis credential lifecycle의 가장 좁은 반복 실행 경계입니다.** |
+
+**선택: `scripts/operations/application/reconcile-catalog-redis-secrets.sh`.** 확정된 범위가 요구한
+credential 생성·same-input 재수렴·rotation의 Secret 단계만 자동화합니다. AppProject 적용,
+GitOps flag 전환, rollout과 cold/warm smoke는 권한·실패·재개 경계가 다르므로 runbook의 사람
+checkpoint로 남깁니다. Contract test는 입력 오류, 다른 owner/schema, plaintext argument·log
+노출, 두 Secret postcondition, 같은 입력 재실행과 두 번째 apply 실패를 재현합니다. 실제
+Kubernetes SSA·rollout·기능 성공은 별도 live 권한의 staging smoke만 증명합니다.
+
+이 entrypoint는 Redis credential lifecycle이 제거되거나 표준 external secret manager가 같은
+두 Secret·ACL 수렴과 rotation을 더 직접 소유하면 함께 제거합니다. 현재 repository의 Bash와
+`kubectl`만 사용하며 새 runtime·외부 package·CI hard gate를 추가하지 않습니다. 운영자가 필요할
+때만 target EC2에서 실행하고 실패하면 flag-off를 유지한 채 같은 입력으로 다시 실행합니다.
 
 ## D10. Health, metric과 log
 
@@ -828,7 +841,7 @@ configuration으로 분리합니다. Flag가 꺼졌을 때 cache adapter는 Redi
 
 Staging은 같은 application artifact의 flag-off를 기준선으로 사용하고 flag-on을 도입 후보로
 사용합니다. Rollback 완료는 GitOps target 반영, DB-only 동작, Redis command 부재로 판정해야
-하지만 exact PR·sync·rollout 순서는 실행 계획과 운영 runbook 후보가 소유합니다. 현재 staging은
+하지만 exact PR·sync·rollout 순서는 운영 runbook이 소유합니다. 현재 staging은
 이 전달 시간의 보장 RTO가 없으며 PostgreSQL data는 rollback 대상이 아닙니다. Old cache key는
 scan 삭제 대신 TTL 소멸에 맡깁니다.
 
@@ -853,7 +866,7 @@ backup·관측 책임을 새로 비교합니다. PostgreSQL authoritative source
 
 | 판정 축 | 현재 결론 |
 | --- | --- |
-| 근본 문제·증거 | 같은 모델 상세 요청이 매번 여러 PostgreSQL query group을 다시 실행하고, 현재 application에는 외부 cache 경계가 없습니다. |
+| 도입 당시 문제·증거 | 설계 당시에는 같은 모델 상세 요청이 매번 여러 PostgreSQL query group을 다시 실행했고 외부 cache 경계가 없었습니다. 도입된 cache 경계의 현재 구조는 [Module Map](../../../project/210-module-map.md)이 소유합니다. |
 | 도입 경계 | Redis는 R0의 사용자 고정 입력이며 PostgreSQL의 원본 지위를 바꾸지 않는 선택적 catalog outbound adapter로만 사용합니다. Query 최적화·Caffeine과의 우열은 이번 결정이 아닙니다. |
 | 독립 oracle | 실제 Redis를 사용한 cold miss→PostgreSQL→populate→warm hit, TTL·직렬화·오염 처분과 Redis unavailable fallback을 확인합니다. Mock이나 Redis `PING`만으로 application 결합 완료를 선언하지 않습니다. |
 | 오판·새 실패 표면 | Warm 값만 확인하면 source 경로와 serializer 결함을 놓칠 수 있습니다. 단일 node failure domain, credential·upgrade·memory 운영은 새 비용으로 남습니다. |
