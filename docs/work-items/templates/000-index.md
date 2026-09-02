@@ -21,7 +21,3 @@
 `Done` 전에는 [문서화 워크플로우](../../workflow/150-documentation-workflow.md)의 결과 게이트와 영구 SOT 대조를 수행합니다.
 검토 checklist와 실행 기록을 작업 문서에 복사하지 않고 현재 결과와 남은 책임만 유지합니다.
 각 template의 `관련 문서`에는 링크만 나열하지 않고 `현재 기준`, `결정 근거`, `구현 source`, `실행 절차`, `작업 상태`, `대체 문서`처럼 실제 관계를 표시합니다. 관계가 없으면 빈 section을 제거합니다.
-
-기존 `feature-template.md`, `bug-template.md`, `improvement-template.md`,
-`spike-template.md`는 이전 링크를 보존하는 비기준 호환 reference입니다. 새 문서나 실질 변경의
-출발점으로 사용하지 않습니다.
