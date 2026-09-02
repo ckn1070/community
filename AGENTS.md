@@ -79,6 +79,12 @@ workflow와 history를 기본으로 읽지 않습니다.
   [150 문서화 워크플로우의 runbook 결함 복구 gate](docs/workflow/150-documentation-workflow.md#runbook-결함-복구-gate)로
   canonical 원문을 수정·검증한 뒤 수정된 실행 단위를 그대로 인용합니다. 질문·설명·검토
   요청이면 결함과 안전한 후속만 답하고 mutation하지 않습니다.
+- 재사용 operations 문서에는 literal 값, 현재 변수·Secret 이름 목록과 live inventory를
+  기본으로 보존하지 않습니다. 해당 정보가 없으면 문서가 소유한 실행 절차의 의미가
+  성립하지 않고 실행 시 authoritative source에서도 조회할 수 없을 때만 필요한 최소값을
+  둡니다. 그 밖의 값은 canonical source나 실제 환경에서 실행 시 확인하며, 편의·예시·한
+  문서에서의 완결성을 이유로 복제 owner와 갱신 책임을 만들지 않습니다. Secret 값은
+  문서에 기록하지 않습니다.
 - 실패나 누락을 발견하면 사건의 명사를 규칙으로 추가하지 않습니다. 작업 실행
   워크플로우의 통제 생애주기로 첫 단절과 기존 방어를 먼저 판정합니다.
 - 완료·검증된 방어 범위의 재발은 [심화 회고](.agents/skills/deep-retrospective/SKILL.md),
