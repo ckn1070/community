@@ -4,6 +4,7 @@ import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.CommonErrorCode;
 import com.ronams.carmunity.shared.error.ErrorCode;
 import com.ronams.carmunity.shared.error.FieldErrorDetail;
+import com.ronams.carmunity.shared.error.RetryAfterErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -106,7 +107,13 @@ public class ApiExceptionHandler {
   @ExceptionHandler(ApiException.class)
   ResponseEntity<ProblemDetail> handleApiException(ApiException exception, WebRequest request) {
     ErrorCode errorCode = exception.errorCode();
-    return toResponseEntity(responseFactory.create(errorCode, request));
+    ProblemDetail problemDetail = responseFactory.create(errorCode, request);
+    if (errorCode instanceof RetryAfterErrorCode retryable && retryable.retryAfterSeconds() > 0) {
+      return ResponseEntity.status(problemDetail.getStatus())
+          .header("Retry-After", Integer.toString(retryable.retryAfterSeconds()))
+          .body(problemDetail);
+    }
+    return toResponseEntity(problemDetail);
   }
 
   /**

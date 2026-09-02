@@ -18,6 +18,7 @@ import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
 import com.ronams.carmunity.config.ApiErrorResponseFactory;
 import com.ronams.carmunity.config.ApiExceptionHandler;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -191,6 +192,11 @@ class CatalogModelControllerSearchTest {
     @Bean
     GetCatalogModelDetailUseCase unusedGetCatalogModelDetailUseCase() {
       return query -> java.util.Optional.empty();
+    }
+
+    @Bean
+    Clock clock() {
+      return Clock.systemUTC();
     }
   }
 

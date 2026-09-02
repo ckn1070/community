@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.ronams.carmunity.catalog.internal.application.CatalogErrorCode;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.error.ErrorCode;
 import jakarta.validation.Valid;
@@ -135,6 +136,22 @@ class ApiExceptionHandlerTest {
         .andExpect(jsonPath("$.instance").value("/test/errors/conflict"))
         .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_USED"))
         .andExpect(jsonPath("$.detail").value("이미 사용 중인 이메일입니다."));
+  }
+
+  @Test
+  void catalogSourceCapacityExhaustionAddsOnlyItsTwoSecondRetryContract() {
+    ApiExceptionHandler exceptionHandler = new ApiExceptionHandler(new ApiErrorResponseFactory());
+    MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/car/models/id");
+
+    var response =
+        exceptionHandler.handleApiException(
+            new ApiException(CatalogErrorCode.CATALOG_MODEL_DETAIL_CAPACITY_EXHAUSTED),
+            new ServletWebRequest(request));
+
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(response.getHeaders().getFirst("Retry-After")).isEqualTo("2");
+    assertThat(response.getBody().getProperties().get("code"))
+        .isEqualTo("CATALOG_MODEL_DETAIL_CAPACITY_EXHAUSTED");
   }
 
   /** 미분류 예외는 500 INTERNAL_ERROR로 축약하고 내부 예외 메시지를 클라이언트에 노출하지 않습니다. */

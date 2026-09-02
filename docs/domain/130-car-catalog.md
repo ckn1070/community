@@ -121,6 +121,10 @@ Carmunity가 해당 판매 구성을 공개 API에 노출하도록 검수한 상
 
 부모 행을 읽어야 하는 규칙이나 여러 자식 행의 완전성을 단일 row `CHECK`로 흉내 내지
 않습니다. 현재 runtime은 읽기 전용이며, 검수된 data migration만 카탈로그를 변경합니다.
+모델 상세 Redis cache는 이 PostgreSQL 원본 지위를 바꾸지 않습니다. 현재일의 성공 결과만
+최대 5분 재사용하고 과거·미래 snapshot, not-found와 Redis 장애는 원본 조회 의미를 그대로
+유지합니다. Runtime writer가 생기면 TTL만으로 freshness를 관리하지 않고 targeted
+invalidation을 별도 설계합니다.
 
 ## 확장 조건
 

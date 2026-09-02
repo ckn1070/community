@@ -7,9 +7,11 @@ import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDe
 import com.ronams.carmunity.shared.error.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class CatalogModelController {
 
   private final SearchCatalogModelsUseCase searchCatalogModelsUseCase;
   private final GetCatalogModelDetailUseCase getCatalogModelDetailUseCase;
+  private final Clock clock;
 
   /** filter를 생략하면 판매 중 모델을 이름순 첫 page로 조회합니다. */
   @Operation(summary = "카탈로그 모델 목록", description = "선택 filter를 생략해도 판매 중 모델의 첫 page를 반환합니다.")
@@ -69,6 +72,15 @@ public class CatalogModelController {
       responseCode = "405",
       description = "지원하지 않는 HTTP method",
       content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+  @ApiResponse(
+      responseCode = "503",
+      description = "모델 상세 DB source 처리 용량이 일시적으로 소진됨",
+      headers =
+          @Header(
+              name = "Retry-After",
+              description = "재시도 전 대기할 시간(초)",
+              schema = @Schema(type = "integer", example = "2")),
+      content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
   @GetMapping(value = "/{carModelId}", produces = MediaType.APPLICATION_JSON_VALUE)
   public CatalogModelDetailResponse getDetail(
       @PathVariable UUID carModelId,
@@ -77,7 +89,9 @@ public class CatalogModelController {
           LocalDate asOf) {
     GetCatalogModelDetailQuery query =
         new GetCatalogModelDetailQuery(
-            carModelId, modelYearId, asOf == null ? LocalDate.now(SEOUL_ZONE_ID) : asOf);
+            carModelId,
+            modelYearId,
+            asOf == null ? LocalDate.now(clock.withZone(SEOUL_ZONE_ID)) : asOf);
     return getCatalogModelDetailUseCase
         .execute(query)
         .map(CatalogModelDetailResponse::from)

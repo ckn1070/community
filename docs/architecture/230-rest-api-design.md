@@ -348,6 +348,7 @@ handler의 generic 500으로 분류될 수 있으며, 이 불일치의 수정 �
 | 중복 또는 상태 충돌 | 409 Conflict | email 중복, 이미 처리된 상태 등 |
 | 의미 검증 실패 | 422 Unprocessable Content | 400과 구분하기로 한 경우에만 사용 |
 | rate limit 초과 | 429 Too Many Requests | 재시도 제한 |
+| Catalog 모델 상세 DB source 처리 용량 소진 | 503 Service Unavailable | `CATALOG_MODEL_DETAIL_CAPACITY_EXHAUSTED`, `Retry-After: 2`; client quota 429와 구분 |
 | 서버 내부 오류 | 500 Internal Server Error | 예상하지 못한 서버 오류 |
 
 프로젝트 기본값은 validation 실패에 `400 Bad Request`를 사용합니다.

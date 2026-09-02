@@ -19,6 +19,7 @@ import com.ronams.carmunity.auth.internal.application.port.in.RotateRefreshToken
 import com.ronams.carmunity.catalog.internal.application.port.in.GetCatalogModelDetailUseCase;
 import com.ronams.carmunity.catalog.internal.application.port.in.ListCatalogBrandsUseCase;
 import com.ronams.carmunity.catalog.internal.application.port.in.SearchCatalogModelsUseCase;
+import java.time.Clock;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -80,7 +81,8 @@ class OpenApiContractTest {
               "500"),
           operation("get", "/api/v1/car/brands", "200", "405", "500"),
           operation("get", "/api/v1/car/models", "200", "400", "405", "500"),
-          operation("get", "/api/v1/car/models/{carModelId}", "200", "400", "404", "405", "500"));
+          operation(
+              "get", "/api/v1/car/models/{carModelId}", "200", "400", "404", "405", "500", "503"));
 
   private static final Set<OperationKey> CATALOG_OPERATIONS =
       Set.of(
@@ -218,6 +220,17 @@ class OpenApiContractTest {
   @MockitoBean private ListCatalogBrandsUseCase listCatalogBrandsUseCase;
   @MockitoBean private SearchCatalogModelsUseCase searchCatalogModelsUseCase;
   @MockitoBean private GetCatalogModelDetailUseCase getCatalogModelDetailUseCase;
+  @MockitoBean private Clock clock;
+
+  @Test
+  void documentsCatalogCapacityRetryHeader() throws Exception {
+    JsonNode response =
+        generatedOpenApi().at("/paths/~1api~1v1~1car~1models~1{carModelId}/get/responses/503");
+
+    assertThat(response.at("/headers/Retry-After/schema/type").stringValue()).isEqualTo("integer");
+    assertThat(response.at("/content/application~1problem+json/schema/$ref").stringValue())
+        .isEqualTo(PROBLEM_SCHEMA);
+  }
 
   /** 새 API가 추가되면 operation 수와 응답 집합이 달라져 실제 계약 검토 없이 명세가 통과하지 못합니다. */
   @Test

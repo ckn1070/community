@@ -6,14 +6,18 @@ import static org.mockito.Mockito.when;
 
 import com.ronams.carmunity.catalog.api.SalesStatus;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogBrandSummary;
+import com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetailCachePolicy;
 import com.ronams.carmunity.catalog.internal.application.model.CatalogModelPage;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogBrandReadPort;
+import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelDetailCachePort;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelDetailReadPort;
 import com.ronams.carmunity.catalog.internal.application.port.out.CatalogModelSearchPort;
 import com.ronams.carmunity.catalog.internal.application.query.CatalogModelSort;
 import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDetailQuery;
 import com.ronams.carmunity.catalog.internal.application.query.SearchCatalogModelsQuery;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -74,7 +78,35 @@ class CatalogQueryServiceTest {
     GetCatalogModelDetailQuery query =
         new GetCatalogModelDetailQuery(modelId, modelYearId, LocalDate.of(2026, 8, 29));
 
-    assertThat(new GetCatalogModelDetailService(catalogModelDetailReadPort).execute(query))
+    CatalogModelDetailCachePort cache =
+        new CatalogModelDetailCachePort() {
+          @Override
+          public java.util.Optional<
+                  com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail>
+              find(GetCatalogModelDetailQuery ignored) {
+            return java.util.Optional.empty();
+          }
+
+          @Override
+          public void put(
+              GetCatalogModelDetailQuery ignored,
+              com.ronams.carmunity.catalog.internal.application.model.CatalogModelDetail detail) {}
+        };
+    var policy =
+        new CatalogModelDetailCachePolicy(
+            false,
+            Duration.ofMinutes(5),
+            Duration.ofSeconds(30),
+            1_048_576,
+            8,
+            1,
+            Duration.ofMillis(20));
+    var loader = new TransactionalCatalogModelDetailSourceLoader(catalogModelDetailReadPort);
+
+    assertThat(
+            new GetCatalogModelDetailService(
+                    cache, loader, policy, Clock.systemUTC(), new SimpleMeterRegistry())
+                .execute(query))
         .isEmpty();
     verify(catalogModelDetailReadPort).find(modelId, modelYearId, LocalDate.of(2026, 8, 29));
   }

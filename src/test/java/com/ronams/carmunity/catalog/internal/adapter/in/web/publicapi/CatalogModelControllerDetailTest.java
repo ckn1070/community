@@ -19,8 +19,10 @@ import com.ronams.carmunity.catalog.internal.application.query.GetCatalogModelDe
 import com.ronams.carmunity.config.ApiErrorResponseFactory;
 import com.ronams.carmunity.config.ApiExceptionHandler;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,8 +67,6 @@ class CatalogModelControllerDetailTest {
   /** modelYearId와 asOf를 생략하면 현재 대표 연식을 서울 현재 날짜 기준으로 조회합니다. */
   @Test
   void getsDefaultModelDetailWithoutExplicitModelYear() throws Exception {
-    LocalDate beforeRequest = LocalDate.now(ZoneId.of("Asia/Seoul"));
-
     mockMvc
         .perform(get("/api/v1/car/models/{carModelId}", MODEL_ID))
         .andExpect(status().isOk())
@@ -78,8 +78,7 @@ class CatalogModelControllerDetailTest {
 
     assertThat(useCase.lastQuery.modelId()).isEqualTo(MODEL_ID);
     assertThat(useCase.lastQuery.requestedModelYearId()).isNull();
-    assertThat(useCase.lastQuery.asOf())
-        .isBetween(beforeRequest, LocalDate.now(ZoneId.of("Asia/Seoul")));
+    assertThat(useCase.lastQuery.asOf()).isEqualTo(LocalDate.of(2026, 9, 3));
   }
 
   /** 상세 graph의 모든 중첩 묶음과 nullable·빈 배열 표현을 실제 JSON으로 변환합니다. */
@@ -356,6 +355,11 @@ class CatalogModelControllerDetailTest {
     @Bean
     SearchCatalogModelsUseCase unusedSearchCatalogModelsUseCase() {
       return query -> new CatalogModelPage(List.of(), 0, 20, 0, 0);
+    }
+
+    @Bean
+    Clock clock() {
+      return Clock.fixed(Instant.parse("2026-09-02T15:00:00Z"), ZoneOffset.UTC);
     }
   }
 

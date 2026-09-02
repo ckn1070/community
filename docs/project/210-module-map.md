@@ -14,8 +14,8 @@
 | `moderation` | 구현됨·비활성 | 사용자 신고, 관리자 신고 조회·종결과 Community 공개 hide 협력 |
 | `media` | 구현됨·비활성 | private 이미지 asset·usage·job, 검증·정리 worker와 S3 adapter |
 | `securityaudit` | 구현됨 | 인증·인가 보안 감사 append 계약과 `auth_event` 단일 persistence writer |
-| `catalog` | 조회 API 구현됨 | 신차 제품·사양·판매 정보의 읽기 전용 경계, 차체·동력 형식·연료·판매 상태 공개 enum과 브랜드·모델 목록·상세 application/persistence/Web adapter |
-| `shared` | 구현됨 | 여러 module이 공유하는 안정된 공개 계약과 기반 type. `shared.error`가 `ErrorCode`, `CommonErrorCode`, `ApiException`, `FieldErrorDetail` 계약을 소유합니다. |
+| `catalog` | 조회 API·선택적 cache 구현됨 | 신차 제품·사양·판매 정보의 읽기 전용 경계, 브랜드·모델 목록·상세 application/persistence/Web adapter와 모델 상세 Redis cache adapter |
+| `shared` | 구현됨 | 여러 module이 공유하는 안정된 공개 계약과 기반 type. `shared.error`가 `ErrorCode`, `RetryAfterErrorCode`, `CommonErrorCode`, `ApiException`, `FieldErrorDetail` 계약을 소유합니다. |
 | `config` | 구현됨 | Spring MVC, Security, OpenAPI, request id, logging, 공통 예외 처리·HTTP `ProblemDetail` 변환과 애플리케이션 조립 |
 
 `config`는 업무 Bounded Context가 아니라 애플리케이션 조립 경계입니다.
@@ -59,7 +59,14 @@ catalog -> shared :: error
   차체·동력·연료·판매 상태 enum만 제공하고, 조회 use case·read model·port는
   `internal.application`, projection SQL은 `internal.adapter.out.persistence`에 둡니다.
   jOOQ 구현은 `internal.adapter.out.persistence.jooq`에서 조회 능력별 adapter와 상세 조립·JSON
-  변환 책임으로 분리합니다.
+  변환 책임으로 분리합니다. 모델 상세 use case는 Redis를 원본으로 취급하지 않고
+  `CatalogModelDetailCachePort`의 현재일 hit만 사용합니다. Flag-off·비현재일·miss·Redis
+  장애는 PostgreSQL source loader로 이동하며, cache adapter는 versioned JSON document,
+  application read model과 분리한 전용 DTO의 명시적 양방향 mapping, 5분 이하 TTL과
+  read/write circuit을 소유합니다. Process-local single-flight와 bounded source permit은 동일
+  key stampede와 DB 동시 부하를 제한합니다. 내부 계측은 lookup·leader/waiter·source-load,
+  Redis operation count/duration/outcome, entry byte와 circuit transition만 low-cardinality로
+  기록하고 모델 ID·key·value·credential을 label이나 log에 넣지 않습니다.
   `internal.adapter.in.web.publicapi`는 세 공개 GET의 request·response mapping을 소유하고
   공통 `ProblemDetail` 변환을 위해 `shared :: error` 공개 계약만 사용합니다.
 
