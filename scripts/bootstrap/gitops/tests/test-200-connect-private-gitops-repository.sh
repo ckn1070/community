@@ -94,6 +94,10 @@ test_tracked_manifests_define_restricted_project_and_application() {
     "Application bootstrap 소유 Namespace를 Argo CD가 생성하면 안 됩니다."
   assert_file_contains "${project_path}" '      kind: ConfigMap' \
     "Application 공개 설정 ConfigMap을 허용해야 합니다."
+  assert_file_contains_adjacent_lines "${project_path}" \
+    '    - group: ""' \
+    '      kind: ServiceAccount' \
+    "Runtime 전용 ServiceAccount만 exact namespaced resource로 허용해야 합니다."
   assert_file_contains "${project_path}" '      kind: Service' \
     "Runtime Service를 허용해야 합니다."
   assert_file_contains "${project_path}" '      kind: Deployment' \

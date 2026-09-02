@@ -83,8 +83,8 @@ Application bootstrap 소유 `car-community` Namespace가 없으면 GitOps resou
 않습니다. Secret schema는 repository 연결 script가 중복 검사하지 않고, 누락된 Secret은
 Job·Deployment의 resource reference가 차단합니다. DB URL·RDS CA와 notification 공개 설정
 ConfigMap은 staging overlay가 최초 sync에서 적용합니다. Git에 추적된 AppProject manifest는 cluster-scoped resource를
-허용하지 않고 Git manifest에 필요한 `ConfigMap`·`Service`·`Deployment`·`Job`·
-`networking.k8s.io/Ingress`만 허용합니다. Staging overlay의 `Ingress`는 AWS Load Balancer
+허용하지 않고 Git manifest에 필요한 `ConfigMap`·`ServiceAccount`·`Service`·`Deployment`·
+`Job`·`networking.k8s.io/Ingress`만 허용합니다. Staging overlay의 `Ingress`는 AWS Load Balancer
 Controller가 public ALB를 만들 desired state이고, controller의 cluster 권한과 설치는
 AppProject 허용 범위가 아닙니다.
 Notification operation이 새 Pod를 만드는 annotation만 `RespectIgnoreDifferences` 경계로
