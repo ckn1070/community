@@ -18,6 +18,8 @@ class PostgreSqlIntegrationTestSupportContractTest {
       "com.ronams.carmunity.support.PostgreSqlIntegrationTestSupport";
   private static final String CONTRACT_CLASS =
       "com.ronams.carmunity.support.PostgreSqlIntegrationTestSupportContractTest";
+  private static final String REDIS_SUPPORT_CLASS =
+      "com.ronams.carmunity.support.RedisIntegrationTestSupport";
 
   @Test
   void requiresDockerForPostgreSqlIntegrationTests() {
@@ -36,6 +38,14 @@ class PostgreSqlIntegrationTestSupportContractTest {
   }
 
   @Test
+  void pinsRedisArm64ImageToPatchAndDigest() {
+    assertThat(RedisIntegrationTestSupport.REDIS_IMAGE)
+        .matches("^redis:8\\.2\\.[0-9]+-alpine[0-9]+\\.[0-9]+@sha256:[0-9a-f]{64}$");
+    assertThat(RedisIntegrationTestSupport.REDIS.getDockerImageName())
+        .isEqualTo(RedisIntegrationTestSupport.REDIS_IMAGE);
+  }
+
+  @Test
   void preventsDirectTestcontainersUsageOutsideTheCommonSupport() {
     var testClasses = new ClassFileImporter().importPackages("com.ronams.carmunity");
 
@@ -44,6 +54,8 @@ class PostgreSqlIntegrationTestSupportContractTest {
         .doNotHaveFullyQualifiedName(SUPPORT_CLASS)
         .and()
         .doNotHaveFullyQualifiedName(CONTRACT_CLASS)
+        .and()
+        .doNotHaveFullyQualifiedName(REDIS_SUPPORT_CLASS)
         .should()
         .dependOnClassesThat()
         .resideInAnyPackage("org.testcontainers..")

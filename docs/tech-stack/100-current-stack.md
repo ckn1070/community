@@ -24,6 +24,8 @@
 | OAuth2 Resource Server | Bearer JWT 검증 |
 | Spring Data JPA | persistence adapter |
 | jOOQ 3.19.32 | catalog 복합 조회 실행, record mapping과 Flyway 기반 schema code generation |
+| Spring Data Redis + Lettuce | Catalog 모델 상세의 명시적 cache-aside Redis adapter와 bounded connection timeout |
+| Resilience4j CircuitBreaker 2.4.0 | Catalog Redis read/write 장애의 독립 short-circuit와 DB fallback |
 | Flyway | PostgreSQL schema migration |
 | Spring Modulith 2.1.0 | module boundary model과 test 검증 |
 | springdoc-openapi 3.0.2 | 로컬 API 문서 |
@@ -37,13 +39,17 @@
 - PostgreSQL JDBC driver
 - PostgreSQL용 Flyway database module
 - Flyway V1~V17 account/auth·catalog schema
+- Redis Open Source 8.2.9는 PostgreSQL 원본을 대체하지 않는 무영속 catalog cache입니다.
+- Catalog Redis는 `StringRedisTemplate`의 UTF-8 string과 adapter 전용 versioned JSON DTO를
+  사용하며 Java native serialization·default typing을 사용하지 않습니다. Read/write
+  operation은 retry 없이 100ms timeout·독립 circuit·DB fallback 경계를 따릅니다.
 
 ## Test
 
 - Spring Boot JPA, Flyway, Security, Web MVC test starter
 - Spring Modulith test
 - ArchUnit JUnit 5 1.4.2
-- Testcontainers 2.0.5 BOM, JUnit Jupiter, PostgreSQL
+- Testcontainers 2.0.5 BOM, JUnit Jupiter, PostgreSQL, Redis 8.2.9 ARM64 digest
 - JUnit Platform Launcher
 
 ## 품질 기준

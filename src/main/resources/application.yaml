@@ -38,6 +38,15 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      username: ${REDIS_USERNAME:}
+      password: ${REDIS_PASSWORD:}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:100ms}
+      timeout: ${REDIS_COMMAND_TIMEOUT:100ms}
+
   servlet:
     multipart:
       max-file-size: 10485760B
@@ -49,6 +58,23 @@ springdoc:
     path: /swagger-ui.html
 
 carmunity:
+  catalog:
+    model-detail-cache:
+      enabled: ${CATALOG_MODEL_DETAIL_CACHE_ENABLED:false}
+      ttl: ${CATALOG_MODEL_DETAIL_CACHE_TTL:5m}
+      ttl-jitter: ${CATALOG_MODEL_DETAIL_CACHE_TTL_JITTER:30s}
+      max-entry-bytes: ${CATALOG_MODEL_DETAIL_CACHE_MAX_ENTRY_BYTES:1048576}
+      max-in-flight-keys: ${CATALOG_MODEL_DETAIL_CACHE_MAX_IN_FLIGHT_KEYS:64}
+      max-source-loads: ${CATALOG_MODEL_DETAIL_CACHE_MAX_SOURCE_LOADS:8}
+      source-wait-timeout: ${CATALOG_MODEL_DETAIL_CACHE_SOURCE_WAIT_TIMEOUT:100ms}
+      circuit:
+        sliding-window-size: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_WINDOW_SIZE:20}
+        minimum-number-of-calls: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_MINIMUM_CALLS:10}
+        failure-rate-threshold: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_FAILURE_RATE:50}
+        slow-call-rate-threshold: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_SLOW_RATE:50}
+        slow-call-duration-threshold: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_SLOW_DURATION:100ms}
+        open-state-duration: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_OPEN_DURATION:5s}
+        half-open-permitted-calls: ${CATALOG_MODEL_DETAIL_CACHE_CIRCUIT_HALF_OPEN_CALLS:2}
   community:
     # 기반 배포와 사용자 공개 활성화를 분리합니다.
     enabled: ${COMMUNITY_ENABLED:false}
