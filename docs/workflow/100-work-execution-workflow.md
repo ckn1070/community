@@ -86,6 +86,16 @@ identity입니다.
 | `EXECUTE` | 모든 상태 변경 원자에 현재 generation의 positive source가 있고 같은 batch에 미확정 질문·비교·우려·선택이 없음 | exact 승인 범위의 specialist·계획·위임·review·mutation |
 | `DISCUSS_THEN_REEVALUATE` | 실행 원자와 같은 결과를 결정하는 질문·비교·우려·미확정 선택이 함께 있음 | 질문·미확정 차원의 직접 답변과 논의만 허용; batch의 상태 변경은 금지 |
 
+`ANSWER_ONLY` batch의 첫 실질 출력은 원문의 대상·술어·수식어를 보존한 직접 답변이어야
+합니다. Source read 최소 안내를 제외하면 답보다 앞서 실행 계획, 정정 약속, specialist
+선택이나 mutation을 투영하지 않습니다. 현재 generation에 독립된 `EXECUTE` batch가 없으면
+직접 답변으로 해당 generation을 끝내며, 질문의 강도·반복·실행을 재촉하는 듯한 함의나
+과거 미완료 효과를 positive source로 바꾸지 않습니다.
+
+독립된 `EXECUTE` batch가 같은 generation에 있으면 질문 batch의 직접 답을 첫 실질 명제로
+닫은 뒤 그 실행만 별도 identity로 소비합니다. 실행 원자의 존재를 이유로 질문을 생략하거나,
+질문의 답을 인접 실행의 권한으로 전파하지 않습니다.
+
 상태를 산출하기 전에는 위 source read 최소 안내와 Bootstrap source discovery만 허용합니다.
 그 전에 실행 범위·결정·계획·전문가·완료를 투영한 commentary나 답변이 나왔다면 그 약속은
 invalid입니다. 뒤늦게 source를 읽어 이를 보정하거나 이미 선택한 primary path의 입력으로

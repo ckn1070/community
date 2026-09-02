@@ -50,6 +50,8 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
 - 복합 실행 batch는 raw 항목별 문장 기능·효과·positive 권한 source 또는 미확정 사유를
   첫 writer 전에 완전히 대조합니다. 하나라도 질문·비교·미확정 항목이면 승인된 다른 항목도
   부분 실행하지 않고 논의를 닫은 새 generation에서만 batch를 재개합니다.
+- `ANSWER_ONLY` batch는 질문의 대상·술어를 첫 실질 명제에서 직접 닫고, 독립된 현재
+  `EXECUTE` 원자가 없으면 실행 약속이나 정정 작업으로 전환하지 않습니다.
 - 실행 회고의 행동 verdict는 통제 처분·canonical owner 효과·증거 등급·Git 자격과 전체
   상태를 하나의 closure identity로 Git과 보고 phase에 전달합니다. History·상태 문서와
   commit은 canonical 통제 적용이나 actual invocation 공백을 대신하지 않습니다.
