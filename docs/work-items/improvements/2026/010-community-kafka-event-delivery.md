@@ -10,42 +10,29 @@ Proposed
 
 ## 현재 결론과 다음 행동
 
-| 항목 | 현재 값 |
+| 구분 | 현재 내용 |
 | --- | --- |
-| 현재 단계 | `해결 설계` |
-| 현재 결론 | 닫힌 결과와 R1-A·단일-node Kubernetes 범위를 보존한 exact 해결 설계 후보가 구조·내용 검증과 local checkpoint를 마쳤습니다. |
-| 닫힌 결과 | 결과 정의, R1-A, 단일-node Kubernetes의 Strimzi qualification 범위 |
-| 남은 gate | Exact 해결 설계 후보의 사용자 단계 확정 |
-| 지금 actor | 사용자 |
-| 지금 할 일 | 아래 결정 색인과 상세 설계를 확인하고 해결 설계를 확정하거나 변경할 identity를 지정합니다. |
-| 사용자 차례 | 지금 |
-| 응답 방식 | `해결 설계를 확정해 주세요.` 또는 `D번호/R1: <변경 요구>` |
-| 이 행동 뒤 결과 | 변경 요구가 없으면 해결 설계가 닫히고 work item이 다음 명시 요청을 기다립니다. |
-| 다음 단계 전환 | 사용자가 실행 계획 작성을 명시하면 `실행 계획`을 엽니다. |
+| 현재 결론 | Community 댓글·답글 저장을 Kafka 장애와 분리하고 서비스 안 알림은 복구 뒤 누락·사용자 중복 없이 생성하는 R1-A를 반영했습니다. 결과 정의는 닫혔고, 이 결과를 구현할 D2~D9 해결 설계 후보가 준비돼 있습니다. |
+| 닫힌 결과 경계 | 첫 적용 대상은 Community 댓글·답글 생성에서 서비스 안 알림까지 한 수직 흐름입니다. 댓글 저장은 Kafka 장애와 분리되고 복구 뒤 알림은 누락·사용자 중복 없이 수렴해야 합니다. 현재 Kubernetes의 Strimzi 단일-node Kafka 범위는 qualification일 뿐 production 고가용성이나 큰 부하 보장을 뜻하지 않습니다. |
+| 선행 외부 gate | 별도 failure-domain 부하·장애 qualification과 production 환경 생성·적용은 실행 시점의 비용·운영·외부 변경 권한이 있어야 수행합니다. 이 gate는 현재 해결 설계의 검증·사용자 확정을 막지 않습니다. |
+| 남은 gate | D2~D9 전체 해결 설계 후보는 fresh 독립 검증을 통과했습니다. 사용자가 이 exact 후보를 확정해야 실행 계획으로 전환할 수 있습니다. |
+| 현재 행동 주체 | 사용자가 [해결 설계](010-community-kafka-event-delivery-design.md)의 D2~D9 전체 후보를 확정하거나 바꿀 결정 ID와 값을 지정합니다. |
+| 사용자 차례 | `현재 해결 설계 후보 전체를 그대로 확정해줘` 또는 바꿀 결정 ID와 값을 답합니다. |
+| 현재 행동 뒤 결과 | 사용자 확정 뒤 이 해결 설계를 입력으로 실행 계획의 구조와 검증 가능한 결과 단위를 작성합니다. 별도 개발·live 적용 요청 전에는 구현하거나 환경을 변경하지 않습니다. |
 
-## 닫힌 결과 정의
+## 진행 지도
 
-### 전체 상황
+| 단계 | 상태 | 현재 작업에서의 결과·전환 조건 | 실행자와 즉시 다음 행동 |
+| --- | --- | --- | --- |
+| 범위·결정 정규화 | 완료 | Kafka 첫 적용을 Community 댓글·답글 생성에서 서비스 안 알림까지로 고정하고 account·catalog·media와 새 제품 기능은 제외했습니다. | 사용자 작업 없음 |
+| 결과 정의 | 완료 | R1-A에 따라 Community write와 Kafka 장애를 분리하고 복구 뒤 알림이 누락·사용자 중복 없이 수렴하는 결과를 확정했습니다. | 사용자 작업 없음 |
+| 해결 설계 | 현재 | R1 고정 입력과 D2~D9 비교 후보를 작성했고 fresh 독립 검증을 통과했습니다. 사용자 단계 확정이 남았습니다. | 사용자가 현재 전체 후보를 확정하거나 바꿀 결정 ID와 값을 지정합니다. |
+| 실행 계획 | 후속 | 검증 가능한 결과 단위, 실제 의존 순서, test·문서·운영 책임과 완료 증거를 확정합니다. | 해결 설계 closure 뒤 Agent가 진행합니다. |
+| 계획 검증·확정 | 후속 | 최초 목적·확정 결정·current source를 기준으로 완성 후보를 검증하고 사용자 채택 뒤 `Planned`로 전환합니다. | 실행 계획 후보와 필수 검증이 준비된 뒤 진행합니다. |
+| 개발·결과 검증 | 조건부 후속 | 별도 개발 요청과 `Planned` baseline 뒤 repository 구현·자동 검증을 수행합니다. Kafka 전환 qualification은 `In Progress`인 Community 기반 배포와 `COMMUNITY_ENABLED=false` 상태의 선행 활성화 검증에 순서를 맞춥니다. | 이 계획 작업의 terminal이 아니며 이후 실행 요청과 Community 선행 결과가 필요합니다. |
+| 영구 SOT·Git 마무리 | 조건부 후속 | 검증된 실제 event·module·운영 계약만 canonical 문서에 승격하고 승인된 Git·remote 효과만 수행합니다. | 구현·검증 결과가 생긴 뒤 해당 권한 범위에서 진행합니다. |
 
-제품 범위에는 자동차 catalog 조회와 차량에 연결되지 않은 일반 Community가 함께 있습니다.
-Repository에서 catalog 조회 API는 구현됐습니다. Community code도 구현됐지만 현재 기본
-설정에서 비활성이고 원 기능 작업은 `In Progress`이므로, R1-A는 이미 production에 제공 중인
-기능의 즉시 전환이 아니라 Community 활성화·검증과 순서를 맞춰야 하는 후속 결과입니다.
-Account·auth는 보안 결과의 즉시 정확성이 우선이고, media는 독립 정리 worker를 이미 가집니다.
-
-Community 댓글·답글 작성은 현재 서비스 안 알림 저장과 한 번에 성공하거나 실패합니다.
-지금은 단순하고 원자적이지만, 알림 저장의 부하·장애가 댓글 작성 전체를 rollback합니다.
-이후 검색 색인·활동 통계처럼 같은 사건을 쓰는 consumer가 늘면 생산자가 각 consumer를
-동기로 호출하는 구조는 장애 반경과 배포 결합을 키웁니다.
-
-Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을 전달·완충해 생산자와 consumer가
-서로 다른 속도와 장애 경계에서 동작하고 복구 뒤 같은 사용자 결과로 수렴하게 하는 것입니다.
-아직 제품 결과가 없는 기능을 Kafka를 위해 새로 만들거나, 작은 단일 node 성공을 production
-고가용성으로 확대하지 않습니다.
-
-### 달성할 결과
-
-다음 결과는 R1-A 확정과 함께 계획의 상위 계약으로 닫혔습니다.
+## 달성할 결과
 
 - Community 댓글·답글 작성은 messaging 처리 속도·장애에서 분리됩니다.
 - 댓글·답글 작성과 전달할 사실 사이에는 한쪽만 남는 유실이 없고, 복구 뒤 서비스 안 알림이
@@ -61,7 +48,25 @@ Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을
   생성 비용과 운영 권한은 실행 시점에 별도로 승인받습니다.
 - Production topology와 수치는 peak·SLO·RPO·RTO·예산·운영 책임이 정해진 뒤 별도 승인합니다.
 
-### 범위
+## 현재 문제
+
+- Community 구현 후보는 저장소에 있지만 원 기능 work item은 아직 `In Progress`이고
+  `COMMUNITY_ENABLED=false`가 기본입니다. 따라서 R1-A는 운영 중 기능을 즉시 전환하는 작업이
+  아니라 Community 기반 배포·활성화 검증과 순서를 맞춰 적용할 후속 결과입니다.
+- `CommunityService.createComment()`는 댓글과 알림 수신 후보를 계산한 뒤 같은 transaction에서
+  `CommunityConversationNotification.store()`를 호출합니다. 알림 저장 실패가 댓글 작성까지
+  rollback하므로 사용자의 핵심 write가 후속 projection의 장애와 결합돼 있습니다.
+- Community와 Notification은 하나의 Spring Boot artifact와 PostgreSQL을 사용하고 현재 Kafka
+  client·broker·outbox·처리 영수증은 없습니다. 따라서 broker를 추가하는 것만으로 DB 업무
+  상태와 event 전달 사이의 유실·중복·재시작 경계가 생기지 않습니다.
+- 같은 사건을 소비할 검색 색인·활동 통계 등이 늘면 생산자가 각 consumer를 동기로 호출하는
+  구조는 장애 반경과 배포 결합을 계속 키웁니다.
+- Staging은 ARM64 단일 Kubernetes node에서 control plane과 application을 함께 실행합니다.
+  이 환경의 성공만으로 application과 broker가 분리된 큰 부하·고가용성을 증명할 수 없습니다.
+- 현재 저장소에는 event 발행률·lag·backlog 복구와 broker 장애를 사용자 결과까지 대조하는
+  반복 가능한 qualification artifact가 없습니다.
+
+## 범위
 
 - Community 댓글·답글 생성에서 서비스 안 알림까지 한 수직 흐름
 - 업무 저장과 event 전달 사이의 유실·중복·재시작·처리 불가 event·복구 결과
@@ -69,7 +74,7 @@ Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을
 - 로컬·CI, 공유 기능 환경과 별도 failure-domain 부하·장애 qualification
 - 구현 뒤 현재 구조·계약과 운영 절차의 영구 문서 인계
 
-### 제외 범위
+## 제외 범위
 
 - Community 외 account·auth·catalog·media event의 이번 구현 연결
 - Kafka 도입을 이유로 modular monolith를 microservice로 분리하는 것
@@ -79,9 +84,7 @@ Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을
 - 아직 workload·SLO·비용이 없는 상태에서 production broker·partition·retention 수치를 고정하는 것
 - Kafka를 Community 업무 상태나 알림 inbox의 원본 저장소로 사용하는 것
 
-### 품질 수용 기준
-
-#### 정확성과 복구
+## 품질 수용 기준
 
 - Messaging 장애 중에도 선택한 업무 쓰기 결과가 보존되고 복구 뒤 누락 없이 consumer 결과로
   수렴합니다.
@@ -90,8 +93,6 @@ Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을
   막지 않습니다.
 - 변경·배포 뒤에도 이전 application과 이미 대기 중인 작업을 일방적으로 깨지 않습니다.
 - Rollback과 전달 시스템 data 손실 복구 뒤에도 미처리 결과의 책임을 잃지 않습니다.
-
-#### 성능과 증거 경계
 
 - 동기 API, event 전달, broker와 consumer를 분리 측정하고 PostgreSQL·node·network 병목을
   Kafka 성능으로 오판하지 않습니다.
@@ -108,8 +109,6 @@ Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을
 - 정상 운영점에서 broker를 10분 중단해도 댓글·답글 작성은 성공해야 합니다. 복구 뒤
   consumer는 새 event를 처리하면서 20분 안에 중단 중 backlog를 해소해야 합니다.
 
-#### 보안과 유지보수
-
 - Kafka는 public internet에 노출하지 않고 허용한 producer·consumer만 인증된 암호화 통신을
   사용합니다.
 - Secret과 불필요한 개인정보를 event·Git·image·metric·일반 log에 남기지 않습니다.
@@ -117,30 +116,54 @@ Kafka 도입의 목적은 설치 자체가 아니라, 확정된 업무 사건을
 - 도입 도구마다 official source, 실제 caller·독립 oracle, 지원·upgrade·rollback·제거 조건과
   새 실패 표면을 계획합니다.
 
-## 현재 결정 색인
+## 결과 결정
 
-| Identity | 상태 | 현재 값 | 상세 owner |
-| --- | --- | --- | --- |
-| R1 | 사용자 확정 | Community 댓글·답글 저장은 Kafka 장애와 분리하고, 알림은 consumer가 복구 뒤 생성 | 사용자 결정 canonical owner는 이 문서; [상세 설계의 R1](010-community-kafka-event-delivery-design.md#r1-kafka-적용-경계와-사용자-결과)은 기술 projection |
-| 단일-node runtime | 사용자 확정 | 현재 Kubernetes에 Strimzi 기반 단일 Kafka node를 qualification 용도로 구축 | [상세 설계 D6](010-community-kafka-event-delivery-design.md#d6-runtime-storage와-환경별-증명-범위) |
-| D2~D9 | Agent 후보 | 전달 원본부터 production 승격까지 해결 설계 선택 | [상세 설계 결정 지도](010-community-kafka-event-delivery-design.md#결정-지도) |
+### 확정
 
-활성 value 결정은 없습니다. Managed Kafka는 현재 대안이 아니라 production 또는 최소 경로
-실측 실패 때만 여는 재검토 후보입니다.
+- Kafka의 첫 적용 대상은 Community 댓글·답글 생성에서 서비스 안 알림까지 한 흐름입니다.
+- 댓글·답글 저장은 Kafka 장애와 분리하고, 알림은 consumer가 복구 뒤 누락·사용자 중복 없이
+  생성합니다.
+- 현재 Kubernetes에는 Strimzi 기반 단일 Kafka node를 qualification 용도로 구축하는 범위를
+  사용합니다.
+- 부하 시험은 선택 기능이 아니라 동기 기준선, 비동기 도입 효과와 다음 병목을 입증하는 완료
+  증거입니다.
+- 현재 단일-node 환경은 기능·복구·resource 경계를 검증하는 출발점이며 production
+  고가용성이나 큰 부하를 증명하지 않습니다.
+- 큰 부하·HA 주장은 application과 broker의 failure domain을 분리한 별도 환경에서만 검증합니다.
+- Production topology는 peak·SLO·RPO·RTO·예산·운영 책임을 입력으로 별도 선택합니다.
+- 현재 계획의 확정은 repository 구현, external environment 생성이나 live 적용 권한이 아닙니다.
 
-## 남은 설계 closure
+### R1. Kafka 적용 경계와 사용자 결과
 
-구조와 내용이 독립 검증된 exact 해결 설계 후보에 대한 사용자 단계 확정만 남았습니다.
-이미 닫힌 R1-A와 단일-node Kubernetes 범위를 다시 선택하지 않습니다.
+**결정 질문:** 첫 Kafka 흐름에서 Community 댓글·답글 저장 성공을 broker·consumer 장애와
+분리하고, 서비스 안 알림을 복구 뒤 생성하도록 바꿀 것입니까? 두 후보는 같은 알림 결과를
+목표로 하지만 사용자의 댓글 write가 후속 전달 장애와 결합되는지가 다릅니다.
 
-## 전체 진행 지도
-
-| 단계 | 상태 | 다음 조건 |
+| 비교 축 | R1-A. 댓글 write와 알림 전달 분리 | R1-B. 현재 동기 transaction 유지 |
 | --- | --- | --- |
-| 결과 정의 | 완료 | 재개방하지 않음 |
-| 해결 설계 | 현재 | Exact 후보의 사용자 단계 확정 |
-| 실행 계획 | 미착수 | 사용자가 작성을 명시 |
-| 개발 | 미착수 | 검증·확정된 실행 계획과 별도 구현 요청 |
+| 댓글·답글 성공 의미 | PostgreSQL 업무 저장과 유실 없는 전달 인계가 함께 commit되면 성공합니다. | 알림 저장까지 같은 transaction에서 성공해야 합니다. |
+| Kafka·consumer 장애 | 댓글·답글 성공을 rollback하지 않고 복구 뒤 알림으로 수렴합니다. | 현재는 Kafka가 없고 알림 저장 장애가 댓글·답글을 rollback합니다. |
+| 알림 도착 | 늦을 수 있지만 처리 영수증과 inbox unique 계약으로 누락·사용자 중복을 막습니다. | 즉시 같은 transaction에서 저장되지만 후속 처리와 장애 경계가 결합됩니다. |
+| 구현·운영 영향 | Outbox, relay, broker, consumer, retry·DLQ·replay와 관측 책임이 생깁니다. | 구조는 작지만 consumer 확장 때 생산자 결합과 장애 반경이 커집니다. |
+| 목표 판정 | **업무 write를 보호하면서 실제 사용자 결과까지 비동기로 수렴합니다.** | 현재 단순성은 유지하지만 Kafka 도입의 장애 분리·완충 목표를 달성하지 못합니다. |
+
+**선택: R1-A.** 사용자가 첫 Kafka 적용을 Community 댓글·답글에서 서비스 안 알림까지로
+확정했습니다. 댓글·답글은 PostgreSQL commit으로 성공하고 알림은 지연될 수 있지만, 복구 뒤
+누락·사용자 중복 없이 생성되는 결과를 선택했습니다. 내구 전달·broker·consumer 운영 비용을
+감수하는 대신 후속 projection 장애가 사용자의 핵심 write를 rollback하지 않게 합니다.
+사용자가 첫 적용 결과를 직접 바꾸거나 Notification의 제품 의미가 달라지면 R1을 다시 엽니다.
+
+## 해결 설계 결정 색인
+
+- 닫힌 R1의 기술 projection과 전달 원본, event·module 계약, relay·topic, consumer 멱등·실패,
+  runtime·storage·환경별 증명, 보안, 관측·qualification, 전환·rollback·production 승격은
+  [010 Community Kafka 이벤트 전달 상세 설계](010-community-kafka-event-delivery-design.md)의
+  R1과 D2~D9가 소유합니다.
+- D2~D9는 source·대안·trade-off로 선택한 Agent 기술 후보이며 사용자 결정으로 기록하지
+  않습니다. 현재 후보는 fresh 독립 검증을 통과했지만 사용자가 해결 설계 단계 전체를
+  확정하기 전에는 실행 계획이나 구현 입력이 아닙니다.
+- Managed Kafka, persistent block storage, Debezium·Kafka Connect, Schema Registry와 전용
+  관측 stack은 현재 선택이 아닙니다. 각 재검토 조건은 관련 D section이 소유합니다.
 
 ## 관련 문서
 
