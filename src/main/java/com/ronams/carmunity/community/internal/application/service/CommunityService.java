@@ -52,7 +52,7 @@ public class CommunityService implements CommunityContentVisibility {
     if (existing != null) {
       if (!hash.equals(existing.get(REQUEST_HASH_FIELD)))
         throw error(CommunityErrorCode.IDEMPOTENCY_KEY_REUSED);
-      return postView((UUID) existing.get("id"), actor);
+      return postView((UUID) existing.get("id"));
     }
     UUID id = UUID.randomUUID();
     Long contentId =
@@ -78,7 +78,7 @@ public class CommunityService implements CommunityContentVisibility {
         .param("body", canonical(body.canonical()))
         .update();
     mediaUsage.replace(actor, id, body.mediaIds());
-    return postView(id, actor);
+    return postView(id);
   }
 
   @Transactional(readOnly = true)
@@ -128,11 +128,11 @@ public class CommunityService implements CommunityContentVisibility {
   }
 
   @Transactional(readOnly = true)
-  public Map<String, Object> post(UUID id, UUID viewer) {
-    return postView(id, viewer);
+  public Map<String, Object> post(UUID id) {
+    return postView(id);
   }
 
-  private Map<String, Object> postView(UUID id, UUID viewer) {
+  private Map<String, Object> postView(UUID id) {
     return jdbc
         .sql(
             """
@@ -180,9 +180,9 @@ public class CommunityService implements CommunityContentVisibility {
             .param("id", current.get(INTERNAL_ID_COLUMN))
             .query()
             .singleRow();
-    boolean titleSame = title == null || title.value().equals(stored.get("title"));
+    boolean titleSame = title == null || title.value().equals(stored.get(TITLE_PARAMETER));
     boolean bodySame = Boolean.TRUE.equals(stored.get("body_same"));
-    if (titleSame && bodySame) return postView(id, actor);
+    if (titleSame && bodySame) return postView(id);
     int changed =
         jdbc.sql(
                 """
@@ -201,7 +201,7 @@ public class CommunityService implements CommunityContentVisibility {
         .param("id", current.get(INTERNAL_ID_COLUMN))
         .update();
     if (body != null) mediaUsage.replace(actor, id, body.mediaIds());
-    return postView(id, actor);
+    return postView(id);
   }
 
   @Transactional

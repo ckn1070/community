@@ -69,7 +69,7 @@ class CommunityPostIntegrationTest extends PostgreSqlIntegrationTestSupport {
                     .isEqualTo(CommunityErrorCode.PRECONDITION_FAILED));
 
     service.deleteContent(author, postId, "POST");
-    assertThatThrownBy(() -> service.post(postId, null))
+    assertThatThrownBy(() -> service.post(postId))
         .isInstanceOfSatisfying(
             ApiException.class,
             exception ->

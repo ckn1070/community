@@ -56,7 +56,7 @@ public class CommunityController {
 
   @GetMapping("/posts/{postId}")
   public ResponseEntity<Map<String, Object>> post(@PathVariable UUID postId, Principal principal) {
-    Map<String, Object> result = service.post(postId, actorOrNull(principal));
+    Map<String, Object> result = service.post(postId);
     return ResponseEntity.ok().eTag(etag(result)).body(result);
   }
 
