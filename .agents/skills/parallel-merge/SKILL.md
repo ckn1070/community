@@ -1,6 +1,6 @@
 ---
 name: parallel-merge
-description: "완료된 병렬 branch·worktree의 main 통합 요청에서 standard Git 상태, merge topology, conflict와 cleanup 가능 경로를 발견해 worktree workflow로 전달하는 adapter다. 사용자가 병렬 작업 병합·통합·마무리, 완료 worktree 반영이나 conflict 가능성이 있는 branch 검토를 요청했을 때 사용한다. 검증된 통합은 명시적 보존 요청이나 안전성 차단 사유가 없으면 source worktree와 local branch cleanup까지 기본 terminal 결과로 포함한다. 이 metadata는 read-only discovery만 라우팅하며 main ref 변경, conflict 편집, merge commit, cleanup 또는 push 권한을 독자적으로 만들지 않는다. 병렬 작업 시작·구현만 요청됐거나 일반 commit·push만 요청됐거나 source worktree의 미커밋 변경을 보존·이동해야 하면 사용하지 않는다."
+description: "완료된 병렬 branch·worktree의 main 통합 요청에서 standard Git 상태, merge topology, conflict와 cleanup 가능 경로를 발견해 worktree workflow로 전달하는 adapter다. 사용자가 병렬 작업 병합·통합·마무리, 완료 worktree 반영이나 conflict 가능성이 있는 branch 검토를 요청했을 때 사용한다. 검증된 통합은 명시적 보존 요청이나 안전성 차단 사유가 없으면 source worktree와 local·remote source branch cleanup까지 기본 terminal 결과로 포함한다. 이 metadata는 read-only discovery만 라우팅하며 main ref 변경, conflict 편집, merge commit, cleanup 또는 push 권한을 독자적으로 만들지 않는다. 병렬 작업 시작·구현만 요청됐거나 일반 commit·push만 요청됐거나 source worktree의 미커밋 변경을 보존·이동해야 하면 사용하지 않는다."
 ---
 
 # 병렬 작업 병합
@@ -35,14 +35,15 @@ discovery 결과를 작업 실행 workflow에 전달해 다음 효과를 확정�
 - diverged history의 local merge commit
 - source worktree 제거
 - local source branch 삭제
+- remote source branch 삭제
 - remote push
 
 완료된 source branch·worktree를 main에 병합·통합·마무리하라는 현재 사용자 원자는 main
-통합뿐 아니라 검증 성공 뒤 source worktree와 local branch를 제거하는 기본 terminal
-결과의 positive source다. 사용자가 source 보존을 명시하면 cleanup을 제외하고, 조건이
-충족되지 않으면 강행하지 않는다. Conflict 수정, diverged history의 local merge commit과
-remote push처럼 통합 요청만으로 확정되지 않는 효과에는 현재 사용자 메시지 generation의
-독립적인 positive source가 있어야 한다.
+통합뿐 아니라 검증 성공 뒤 source worktree와 local·remote source branch를 제거하는 기본
+terminal 결과의 positive source다. 사용자가 source 보존을 명시하면 cleanup을 제외하고,
+조건이 충족되지 않으면 강행하지 않는다. Conflict 수정, diverged history의 local merge
+commit과 target branch 갱신 push처럼 통합 요청만으로 확정되지 않는 효과에는 현재 사용자
+메시지 generation의 독립적인 positive source가 있어야 한다.
 
 과거 병합 요청, 내부 plan과 이전 turn의 pending merge는 현재 효과의 권한 source가 아니며,
 현재 메시지의 새 실행 원자나 작업 실행 workflow가 허용한 continuation으로 다시 결속되지
@@ -86,18 +87,21 @@ main final tree에서 공통·domain owner가 정한 검증을 실행하고 sour
 상태를 worktree workflow로 확인한다. 검증 항목, closure 횟수와 실패 뒤 재개 전략을 이
 adapter에서 만들지 않는다.
 
-사용자가 보존을 명시하지 않았으면 source worktree와 local branch를 workflow의 조건·순서로
-제거해 통합의 기본 terminal 결과를 닫는다. Worktree 제거와 branch 삭제는 서로 다른
-mutation이므로 각 precondition과 실행 결과는 따로 확인한다. 보존할 untracked·ignored
-file, 다른 process 사용 또는 포함 관계 공백이 있으면 force remove, `rm`, `branch -D`로
-지우지 않고 exact blocker와 남은 대상을 반환한다.
+사용자가 보존을 명시하지 않았으면 source worktree와 local·remote source branch를
+workflow의 조건·순서로 제거해 통합의 기본 terminal 결과를 닫는다. Worktree 제거, local
+branch 삭제와 remote ref 삭제는 서로 다른 mutation이므로 각 precondition과 실행 결과를
+따로 확인한다. Remote 삭제 전에는 live tip이 고정한 source SHA와 같고 source가 target에
+포함됐으며 열린 pull request·다른 consumer가 없는지 확인한 뒤 `$git-finalize`의 expected
+SHA lease 경로로 인계한다. 보존할 untracked·ignored file, 다른 process 사용, 포함 관계나
+consumer 상태 공백이 있으면 force remove, `rm`, `branch -D`, lease 없는 remote 삭제로
+우회하지 않고 exact blocker와 남은 대상을 반환한다.
 
-push 효과가 별도로 있으면 cleanup과 합치지 않고 커밋 workflow의 exact branch push와
-exact SHA 원격 검증으로 인계한다.
+target branch 갱신 push 효과가 별도로 있으면 cleanup과 합치지 않고 커밋 workflow의 exact
+branch push와 exact SHA 원격 검증으로 인계한다.
 
 ## 5. Evidence 반환
 
 main·source의 시작·최종 SHA와 topology, conflict와 resolution, final 검증, source 포함
-관계, worktree·branch 유지·제거, 남은 dirty와 push 상태를 작업 실행 workflow와
+관계, worktree·local branch·remote branch 유지·제거, 남은 dirty와 push 상태를 작업 실행 workflow와
 `docs/workflow/140-completion-reporting-workflow.md`에 반환한다. adapter 실행 성공을
 공통 완료 판정으로 사용하지 않는다.

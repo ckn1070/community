@@ -1,7 +1,8 @@
 # 커밋 워크플로우
 
 이 문서는 Git index·commit object·branch ref·remote ref의 의미와 안전한 exact
-stage·commit·push·history 복구, push한 exact SHA의 CI·Sonar 확인 절차만 소유합니다.
+stage·commit·push·remote branch 삭제·history 복구, push한 exact SHA의 CI·Sonar 확인
+절차만 소유합니다.
 요청 의미, 상태 변경 권한, 공통 결과 단위·dependency·차단과 final
 discovery·closure는 [작업 실행 워크플로우](100-work-execution-workflow.md)가
 소유합니다.
@@ -11,7 +12,7 @@ discovery·closure는 [작업 실행 워크플로우](100-work-execution-workflo
 작업 실행 워크플로우에서 다음 입력을 확정한 뒤 이 절차를 시작합니다.
 
 - exact repository, local branch·ref와 필요한 remote ref
-- stage, commit, push, history rewrite별 현재 권한
+- stage, commit, push, remote branch 삭제, history rewrite별 현재 권한
 - 현재 작업 문서와 source에서 확정·검증된 의미 단위 지도
 - Git에 반영할 결과 단위, exact path·hunk와 dependency 순서
 - local 검증을 마친 후보와 push 뒤 적용할 terminal gate
@@ -42,6 +43,7 @@ Checkpoint, parent SHA, 작성 시각과 descendant 관계는 조사 범위를 �
 
 ```text
 push source commit/ref → remote target ref
++ remote 삭제이면 empty source → 삭제할 remote target ref와 expected SHA
 + 새 local·remote branch 생성 여부
 + PR 생성 여부
 + 각 효과의 현재 사용자 결정 source 또는 권한 없음
@@ -60,7 +62,7 @@ diff 확인과 tool approval은 Git 권한이 아닙니다. 각 Git 효과는 �
 | --- | --- |
 | stage | worktree 내용을 index에 기록 |
 | commit | index tree로 commit object를 만들고 현재 local ref를 이동 |
-| push | exact local ref의 commit을 remote ref에 반영 |
+| push | exact local ref의 commit 반영 또는 승인된 remote ref 삭제 |
 | history rewrite | 기존 commit topology와 local ref를 교체 |
 
 commit 권한은 push나 history rewrite 권한을 포함하지 않고, push 권한은 새 commit이나
@@ -402,6 +404,40 @@ push 뒤에는 live remote ref를 고정한 expected source commit과 직접 대
 ```sh
 git ls-remote --refs <remote> refs/heads/<branch>
 ```
+
+### Exact remote branch 삭제
+
+Remote source branch 삭제는 해당 효과가 현재 operation map에 있고, branch 사용 종료와
+안전 조건을 소유하는 [Git Worktree 워크플로우](310-git-worktree-workflow.md#6-통합-검증과-cleanup)가
+모두 닫혔을 때만 수행합니다. 일반 push나 local cleanup 권한으로 이 효과를 만들지 않습니다.
+
+1. 삭제할 `<remote>`와 `refs/heads/<source-branch>`, live remote tip의 40자리
+   `<expected-sha>`를 고정합니다.
+2. 고정한 SHA가 검증된 target branch에 포함됐고, source branch를 head로 사용하는 열린
+   pull request나 현재 operation map의 다른 consumer·보존 요청이 없는지 확인합니다.
+3. 삭제 직전에 `git ls-remote --refs`로 live remote tip이 `<expected-sha>`와 같은지 다시
+   확인합니다. Ref가 없으면 already-absent로 종료하고, SHA가 다르면 삭제하지 않습니다.
+4. Expected SHA를 lease로 건 exact refspec을 한 번 push합니다.
+
+```sh
+git push \
+  --force-with-lease=refs/heads/<source-branch>:<expected-sha> \
+  <remote> \
+  :refs/heads/<source-branch>
+```
+
+이 `--force-with-lease`는 history 갱신을 강제하는 일반 push에 허용하는 옵션이 아니라,
+확인 뒤 remote branch가 다른 SHA로 이동했으면 삭제를 거부하는 compare-and-swap 보호입니다.
+Lease 실패를 새 조회 없이 재시도하거나 `--force`, lease 없는 `--delete`로 우회하지 않습니다.
+
+삭제 뒤 다음 명령이 아무 ref도 반환하지 않아야 완료입니다.
+
+```sh
+git ls-remote --refs <remote> refs/heads/<source-branch>
+```
+
+Local `refs/remotes/<remote>/<source-branch>`가 남아 있으면 live 부재 확인 뒤 표준 prune으로
+정리하고, local branch·worktree·다른 remote ref가 유지됐는지 확인합니다.
 
 ## 7. Pushed SHA의 CI와 Sonar
 

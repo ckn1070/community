@@ -15,8 +15,8 @@ stage·commit·push와 history 복구는
 - 현재 작업 문서에서 branch가 소유할 상위 결과, 의미 단위 지도와 각 단위의 예정 commit·
   검증 경계
 - worktree 생성, target ref 통합, conflict 내용 수정, merge commit, worktree 제거,
-  local branch 삭제와 remote push별 허용 효과, 통합 완료 뒤 source worktree·local branch의
-  보존 요청 또는 cleanup 차단 조건
+  local·remote source branch 삭제와 remote push별 허용 효과, 통합 완료 뒤 source
+  worktree·branch의 보존 요청 또는 cleanup 차단 조건
 - 제외할 기존·다른 작업의 dirty·staged·untracked·ignored 상태
 - 통합 전후 필요한 domain 검증과 완료 oracle
 
@@ -195,15 +195,20 @@ git worktree list --porcelain
 ```
 
 완료된 source branch·worktree를 main에 병합·통합·마무리하라는 요청은 사용자가 보존을
-명시하지 않는 한, 검증 성공 뒤 source worktree와 local source branch를 제거하는
-cleanup까지 하나의 terminal 결과로 포함합니다. 이 기본값은 remote branch 삭제 권한을
+명시하지 않는 한, 검증 성공 뒤 source worktree와 local·remote source branch를 제거하는
+cleanup까지 하나의 terminal 결과로 포함합니다. 현재 요청의 이 의미가 remote source branch
+삭제의 positive source이며, 일반 push·질문·상태 확인이나 과거 cleanup 요청은 이 효과를
 만들지 않습니다. Cleanup은 merge 전에 시작하지 않고 다음 조건을 모두 만족할 때만
 수행합니다.
 
 - source SHA가 검증된 main HEAD에 포함됐습니다.
-- source worktree가 clean하고 진행 중 Git operation이 없습니다.
-- 보존할 untracked·ignored file과 다른 process의 사용이 없습니다.
-- 제거할 exact path가 `git worktree list --porcelain`의 source record와 같습니다.
+- source worktree가 존재하면 clean하고 진행 중 Git operation, 보존할 untracked·ignored
+  file과 다른 process의 사용이 없습니다. 이미 없으면 Git 등록과 filesystem path가 모두
+  부재한지 확인합니다.
+- 제거할 source worktree가 존재하면 exact path가 `git worktree list --porcelain`의 source
+  record와 같습니다.
+- source branch를 head로 사용하는 열린 pull request, 현재 operation map의 다른 consumer와
+  명시적인 보존 요청이 없습니다.
 
 ```sh
 git worktree remove <source-path>
@@ -215,8 +220,9 @@ directory가 남아도 소유자와 보존 필요성을 확인하지 않은 `rm`
 사용하지 않습니다.
 
 local source branch 삭제는 worktree 제거 뒤 수행하는 별도 ref mutation이지만, 위 통합
-요청의 기본 terminal 결과에 함께 포함됩니다. source SHA가 main에 포함됐고 어느
-worktree에도 checkout되지 않았을 때만 safe delete를 사용합니다.
+요청의 기본 terminal 결과에 함께 포함됩니다. Local branch가 존재하면 source SHA가 main에
+포함됐고 어느 worktree에도 checkout되지 않았을 때만 safe delete를 사용합니다. 이미 없으면
+local cleanup이 닫힌 상태로 확인합니다.
 
 ```sh
 git branch -d -- <source-branch>
@@ -225,9 +231,29 @@ git branch -d -- <source-branch>
 `-D`로 포함 관계 검증을 우회하지 않습니다. push가 입력에 있으면 여기서 수행하지
 않고 커밋 워크플로우의 exact branch push와 exact SHA 원격 검증으로 인계합니다.
 
-사용자가 source 보존을 명시했거나 cleanup 조건 중 하나라도 충족하지 못하면 worktree와
-branch를 그대로 두고 exact 대상과 차단 사유를 반환합니다. 이때 main 통합은 완료일 수
-있지만 병합·통합·마무리 요청의 기본 terminal 결과는 cleanup까지 닫히지 않은 상태입니다.
+Remote source branch 삭제는 worktree와 local branch 정리가 끝난 뒤 수행하는 마지막
+cleanup mutation입니다. `git ls-remote --refs`로 live remote tip을 고정하고 다음을 모두
+확인합니다.
+
+- live remote tip이 통합·검증한 exact source SHA와 같습니다.
+- exact source SHA가 현재 target branch HEAD의 조상입니다.
+- source branch를 head로 사용하는 열린 pull request와 다른 선언된 consumer가 없습니다.
+- source worktree와 local source branch가 더 이상 존재하지 않습니다.
+
+조건이 닫히면 [커밋 워크플로우의 Exact remote branch 삭제](300-commit-workflow.md#exact-remote-branch-삭제)로
+인계해 expected SHA lease를 건 remote ref 삭제와 live 부재 확인을 수행합니다. Remote ref가
+이미 없으면 완료로 처리하되 local remote-tracking ref를 prune하고, SHA가 달라졌거나 consumer
+상태를 확인할 수 없으면 삭제하지 않고 exact blocker를 반환합니다.
+
+앞선 실행에서 worktree나 local branch만 제거된 뒤 remote source branch가 남았거나,
+별도의 완료 branch 정리 요청으로 cleanup을 재개할 때도 같은 조건을 적용합니다. 이미 없는
+local 대상은 다시 만들거나 삭제하지 않고 부재를 확인하며, remote ref는 source SHA 포함·
+consumer 종료·expected SHA lease를 새로 검증한 뒤에만 제거합니다.
+
+사용자가 source 보존을 명시했거나 cleanup 조건 중 하나라도 충족하지 못하면 아직 제거하지
+않은 worktree와 branch를 그대로 두고 exact 대상과 차단 사유를 반환합니다. 이때 main 통합은
+완료일 수 있지만 병합·통합·마무리 요청의 기본 terminal 결과는 local·remote cleanup까지
+닫히지 않은 상태입니다.
 
 ## 7. Mechanics 결과 인계
 
@@ -237,7 +263,7 @@ branch를 그대로 두고 exact 대상과 차단 사유를 반환합니다. 이
 - fast-forward, merge commit 또는 already-contained 관계
 - conflict set과 확정한 resolution
 - main final tree의 domain 검증과 source 포함 관계
-- source worktree·branch의 유지 또는 제거 사실
+- source worktree·local branch·remote branch의 유지 또는 제거 사실
 - 남은 dirty·Git operation과 push 미수행·수행 상태
 
 helper 출력, branch 이름과 cleanup 성공은 결과 전체의 완료나 다른 Git 권한을 증명하지
