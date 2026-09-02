@@ -1,6 +1,6 @@
 ---
 name: dev-plan
-description: "사용자가 실제 개발 전에 계획 문서 자체를 요청했거나, 개발 중 확인된 중대한 미결정에 설계 표면 조사·권위별 결정 분류·결정 카드·계획 artifact 작성이 필요할 때 사용한다. 구현이 요청 결과이고 현재 source와 사용자 결정에서 실행 가능한 단위가 있으면 primary로 사용하지 않고 $develop을 사용한다."
+description: "사용자가 실제 개발 전에 계획 문서 자체를 요청했거나, 개발 중 확인된 중대한 미결정에 설계 표면 조사·권위별 결정 분류·결정 카드·계획 artifact 작성이 필요할 때 사용한다. 사용자 값 선택·단계 확정용 artifact는 상세 content보다 structure round를 먼저 닫고 최종 content를 한 번 검증한다. 구현이 요청 결과이고 현재 source와 사용자 결정에서 실행 가능한 단위가 있으면 primary로 사용하지 않고 $develop을 사용한다."
 ---
 
 # 개발 계획
@@ -256,16 +256,16 @@ work item 본문은 현재 계획 결과와 확정 결정 색인을, `-design`�
 단계 바로 다음, 첫 배경·문서 경계·상세 결정 전에 다음 source-backed 현재 상태를 보여 준다.
 
 - 현재 단계·결론, 닫힌 결과와 남은 gate
-- 각 남은 gate의 현재 상태와 지금 행동할 actor·exact 행동
-- 사용자 입력이 지금 필요하면 exact 질문, 선택지·결과 차이, 추천·근거와 응답 형식
-- 사용자보다 먼저 닫을 Agent 검증·보완이 있으면 사용자 차례가 오는 조건과 그때의 exact
-  후보 범위·응답 방식
+- 다음 안정 handoff에 남을 gate identity·terminal 상태와 모든 선행 gate·checkpoint 뒤 처음
+  행동할 안정 actor·exact 행동
+- 그 안정 actor가 사용자이면 exact 질문, 선택지·결과 차이, 추천·근거와 응답 형식
 - 현재 행동 뒤 결과와 다음 단계 전환 조건
 
 상세 결정과 근거는 해당 section으로 연결하되 현재 행동을 알기 위해 하단이나 다른 문서를
 먼저 읽게 하지 않는다. 모든 gate가 닫혔으면 완료 결론과 다음 허용 행동만 표시하고 새
-선택지·응답 형식·중복 확정을 만들지 않는다. 결론·gate·actor·다음 행동이 바뀌면 다음 actor
-인계 전에 같은 candidate의 첫 화면을 갱신한다.
+선택지·응답 형식·중복 확정을 만들지 않는다. 검증·checkpoint가 닫힌 exact candidate의
+결론·gate·안정 actor·다음 행동이 바뀌면 다음 actor 인계 전에 첫 화면을 갱신한다. 진행 중
+writer·reviewer·Git actor와 phase는 작업 실행 receipt에만 둔다.
 
 사용자 검토용 첫 화면, heading과 결정 카드는 사용자가 무엇을 선택하고 어떤 결과가
 달라지는지를 일상어로 먼저 쓴다. 직접 선행 문맥에서 이해가 확인되지 않은 기술 명사는
@@ -273,6 +273,33 @@ work item 본문은 현재 계획 결과와 확정 결정 색인을, `-design`�
 판단에 필요하지 않으면 기술 상세로 옮긴다. 뒤쪽 용어집, 다른 미정의 영어 이름이나 API·DB
 목록은 첫 설명을 대신하지 않는다. Exact API path·field·enum 같은 구현 계약 literal은
 보존하되 그 역할이 사용자 판단에 필요하면 같은 단위에서 쉬운 뜻을 붙인다.
+
+### 구조를 먼저 닫는 작성 순서
+
+현재 단계 work item과 허용된 `-design`을 실질 변경해 사용자의 값 선택이나 단계 확정에
+인계할 때에는 상세 내용을 쓰기 전에 문서화 workflow의 session structure map을 만들고
+작업 실행 workflow의 `plan-structure` round를 닫는다. `$verify-plan structure`를 항상
+호출하며 중대한 구조이면 같은 round의 별도 identity로 `$verify-documentation proposal`도
+호출한다. Discovery 전체 finding을 한 번 처분한 뒤 계획 의미·결정 권위·단계는 이 skill이,
+hierarchy·first-screen·owner·보존 map은 `$documentation`이 그 순서로 한 correction batch에서
+고친다. 새 map·digest를 하나의 Frozen candidate로 만든 뒤 closure를 한 번 수행한다.
+
+Structure closure receipt와 exact map·digest가 없거나 stale이면 content writer를 호출하지
+않는다. Closure 뒤 단일 `$documentation` writer는 동결된 heading, 두 열 first-screen field,
+활성 결정 block, 결정 권위·상태와 보존 관계를 추가·삭제·재배치하지 않고 값과 설명만 채운다.
+그 뒤 `$verify-plan content`로 final content round를 한 번 닫고, 중대한 final 또는 중대한
+구조이면 `$verify-documentation final`을 같은 round의 별도 identity로 호출한다. Content가
+골격이나 권위 상태를 바꾸면 structure verdict는 `Invalidated`이며 새 structure round로
+돌아간다.
+
+첫 화면에는 review 중 실제 writer·reviewer·Git actor가 아니라 모든 필수 gate와 checkpoint가
+닫힌 뒤 문서를 처음 소비할 안정 actor·상태를 투영한다. Live phase는 작업 실행 receipt만
+소유한다. 이미 확정된 결정은 결정 색인과 닫힌 결과에 남기고 활성 결정으로 다시 열지 않는다.
+검증된 안정 candidate가 복구 지점이면 사용자에게 제시하기 전에 아래 checkpoint를 닫는다.
+
+최초의 명시적 계획 artifact 작성 요청은 위 구조·내용 검증과 필수 checkpoint까지 허용한다.
+반대로 사용자가 값만 선택하고 artifact 반영을 요청하지 않은 메시지는 문서 mutation 권한을
+만들지 않는다.
 
 ## 6. 계획 문서 checkpoint
 
@@ -342,9 +369,10 @@ Checkpoint commit은 계획 작업의 복구 지점이지 완료 판정이 아�
   않았는가
 - 결정 카드가 상세 절 없이 질문·대안 차이·추천·응답 형식을 전달하는가
 - work item 본문과 `-design`을 포함한 모든 계획 목적 artifact의 첫 화면에서 현재 결론,
-  닫힌 결과, 남은 gate 상태, 지금 actor·exact 행동, 사용자 차례의 조건·응답 방식과 다음
-  전환을 복원할 수 있는가. 활성 사용자 값 결정이 없다는 이유로 단계 확정·선행 검증의
-  현재 행동을 하단으로 미루거나, 닫힌 계획에 새 질문·재확인을 만들지 않았는가
+  닫힌 결과, 다음 안정 handoff의 남은 gate terminal 상태, 안정 actor·exact 행동, 사용자
+  차례의 조건·응답 방식과 다음 전환을 복원할 수 있는가. 선행 검증의 live 행동을 첫 화면에
+  섞거나, 활성 사용자 값 결정이 없다는 이유로 단계 확정 행동을 하단으로 미루거나, 닫힌
+  계획에 새 질문·재확인을 만들지 않았는가
 - 사용자 행동이 없고 계획이 미완료인데 checkpoint·검증·보고 뒤 안전한 다음 설계 단위로
   복귀하지 않고 종료했는가
 - 검증된 안정 상태가 `Required-Pending`인데 `$git-finalize` 호출과 commit object 확인보다

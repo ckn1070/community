@@ -1,4 +1,4 @@
 interface:
   display_name: "문서 검증"
-  short_description: "중대한 Markdown 구조·동결 후보의 fresh 독립 감사"
-  default_prompt: "Use $verify-documentation as the required fresh specialist to freeze the exact major Markdown proposal, initial final, or correction impact target first and audit every documentation axis reachable from that target without reopening unaffected baseline content."
+  short_description: "계획 구조 map·중대한 Markdown 후보의 fresh 독립 감사"
+  default_prompt: "Use $verify-documentation as the required fresh specialist to freeze the exact major Markdown proposal, initial final, or correction impact target first. When proposal is invoked by a plan-structure round, also audit hierarchy, first-screen, authority, owner, preservation, and representative-template structure without judging content; keep proposal and final verdicts distinct and do not reopen unaffected baseline content."

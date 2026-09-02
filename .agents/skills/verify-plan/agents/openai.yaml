@@ -1,5 +1,5 @@
 # 계획 최종 검증 스킬의 사용자 표시 정보와 기본 호출 prompt를 정의합니다.
 interface:
   display_name: "계획 검증"
-  short_description: "현재 계획 단계의 목적·권위·artifact를 독립 감사"
-  default_prompt: "Use $verify-plan to freeze the verification occasion and exact plan target first, audit every relevant axis reachable from that target, use the whole plan only for an initial completed plan or pre-development final confirmation, and keep recommendation, selection, confirmation, and mutation authority distinct."
+  short_description: "현재 계획 단계의 구조와 최종 내용을 분리해 독립 감사"
+  default_prompt: "Use $verify-plan with an explicit structure or content audit domain. Structure mode freezes and checks the lifecycle skeleton, first-screen handoff, decision authority, and preservation map before content writing; content mode requires that exact closed map and digest, invalidates structural drift, and audits the final content once while keeping recommendation, selection, confirmation, and mutation authority distinct."

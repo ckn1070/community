@@ -1258,6 +1258,43 @@ writer나 다른 reviewer를 호출하지 않습니다. `ClosureRunning`의 실�
 자동 verifier를 만들지 않습니다. Review tool의 실행 성공, reviewer 한 명의 조기 finding,
 상태 보고와 commentary는 phase 전이 증거를 대신하지 않습니다.
 
+### 사용자 결정 계획 문서의 구조 선행 round
+
+`$dev-plan`이 `Proposed`·`Planned` 또는 planning-`Blocked` work item과 현재 단계에서 허용된
+`-design`을 실질적으로 작성·변경하고, 그 결과를 사용자의 값 선택이나 단계 확정에 인계할
+때에는 content round보다 먼저 별도 structure round를 닫습니다. 읽기 전용 질문, 상태 보고,
+사용자 handoff가 없는 내부 계획, plan content를 바꾸지 않는 국소 교정과 일반
+Decision/Design에는 적용하지 않습니다.
+
+```text
+plan-structure round Closed
+→ 단일 content writer
+→ plan-content round Closed
+→ 안정 복구 지점이면 Required-Pending → $git-finalize → Committed
+→ 사용자 또는 다음 Agent handoff
+```
+
+- 각 round는 위의 기존 `discovery → finding 전체 단일 처분 → correction 0..1 → closure 1회`
+  state를 그대로 사용합니다. Receipt에서 `audit domain`과 `discovery|closure` phase를 분리합니다.
+- Structure active review set에는 `$verify-plan structure`를 항상 두고, 문서화 workflow가
+  `중대한 구조`로 판정하면 `$verify-documentation proposal`도 별도 identity로 둡니다.
+- Content active review set에는 `$verify-plan content`를 항상 두고, `중대한 final` 또는
+  `중대한 구조`이면 `$verify-documentation final`도 별도 identity로 둡니다.
+- Structure discovery correction은 전체 finding 처분 뒤 계획 의미·결정 권위·단계가 원인이면
+  `$dev-plan`, hierarchy·first-screen·owner·보존 map이 원인이면 `$documentation` 순서로 한
+  batch 안에서 직렬 실행합니다. `$dev-plan`은 structure map을 직접 고치지 않고
+  `$documentation`은 계획 의미를 선택하지 않습니다. 새 map과 digest를 하나의 새 Frozen으로
+  만든 뒤 closure set만 호출합니다.
+- Structure closure가 없거나 candidate map·digest가 stale이면 writer와 content reviewer는
+  시작 전에 `검증 불가` 또는 `Invalidated`를 반환합니다. Content writer가 heading,
+  first-screen field, 활성 결정 block이나 결정 권위·상태를 바꾸면 structure verdict도
+  `Invalidated`입니다.
+- Closure 실패 뒤에는 원인·구조 map·대표 결과를 다시 계획할 `$dev-plan`만 다음 actor로
+  허용합니다. 새 Frozen 없이 reviewer나 writer를 바꾸어 같은 round를 반복하지 않습니다.
+- 통과한 안정 candidate가 복구 지점이면 사용자 대기보다 local checkpoint를 먼저 닫습니다.
+  Review 중 candidate의 다음 안정 handoff와 실제 live actor의 차이는 문서 정보 구조 가이드와
+  문서화 workflow의 candidate 계약을 따릅니다.
+
 실행 중 처음 드러난 source·환경·검증 증거는 이 문서의 새 발견·실제 차단 판정으로
 분류합니다. 안전한 단위는 계속 수행하고, 새 증거로 생긴 사용자 소유 결정이 남은 결과에
 필요하면 그 입력 전체를 한 번에 모아 다음 결정 라운드를 엽니다. 첫 mutation 전에 이미

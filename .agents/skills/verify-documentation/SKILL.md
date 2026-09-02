@@ -1,6 +1,6 @@
 ---
 name: verify-documentation
-description: "저장소 Markdown의 중대한 구조 proposal 또는 작성과 작성자 source 대조가 끝난 동결된 중대한 final 후보를 fresh reviewer가 독립 감사할 때 사용한다. canonical SOT·workflow·router·runbook의 신설·대규모 재작성, 다문서 병합·분리·이동·삭제, owner·관계·번호·탐색 topology 변경과 전체 coverage 주장이 대상이다. routine 오탈자·링크·상태 동기화의 두 번째 대조에는 사용하지 않으며, 중대한 문서가 계획·개발 결과에 포함돼도 일반 verifier의 문서 축으로 대체하지 않는다."
+description: "사용자 결정·단계 확정용 plan artifact의 상세 작성 전 중대한 동결 구조 map을 proposal로 감사하거나, 저장소 Markdown의 중대한 구조 proposal 또는 작성과 작성자 source 대조가 끝난 동결된 중대한 final 후보를 fresh reviewer가 독립 감사할 때 사용한다. Plan structure proposal에서는 hierarchy·first-screen·결정 권위·owner·보존 관계와 대표 골격을 추가로 감사한다. canonical SOT·workflow·router·runbook의 신설·대규모 재작성, 다문서 병합·분리·이동·삭제, owner·관계·번호·탐색 topology 변경과 전체 coverage 주장도 대상이다. routine 오탈자·링크·상태 동기화의 두 번째 대조에는 사용하지 않으며, 중대한 문서가 계획·개발 결과에 포함돼도 일반 verifier의 문서 축으로 대체하지 않는다."
 ---
 
 # 문서 검증
@@ -72,6 +72,25 @@ authoritative source에 연결될 때만 기준이 된다.
   않았는지 확인한다.
 - 전체 흐름·이해 가능성이 결과이면 제안이 같은 품질 차원의 전체 관계 골격과 대표
   source를 검증하며 특정 세부 절차가 결과를 대체하지 않는지 확인한다.
+
+### Plan structure proposal 추가 감사 축
+
+`proposal`이 작업 실행 workflow의 plan-structure round에서 호출됐으면 위 공통 Proposal
+축과 함께 다음 구조 관계를 양방향으로 감사한다. 별도 mode나 verdict를 만들지 않으며,
+Content의 정확성·추천 결론·기술 대안 자체를 재판정하지 않는다.
+
+- lifecycle이 허용한 artifact·section과 금지한 다음 단계 section
+- heading별 독자 질문, 상세 owner와 실제 읽기 순서
+- 첫 화면의 두 열 field·순서, 안정 handoff actor·상태와 live receipt의 분리
+- 결정 identity별 사용자 요구·source 제약·Agent 기술 선택·사용자 값 확정·단계 확정 권위,
+  활성 질문과 닫힌 결정의 배타성
+- 활성 카드 7개 field와 모든 카드를 위한 단일 결합 응답 형식 owner
+- body·`-design`·router·rollback에서 보존할 정보와 canonical owner
+- representative template이 같은 구조로 closed-only와 active-decision 상태를 모두 표현하는지
+
+Map·candidate digest가 없거나 stale하거나, 구조가 content 값을 미리 확정해야만 성립하면
+`판정 불가` 또는 `실패`로 반환한다. 통과 verdict는 content 품질이나 사용자 결정을 대신하지
+않는다.
 
 ## Final 감사 축
 
