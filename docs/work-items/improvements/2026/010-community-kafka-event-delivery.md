@@ -6,7 +6,7 @@ Proposed
 
 ## 계획 단계
 
-결과 정의
+실행 계획
 
 ## 현재 위치와 다음 행동
 
@@ -16,13 +16,13 @@ Community의 첫 Kafka 적용을 단일 node staging에서 검증하고, 이후 
 
 | 구분 | 현재 값 |
 | --- | --- |
-| 닫힌 결과 | 결과 정의 독립 검증과 사용자 단계 확정, 단일 node Kafka·비동기 알림 수직 흐름·품질 범위 |
-| 남은 gate | 없음 |
-| 현재 실행자 | 계획 Agent |
-| 현재 행동 | 결과 정의 checkpoint를 기록하고 해결 설계를 시작 |
+| 닫힌 결과 | 결과 정의와 해결 설계의 독립 검증·사용자 확정 범위·local checkpoint |
+| 남은 gate | 실행 계획 작성·독립 검증과 exact 후보의 사용자 단계 확정 |
+| 현재 실행자 | 없음 |
+| 현재 행동 | 해결 설계에서 멈추고 다음 명시 요청을 기다림 |
 | 사용자 작업 | 없음 |
-| 현재 행동 뒤 결과 | 승인된 결과 정의를 복구할 수 있는 local 기준선 |
-| 다음 전환 | checkpoint 확인 뒤 계획 단계를 `해결 설계`로 전환 |
+| 현재 행동 뒤 결과 | 독립 검증을 통과한 [010 Community Kafka 이벤트 전달 상세 설계](010-community-kafka-event-delivery-design.md) 기준선 |
+| 다음 전환 | 사용자가 실행 계획 작성을 명시하면 검증 가능한 결과 단위와 의존 순서를 작성 |
 
 ## 달성할 결과
 
@@ -39,7 +39,7 @@ broker 수를 늘릴 때 업무 흐름을 다시 작성하지 않도록 설계�
 
 - Community 대화 생성은 현재 `notification` module의 inbox 저장을 같은 PostgreSQL
   transaction에서 직접 호출하므로 알림 쓰기 부하와 실패가 대화 쓰기에 함께 전파됩니다.
-- 저장소에는 Kafka broker, topic, producer·consumer, event publication과 재처리의 현재
+- 저장소에는 Kafka broker, topic, producer·consumer, transactional outbox와 재처리의 현재
   계약이 없습니다.
 - 현재 staging은 control plane과 workload를 함께 실행하는 단일 node이고 live memory는
   4 GiB, root EBS는 20 GiB입니다. Kafka를 추가하기 전 compute·storage 여유와 data
@@ -54,7 +54,7 @@ broker 수를 늘릴 때 업무 흐름을 다시 작성하지 않도록 설계�
 - PostgreSQL 업무 transaction과 Kafka 전달 사이의 event 유실 방지
 - 중복·순서·실패 event와 consumer 재시작에도 일관된 사용자 결과
 - 외부 비공개, 인증된 내부 통신, 최소 권한, secret과 공급망의 보안 결과
-- broker·producer·consumer·event publication의 metric, log, health와 장애 진단 신호
+- broker·relay·consumer·outbox의 metric, log, health와 장애 진단 신호
 - 정상·점증·급증·장시간 부하와 broker·consumer 장애·복구 검증
 - 단계적 전환, rollback, 미처리 event 재개와 data 보존
 - 단일 node 한계의 명시와 다중 broker·node 고가용성 전환에 필요한 호환 경계
@@ -112,7 +112,7 @@ broker 수를 늘릴 때 업무 흐름을 다시 작성하지 않도록 설계�
   재균형과 application 재시작을 독립적으로 검증합니다.
 - Broker 복구 뒤 미전달 event와 consumer backlog가 자동 또는 승인된 운영 절차로 수렴하고,
   누락·중복 사용자 결과가 없습니다.
-- Disk 고갈, consumer lag, 처리 불가능 event, publication 적체와 인증 실패를 운영자가 서로
+- Disk 고갈, consumer lag, 처리 불가능 event, outbox 적체와 인증 실패를 운영자가 서로
   구분할 수 있습니다.
 - 배포와 data·event 계약 변경은 호환 가능한 순서를 가지며, 새 경로를 끄거나 이전 application으로
   rollback해도 기존 Community data와 미처리 event를 잃지 않습니다.
@@ -156,6 +156,7 @@ broker 수를 늘릴 때 업무 흐름을 다시 작성하지 않도록 설계�
 
 ## 관련 문서
 
+- **해결 설계**: [010 Community Kafka 이벤트 전달 상세 설계](010-community-kafka-event-delivery-design.md)
 - **현재 Community 결과**: [018 일반 커뮤니티](../../features/2026/018-general-community.md)
 - **현재 동기 알림 결정과 재검토 조건**: [018 일반 커뮤니티 해결 설계](../../features/2026/018-general-community-design.md#d9-서비스-안-알림의-원자성과-중복-방지)
 - **현재 application 구조**: [200 현재 프로젝트 아키텍처](../../../project/200-current-architecture.md), [210 모듈 지도](../../../project/210-module-map.md)
