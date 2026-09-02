@@ -73,6 +73,60 @@ grouping·subtype과 계획을 투영하면 이미 실질 효과입니다. 이 �
 read 자체는 실질 효과가 아니며, source가 실제로 접근 불가능할 때만 추측하지 않고 그
 blocker를 반환합니다.
 
+### 사용자 요청 계약 잠금 gate
+
+상태 변경 원자가 있는 batch는 source discovery 뒤 첫 실질 commentary·specialist 선택·계획·
+위임·review·mutation·Git·외부 효과보다 먼저 다음 요청 계약을 하나의 identity로 잠급니다.
+
+```text
+현재 사용자 원문의 exact span
+→ 현재 표현이 실제로 가리키는 직접 선행 사용자 원문의 exact span
+→ 이후 명시적으로 확정·취소·대체된 논의 결과
+→ 대상·문장 기능·요구 결과·사용자 지정 reference와 그 역할·산출물 형식
+→ 포함·제외·순서·허용 효과·금지 효과·완료 oracle
+→ 차원별 사용자 지정 / authoritative source로 정의 / 별도 제약 없음·해당 없음 / 미확정
+→ 최상위 의미 source 역추적과 상호 양립 여부
+→ Locked / Unresolved
+```
+
+- 현재 메시지가 자기완결적이면 그 원문만 사용합니다. `진행해`, `그대로 해`처럼 선행
+  결과를 가리키는 표현은 직접 선행 문맥에서 활성 미완료 결과가 하나로 복원될 때만 그
+  결과에 결속합니다. 오래된 독립 요청, 비활성·무효화된 원자와 현재 후속 표현을 결합해
+  새 artifact·Git·외부 효과를 만들지 않습니다.
+- 대화 요약, compaction summary, 과거 operation map, Agent가 만든 계획·진단·복귀 의도와
+  비슷한 주제는 사용자 원문의 exact span이 아닙니다. 원문을 읽을 수 없거나 둘 이상의
+  대상·결과·효과가 남으면 `Unresolved`이며, 누락을 추정하거나 더 넓은 과거 요청을 선택하지
+  않습니다.
+- 사용자 지정 reference는 사용자가 구조·내용·형식·판정의 기준으로 명시한 접근 가능한
+  artifact입니다. 단순 참고 source와 구분해 그 역할을 계약에 보존하며, 별도 reference를
+  지정하지 않았으면 `별도 제약 없음`으로 닫습니다. Repository 사실이나 기술값이 독립
+  authoritative source에서 하나로 정해지면 해당 차원을 `authoritative source로 정의`로
+  닫고 사용자 결정으로 바꾸지 않습니다.
+- `Locked`는 모든 차원이 `사용자 지정`, `authoritative source로 정의` 또는 `별도 제약
+  없음·해당 없음` 중 하나이고 서로 양립하며, 사용자와 확정한 활성 결과가 누락 없이 보존될
+  때만 성립합니다. `미확정`이 하나라도 있으면 `Unresolved`입니다. Repository source·workflow·
+  도구 제약이 다른 결과를 요구하면 임의로 우선순위를 정하지 않고 아래 충돌 중단 gate로
+  보냅니다.
+- `Unresolved`이면 해당 batch의 source 복원과 결과를 바꾸는 exact 공백에 대한 최소 질문만
+  허용합니다. 계획·specialist·worker·reviewer·writer·mutation·Git·외부 효과와 원래 작업
+  복귀를 모두 시작하거나 재개하지 않습니다. 명확한 독립 batch가 따로 있더라도 같은 상위
+  결과나 write set을 소비하면 함께 중단합니다.
+- `EXECUTE` batch의 첫 실질 commentary는 잠근 계약에서 현재 대상과 결과, 사용자 지정
+  reference와 그 역할·형식·순서, 허용 효과와 금지 효과를 짧게 투영합니다. 이 projection과
+  이후 actor가 서로 다른 계약 identity를 소비하면 해당 후보와 후속 효과를 `Invalidated`로
+  돌립니다. 명확한 계약을 다시 승인받는 질문은 만들지 않습니다.
+- 사용자가 작업 주체·범위·권한·안전성·사실을 이의 제기하면 기존 잠금과 그 후손을 즉시
+  무효화합니다. 이의에 답하기 전과 새 사용자 원문에서 계약이 다시 `Locked`되기 전에는
+  pending 작업을 재개하지 않습니다.
+
+이 gate는 내부 체크리스트가 아니라 모든 상태 변경 경로의 fail-closed admission입니다.
+요청 계약 identity 없이 나온 계획·review·변경·Git 결과는 내용이 옳아도 현재 작업의 유효한
+후보나 완료 증거가 아닙니다.
+
+읽기 전용 답변·검토·standalone audit은 상태 변경용 `Locked` identity를 요구하지 않습니다.
+현재 `ANSWER_ONLY` generation의 exact 대상·문장 기능·audit scope를 별도 읽기 전용 계약으로
+소비하며, 이를 과거 상태 변경 계약이나 후속 mutation 권한으로 승격하지 않습니다.
+
 ### 현재 메시지 입장 상태
 
 Bootstrap은 source discovery를 끝내는 데서 멈추지 않고, 현재 generation의 각 독립 결과
@@ -83,7 +137,7 @@ identity입니다.
 | 상태 | 조건 | 허용 효과 |
 | --- | --- | --- |
 | `ANSWER_ONLY` | batch의 모든 원자가 질문·설명·검토처럼 읽기 전용임 | 질문을 직접 닫는 답변과 필요한 read-only 근거 조사 |
-| `EXECUTE` | 모든 상태 변경 원자에 현재 generation의 positive source가 있고 같은 batch에 미확정 질문·비교·우려·선택이 없음 | exact 승인 범위의 specialist·계획·위임·review·mutation |
+| `EXECUTE` | 모든 상태 변경 원자에 현재 generation의 positive source가 있고 요청 계약이 `Locked`이며 같은 batch에 미확정 질문·비교·우려·선택이 없음 | 잠근 exact 범위의 specialist·계획·위임·review·mutation |
 | `DISCUSS_THEN_REEVALUATE` | 실행 원자와 같은 결과를 결정하는 질문·비교·우려·미확정 선택이 함께 있음 | 질문·미확정 차원의 직접 답변과 논의만 허용; batch의 상태 변경은 금지 |
 
 `ANSWER_ONLY` batch의 첫 실질 출력은 원문의 대상·술어·수식어를 보존한 직접 답변이어야
@@ -428,8 +482,11 @@ Agent가 선호하는 결과로 바꾸는 권위가 아닙니다. 상위 system�
 
 ### 확정 논의 보존과 충돌 중단 gate
 
-선행 논의의 결과를 소비하는 첫 계획 projection, 첫 mutation, review, Git 인계와 terminal
-보고 전에 다음 기준선을 같은 identity로 복원합니다.
+선행 논의의 결과를 소비하는 상태 변경 경로의 첫 계획 projection, 첫 mutation, review,
+Git 인계와 terminal 보고 전에 사용자 요청 계약 잠금 gate의 `Locked` identity를 입력으로
+받아 다음 기준선을 같은 identity로 복원합니다. 잘못되거나 미증명인 요청 계약을 이 gate에서
+사후 보정하지 않습니다. 독립된 읽기 전용 답변·검토는 현재 `ANSWER_ONLY` generation과 exact
+scope를 소비하며 이 `Locked` 전이를 요구하지 않습니다.
 
 ```text
 사용자가 확정한 활성 결과·제약·제외·산출물 형태·완료 조건
@@ -693,6 +750,9 @@ I = 실제로 읽은 control 기준선 R
   바꾸면 더 편한 쪽을 고르지 않고 control source 충돌과 영향 범위를 먼저 반환합니다.
 - `G`는 Bootstrap이 확정한 현재 사용자 원자와 carry-forward·무효화 관계입니다. 이의나
   대체로 무효화된 원자의 이전 generation 결과는 내용이 유용해도 현재 evidence가 아닙니다.
+  상태 변경 경로의 `G`에는 사용자 요청 계약 잠금의 exact 원문 span, `Locked` 판정, 대상·
+  결과·사용자 지정 reference와 그 역할·형식·순서·허용 및 금지 효과·완료 oracle이 모두
+  포함됩니다. 이 값이 없거나 actor의 입력과 다르면 handoff를 시작하지 않습니다.
 - `C`는 repository·worktree, fixed base, `HEAD`, index, tracked diff, untracked path·content와
   적용되는 외부 상태를 포함한 exact snapshot입니다. Writer가 후보를 바꾸면 새 `C`를
   동결하고 이전 review·Git 인계를 승계하지 않습니다.
