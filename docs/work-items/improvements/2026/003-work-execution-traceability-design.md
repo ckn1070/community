@@ -1410,6 +1410,36 @@ checkout에서 branch를 직접 만들고 전환해 사용자의 main 관찰 상
 관리 요청을 오분류하므로 생성 요청에만 한정했습니다. 작업 branch 생성이 current checkout을
 다시 바꾸거나 기존 branch 관리가 과잉 차단되면 trigger와 생성·관리 경계를 다시 검토합니다.
 
+## 결정 37. 사용자 질문은 미정의 사용자 결정만 입장시킵니다
+
+### 배경
+
+실행 회고와 영구 규칙 변경은 별도 `commit` 표현 없이 exact-path local commit까지 수행하는
+상시 예외였고, 외부 gate가 승인 없음으로 거절해도 같은 승인을 다시 묻지 않는 규칙도
+존재했습니다. 그런데 Agent는 tool gate의 거절을 operation map의 실행 가능성 증거가 아니라
+새 사용자 권한 공백으로 해석해 이미 정의된 commit 권한을 다시 물었습니다.
+
+### 선택
+
+- 모든 user-facing 질문 직전에 질문할 exact 값·효과, 이를 정할 수 있는 원문·operation
+  map·canonical workflow·domain source와 실제 EOF read identity를 대조합니다.
+- 결과는 `정의됨 / 사용자만 결정 가능 / 접근 불가·미증명` 중 하나로 분류합니다.
+- 정의된 값은 현재 권위로 소비하고, source가 제한하지 못하며 사용자만 결정할 수 있는
+  미정의 차원만 질문합니다.
+- Tool 승인·거절, 명령 실패와 Agent의 불확실성은 닫힌 의미 권한을 다시 열지 않습니다.
+  기존 retry·blocker 경계로 반환합니다.
+
+실제 질문 admission과 상태 전이는
+[100 작업 실행 워크플로우](../../../workflow/100-work-execution-workflow.md#사용자-질문-생성-admission)가
+소유합니다.
+
+### 대안과 재검토 조건
+
+질문마다 새 문서나 자동 hook을 만드는 안은 질문 의미를 외부 verifier에 넘기고 단순 응답의
+비용을 늘려 배제했습니다. 모든 미증명을 사용자에게 묻는 안도 source 접근 장애와 사용자
+결정을 혼동하므로 배제했습니다. 정의된 값을 다시 묻거나, 실제 사용자 소유 결정이 Agent
+판단으로 채워지면 source coverage와 첫 질문 consumer를 함께 다시 검토합니다.
+
 ## 서로 다른 first-break family의 owner
 
 모든 과거 사건을 하나의 막연한 원인으로 합치지 않습니다.

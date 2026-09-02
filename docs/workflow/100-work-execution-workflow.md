@@ -135,6 +135,33 @@ reviewer·dispatcher·hook에 넘기지 않습니다.
 독립 검증을 요구하는 산출물에 적용하며, 현재 요청의 권한을 만들거나 명시된 문장
 기능을 다시 정의하지 않습니다.
 
+### 사용자 질문 생성 admission
+
+현재 Agent가 사용자에게 승인·선택·값·대상·재개 여부를 묻기 전에는 질문 후보마다 다음
+coverage를 실제 source에서 닫습니다.
+
+```text
+질문하려는 exact 값·효과
+→ 그 값을 정할 수 있는 사용자 원문·operation map·canonical workflow·domain source
+→ 필요한 source의 EOF까지 읽은 content identity
+→ 정의됨 / 사용자만 결정 가능 / 접근 불가·미증명
+→ 질문이 필요한 이유와 질문할 최소 차원
+```
+
+- `정의됨`이면 그 값을 현재 권위로 소비하며 같은 승인·선택·값을 다시 묻지 않습니다.
+- `사용자만 결정 가능`이고 현재 source가 하나로 제한하지 못할 때만 그 미정의 차원을
+  묻습니다. 서로 관련된 열린 값은 한 라운드에 모으되 정의된 값을 다시 열지 않습니다.
+- `접근 불가·미증명`이면 실제 공백과 영향을 보고합니다. 사용자가 가진 외부 정보만이
+  공백을 닫을 수 있다는 source가 없으면 이를 사용자 선택 질문으로 바꾸지 않습니다.
+- Sandbox·tool approval의 허용·거절, 명령 실패, Agent의 기억 부족이나 확신 부족은 이미
+  닫힌 의미 권한·결정을 미정의 상태로 되돌리지 않습니다. 해당 workflow의 재시도·차단
+  경계를 적용하고 동일 권한을 사용자에게 다시 묻지 않습니다.
+
+첫 user-facing 질문 consumer는 이 coverage의 같은 generation·candidate identity를 받아야
+합니다. Coverage가 없거나 source read가 잘림·중단됐으면 질문을 만들지 않고 Bootstrap의
+source discovery로 돌아갑니다. 질문을 정중하게 표현했다는 사실, 안전을 이유로 한 재확인과
+tool UI의 별도 승인은 이 admission을 대신하지 않습니다.
+
 ### 요청 원자화 gate
 
 메시지에 둘 이상의 문장·block이 있거나 대상, 문장 기능, 결과, 제약, 권한 또는

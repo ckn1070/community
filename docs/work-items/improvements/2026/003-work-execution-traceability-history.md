@@ -1043,3 +1043,35 @@ checkout을 그대로 둔 채 helper dry-run으로 입장했을 것입니다. `f
 같이 처리하되, 기존 branch를 조회·통합·삭제하거나 명시적으로 이름만 바꾸는 요청은 작업
 branch 생성으로 오분류하지 않아야 합니다. 당시 생성된 branch의 삭제나 Kafka 계획 재개는
 이번 통제 변경 권한에 포함되지 않습니다.
+
+## 정의된 실행 회고 commit 권한을 사용자에게 다시 물은 재발
+
+### 사건과 영향
+
+사용자는 실행 회고와 영구문서 반영을 명령했습니다. 해당 workflow는 통제 변경의
+exact-path local commit을 상시 예외로 이미 허용했지만, Agent는 tool gate가 commit을
+거절하자 사용자에게 같은 commit 권한을 다시 물었습니다. 사용자는 이미 정리한 프로세스를
+다시 설명하고 작업 마무리를 재차 명령해야 했습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+최초 단절은 `tool 실행 결과 → 다음 user-facing 질문 admission`입니다. Workflow/100,
+retrospective와 git-finalize에는 영구 통제의 local commit 예외, 거절 뒤 근거를 결속한 1회
+재시도와 동일 승인 재질문 금지가 사건 전에 존재했고 Agent도 해당 source를 읽었습니다.
+그럼에도 거절 결과를 실행 경로의 차단 증거가 아니라 사용자 권한의 부재로 다시 분류했습니다.
+
+다섯 단계의 원인은 정의된 commit 권한을 다시 물은 직접 오류, tool 거절을 의미 권한
+판정으로 승격한 상태 혼동, 현재 operation map보다 외부 gate의 일반 사유를 우선한 authority
+역전, 질문 직전 source closure를 소비하지 않은 interface 공백, source를 읽었다는 사실을
+실제 질문 consumer invocation으로 확대한 이전 방어입니다. 2차 시스템 root는 규칙 부재가
+아니라 `실행 결과 → 정의 여부 재대조 → 사용자 질문` 전이에 exact 값의 source coverage가
+전달되지 않은 것입니다.
+
+### 통제 처분과 남은 위험
+
+기존 상시 예외·retry·동일 승인 재질문 금지는 유지하고, workflow/100의 모든 user-facing
+질문 앞에 source coverage admission을 강화했습니다. Root가 제거됐다면 tool 거절 뒤 원래
+명령과 상시 예외를 결속해 지원 경로로 재시도하고, 재차 거절되면 interface blocker로
+보고했을 뿐 commit 권한을 다시 묻지 않았을 것입니다. 배포·문서 선택처럼 명사를 바꿔도
+정의된 값은 묻지 않되, source가 제한하지 못하는 실제 사용자 소유 결정은 과잉 차단하지
+않아야 합니다.

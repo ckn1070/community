@@ -55,6 +55,9 @@ actor invocation으로 확대한 판정과 복원할 수 없는 provenance에 �
 - 새 작업 branch 요청은 `$parallel-start`의 bundled helper만 소비합니다. Branch만
   언급돼도 primary checkout의 ref를 직접 생성·전환하지 않으며, preflight 실패를 수동
   Git 명령이나 이름 변경으로 우회하지 않습니다.
+- 사용자 질문은 질문할 exact 값의 authoritative source와 operation map을 끝까지 읽어
+  `정의됨 / 사용자만 결정 가능 / 접근 불가·미증명`을 닫은 뒤 생성합니다. 정의된 값과
+  tool 거절로 이미 확정된 권한을 다시 묻지 않습니다.
 - 실행 회고의 행동 verdict는 통제 처분·canonical owner 효과·증거 등급·Git 자격과 전체
   상태를 하나의 closure identity로 Git과 보고 phase에 전달합니다. History·상태 문서와
   commit은 canonical 통제 적용이나 actual invocation 공백을 대신하지 않습니다.
