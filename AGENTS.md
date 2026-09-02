@@ -132,6 +132,12 @@ payload를 두지 않습니다.
   dirty snapshot과 Git으로 복원 가능한 변경 기록을 저장소 문서에 복사하지 않습니다.
 - Markdown 변경의 source·owner·링크 감사와 fresh 독립 검토 범위는 문서화
   워크플로우를 따릅니다.
+- 번호가 있는 문서를 신설·일반화·병합·이동·삭제하기 전에 direct directory의
+  실제 문서, router 번호 그룹, 기존 owner와 inbound link를 먼저 확인합니다.
+  일반 책임이 기존 특수 책임을 포함하면 기존 번호·owner의 확장을 신규 문서보다
+  먼저 판정하고, 예외적 분리는 근거를 설명해 사전 명시 승인을 받습니다. 상세
+  판정과 순서는 [문서 정보 구조 가이드](docs/100-documentation-guide.md#새-문서와-분리-기준)와
+  [문서화 워크플로우](docs/workflow/150-documentation-workflow.md#4-구조-gate)가 소유합니다.
 
 ## Git과 완료
 
