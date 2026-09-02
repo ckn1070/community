@@ -6,38 +6,26 @@ Proposed
 
 ## 계획 단계
 
-결과 정의
+해결 설계
 
 ## 현재 결론과 다음 행동
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 결론 | 공개 자동차 모델 상세 조회에 폐기 가능한 Redis cache를 도입하는 결과 정의의 값 결정은 모두 닫혔습니다. 측정 기반과 Redis 구현은 함께 준비하되 같은 artifact의 cache 비활성 상태를 기준선으로 먼저 측정하고, 활성 상태와 비교합니다. |
+| 현재 결론 | 결과 정의는 닫혔고, Redis cache를 application의 선택적 보조 adapter로 격리하는 해결 설계 후보가 독립 검증을 통과했습니다. 상세 결정은 [010 자동차 모델 상세 Redis cache 설계](010-catalog-model-detail-redis-cache-design.md)가 소유합니다. |
 | 닫힌 결과 경계 | 첫 적용 대상은 `GET /api/v1/car/models/{carModelId}` 하나이고 PostgreSQL은 유일한 원본입니다. 최대 stale 시간은 5분이며, 계획은 저장소 구현 뒤 별도 권한에 따른 staging 실증까지 포함합니다. 단일 Redis instance는 현재 staging의 비고가용성 출발점일 뿐 production 고가용성이나 자동 확장을 뜻하지 않습니다. |
-| 남은 gate | 댓글을 반영한 현재 결과 정의 후보에 대한 사용자 단계 확정만 남았습니다. 기술 해결 값은 다음 해결 설계 단계에서 Agent가 source와 공식 근거를 대조해 선택합니다. |
-| 현재 행동 주체 | 사용자가 아래 결과 정의를 확정하거나 수정할 부분을 지정합니다. |
-| exact 응답 형식 | `이 결과 정의를 확정하고 해결 설계를 진행해줘` 또는 `결과 정의에서 <항목>을 <값>으로 수정해줘` |
-| 답변 뒤 결과 | 확정하면 Agent가 `Proposed / 해결 설계`로 전환해 Redis 배포 형태, key·TTL, 직렬화, 동시성, 장애 격리, 보안, 관측과 부하 시험 계약을 설계합니다. |
-
-## 성능 비교 시점 피드백 반영
-
-- **사용자 의견 요약**: 측정 시스템을 Redis보다 먼저 별도 도입하지 않고, Redis 구현 뒤에도
-  cache 적용 전후를 비교할 수 있어야 한다는 의견입니다.
-- **Agent 답변·판단 요약**: 가능합니다. 비교의 `전`은 구현 시점이 아니라 같은 application
-  artifact에서 cache를 비활성화한 실행 상태입니다. 측정 기반과 Redis를 함께 준비하되
-  application build, data, workload와 자원 조건을 유지한 채 비활성 상태를 먼저 측정해야
-  Redis 외의 변화가 효과로 섞이지 않습니다.
-- **최종 반영**: 별도 선행 측정 프로젝트를 두지 않습니다. 구현 뒤 cache 비활성 기준선과
-  활성 결과를 같은 조건에서 비교하고, 기준선에서 확인한 최대 안정 처리량과 병목을 바탕으로
-  목표 RPS·p95·오류율·DB 부하를 동결합니다. 상대 개선과 동결한 수치 통과를 모두 요구합니다.
+| 남은 gate | 독립 검증을 통과한 exact 해결 설계 후보에 대한 사용자 단계 확정만 남았습니다. 확정 전에는 실행 계획이나 구현 입력으로 사용하지 않습니다. |
+| 현재 행동 주체 | 사용자가 본문 범위와 설계 문서의 D1~D12 전체를 검토하고 채택하거나 수정할 결정을 지정합니다. |
+| 사용자 차례 | 응답은 `이 해결 설계를 확정하고 실행 계획을 진행해줘` 또는 `해결 설계에서 <결정>을 <값>으로 수정해줘`입니다. |
+| 현재 행동 뒤 결과 | 사용자가 exact 후보를 채택하면 `Proposed / 실행 계획`으로 전환하고 검증 가능한 구현·운영 단위를 작성합니다. 수정 요청이면 해결 설계 단계에서 해당 결정과 직접 영향을 다시 검증합니다. |
 
 ## 진행 지도
 
 | 단계 | 상태 | 현재 작업에서의 결과·전환 조건 | 실행자와 즉시 다음 행동 |
 | --- | --- | --- | --- |
 | 범위·결정 정규화 | 완료 | 자동차 모델 상세, 현재 단일 node Kubernetes, PostgreSQL 원본성, 부하 시험과 품질 축을 입력으로 고정했습니다. | 사용자 작업 없음 |
-| 결과 정의 | 현재 | 목표·범위·제외·품질 수용 기준과 사용자 값 결정을 모두 반영했습니다. 사용자가 현재 후보를 단계 결과로 채택하면 완료됩니다. | 사용자가 결과 정의를 확정하거나 수정 항목을 지정합니다. |
-| 해결 설계 | 다음 | 닫힌 결과 정의를 입력으로 application, infrastructure, 일관성·동시성, 보안, 관측·시험, rollout·복구 결정을 source와 공식 근거에 대조합니다. | 결과 정의 closure 뒤 Agent가 진행합니다. |
+| 결과 정의 | 완료 | 목표·범위·제외·품질 수용 기준과 사용자 값 결정을 반영한 후보를 사용자가 채택했습니다. | 사용자 작업 없음 |
+| 해결 설계 | 현재 | Application, infrastructure, 일관성·동시성, 보안, 관측·시험, rollout·복구를 D1~D12 계약으로 닫은 후보가 독립 검증을 통과했습니다. 사용자가 exact 후보를 채택하면 완료됩니다. | 사용자가 D1~D12를 채택하거나 수정할 결정을 지정합니다. |
 | 실행 계획 | 후속 | 검증 가능한 결과 단위, 의존 순서, test·문서·운영 책임과 완료 증거를 확정합니다. | 해결 설계 closure 뒤 Agent가 진행합니다. |
 | 계획 검증·확정 | 후속 | 최초 목적·확정 결정·current source를 기준으로 완성 후보를 검증하고 사용자 채택 뒤 `Planned`로 전환합니다. | 실행 계획 후보와 필수 검증이 준비된 뒤 진행합니다. |
 | 개발·결과 검증 | 조건부 후속 | 별도 개발 요청과 `Planned` baseline 뒤 repository 구현·자동 검증을 수행하고, 선택한 완료 범위가 A이면 별도 live 적용 권한을 받아 staging 실증까지 수행합니다. | 이 계획 작업의 terminal이 아니며 이후 실행 요청이 필요합니다. |
@@ -144,6 +132,17 @@ Proposed
 - 계획의 완료 범위에는 저장소 구현·자동 검증과 별도 live 적용 권한을 받은 뒤의 staging
   부하·장애·rollback 실증이 포함됩니다. 이 결정 자체는 현재 live 적용 권한이 아닙니다.
 
+## 해결 설계 결정 색인
+
+- Application 경계, cache key·document·TTL, transaction·동시성, 장애 격리, Redis runtime,
+  Kubernetes 배치, 보안, 관측·부하 시험, 전환·복구와 production 승격 조건은
+  [010 자동차 모델 상세 Redis cache 설계](010-catalog-model-detail-redis-cache-design.md)의
+  D1~D12가 소유합니다.
+- 해결 설계는 공개 API와 PostgreSQL schema를 변경하지 않으며, catalog module 안의 기술
+  adapter와 repository가 소유하는 배포·운영 경계만 추가합니다.
+- 현재 사용자 소유 결과 값은 모두 닫혔습니다. D1~D12는 source와 대안을 근거로 한 Agent
+  기술 선택이며, 사용자 단계 확정 전에는 실행 계획이나 구현 입력이 아닙니다.
+
 ## 관련 문서
 
 - [200 제품 기능 범위](../../../product/200-feature-scope.md)
@@ -154,4 +153,5 @@ Proposed
 - [150 Kubernetes cluster](../../../project/infrastructure/150-kubernetes-cluster.md)
 - [220 GitOps Application Delivery](../../../project/infrastructure/220-gitops-application-delivery.md)
 - [004 Infrastructure 진화 Backlog](../../backlog/2026/004-infrastructure-evolution.md)
+- [010 자동차 모델 상세 Redis cache 설계](010-catalog-model-detail-redis-cache-design.md)
 - [100 작업 문서 생명주기](../../100-work-item-lifecycle.md)
