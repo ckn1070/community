@@ -18,7 +18,7 @@ template을 만들고 rollout·Ready를 기다립니다. 같은 Secret 값과 an
 approved schema에서 key를 제거해 같은 field manager가 소유한 key만 omit하는 순서로 합니다.
 
 실제 Resend key 교체와 기존 key 폐기 순서는
-[Notification credential 변경 runbook](../../../docs/operations/540-application-notification-credential-runbook.md)이
+[540 Application 환경변수·Secret 변경의 Resend API key 교체](../../../docs/operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체)가
 소유합니다.
 
 ## Local 검증

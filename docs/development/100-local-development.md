@@ -69,7 +69,7 @@ volume에 넣지 않습니다. Runbook이 정한 allow-list와 순서로 필요�
 전달하고, remote script는 argument·log에 값을 출력하지 않습니다. RDS master password는
 RDS가 관리하는 Secrets Manager의 현재 값을 실행 시점에 일회성으로 사용하며 `.env`의 장기
 key로 추가하지 않습니다. Resend key 교체는
-[Application notification credential 변경](../operations/540-application-notification-credential-runbook.md)을
+[540 Application 환경변수·Secret 변경의 Resend API key 교체](../operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체)를
 따릅니다.
 
 실제 secret이 있는 `.env`는 symlink가 아닌 현재 사용자 소유 regular file, mode `0600`으로

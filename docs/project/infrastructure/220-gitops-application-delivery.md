@@ -193,7 +193,7 @@ Controller·repository·image·manifest 원인을 확인하고 Git 목표 또는
 GitHub App private key와 notification provider credential 변경은 deployment PR 자체가 아니라
 각각 별도 change lifecycle입니다. Notification Secret 변경은 새 Pod rollout·Ready와 실제
 email smoke 뒤 기존 provider key를 폐기합니다. 실행 절차는
-[Application notification credential 변경](../../operations/540-application-notification-credential-runbook.md),
+[540 Application 환경변수·Secret 변경의 Resend API key 교체](../../operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체),
 GitHub App rotation 원리는
 [Repository credential rotation](330-argocd-repository-credential-rotation.md)이 소유합니다.
 
@@ -226,7 +226,7 @@ Repository capability와 live 실행 완료는 서로 다른 사실입니다. �
 - **Staging external HTTPS 최초 절차**:
   [370 Staging 외부 HTTPS ingress 최초 구축 runbook](../../operations/370-staging-external-https-ingress-bootstrap-runbook.md)
 - **Notification provider credential 변경**:
-  [Application notification credential 변경](../../operations/540-application-notification-credential-runbook.md)
+  [540 Application 환경변수·Secret 변경의 Resend API key 교체](../../operations/540-application-environment-and-secret-change-runbook.md#4-resend-api-key-교체)
 - [Argo CD automated sync](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)
 - [Argo CD AppProject](https://argo-cd.readthedocs.io/en/stable/operator-manual/project-specification/)
 - [Argo CD repository Secret](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#repositories)
