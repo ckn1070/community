@@ -837,6 +837,29 @@ workflow의 삭제 admission으로 인계합니다. 허락 전에는 기존 파�
 세 예외 모두 각 결과의 의미 단위 지도와 검증을 생략하지 않으며, 다른 작업 변경, plan이
 선행하는 production mutation, 사건 대상 artifact 복구와 push 권한을 만들지 않습니다.
 
+### 계획 checkpoint의 fail-closed 전이
+
+`$dev-plan`의 검증된 안정 상태는 다음 checkpoint 상태 중 하나를 operation map에 둡니다.
+
+| 상태 | 뜻 | 허용되는 다음 전이 |
+| --- | --- | --- |
+| `Not-Required` | 아직 복구 지점이 아니거나 repository 계획이 결과가 아님 | 원래 계획 작업 계속 |
+| `Required-Pending` | 다음 actor가 복원할 안정 상태와 exact path·hunk가 검증됨 | `$git-finalize`의 exact-path local commit |
+| `Committed` | 고정한 parent 뒤 실제 commit object·tree·patch와 잔여 dirty를 확인함 | 원래 계획 oracle로 복귀 |
+| `Blocked` | 다른 dirty와의 분리 불가나 Git 실행 차단을 실제 source로 확인함 | blocker 해제 뒤 같은 checkpoint 재개 |
+
+`Required-Pending` 전이에는 같은 후보 digest, 계획 lifecycle 상태, fixed-base `HEAD`, exact
+path·hunk, 제외 dirty와 `push 없음` 경계를 결속합니다. 검증 verdict를 소비해 이 상태를 만든
+plan actor는 `$git-finalize`를 즉시 다음 consumer로 호출하며, 별도 `commit` 요청이나 사용자
+재확인을 기다리지 않습니다. 실제 commit 증거만 `Committed`를 만들 수 있고 문서 검증 통과,
+clean 예상, commit 의도나 보고 문장은 이를 대신하지 않습니다.
+
+`Required-Pending`에서 허용되는 handoff는 `$git-finalize` 호출 하나뿐입니다. 사용자 대기,
+다른 phase handoff, 다음 rewrite와 terminal 보고는 허용하지 않습니다. Git adapter가 실제
+차단을 반환한 경우에만 공통 blocker gate를 거쳐 `Blocked`로 바꿀 수 있으며, `commit 요청
+없음`은 blocker가 아닙니다. `Committed` 뒤에도 checkpoint는 계획 완료가 아니므로 원래 계획
+oracle과 사용자 행동 유무를 다시 읽고 안전한 다음 계획 단위가 있으면 계속합니다.
+
 상시 예외를 적용하면 해당 효과를 첫 mutation 전에 끝나는 내부 판정으로만 두지 않습니다.
 사용자 원문 원자, 선택한 예외, exact 효과·path와 제외 효과를 operation map에 결속하고,
 그 효과를 실행하는 adapter와 sandbox·tool approval 호출까지 같은 근거를 전달합니다.

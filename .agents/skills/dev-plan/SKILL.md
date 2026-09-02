@@ -284,14 +284,24 @@ checkpoint를 local commit한다. 이 예외는 후속 production mutation이나
 1. 현재 계획 상태를 work item, 현재 단계에서 허용된 `-design`과 필수 router에 동기화한다.
    미확정 계획을 `Planned`나 완료로 승격하지 않는다.
 2. `$documentation`으로 source·owner·링크·번호와 결정 delta를 검증한다.
-3. 이번 checkpoint의 exact path·hunk만
-   [커밋 워크플로우](../../../docs/workflow/300-commit-workflow.md)로 stage·commit한다.
-4. 다른 작업의 dirty hunk와 안전하게 분리할 수 없으면 checkpoint를 만들지 않는다.
-5. commit object와 잔여 dirty를 확인한다. push는 별도 명시 권한이 있을 때만 수행한다.
+3. 검증된 안정 상태가 다음 actor의 복구 지점이면 같은 후보 digest, 계획 lifecycle 상태,
+   fixed-base `HEAD`, exact path·hunk, 제외 dirty와 `push 없음` 경계를 결속해 checkpoint를
+   `Required-Pending`으로 만든다.
+4. `Required-Pending`을 즉시 `$git-finalize`에 전달하고 이번 checkpoint의 exact path·hunk만
+   [커밋 워크플로우](../../../docs/workflow/300-commit-workflow.md)로 stage·commit한다. 별도
+   `commit` 요청이나 사용자 재확인을 기다리지 않는다.
+5. 다른 작업의 dirty hunk와 안전하게 분리할 수 없으면 공통 blocker gate의 직접 증거로
+   `Blocked`를 반환하고 다른 Git 효과로 우회하지 않는다.
+6. commit object, parent, tree, full patch와 잔여 dirty를 확인한 뒤에만 `Committed`로
+   바꾼다. push는 별도 명시 권한이 있을 때만 수행한다.
 
 Checkpoint commit은 계획 작업의 복구 지점이지 완료 판정이 아니다. Commit 뒤에는 원래 계획
 결과의 완료 oracle, 현재 단계의 남은 결과, 사용자 행동 유무를 operation map에서 다시 읽고,
 사용자 행동이 없으면 다음 안전한 설계 단위를 계속 수행한다.
+
+`Required-Pending`에서는 `$git-finalize` handoff만 수행하고 사용자 대기, 다른 phase handoff,
+다음 rewrite와 terminal 보고를 하지 않는다. 실제 Git 차단만 `Blocked`를 만들 수 있으며,
+`commit 요청 없음`이나 검증 완료 보고는 정상 종료 사유가 아니다.
 
 최초 안정된 `Proposed`, 사용자 결정 반영과 최종 `Planned` 후보처럼 다음 작업자가 복원할
 필요가 있는 상태만 checkpoint로 남긴다. `Planned` 후보는 모든 사용자 소유 값이 사용자
@@ -337,6 +347,8 @@ Checkpoint commit은 계획 작업의 복구 지점이지 완료 판정이 아�
   현재 행동을 하단으로 미루거나, 닫힌 계획에 새 질문·재확인을 만들지 않았는가
 - 사용자 행동이 없고 계획이 미완료인데 checkpoint·검증·보고 뒤 안전한 다음 설계 단위로
   복귀하지 않고 종료했는가
+- 검증된 안정 상태가 `Required-Pending`인데 `$git-finalize` 호출과 commit object 확인보다
+  사용자 대기·다른 phase handoff·다음 rewrite·terminal 보고를 먼저 했는가
 - 첫 화면·heading·결정 카드의 새 용어가 `선행 이해 확인 / 최초 문장에서 일상어로 설명 /
   쉬운 표현으로 교체·기술 상세로 이동` 중 하나이며, exact 계약 literal을 불필요하게
   번역·삭제하지 않았는가
@@ -350,7 +362,8 @@ Checkpoint commit은 계획 작업의 복구 지점이지 완료 판정이 아�
 - 계획 문서 경로, 현재 계획 단계와 해당 단계 closure 상태
 - 현재 단계까지 선택·검증·확정된 표면, 주요 결정과 남은 사용자 소유 결정 또는 단계 확정
 - 실행 계획 단계이면 작업·검증·전환·문서 책임의 연결과 구현 가능 판정
-- 적용한 검증 판정과 계획 checkpoint 상태
+- 적용한 검증 판정과 계획 checkpoint 상태. `Committed`이면 SHA·parent·exact path·잔여
+  dirty 확인을, `Blocked`이면 실제 blocker와 재개 조건을 함께 연결한다.
 
 채팅 projection은 [완료 및 작업 보고 워크플로우](../../../docs/workflow/140-completion-reporting-workflow.md)에
 맡기고 계획 결과와 구현 결과를 구분한다.
