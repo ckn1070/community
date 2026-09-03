@@ -66,7 +66,7 @@ class AdminInvitationCreationTransactionIntegrationTest extends PostgreSqlIntegr
         .isTrue();
     assertThat(
             jdbcTemplate.queryForObject(
-                "select count(*) from auth_event where account_id = ? and event_type = 'ADMIN_INVITATION_CREATED'",
+                "select count(*) from auth_event where account_public_id = (select public_id from account where id = ?) and event_type = 'ADMIN_INVITATION_CREATED'",
                 Integer.class,
                 inviterAccountId))
         .isZero();

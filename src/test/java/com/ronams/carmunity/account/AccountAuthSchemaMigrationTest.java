@@ -11,7 +11,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -175,10 +174,10 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
 
     jdbcTemplate.update(
         """
-					insert into refresh_token (account_id, token_hash, family_id, expires_at)
+					insert into refresh_token (account_public_id, token_hash, family_id, expires_at)
 					values (?, ?, ?, now() + interval '30 days')
 					""",
-        accountId,
+        publicId(accountId),
         tokenHash,
         firstFamilyId);
 
@@ -187,10 +186,10 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         () ->
             jdbcTemplate.update(
                 """
-						insert into refresh_token (account_id, token_hash, family_id, expires_at)
+						insert into refresh_token (account_public_id, token_hash, family_id, expires_at)
 						values (?, ?, ?, now() + interval '30 days')
 							""",
-                accountId,
+                publicId(accountId),
                 tokenHash,
                 secondFamilyId));
   }
@@ -427,10 +426,10 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         () ->
             jdbcTemplate.update(
                 """
-				insert into auth_event (account_id, event_type, result, metadata)
+				insert into auth_event (account_public_id, event_type, result, metadata)
 				values (?, 'PASSWORD_LOGIN', 'SUCCESS', '[]'::jsonb)
 				""",
-                accountId));
+                publicId(accountId)));
   }
 
   /** 관리자 초대 생성, 수락, 회수는 auth_event taxonomy 안에서 허용되어야 합니다. */
@@ -479,10 +478,10 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
     assertTrue(indexNames.contains("uk_account_role_assignment_active_account_role"));
     assertTrue(indexNames.contains("idx_account_role_assignment_active_role"));
     assertTrue(indexNames.contains("uk_refresh_token_token_hash"));
-    assertTrue(indexNames.contains("idx_refresh_token_active_account"));
+    assertTrue(indexNames.contains("idx_refresh_token_active_account_public"));
     assertTrue(indexNames.contains("idx_refresh_token_family_id"));
     assertTrue(indexNames.contains("idx_refresh_token_expires_at"));
-    assertTrue(indexNames.contains("idx_auth_event_account_occurred_at"));
+    assertTrue(indexNames.contains("idx_auth_event_account_public_occurred_at"));
     assertTrue(indexNames.contains("idx_auth_event_occurred_at"));
     assertTrue(indexNames.contains("idx_auth_event_identifier_occurred_at"));
     assertTrue(indexNames.contains("uk_account_verification_token_hash"));
@@ -511,31 +510,22 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
     assertEquals(List.of("inet", "inet"), udtNames);
   }
 
-  /** expand 기간에는 내부 id와 public id 쓰기가 서로 보완되고 불일치한 이중 입력은 거부됩니다. */
+  /** 초기 schema는 Context 밖 내부 account id나 임시 호환 trigger 없이 public id 계약만 생성합니다. */
   @Test
-  void synchronizesPublicAndInternalAccountIdentityDuringExpandMigration() {
+  void createsFinalPublicIdentitySchemaWithoutTransitionArtifacts() {
     UUID publicId = UUID.randomUUID();
-    Long accountId =
-        jdbcTemplate.queryForObject(
-            """
-            insert into account (public_id, email, email_normalized, status)
-            values (?, ?, ?, 'ACTIVE')
-            returning id
-            """,
-            Long.class,
-            publicId,
-            "identity-expand@example.com",
-            "identity-expand@example.com");
+    jdbcTemplate.update(
+        """
+        insert into account (public_id, email, email_normalized, status)
+        values (?, ?, ?, 'ACTIVE')
+        """,
+        publicId,
+        "identity-final@example.com",
+        "identity-final@example.com");
 
     jdbcTemplate.update(
-        "insert into auth_event (account_id, event_type, result) values (?, 'PASSWORD_LOGIN', 'SUCCESS')",
-        accountId);
-    assertEquals(
-        publicId,
-        jdbcTemplate.queryForObject(
-            "select account_public_id from auth_event where account_id = ? order by id desc limit 1",
-            UUID.class,
-            accountId));
+        "insert into auth_event (account_public_id, event_type, result) values (?, 'PASSWORD_LOGIN', 'SUCCESS')",
+        publicId);
 
     jdbcTemplate.update(
         """
@@ -546,21 +536,43 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         publicId,
         "9".repeat(64),
         UUID.randomUUID());
+    List<String> identityColumns =
+        jdbcTemplate.queryForList(
+            """
+            select table_name || '.' || column_name || '.' || is_nullable
+            from information_schema.columns
+            where table_schema = 'public'
+              and table_name in ('auth_event', 'refresh_token')
+              and column_name in ('account_id', 'account_public_id')
+            order by table_name, column_name
+            """,
+            String.class);
     assertEquals(
-        accountId,
-        jdbcTemplate.queryForObject(
-            "select account_id from refresh_token where token_hash = ?",
-            Long.class,
-            "9".repeat(64)));
+        List.of("auth_event.account_public_id.YES", "refresh_token.account_public_id.NO"),
+        identityColumns);
 
-    Long otherAccountId = createAccount("identity-other@example.com", "identity-other@example.com");
-    assertThrows(
-        DataAccessException.class,
-        () ->
-            jdbcTemplate.update(
-                "insert into auth_event (account_id, account_public_id, event_type, result) values (?, ?, 'PASSWORD_LOGIN', 'SUCCESS')",
-                otherAccountId,
-                publicId));
+    assertEquals(
+        0,
+        jdbcTemplate.queryForObject(
+            """
+            select count(*)
+            from information_schema.triggers
+            where event_object_schema = 'public'
+              and event_object_table in ('auth_event', 'refresh_token')
+            """,
+            Integer.class));
+    assertEquals(
+        0,
+        jdbcTemplate.queryForObject(
+            """
+            select count(*)
+            from pg_proc
+            where proname in (
+                'sync_auth_event_account_identity',
+                'sync_refresh_token_account_identity'
+            )
+            """,
+            Integer.class));
   }
 
   private Long createAccount(String email, String normalizedEmail) {
@@ -608,10 +620,10 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
   private int createAuthEvent(Long accountId, String eventType, String result) {
     return jdbcTemplate.update(
         """
-				insert into auth_event (account_id, event_type, result)
+				insert into auth_event (account_public_id, event_type, result)
 				values (?, ?, ?)
 				""",
-        accountId,
+        publicId(accountId),
         eventType,
         result);
   }
@@ -620,13 +632,18 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
       Long accountId, String eventType, String result, String reasonCode) {
     return jdbcTemplate.update(
         """
-				insert into auth_event (account_id, event_type, result, reason_code)
+				insert into auth_event (account_public_id, event_type, result, reason_code)
 				values (?, ?, ?, ?)
 				""",
-        accountId,
+        publicId(accountId),
         eventType,
         result,
         reasonCode);
+  }
+
+  private UUID publicId(Long accountId) {
+    return jdbcTemplate.queryForObject(
+        "select public_id from account where id = ?", UUID.class, accountId);
   }
 
   private int createAdminInvitation(

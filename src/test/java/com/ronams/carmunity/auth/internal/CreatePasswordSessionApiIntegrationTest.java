@@ -59,9 +59,9 @@ class CreatePasswordSessionApiIntegrationTest extends PostgreSqlIntegrationTestS
     assertThat(refreshToken).isNotBlank();
     assertThat(
             jdbcTemplate.queryForObject(
-                "select token_hash from refresh_token where account_id = ?",
+                "select token_hash from refresh_token where account_public_id = ?",
                 String.class,
-                internalAccountId))
+                accountPublicId))
         .matches("^[0-9a-f]{64}$")
         .isNotEqualTo(refreshToken);
     assertThat(
@@ -69,10 +69,10 @@ class CreatePasswordSessionApiIntegrationTest extends PostgreSqlIntegrationTestS
                 """
                 select count(*)
                 from auth_event
-                where account_id = ? and event_type = 'PASSWORD_LOGIN' and result = 'SUCCESS'
+                where account_public_id = ? and event_type = 'PASSWORD_LOGIN' and result = 'SUCCESS'
                 """,
                 Integer.class,
-                internalAccountId))
+                accountPublicId))
         .isOne();
   }
 
@@ -117,13 +117,13 @@ class CreatePasswordSessionApiIntegrationTest extends PostgreSqlIntegrationTestS
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                   and event_type = 'PASSWORD_LOGIN'
                   and result = 'FAILURE'
                   and reason_code = 'PASSWORD_MISMATCH'
                 """,
                 Integer.class,
-                internalAccountId))
+                accountPublicId))
         .isOne();
   }
 

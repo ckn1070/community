@@ -95,7 +95,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'ADMIN_INVITATION_CREATED'
                   and result = 'SUCCESS'
                 """,
@@ -191,7 +191,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'ADMIN_INVITATION_CREATED'
                 """,
                 Integer.class,
@@ -284,7 +284,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                    metadata ->> 'roleCode' as role_code,
                    metadata ->> 'invitedByAccountPublicId' as invited_by_account_public_id
             from auth_event
-            where account_id = ?
+            where account_public_id = (select public_id from account where id = ?)
               and event_type = 'ADMIN_INVITATION_ACCEPTED'
             order by id desc
             limit 1
@@ -300,7 +300,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'ADMIN_INVITATION_ACCEPTED'
                   and result = 'SUCCESS'
                 """,
@@ -348,7 +348,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                    metadata ->> 'targetEmailHash' as target_email_hash,
                    metadata ->> 'reasonCode' as reason_code
             from auth_event
-            where account_id = ?
+            where account_public_id = (select public_id from account where id = ?)
               and event_type = 'ADMIN_INVITATION_REVOKED'
             order by id desc
             limit 1
@@ -444,7 +444,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
             """
             select count(*)
             from auth_event
-            where account_id = ?
+            where account_public_id = (select public_id from account where id = ?)
               and event_type = 'ADMIN_INVITATION_REVOKED'
             """,
             Integer.class,
@@ -648,7 +648,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                 """
                 select count(*)
                 from auth_event event
-                join account on account.id = event.account_id
+                join account on account.public_id = event.account_public_id
                 where account.email_normalized = ?
                   and event.event_type = 'ADMIN_INVITATION_ACCEPTED'
                 """,
@@ -673,7 +673,7 @@ class AdminInvitationApiIntegrationTest extends PostgreSqlIntegrationTestSupport
                    metadata ->> 'roleCode' as role_code,
                    metadata ->> 'previousInvitationRevoked' as previous_invitation_revoked
             from auth_event
-            where account_id = ?
+            where account_public_id = (select public_id from account where id = ?)
               and event_type = 'ADMIN_INVITATION_CREATED'
             order by id desc
             limit 1

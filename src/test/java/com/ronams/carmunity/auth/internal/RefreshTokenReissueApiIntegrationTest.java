@@ -98,7 +98,8 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
                 """
                 select count(*)
                 from auth_event
-                where account_id = ? and event_type = 'TOKEN_REFRESH' and result = 'SUCCESS'
+                where account_public_id = (select public_id from account where id = ?)
+                  and event_type = 'TOKEN_REFRESH' and result = 'SUCCESS'
                 """,
                 Integer.class,
                 accountId))
@@ -145,7 +146,7 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'TOKEN_REFRESH'
                   and result = 'FAILURE'
                   and reason_code = 'TOKEN_REUSE_DETECTED'
@@ -305,7 +306,7 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'TOKEN_REFRESH'
                   and result = 'FAILURE'
                   and reason_code = 'ACCOUNT_SUSPENDED'
@@ -364,8 +365,8 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
   private Long createRefreshToken(Long accountId, String rawRefreshToken, UUID familyId) {
     return jdbcTemplate.queryForObject(
         """
-        insert into refresh_token (account_id, token_hash, family_id, issued_at, expires_at)
-        values (?, ?, ?, ?, ?)
+        insert into refresh_token (account_public_id, token_hash, family_id, issued_at, expires_at)
+        values ((select public_id from account where id = ?), ?, ?, ?, ?)
         returning id
         """,
         Long.class,
@@ -388,7 +389,7 @@ class RefreshTokenReissueApiIntegrationTest extends PostgreSqlIntegrationTestSup
         """
         select count(*)
         from auth_event
-        where account_id = ?
+        where account_public_id = (select public_id from account where id = ?)
           and event_type = 'TOKEN_REFRESH'
           and result = 'FAILURE'
           and reason_code = 'TOKEN_REUSE_DETECTED'
