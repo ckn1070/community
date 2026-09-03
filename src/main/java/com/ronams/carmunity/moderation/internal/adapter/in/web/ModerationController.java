@@ -1,6 +1,10 @@
 package com.ronams.carmunity.moderation.internal.adapter.in.web;
 
 import com.ronams.carmunity.moderation.internal.application.ModerationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Map;
@@ -28,6 +32,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ModerationController {
   private final ModerationService service;
 
+  @Operation(summary = "게시글·댓글 신고", description = "인증된 사용자가 게시글 또는 댓글을 신고합니다.")
+  @ApiResponse(
+      responseCode = "201",
+      description = "신고 접수 성공",
+      headers = @Header(name = "Location", schema = @Schema(type = "string", format = "uri")))
   @PostMapping({"/posts/{targetId}/reports", "/comments/{targetId}/reports"})
   public ResponseEntity<Map<String, Object>> report(
       @PathVariable UUID targetId, Authentication authentication, HttpServletRequest request) {
@@ -37,6 +46,8 @@ public class ModerationController {
         .body(result);
   }
 
+  @Operation(summary = "관리자 신고 목록", description = "관리자가 처리 상태별 신고를 cursor 기반으로 조회합니다.")
+  @ApiResponse(responseCode = "200", description = "신고 목록 조회 성공")
   @GetMapping("/admin/community/reports")
   public Map<String, Object> reports(
       @RequestParam(defaultValue = "OPEN") String status,
@@ -47,6 +58,8 @@ public class ModerationController {
     return service.list(status, cursor, size);
   }
 
+  @Operation(summary = "관리자 신고 상세", description = "관리자가 신고의 대상과 현재 처리 상태를 조회합니다.")
+  @ApiResponse(responseCode = "200", description = "신고 상세 조회 성공")
   @GetMapping("/admin/community/reports/{reportId}")
   public ResponseEntity<Map<String, Object>> report(
       @PathVariable UUID reportId, Authentication authentication) {
@@ -55,6 +68,8 @@ public class ModerationController {
     return ResponseEntity.ok().eTag("\"" + result.get("version") + "\"").body(result);
   }
 
+  @Operation(summary = "관리자 신고 처리", description = "관리자가 현재 ETag와 일치하는 신고에 처리 결과를 기록합니다.")
+  @ApiResponse(responseCode = "200", description = "신고 처리 성공")
   @PatchMapping("/admin/community/reports/{reportId}")
   public ResponseEntity<Map<String, Object>> resolve(
       @PathVariable UUID reportId,
