@@ -30,5 +30,5 @@ configMapGenerator:
 images:
   - name: registry.invalid/car-community
     newName: 000000000000.dkr.ecr.ap-northeast-2.amazonaws.com/car-community
-    # main dc449796에서 게시된 ARM64 runtime manifest입니다.
-    digest: sha256:76f95ff44f5abad3d1e61e8d8453f143fa660b041d2e232f3250404b60e29b49
+    # main 0df1aef7에서 게시된 ARM64 runtime manifest입니다.
+    digest: sha256:8e94a6bd13dd31a13b3c692590700cfac23266297e260dae6c2584f0cc998613
