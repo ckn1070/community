@@ -171,13 +171,14 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
     String tokenHash = "a".repeat(64);
     UUID firstFamilyId = UUID.randomUUID();
     UUID secondFamilyId = UUID.randomUUID();
+    UUID accountPublicId = publicId(accountId);
 
     jdbcTemplate.update(
         """
 					insert into refresh_token (account_public_id, token_hash, family_id, expires_at)
 					values (?, ?, ?, now() + interval '30 days')
 					""",
-        publicId(accountId),
+        accountPublicId,
         tokenHash,
         firstFamilyId);
 
@@ -189,7 +190,7 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
 						insert into refresh_token (account_public_id, token_hash, family_id, expires_at)
 						values (?, ?, ?, now() + interval '30 days')
 							""",
-                publicId(accountId),
+                accountPublicId,
                 tokenHash,
                 secondFamilyId));
   }
@@ -411,6 +412,7 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
         createAuthEventWithReason(accountId, "PASSWORD_LOGIN", "FAILURE", "PASSWORD_MISMATCH");
     int tokenRefresh =
         createAuthEventWithReason(accountId, "TOKEN_REFRESH", "FAILURE", "TOKEN_REUSE_DETECTED");
+    UUID accountPublicId = publicId(accountId);
 
     assertEquals(1, passwordLogin);
     assertEquals(1, tokenRefresh);
@@ -429,7 +431,7 @@ class AccountAuthSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
 				insert into auth_event (account_public_id, event_type, result, metadata)
 				values (?, 'PASSWORD_LOGIN', 'SUCCESS', '[]'::jsonb)
 				""",
-                publicId(accountId)));
+                accountPublicId));
   }
 
   /** 관리자 초대 생성, 수락, 회수는 auth_event taxonomy 안에서 허용되어야 합니다. */
