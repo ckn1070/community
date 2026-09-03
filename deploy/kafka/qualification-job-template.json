@@ -1,0 +1,66 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "kafka-access-probe",
+    "namespace": "car-community"
+  },
+  "spec": {
+    "activeDeadlineSeconds": 60,
+    "backoffLimit": 0,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app.kubernetes.io/name": "car-community",
+          "app.kubernetes.io/component": "kafka-access-probe"
+        }
+      },
+      "spec": {
+        "restartPolicy": "Never",
+        "automountServiceAccountToken": false,
+        "enableServiceLinks": false,
+        "containers": [
+          {
+            "name": "probe",
+            "image": "quay.io/strimzi/kafka@sha256:47ea0bd5cd416a92cbcfa248ae4b4b01a1e5d6b87aeafa67a691abdc29e20d0d",
+            "command": ["/bin/bash", "-ec"],
+            "args": [
+              "PASSWORD=\"$(cat /etc/kafka/identity/user.password)\"\ncat >/tmp/client.properties <<EOF\nsecurity.protocol=SSL\nssl.truststore.type=PEM\nssl.truststore.location=/etc/kafka/ca/ca.crt\nssl.keystore.type=PKCS12\nssl.keystore.location=/etc/kafka/identity/user.p12\nssl.keystore.password=${PASSWORD}\nssl.endpoint.identification.algorithm=https\nEOF\nunset PASSWORD\nCOMMAND"
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {"drop": ["ALL"]},
+              "readOnlyRootFilesystem": true,
+              "runAsNonRoot": true
+            },
+            "volumeMounts": [
+              {"name": "tmp", "mountPath": "/tmp"},
+              {"name": "cluster-ca", "mountPath": "/etc/kafka/ca", "readOnly": true},
+              {"name": "identity", "mountPath": "/etc/kafka/identity", "readOnly": true}
+            ]
+          }
+        ],
+        "volumes": [
+          {"name": "tmp", "emptyDir": {"sizeLimit": "16Mi"}},
+          {
+            "name": "cluster-ca",
+            "secret": {
+              "secretName": "car-community-cluster-ca-cert",
+              "items": [{"key": "ca.crt", "path": "ca.crt"}]
+            }
+          },
+          {
+            "name": "identity",
+            "secret": {
+              "secretName": "IDENTITY",
+              "items": [
+                {"key": "user.p12", "path": "user.p12"},
+                {"key": "user.password", "path": "user.password"}
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -9,6 +9,10 @@ spring:
   config:
     import: optional:file:.env[.properties]
 
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:}
+
   # JPA와 Flyway가 함께 사용하는 데이터베이스 접속 정보입니다.
   datasource:
     # 로컬 기본값만 두고, 환경별 접속 정보는 DB_URL로 덮어씁니다.
@@ -49,6 +53,47 @@ springdoc:
     path: /swagger-ui.html
 
 carmunity:
+  kafka:
+    cleanup-enabled: ${KAFKA_CLEANUP_ENABLED:false}
+    relay-enabled: ${KAFKA_RELAY_ENABLED:false}
+    consumer-enabled: ${KAFKA_CONSUMER_ENABLED:false}
+    sync-notifications-enabled: ${KAFKA_SYNC_NOTIFICATIONS_ENABLED:true}
+    relay:
+      properties:
+        security.protocol: ${KAFKA_RELAY_SECURITY_PROTOCOL:PLAINTEXT}
+        ssl.truststore.type: ${KAFKA_TRUSTSTORE_TYPE:PEM}
+        ssl.truststore.location: ${KAFKA_CA_PATH:}
+        ssl.keystore.type: ${KAFKA_RELAY_KEYSTORE_TYPE:PKCS12}
+        ssl.keystore.location: ${KAFKA_RELAY_KEYSTORE_PATH:}
+        ssl.keystore.password: ${KAFKA_RELAY_KEYSTORE_PASSWORD:}
+        ssl.endpoint.identification.algorithm: https
+    consumer:
+      properties:
+        security.protocol: ${KAFKA_CONSUMER_SECURITY_PROTOCOL:PLAINTEXT}
+        ssl.truststore.type: ${KAFKA_TRUSTSTORE_TYPE:PEM}
+        ssl.truststore.location: ${KAFKA_CA_PATH:}
+        ssl.keystore.type: ${KAFKA_CONSUMER_KEYSTORE_TYPE:PKCS12}
+        ssl.keystore.location: ${KAFKA_CONSUMER_KEYSTORE_PATH:}
+        ssl.keystore.password: ${KAFKA_CONSUMER_KEYSTORE_PASSWORD:}
+        ssl.endpoint.identification.algorithm: https
+    dlt:
+      properties:
+        security.protocol: ${KAFKA_DLT_SECURITY_PROTOCOL:PLAINTEXT}
+        ssl.truststore.type: ${KAFKA_TRUSTSTORE_TYPE:PEM}
+        ssl.truststore.location: ${KAFKA_CA_PATH:}
+        ssl.keystore.type: ${KAFKA_DLT_KEYSTORE_TYPE:PKCS12}
+        ssl.keystore.location: ${KAFKA_DLT_KEYSTORE_PATH:}
+        ssl.keystore.password: ${KAFKA_DLT_KEYSTORE_PASSWORD:}
+        ssl.endpoint.identification.algorithm: https
+    replay:
+      properties:
+        security.protocol: ${KAFKA_REPLAY_SECURITY_PROTOCOL:PLAINTEXT}
+        ssl.truststore.type: ${KAFKA_TRUSTSTORE_TYPE:PEM}
+        ssl.truststore.location: ${KAFKA_CA_PATH:}
+        ssl.keystore.type: ${KAFKA_REPLAY_KEYSTORE_TYPE:PKCS12}
+        ssl.keystore.location: ${KAFKA_REPLAY_KEYSTORE_PATH:}
+        ssl.keystore.password: ${KAFKA_REPLAY_KEYSTORE_PASSWORD:}
+        ssl.endpoint.identification.algorithm: https
   community:
     # 기반 배포와 사용자 공개 활성화를 분리합니다.
     enabled: ${COMMUNITY_ENABLED:false}

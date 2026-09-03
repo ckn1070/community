@@ -26,3 +26,13 @@ spec:
       kind: Job
     - group: networking.k8s.io
       kind: Ingress
+    - group: networking.k8s.io
+      kind: NetworkPolicy
+    - group: kafka.strimzi.io
+      kind: Kafka
+    - group: kafka.strimzi.io
+      kind: KafkaNodePool
+    - group: kafka.strimzi.io
+      kind: KafkaTopic
+    - group: kafka.strimzi.io
+      kind: KafkaUser

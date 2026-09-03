@@ -1,0 +1,65 @@
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: single-node
+  labels:
+    strimzi.io/cluster: car-community
+spec:
+  replicas: 1
+  roles: [controller, broker]
+  resources:
+    requests: {cpu: 250m, memory: 512Mi, ephemeral-storage: 512Mi}
+    limits: {cpu: "1", memory: 768Mi, ephemeral-storage: 3Gi}
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: ephemeral
+        kraftMetadata: shared
+        sizeLimit: 2Gi
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: car-community
+spec:
+  kafka:
+    version: 4.2.1
+    metadataVersion: 4.2-IV1
+    listeners:
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication: {type: tls}
+        configuration:
+          networkPolicyPeers:
+            - podSelector:
+                matchLabels:
+                  app.kubernetes.io/name: car-community
+    authorization: {type: simple}
+    config:
+      auto.create.topics.enable: false
+      default.replication.factor: 1
+      min.insync.replicas: 1
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+  entityOperator:
+    topicOperator:
+      jvmOptions:
+        -Xms: 64m
+        -Xmx: 128m
+      resources:
+        requests: {cpu: 25m, memory: 64Mi, ephemeral-storage: 32Mi}
+        limits: {cpu: 250m, memory: 192Mi, ephemeral-storage: 256Mi}
+    userOperator:
+      jvmOptions:
+        -Xms: 64m
+        -Xmx: 128m
+      resources:
+        requests: {cpu: 25m, memory: 64Mi, ephemeral-storage: 32Mi}
+        limits: {cpu: 250m, memory: 192Mi, ephemeral-storage: 256Mi}

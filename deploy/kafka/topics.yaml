@@ -1,0 +1,19 @@
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: community.conversation-created.v1
+  labels: {strimzi.io/cluster: car-community}
+spec:
+  partitions: 3
+  replicas: 1
+  config: {min.insync.replicas: 1, retention.ms: 86400000, retention.bytes: 67108864, segment.bytes: 16777216}
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: community.conversation-created.v1.dlt
+  labels: {strimzi.io/cluster: car-community}
+spec:
+  partitions: 3
+  replicas: 1
+  config: {min.insync.replicas: 1, retention.ms: 86400000, retention.bytes: 67108864, segment.bytes: 16777216}

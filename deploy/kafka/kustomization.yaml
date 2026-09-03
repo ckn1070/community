@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: car-community
+resources:
+  - cluster.yaml
+  - topics.yaml
+  - users.yaml
+  - network-policy.yaml

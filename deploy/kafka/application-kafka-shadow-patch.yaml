@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: car-community}
+spec:
+  template:
+    spec:
+      containers:
+        - name: application
+          env:
+            - {name: KAFKA_RELAY_ENABLED, value: "true"}
+            - {name: KAFKA_CONSUMER_ENABLED, value: "true"}
+            - {name: KAFKA_CLEANUP_ENABLED, value: "false"}
+            - {name: KAFKA_SYNC_NOTIFICATIONS_ENABLED, value: "true"}

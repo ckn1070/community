@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: car-community}
+spec:
+  template:
+    spec:
+      containers:
+        - name: application
+          env:
+            - {name: KAFKA_BOOTSTRAP_SERVERS, value: car-community-kafka-bootstrap:9093}
+            - {name: KAFKA_RELAY_SECURITY_PROTOCOL, value: SSL}
+            - {name: KAFKA_CONSUMER_SECURITY_PROTOCOL, value: SSL}
+            - {name: KAFKA_DLT_SECURITY_PROTOCOL, value: SSL}
+            - {name: KAFKA_CA_PATH, value: /etc/car-community/kafka/ca/ca.crt}
+            - {name: KAFKA_RELAY_KEYSTORE_PATH, value: /etc/car-community/kafka/relay/user.p12}
+            - name: KAFKA_RELAY_KEYSTORE_PASSWORD
+              valueFrom: {secretKeyRef: {name: community-relay, key: user.password}}
+            - {name: KAFKA_CONSUMER_KEYSTORE_PATH, value: /etc/car-community/kafka/consumer/user.p12}
+            - name: KAFKA_CONSUMER_KEYSTORE_PASSWORD
+              valueFrom: {secretKeyRef: {name: notification-consumer, key: user.password}}
+            - {name: KAFKA_DLT_KEYSTORE_PATH, value: /etc/car-community/kafka/dlt/user.p12}
+            - name: KAFKA_DLT_KEYSTORE_PASSWORD
+              valueFrom: {secretKeyRef: {name: notification-dlt-writer, key: user.password}}
+          volumeMounts:
+            - {name: kafka-ca, mountPath: /etc/car-community/kafka/ca, readOnly: true}
+            - {name: kafka-relay, mountPath: /etc/car-community/kafka/relay, readOnly: true}
+            - {name: kafka-consumer, mountPath: /etc/car-community/kafka/consumer, readOnly: true}
+            - {name: kafka-dlt, mountPath: /etc/car-community/kafka/dlt, readOnly: true}
+      volumes:
+        - name: kafka-ca
+          secret: {secretName: car-community-cluster-ca-cert, items: [{key: ca.crt, path: ca.crt}]}
+        - name: kafka-relay
+          secret: {secretName: community-relay, items: [{key: user.p12, path: user.p12}]}
+        - name: kafka-consumer
+          secret: {secretName: notification-consumer, items: [{key: user.p12, path: user.p12}]}
+        - name: kafka-dlt
+          secret: {secretName: notification-dlt-writer, items: [{key: user.p12, path: user.p12}]}

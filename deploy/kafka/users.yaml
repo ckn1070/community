@@ -1,0 +1,67 @@
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: community-relay
+  labels: {strimzi.io/cluster: car-community}
+spec:
+  authentication: {type: tls}
+  authorization:
+    type: simple
+    acls:
+      - resource: {type: topic, name: community.conversation-created.v1, patternType: literal}
+        operations: [Write, Describe]
+        host: "*"
+      - resource: {type: cluster, patternType: literal}
+        operations: [IdempotentWrite]
+        host: "*"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: notification-consumer
+  labels: {strimzi.io/cluster: car-community}
+spec:
+  authentication: {type: tls}
+  authorization:
+    type: simple
+    acls:
+      - resource: {type: topic, name: community.conversation-created.v1, patternType: literal}
+        operations: [Read, Describe]
+        host: "*"
+      - resource: {type: group, name: notification.community-conversation.v1, patternType: literal}
+        operations: [Read, Describe]
+        host: "*"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: notification-dlt-writer
+  labels: {strimzi.io/cluster: car-community}
+spec:
+  authentication: {type: tls}
+  authorization:
+    type: simple
+    acls:
+      - resource: {type: topic, name: community.conversation-created.v1.dlt, patternType: literal}
+        operations: [Write, Describe]
+        host: "*"
+      - resource: {type: cluster, patternType: literal}
+        operations: [IdempotentWrite]
+        host: "*"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: community-replay
+  labels: {strimzi.io/cluster: car-community}
+spec:
+  authentication: {type: tls}
+  authorization:
+    type: simple
+    acls:
+      - resource: {type: topic, name: community.conversation-created.v1, patternType: literal}
+        operations: [Write, Describe]
+        host: "*"
+      - resource: {type: cluster, patternType: literal}
+        operations: [IdempotentWrite]
+        host: "*"
