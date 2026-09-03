@@ -15,7 +15,8 @@
 - 구현 세부사항에 과하게 결합된 테스트를 피합니다.
 - 빠른 단위 테스트를 우선하고, 필요한 곳에 slice/integration 테스트를 추가합니다.
 - 테스트가 실패하면 실패 이유가 명확해야 합니다.
-- PostgreSQL Testcontainers 테스트는 Docker 부재를 skip으로 처리하지 않고 전체 검증을 실패시킵니다.
+- PostgreSQL·Kafka Testcontainers 테스트는 Docker 부재를 skip으로 처리하지 않고 전체 검증을 실패시킵니다.
+- Kafka 전달 테스트는 실제 broker protocol, DLT, offset, broker 중단과 topic·group data loss를 receipt·inbox 결과와 함께 검증합니다.
 - 공통 지원 클래스의 계약 테스트는 `disabledWithoutDocker = false`와 고정 PostgreSQL image를 검사하고, ArchUnit으로 지원 클래스 밖의 직접 Testcontainers 사용을 금지합니다.
 - 최종 실행과 성공·실패 판정은 Docker daemon preflight 뒤 재사용 없이 실행하는 Gradle `check`와 Testcontainers가 소유합니다.
 

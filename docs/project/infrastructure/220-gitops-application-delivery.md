@@ -43,10 +43,12 @@ exact staging overlay를 읽습니다.
 ```text
 deploy/
 ├── base/
+├── kafka/  # U6 전까지 staging overlay에 포함하지 않는 desired state·application patch
 └── overlays/
     └── stg/
 ```
 
+Kafka CR과 application Kafka patch는 [380 Kafka lifecycle](../../operations/380-kafka-lifecycle-runbook.md)의 CRD·operator·AppProject·mTLS gate 뒤 별도 activation change로 staging overlay에 포함합니다.
 현재 application·environment가 하나라 Application 하나를 사용하고 app-of-apps와
 ApplicationSet을 도입하지 않습니다. Scale·multi-cluster·여러 application의 실제 반복 패턴이
 생기면 도입 비용과 failure domain을 다시 평가합니다.

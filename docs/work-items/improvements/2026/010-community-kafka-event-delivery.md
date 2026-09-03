@@ -2,23 +2,19 @@
 
 ## 상태
 
-Planned
+In Progress
 
-## 계획 단계
-
-계획 완료
-
-## 현재 결론과 다음 행동
+## 결과
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 결론 | 해결 설계와 U1~U8 실행 계획을 확정했습니다. 전체 상태는 `Planned`, 계획 단계는 `계획 완료`입니다. 다음 단계는 구현입니다. |
+| 현재 결론 | U1~U5 repository 구현과 실제 PostgreSQL·Kafka를 포함한 전체 로컬 품질 gate를 완료했습니다. 실제 cluster 설치·인증 검증(U6), 비동기 전환·rollback qualification(U7), exact SHA의 CI·Sonar 확인(U8)은 아직 실행하지 않았습니다. |
 | 닫힌 결과 경계 | Strimzi 단일-node Kafka와 Community 댓글·답글 → 서비스 안 알림 연결, 누락·사용자 중복 방지, 재시작·데이터 손실 복구를 포함합니다. 별도 부하·장애 시험 플랫폼은 후속 범위입니다. |
 | 선행 외부 gate | 실제 cluster 자원·환경 권한은 U6 적용부터, Community 기반 활성화 증거는 U7 전환부터 필요합니다. 이 입력 없이도 U1~U5의 repository 작업을 준비할 수 있습니다. |
-| 남은 gate | 계획 확정에 남은 gate는 없습니다. U6의 실제 환경 적용과 U7의 Community 전환 조건은 각 실행 단계에서 확인합니다. |
-| 현재 행동 주체 | 다음 단계의 구현자가 U1의 댓글·이벤트 원자 저장부터 구현·자동 검증을 진행합니다. U5의 배포 산출물 준비는 독립적으로 진행할 수 있습니다. |
-| 사용자 차례 | 계획에 대한 추가 선택·재확정은 없습니다. |
-| 현재 행동 뒤 결과 | 구현 착수 시 `In Progress`로 전환하고 각 실행 단위의 완료 증거를 확인합니다. 실제 환경 적용은 U6·U7의 선행 조건을 충족한 뒤 진행합니다. |
+| 남은 gate | U6·U7은 target cluster와 live 적용 권한, U8 원격 gate는 push된 exact SHA가 필요합니다. 로컬 결과로 대신 완료 처리하지 않습니다. |
+| 현재 행동 주체 | 다음 실행자는 platform 운영자입니다. Kafka runbook의 사전 확인부터 U6 live 설치·인증 시험을 수행합니다. |
+| 사용자 차례 | 기술 선택은 닫혔습니다. Live U6·U7 실행을 시작하려면 target cluster 변경 권한을 명시해야 합니다. |
+| 현재 행동 뒤 결과 | U6 통과 뒤 capability-off 상태에서 U7의 shadow·async 전환과 rollback을 검증하고, push된 exact SHA로 U8 CI·Sonar를 확인합니다. |
 
 ## 진행 지도
 
@@ -29,10 +25,10 @@ Planned
 | 해결 설계 | 완료 | 사용자 기술 선택과 Kafka 구축 우선 범위를 반영했습니다. D9-A는 Agent 기술 선택이며 부하·장애 플랫폼은 후속 범위입니다. | 추가 사용자 선택 없음 |
 | 실행 계획 | 완료 | U1~U8에 결과·의존·검증·전환·복구와 문서 책임을 연결했습니다. | 확정된 순서와 합류점을 구현 입력으로 사용합니다. |
 | 계획 검증·확정 | 완료 | 실행 계획의 source·구조·내용 검증과 사용자 확정을 마쳤습니다. 검증된 `Planned` 계획이 구현 기준선입니다. | 추가 사용자 선택·재확정 없음 |
-| 개발·결과 검증 | 다음 | 확정된 `Planned` baseline에서 U1 구현·자동 검증을 시작할 수 있습니다. Kafka 전환 qualification은 U7에서 Community 기반 배포·활성화 검증에 순서를 맞춥니다. | 구현 요청 시 U1부터 착수합니다. U5는 독립 준비할 수 있습니다. |
-| 영구 SOT·Git 마무리 | 조건부 후속 | 검증된 실제 event·module·운영 계약만 canonical 문서에 승격하고 승인된 Git·remote 효과만 수행합니다. | 구현·검증 결과가 생긴 뒤 해당 권한 범위에서 진행합니다. |
+| 개발·결과 검증 | 부분 완료 | U1~U5 repository 결과가 실제 PostgreSQL·Kafka 통합 시험과 전체 `check`를 통과했습니다. U6·U7 live 검증과 U8 원격 품질 gate는 미실행입니다. | 독립 재검증을 닫은 뒤 U6 사전 확인에서 재개합니다. |
+| 영구 SOT·Git 마무리 | 진행 중 | U1~U5 계약을 SOT·runbook에 동기화했습니다. 독립 재검증 뒤 의미 단위 commit을 만들며 push는 수행하지 않습니다. | Live 결과는 U6·U7 실행 뒤 같은 문서에 추가합니다. |
 
-## 달성할 결과
+## 구현·검증할 결과
 
 - Community 댓글·답글 작성은 messaging 처리 속도·장애에서 분리됩니다.
 - 댓글·답글 작성과 전달할 사실 사이에는 한쪽만 남는 유실이 없고, 복구 뒤 서비스 안 알림이
@@ -45,6 +41,23 @@ Planned
   주장하지 않습니다.
 - Production topology와 수치는 peak·SLO·RPO·RTO·예산·운영 책임이 정해진 뒤 별도 승인합니다.
 
+## 구현 결과와 남은 gate
+
+| 실행 단위 | 현재 결과 | 검증·다음 gate |
+| --- | --- | --- |
+| U1 | 공개 V1 event와 Community outbox를 댓글 transaction에 원자 저장 | 실제 PostgreSQL에서 rollback·재요청·동시 동일 요청·wire fixture 검증 완료 |
+| U2 | 별도 relay와 Notification consumer가 receipt·inbox를 같은 transaction에 저장 | 실제 Kafka에서 0·1·2명, 자기 알림 제외, async-only 결과 검증 완료 |
+| U3 | `SKIP LOCKED` claim·30초 lease·fencing, 제한 retry와 DLT ack 경계 구현 | 중복 발행, retry 소진, DLT 실패, DB commit 뒤 offset 실패를 실제 Kafka·PostgreSQL로 검증 완료 |
+| U4 | 완료 조회, terminal 근거, 7일 보존·100건 cleanup, dry-run/승인 replay 구현 | broker 중단·topic/group 소실 뒤 미완료만 복구하고 누락·사용자 중복 0 검증 완료 |
+| U5 | Strimzi 1.2.0 설치본, Kafka 4.2.1 단일-node CR·topic·role ACL·mTLS 설정 준비 | 세 Kustomize 경로 render와 자동 staging 미포함 계약 검증 완료 |
+| U6 | 미실행 | Target Kubernetes API의 CRD·자원·ARM64·mTLS·ACL·NetworkPolicy를 live 검증해야 함 |
+| U7 | 미실행 | Community capability-off 선행 조건 뒤 shadow·async 전환·rollback을 live 검증해야 함 |
+| U8 | 부분 완료 | 로컬 SOT·runbook과 품질 검증을 마친 뒤, push된 exact SHA의 required CI·Sonar가 남음 |
+
+현재 일반 Deployment의 Kafka 기능 flag는 기본값이 꺼져 있고 동기 알림 fallback은 켜져 있습니다.
+`deploy/kafka`는 U6 전까지 `deploy/overlays/stg`에 포함되지 않으므로 이 repository 결과만으로
+cluster나 application 전달 경로가 활성화되지 않습니다.
+
 ## 현재 문제
 
 - Community 구현 후보는 저장소에 있지만 원 기능 work item은 아직 `In Progress`이고
@@ -53,15 +66,15 @@ Planned
 - `CommunityService.createComment()`는 댓글과 알림 수신 후보를 계산한 뒤 같은 transaction에서
   `CommunityConversationNotification.store()`를 호출합니다. 알림 저장 실패가 댓글 작성까지
   rollback하므로 사용자의 핵심 write가 후속 projection의 장애와 결합돼 있습니다.
-- Community와 Notification은 하나의 Spring Boot artifact와 PostgreSQL을 사용하고 현재 Kafka
-  client·broker·outbox·처리 영수증은 없습니다. 따라서 broker를 추가하는 것만으로 DB 업무
-  상태와 event 전달 사이의 유실·중복·재시작 경계가 생기지 않습니다.
+- 구현 전에는 Community와 Notification이 하나의 Spring Boot artifact와 PostgreSQL만 사용해
+  Kafka client·broker·outbox·처리 영수증이 없었습니다. 현재 후보는 이 gap을 outbox·receipt와
+  실제 Kafka relay·consumer로 보완하며, U6·U7 live 적용 전까지 운영 경로는 활성화되지 않습니다.
 - 같은 사건을 소비할 검색 색인·활동 통계 등이 늘면 생산자가 각 consumer를 동기로 호출하는
   구조는 장애 반경과 배포 결합을 계속 키웁니다.
 - Staging은 ARM64 단일 Kubernetes node에서 control plane과 application을 함께 실행합니다.
   이 환경의 성공만으로 application과 broker가 분리된 큰 부하·고가용성을 증명할 수 없습니다.
-- 현재 저장소에는 event 발행률·lag·backlog 복구와 broker 장애를 사용자 결과까지 대조하는
-  반복 가능한 qualification artifact가 없습니다.
+- 현재 저장소에는 local broker 중단·data loss 통합 시험과 U6/U7 qualification template·runbook이
+  있습니다. Live 결과와 exact SHA 원격 gate는 아직 없습니다.
 
 ## 범위
 

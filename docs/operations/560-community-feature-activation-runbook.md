@@ -4,6 +4,8 @@
 생성·수렴시킨 뒤 별도 GitOps 변경으로 Community route를 활성화하고 Swagger 노출을
 확인하는 전용 수명주기를 소유합니다. 전체 제품 수용은 별도 qualification owner가 필요합니다.
 
+비동기 댓글 알림을 함께 켜려면 [380 Kafka lifecycle](380-kafka-lifecycle-runbook.md)의 capability-off shadow·async·rollback qualification을 먼저 완료합니다.
+
 ## 실행 계약
 
 | 항목 | 계약 |

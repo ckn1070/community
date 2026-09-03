@@ -2,23 +2,19 @@
 
 ## 상태
 
-Planned
+In Progress
 
-## 계획 단계
-
-계획 완료
-
-## 현재 결론과 다음 행동
+## 결과
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 결론 | 해결 설계와 U1~U8 실행 계획을 확정했습니다. 전체 상태는 `Planned`, 계획 단계는 `계획 완료`입니다. 다음 단계는 구현입니다. |
+| 현재 결론 | U1~U5의 repository 구현과 로컬 검증을 완료했습니다. 실제 cluster 설치·인증 검증(U6), 비동기 전환·rollback qualification(U7), exact SHA의 CI·Sonar 확인(U8)은 아직 실행하지 않았습니다. |
 | 닫힌 결과 경계 | Strimzi 단일-node Kafka와 Community 댓글·답글 → 서비스 안 알림 연결, 누락·사용자 중복 방지, 재시작·데이터 손실 복구를 포함합니다. 별도 부하·장애 시험 플랫폼은 후속 범위입니다. |
 | 선행 외부 gate | 실제 cluster 자원·환경 권한은 U6 적용부터, Community 기반 활성화 증거는 U7 전환부터 필요합니다. 이 입력 없이도 U1~U5의 repository 작업을 준비할 수 있습니다. |
-| 남은 gate | 계획 확정에 남은 gate는 없습니다. U6의 실제 환경 적용과 U7의 Community 전환 조건은 각 실행 단계에서 확인합니다. |
-| 현재 행동 주체 | 다음 단계의 구현자가 U1의 댓글·이벤트 원자 저장부터 구현·자동 검증을 진행합니다. U5의 배포 산출물 준비는 독립적으로 진행할 수 있습니다. |
-| 사용자 차례 | 계획에 대한 추가 선택·재확정은 없습니다. |
-| 현재 행동 뒤 결과 | 구현 착수 시 `In Progress`로 전환하고 각 실행 단위의 완료 증거를 확인합니다. 실제 환경 적용은 U6·U7의 선행 조건을 충족한 뒤 진행합니다. |
+| 남은 gate | U6·U7은 target cluster와 live 적용 권한, U8 원격 gate는 push된 exact SHA가 필요합니다. 로컬 결과로 대신 완료 처리하지 않습니다. |
+| 현재 행동 주체 | 다음 실행자는 platform 운영자입니다. Kafka runbook의 사전 확인부터 U6 live 설치·인증 시험을 수행합니다. |
+| 사용자 차례 | 기술 선택은 닫혔습니다. Live U6·U7 실행을 시작하려면 target cluster 변경 권한을 명시해야 합니다. |
+| 현재 행동 뒤 결과 | U6 통과 뒤 capability-off 상태에서 U7의 shadow·async 전환과 rollback을 검증하고, push된 exact SHA로 U8 CI·Sonar를 확인합니다. |
 
 ## 문서 책임과 설계 입력
 
@@ -37,8 +33,8 @@ test 명령·설치 명령·exact version·image digest·resource
   현재 동작이 integration test로 고정돼 있습니다.
 - Notification은 `(recipient_account_public_id, source_content_public_id)` unique constraint로
   같은 source comment의 중복 inbox를 막고 `created_at, id` 순서로 inbox를 조회합니다.
-- Community와 Notification은 하나의 Spring Boot artifact와 PostgreSQL을 사용합니다. Kafka
-  client·broker·outbox·처리 영수증은 아직 없습니다.
+- Community와 Notification은 하나의 Spring Boot artifact와 PostgreSQL을 사용합니다. 현재
+  구현은 Community outbox·relay, Kafka client와 Notification receipt·consumer를 이 경계 안에 둡니다.
 - 현재 architecture SOT는 `notification`을 독립 업무 정책이 없는 기술 통합 경계로 분류합니다.
   이 작업은 그 사실을 무시해 새 Supporting Bounded Context라고 선언하지 않습니다.
 - Staging은 ARM64 단일 Kubernetes node에서 control plane과 application을 함께 실행합니다.

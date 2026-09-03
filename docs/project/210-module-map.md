@@ -9,8 +9,8 @@
 | --- | --- | --- |
 | `account` | 구현됨 | 인증 주체, profile, password credential, role assignment, verification challenge, admin invitation |
 | `auth` | 구현됨 | password session, JWT 발급·검증, refresh token lifecycle, logout, Bearer 인증 경계 |
-| `notification` | 구현됨 | 이메일 발송 공개 API와 Community 서비스 안 inbox, Resend adapter, transactional template, provider 오류 변환 |
-| `community` | 구현됨·비활성 | 게시판, 게시글·댓글 identity와 visibility, 반응, 공개 읽기·보호 쓰기 API |
+| `notification` | 구현됨 | 이메일 발송 공개 API와 Community 서비스 안 inbox·event receipt, 완료 조회, Kafka consumer, Resend adapter, transactional template, provider 오류 변환 |
+| `community` | 구현됨·비활성 | 게시판, 게시글·댓글 identity와 visibility, 반응, 공개 읽기·보호 쓰기 API, event outbox·relay·보존·재발행 |
 | `moderation` | 구현됨·비활성 | 사용자 신고, 관리자 신고 조회·종결과 Community 공개 hide 협력 |
 | `media` | 구현됨·비활성 | private 이미지 asset·usage·job, 검증·정리 worker와 S3 adapter |
 | `securityaudit` | 구현됨 | 인증·인가 보안 감사 append 계약과 `auth_event` 단일 persistence writer |
@@ -37,6 +37,7 @@ account -> notification :: api
 account -X-> notification.internal
 
 community -> media :: api, notification :: api
+community/notification -> shared :: integration
 moderation -> community :: api
 community -X-> media.internal, notification.internal
 moderation -X-> community.internal
@@ -54,6 +55,7 @@ catalog -> shared :: error
 - `securityaudit`는 caller transaction 참여와 `REQUIRES_NEW` 독립 보존 계약을 분리하고
   `auth_event`의 유일한 JPA mapping·writer를 소유합니다.
 - `notification`은 account 상태와 token lifecycle을 소유하지 않습니다.
+- Community는 댓글과 outbox를 원자 저장하고, Notification은 Kafka 수신 receipt와 inbox를 원자 저장합니다. 완료 여부는 `notification::api`로만 조회합니다.
 - 공용 UTC `Clock`은 `config.TimeConfiguration`만 생성하고 업무 module은 주입받습니다.
 - `catalog`는 다른 module의 내부 상태를 쓰지 않습니다. 공개 package는 검색 입력에 사용하는
   차체·동력·연료·판매 상태 enum만 제공하고, 조회 use case·read model·port는

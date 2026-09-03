@@ -8,7 +8,9 @@ Argo CD Core 설치가 끝난 staging cluster에 application DB role과 Git 밖 
 [420 GitOps 배포와 rollback](420-gitops-deployment-and-rollback-runbook.md), GitHub App
 private key 교체는
 [520 Repository credential 교체](520-argocd-repository-credential-rotation-runbook.md)가
-소유합니다. 같은 repository 사용·read-only 인증·AppProject·자동 sync의 작동 원리와
+소유합니다. Kafka namespace CR과 역할별 credential을 추가하는 후속 설치·전환은 [380 Kafka lifecycle](380-kafka-lifecycle-runbook.md)이 소유합니다.
+
+같은 repository 사용·read-only 인증·AppProject·자동 sync의 작동 원리와
 선택 이유는 [160 Argo CD platform](../project/infrastructure/160-argocd-platform.md)에서
 확인합니다.
 

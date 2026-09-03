@@ -23,6 +23,7 @@ GitHub source·deploy desired state
 Kubernetes workload
 ├── PreSync Migration Job ─> RDS schema·runtime 권한 동기화
 ├── Application Deployment ─> RDS runtime access
+├── Strimzi single-node Kafka desired state (U6 live 적용 전)
 └── NodePort Service·Ingress ─> AWS Load Balancer Controller ─> ALB
 
 Cloudflare DNS-only stg-api.example.com ─> ALB HTTPS ─> NodePort ─> Pod
@@ -42,6 +43,7 @@ data를 소유합니다. ECR은 실행 image를 보관하고 Git의 `deploy/over
 | Database | RDS master·migrator·runtime credential을 역할별로 분리 | Migration Job과 Application Pod | [140 RDS PostgreSQL](140-rds-postgresql.md) |
 | Cluster | Host·containerd·kubeadm·Calico가 node 실행 상태를 만듦 | Argo CD와 application workload | [150 Kubernetes cluster](150-kubernetes-cluster.md) |
 | GitOps control plane | Read-only GitHub App과 AppProject가 repository·resource 범위를 제한 | `deploy/overlays/stg`를 Kubernetes에 수렴 | [160 Argo CD platform](160-argocd-platform.md) |
+| Event delivery | Strimzi operator와 역할별 mTLS KafkaUser가 private Kafka desired state를 구성 | Community outbox → Kafka → Notification receipt·inbox; [380 Kafka lifecycle](../../operations/380-kafka-lifecycle-runbook.md) |
 | Public ingress | LBC가 Git-owned Service·Ingress를 AWS ALB resource로 변환 | Public HTTPS request를 Pod로 전달 | [170 AWS Load Balancer ingress](170-aws-load-balancer-ingress.md) |
 | Delivery | GitHub Actions·ECR·GitOps reviewer·Argo CD가 서로 다른 identity를 사용 | Source revision을 승인된 live workload로 전달 | [200 CI/CD pipeline](200-ci-cd-pipeline.md) |
 

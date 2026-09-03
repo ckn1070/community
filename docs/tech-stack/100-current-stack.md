@@ -25,6 +25,7 @@
 | Spring Data JPA | persistence adapter |
 | jOOQ 3.19.32 | catalog 복합 조회 실행, record mapping과 Flyway 기반 schema code generation |
 | Flyway | PostgreSQL schema migration |
+| Spring for Apache Kafka | Community outbox relay, Notification consumer, 수동 ack·retry·DLT와 일회 replay client |
 | Spring Modulith 2.1.0 | module boundary model과 test 검증 |
 | springdoc-openapi 3.0.2 | 로컬 API 문서 |
 | Resend Java v4.15.0 | 이메일 provider adapter |
@@ -36,14 +37,15 @@
 
 - PostgreSQL JDBC driver
 - PostgreSQL용 Flyway database module
-- Flyway V1~V17 account/auth·catalog schema
+- Community event outbox·lease·보존과 Notification event receipt
+- Flyway V1~V29 account/auth·catalog·Community·Notification schema
 
 ## Test
 
 - Spring Boot JPA, Flyway, Security, Web MVC test starter
 - Spring Modulith test
 - ArchUnit JUnit 5 1.4.2
-- Testcontainers 2.0.5 BOM, JUnit Jupiter, PostgreSQL
+- Testcontainers 2.0.5 BOM, JUnit Jupiter, PostgreSQL, Kafka 4.2.1 고정 image
 - JUnit Platform Launcher
 
 ## 품질 기준

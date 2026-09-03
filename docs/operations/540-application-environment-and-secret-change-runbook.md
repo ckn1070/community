@@ -91,6 +91,8 @@ sudo KUBECONFIG=/etc/kubernetes/admin.conf \
 entrypoint**가 있는지 확인합니다. 기존 값 변경만 지원하는 절차나 전체 bootstrap을 임의로
 재사용하지 않습니다.
 
+Kafka 역할별 Secret·mTLS·identity rotation은 이 공용 절차에 복제하지 않고 [380 Kafka lifecycle](380-kafka-lifecycle-runbook.md)로 인계합니다.
+
 ## 2. 변경 경로 선택
 
 | Source에서 확인한 변경 | 실행 경로 |

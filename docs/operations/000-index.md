@@ -26,6 +26,7 @@ Runbook의 각 단계는 [150 문서화 워크플로우의 Procedure 실행 계�
 | Repository CI부터 ECR·Argo CD delivery 기반까지 처음 붙이기 | [Repository·delivery platform 최초 구축](300-repository-and-delivery-platform-bootstrap-runbook.md) |
 | Staging DB role·Secret·GitHub App·Application을 처음 연결하기 | [Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md) |
 | 배포된 Staging Application에 최초 Super Admin을 생성하고 초기 password 변경 완료 | [360 Super Admin 최초 bootstrap](360-super-admin-bootstrap-runbook.md) |
+| Strimzi Kafka를 설치·인증하고 전환·재발행·rotation 수행 | [380 Kafka lifecycle](380-kafka-lifecycle-runbook.md) |
 | Staging API를 internet-facing ALB와 HTTPS domain으로 처음 공개하기 | [370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md) |
 | `main` CI 성공 image의 ECR digest 확보 | [GitHub ECR image 게시](400-github-ecr-image-publishing-runbook.md) |
 | 현재 node가 private ECR exact digest를 pull·실행하는지 다시 점검 | [Private ECR pull 점검](410-private-ecr-image-pull-verification-runbook.md) |
@@ -74,7 +75,8 @@ Runbook의 각 단계는 [150 문서화 워크플로우의 Procedure 실행 계�
 [Repository·delivery platform 최초 구축](300-repository-and-delivery-platform-bootstrap-runbook.md)의
 단계별 선행 조건과 순서를
 확인한 뒤 필요한 단계를 실행합니다. `310`~`350`은 delivery 기반을, 선택 `360`은 최초
-Super Admin 운영 준비를, `370`은 외부 HTTPS 공개를 소유합니다.
+Super Admin 운영 준비를, `370`은 외부 HTTPS 공개를, 선택 `380`은 Kafka 설치·전환 lifecycle을
+소유합니다.
 
 | 순서 | 절차 |
 | --- | --- |
@@ -85,6 +87,7 @@ Super Admin 운영 준비를, `370`은 외부 HTTPS 공개를 소유합니다.
 | `350` | [Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md) |
 | 선택 `360` | [Super Admin 최초 bootstrap](360-super-admin-bootstrap-runbook.md) |
 | `370` | [370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md) |
+| 선택 `380` | [380 Kafka lifecycle](380-kafka-lifecycle-runbook.md) |
 
 ## `400` 평소 반복 delivery·점검
 

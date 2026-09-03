@@ -44,6 +44,35 @@ format 검사를 실행합니다. commit 범위는 `git diff --cached`로, 남�
 | `ADMIN_INVITATION_BASE_URL` | 관리자 초대 수락 화면 URL입니다. |
 | `PASSWORD_RESET_BASE_URL` | 비밀번호 재설정 화면 URL입니다. |
 
+Kafka 기능은 로컬 기본값에서 모두 비활성이고 기존 동기 알림만 활성입니다. 실제 relay나
+consumer를 켤 때는 Docker의 Testcontainers Kafka 검증 또는 직접 준비한 broker를 사용합니다.
+운영 mTLS 파일과 password는 로컬 개발을 위해 복사하지 않습니다.
+
+| key | 설명 |
+| --- | --- |
+| `KAFKA_BOOTSTRAP_SERVERS` | 활성 Kafka role이 접속할 broker 목록입니다. 비활성 상태에서는 비워 둡니다. |
+| `KAFKA_RELAY_ENABLED` | Community outbox relay를 켭니다. 기본값은 `false`입니다. |
+| `KAFKA_CONSUMER_ENABLED` | Notification consumer와 DLT writer를 켭니다. 기본값은 `false`입니다. |
+| `KAFKA_CLEANUP_ENABLED` | 완료 확인 뒤 7일이 지난 outbox cleanup을 켭니다. 기본값은 `false`입니다. |
+| `KAFKA_SYNC_NOTIFICATIONS_ENABLED` | 기존 동기 알림을 유지합니다. 기본값은 `true`입니다. |
+| `KAFKA_TRUSTSTORE_TYPE`, `KAFKA_CA_PATH` | 역할들이 공유하는 CA 형식과 경로입니다. 운영은 `PEM`과 Strimzi CA를 사용합니다. |
+| `KAFKA_RELAY_*` | relay 전용 protocol·keystore 형식·경로·password입니다. |
+| `KAFKA_CONSUMER_*` | consumer 전용 protocol·keystore 형식·경로·password입니다. |
+| `KAFKA_DLT_*` | DLT writer 전용 protocol·keystore 형식·경로·password입니다. |
+| `KAFKA_REPLAY_*` | 승인 replay Job만 사용하는 protocol·keystore 형식·경로·password입니다. 일반 runtime에 주입하지 않습니다. |
+
+로컬 PLAINTEXT broker에서는 해당 role의 `*_SECURITY_PROTOCOL=PLAINTEXT`를 사용하고 TLS
+경로·password는 비워 둡니다. Production profile에서 활성 role은 `SSL`, CA, 자기 역할의 PKCS12
+keystore와 password가 모두 없으면 시작에 실패합니다. Dry-run·terminal operation은 DB credential만,
+승인 replay는 DB credential과 replay credential만 사용합니다. 실제 Kafka 통합 시험은 별도 환경변수
+없이 다음처럼 pinned Testcontainers broker를 기동합니다.
+
+```bash
+docker info
+JAVA_HOME=<Java 21 경로> ./gradlew test \
+  --tests '*CommunityKafka*' --no-daemon --rerun-tasks --console=plain
+```
+
 Staging bootstrap key는 Spring local runtime key와 분리합니다.
 
 | key | 설명 |
@@ -109,7 +138,9 @@ typeset +x \
   AUTH_JWT_HMAC_SECRET AUTH_LOGIN_IDENTIFIER_HMAC_SECRET \
   STG_AUTH_JWT_HMAC_SECRET STG_AUTH_LOGIN_IDENTIFIER_HMAC_SECRET \
   COMMUNITY_CURSOR_HMAC_SECRET STG_COMMUNITY_CURSOR_HMAC_SECRET \
-  RESEND_API_KEY STG_RESEND_API_KEY SONAR_TOKEN
+  RESEND_API_KEY STG_RESEND_API_KEY \
+  KAFKA_RELAY_KEYSTORE_PASSWORD KAFKA_CONSUMER_KEYSTORE_PASSWORD \
+  KAFKA_DLT_KEYSTORE_PASSWORD KAFKA_REPLAY_KEYSTORE_PASSWORD SONAR_TOKEN
 ```
 
 `set +x`는 상속된 xtrace를 `.env`를 읽기 전에 끕니다. `typeset +x`는 source 전 이미

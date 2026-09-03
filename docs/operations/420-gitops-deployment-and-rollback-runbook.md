@@ -9,6 +9,8 @@ Source→image→GitOps→cluster actor와 자동화·수동 경계는
 [220 GitOps application delivery](../project/infrastructure/220-gitops-application-delivery.md)에서
 확인합니다.
 
+Kafka CR·application mTLS patch의 적용 순서와 결과 oracle은 [380 Kafka lifecycle](380-kafka-lifecycle-runbook.md)을 먼저 따릅니다.
+
 ## 실행 계약
 
 | 항목 | 계약 |

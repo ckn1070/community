@@ -103,6 +103,25 @@ DDD의 구현 기준은 충족하지만, Subdomain 분류·협력 주체·Contex
 로그인·token·invitation·감사 생명주기 전체를 일관된 모델이 소유하지는 않습니다. 이 전체
 coverage가 `전술적 DDD 선택 적용` 판정과 후속 계획의 보완 범위입니다.
 
+
+## Community 이벤트 전달 구조
+
+Community 댓글·답글 작성 transaction은 공개 `CommunityConversationCreatedV1`과 PostgreSQL
+outbox를 함께 저장합니다. Relay는 transaction 밖에서 한 건씩 claim해 Kafka broker ack 뒤
+발행 상태를 갱신합니다. Notification consumer는 event receipt와 기존 inbox를 하나의
+transaction으로 commit한 뒤 offset을 확정합니다. 이 구조는 Community write를 broker 상태와
+분리하면서 at-least-once 재전달을 receipt와 inbox unique 계약으로 수렴시킵니다.
+
+`shared::integration`은 versioned wire DTO만 소유합니다. Community는 outbox·lease·terminal·
+cleanup과 replay 원본의 writer이고, Notification은 receipt와 최종 수신자 계산의 writer입니다.
+Community는 `notification::api`의 batch 완료 조회로만 receipt를 확인합니다. 완료 영수증이나
+승인 근거가 없으면 원본을 지우지 않으며, 적격 표시 후 7일이 지난 행을 최대 100건씩 정리합니다.
+
+현재 Kafka runtime은 같은 Spring Boot artifact의 선택 기능입니다. Relay·consumer·cleanup은
+각각 기본 비활성이고 기존 동기 알림은 기본 활성입니다. 운영 replay·terminal은 HTTP API가
+아닌 같은 artifact의 일회 실행 command이며 일반 worker와 Web runtime을 강제로 끕니다.
+단일-node Strimzi 구성은 기능·복구 qualification용이고 production HA 근거가 아닙니다.
+
 ## 각 아키텍처의 역할
 
 | 적용 요소 | 이 프로젝트에서 해결하는 문제 |
@@ -126,15 +145,16 @@ Java module은 Bounded Context를 구현할 수 있는 구조적 수단이지만
 | --- | --- | --- | --- | --- |
 | `account` | 미확정 | 현재 후보 | `Account`와 verification/reset/invitation challenge 모델이 account graph·credential·terminal 규칙을 소유합니다. | Subdomain 유형과 조직적 Context Map 관계는 미확정입니다. |
 | `auth` | 미확정 | 현재 후보 | `RefreshSession` Aggregate Root와 auth service가 session access·refresh lifecycle을 소유합니다. | Subdomain 유형과 조직적 Context Map 관계는 미확정입니다. |
+| `catalog` | 미확정 | 현재 후보 | 차량 카탈로그 조회 모델과 관리 생명주기를 소유합니다. | Subdomain 유형과 조직적 Context Map 관계는 미확정입니다. |
+| `community` | 미확정 | 현재 후보 | 게시글·댓글·답글과 moderation 상태, event outbox 생명주기를 소유합니다. | Subdomain 유형, 운영 활성화와 Context Map 관계는 미확정입니다. |
 | `securityaudit` | Supporting 후보 | 현재 후보 | 공개 append 계약과 단일 `auth_event` writer가 감사 저장 생명주기를 소유합니다. | 보존·조회·retention 정책이 확장되면 Context 범위를 재검토합니다. |
 | `notification` | 해당 없음 | 아님 | 외부 발송 계약·provider adapter·설정만 확인되며 별도 Domain Model이 필요하다는 업무 규칙 근거는 없습니다. | 현재 기술 통합 경계입니다. 독립 업무 언어·규칙·상태 생명주기가 생기면 Subdomain과 Bounded Context 지위를 재판정합니다. [210 모듈 지도](210-module-map.md) |
 | `shared` | 해당 없음 | 아님 | 업무 규칙과 Domain Model을 두지 않습니다. | 업무 로직이 유입되지 않도록 현재 경계를 유지해야 합니다. [210 모듈 지도](210-module-map.md) |
 | `config` | 해당 없음 | 아님 | 업무 규칙과 Domain Model을 두지 않으며 공용 `Clock`을 조립합니다. | 기술 composition 경계입니다. |
 
-자동차 카탈로그, 커뮤니티와 그 밖의 미구현 제품 영역은 현재 main의 Java module이 아니므로
-현재 source 판정 집합에 포함하지 않습니다. 그러나 새 module을 설계·구현할 때는 업무 종류와
-관계없이 [120 DDD 개념과 적용 기준](../architecture/120-domain-driven-design.md)의 일반 기준을
-동일하게 적용합니다. 미래 경계를 영구 현재 사실로 미리 만들지 않습니다.
+그 밖의 미구현 제품 영역은 현재 main의 Java module이 아니므로 현재 source 판정 집합에
+포함하지 않습니다. 새 module을 설계·구현할 때는 업무 종류와 관계없이
+[120 DDD 개념과 적용 기준](../architecture/120-domain-driven-design.md)의 일반 기준을 적용합니다.
 
 ## 현재 Context 후보와 기술 경계 협력
 
