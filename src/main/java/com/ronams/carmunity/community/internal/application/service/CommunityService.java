@@ -5,14 +5,18 @@ import com.ronams.carmunity.account.api.CommunityAuthorProfileLookup;
 import com.ronams.carmunity.community.api.CommunityContentVisibility;
 import com.ronams.carmunity.community.internal.application.CommunityErrorCode;
 import com.ronams.carmunity.community.internal.application.CursorCodec;
+import com.ronams.carmunity.community.internal.application.port.out.ConversationEventOutboxPort;
 import com.ronams.carmunity.community.internal.domain.PostBody;
 import com.ronams.carmunity.community.internal.domain.PostTitle;
 import com.ronams.carmunity.media.api.PostMediaUsage;
 import com.ronams.carmunity.notification.api.CommunityConversationNotification;
 import com.ronams.carmunity.shared.error.ApiException;
+import com.ronams.carmunity.shared.integration.CommunityConversationCreatedV1;
+import com.ronams.carmunity.shared.integration.CommunityConversationCreatedV1.ConversationKind;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.LinkedHashSet;
@@ -38,6 +42,13 @@ public class CommunityService implements CommunityContentVisibility {
   private static final String REQUEST_HASH_FIELD = "requestHash";
   private static final String TITLE_PARAMETER = "title";
   private final JdbcClient jdbc;
+  private final ConversationEventOutboxPort outbox;
+  private final Clock clock;
+
+  @org.springframework.beans.factory.annotation.Value(
+      "${carmunity.kafka.sync-notifications-enabled:true}")
+  private boolean syncNotificationsEnabled;
+
   private final PostMediaUsage mediaUsage;
   private final CommunityConversationNotification notifications;
   private final CursorCodec cursorCodec;
@@ -273,10 +284,24 @@ public class CommunityService implements CommunityContentVisibility {
         .param("id", internal)
         .param("body", text)
         .update();
+    // 댓글과 전달 원본을 같은 transaction에 남깁니다. 기존 재요청 반환 경로에서는 재기록하지 않습니다.
+    outbox.append(
+        new CommunityConversationCreatedV1(
+            UUID.randomUUID(),
+            "CommunityConversationCreated",
+            1,
+            clock.instant(),
+            postId,
+            id,
+            parentId == null ? ConversationKind.COMMENT : ConversationKind.REPLY,
+            actor,
+            (UUID) post.get("author"),
+            parentAuthor));
     Set<UUID> recipients = new LinkedHashSet<>();
     recipients.add((UUID) post.get("author"));
     if (parentAuthor != null) recipients.add(parentAuthor);
-    notifications.store(actor, recipients, id, postId, parentId != null);
+    if (syncNotificationsEnabled)
+      notifications.store(actor, recipients, id, postId, parentId != null);
     return comment(id);
   }
 

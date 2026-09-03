@@ -3,6 +3,7 @@
       "account :: api",
       "media :: api",
       "notification :: api",
-      "shared :: error"
+      "shared :: error",
+      "shared :: integration"
     })
 package com.ronams.carmunity.community;

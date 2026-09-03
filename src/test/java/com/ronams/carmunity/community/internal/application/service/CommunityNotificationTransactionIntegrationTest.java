@@ -70,6 +70,12 @@ class CommunityNotificationTransactionIntegrationTest extends PostgreSqlIntegrat
                 .query(Long.class)
                 .single())
         .isZero();
+    assertThat(
+            jdbc.sql("SELECT COUNT(*) FROM community_event_outbox WHERE post_id=:post")
+                .param("post", postId)
+                .query(Long.class)
+                .single())
+        .isZero();
   }
 
   private UUID account(String name) {
