@@ -73,6 +73,88 @@ grouping·subtype과 계획을 투영하면 이미 실질 효과입니다. 이 �
 read 자체는 실질 효과가 아니며, source가 실제로 접근 불가능할 때만 추측하지 않고 그
 blocker를 반환합니다.
 
+### 사용자 요청 계약 잠금 gate
+
+상태 변경 원자가 있는 batch는 source discovery 뒤 첫 실질 commentary·specialist 선택·계획·
+위임·review·mutation·Git·외부 효과보다 먼저 다음 요청 계약을 하나의 identity로 잠급니다.
+
+```text
+현재 사용자 원문의 exact span
+→ 현재 표현이 실제로 가리키는 직접 선행 사용자 원문의 exact span
+→ 이후 명시적으로 확정·취소·대체된 논의 결과
+→ 대상·문장 기능·요구 결과·사용자 지정 reference와 그 역할·산출물 형식
+→ 포함·제외·순서·허용 효과·금지 효과·완료 oracle
+→ 차원별 사용자 지정 / authoritative source로 정의 / 별도 제약 없음·해당 없음 / 미확정
+→ 최상위 의미 source 역추적과 상호 양립 여부
+→ Locked / Unresolved
+```
+
+- 현재 메시지가 자기완결적이면 그 원문만 사용합니다. `진행해`, `그대로 해`처럼 선행
+  결과를 가리키는 표현은 직접 선행 문맥에서 활성 미완료 결과가 하나로 복원될 때만 그
+  결과에 결속합니다. 오래된 독립 요청, 비활성·무효화된 원자와 현재 후속 표현을 결합해
+  새 artifact·Git·외부 효과를 만들지 않습니다.
+- 대화 요약, compaction summary, 과거 operation map, Agent가 만든 계획·진단·복귀 의도와
+  비슷한 주제는 사용자 원문의 exact span이 아닙니다. 원문을 읽을 수 없거나 둘 이상의
+  대상·결과·효과가 남으면 `Unresolved`이며, 누락을 추정하거나 더 넓은 과거 요청을 선택하지
+  않습니다.
+- 사용자 지정 reference는 사용자가 구조·내용·형식·판정의 기준으로 명시한 접근 가능한
+  artifact입니다. 단순 참고 source와 구분해 그 역할을 계약에 보존하며, 별도 reference를
+  지정하지 않았으면 `별도 제약 없음`으로 닫습니다. Repository 사실이나 기술값이 독립
+  authoritative source에서 하나로 정해지면 해당 차원을 `authoritative source로 정의`로
+  닫고 사용자 결정으로 바꾸지 않습니다.
+- `Locked`는 모든 차원이 `사용자 지정`, `authoritative source로 정의` 또는 `별도 제약
+  없음·해당 없음` 중 하나이고 서로 양립하며, 사용자와 확정한 활성 결과가 누락 없이 보존될
+  때만 성립합니다. `미확정`이 하나라도 있으면 `Unresolved`입니다. Repository source·workflow·
+  도구 제약이 다른 결과를 요구하면 임의로 우선순위를 정하지 않고 아래 충돌 중단 gate로
+  보냅니다.
+- `Unresolved`이면 해당 batch의 source 복원과 결과를 바꾸는 exact 공백에 대한 최소 질문만
+  허용합니다. 계획·specialist·worker·reviewer·writer·mutation·Git·외부 효과와 원래 작업
+  복귀를 모두 시작하거나 재개하지 않습니다. 명확한 독립 batch가 따로 있더라도 같은 상위
+  결과나 write set을 소비하면 함께 중단합니다.
+- `EXECUTE` batch의 첫 실질 commentary는 잠근 계약에서 현재 대상과 결과, 사용자 지정
+  reference와 그 역할·형식·순서, 허용 효과와 금지 효과를 짧게 투영합니다. 이 projection과
+  이후 actor가 서로 다른 계약 identity를 소비하면 해당 후보와 후속 효과를 `Invalidated`로
+  돌립니다. 명확한 계약을 다시 승인받는 질문은 만들지 않습니다.
+- 사용자가 작업 주체·범위·권한·안전성·사실을 이의 제기하면 기존 잠금과 그 후손을 즉시
+  무효화합니다. 이의에 답하기 전과 새 사용자 원문에서 계약이 다시 `Locked`되기 전에는
+  pending 작업을 재개하지 않습니다.
+
+이 gate는 내부 체크리스트가 아니라 모든 상태 변경 경로의 fail-closed admission입니다.
+요청 계약 identity 없이 나온 계획·review·변경·Git 결과는 내용이 옳아도 현재 작업의 유효한
+후보나 완료 증거가 아닙니다.
+
+`Locked`는 요청의 의미가 고정됐다는 판정이지, Agent가 뒤에 만드는 계획을 일괄 허용한
+판정이 아닙니다. 현재 Agent는 전문 조사·상세 계획·실행 계획을 시작하기 전에 기존 요청
+계약에 예정 행동과 적용 workflow 조항을 직접 연결합니다. 이를 위한 저상세 행동 목록과
+source 확인만 먼저 허용하며, 기술안 작성·후손 조사·위임으로 적합성 확인을 대신하지 않습니다.
+
+| 대조 방향 | 행동 전에 확인할 것 |
+| --- | --- |
+| 사용자 지시·적용 조항 → 예정 행동 | 요구 결과·reference 역할·형식·확정값·순서·필수 검증·금지가 행동과 중단 지점에 빠짐없이 보존되는가 |
+| 예정 행동 → 사용자 지시·적용 조항 | 행동의 대상·효과·순서가 원문 또는 허용된 필수 선행 관계로 돌아가며, Agent의 계획·추천 자체를 근거로 삼지 않는가 |
+
+각 행동은 원문·조항의 위치, 실제 적용 내용과 `적합 / 불일치 / 상충 / 미증명` 판정을 같은
+세션 계약에 남깁니다. `읽음`, `준수 예정`, `Locked`와 조항 이름만으로는 적합 판정이 아닙니다.
+필수 선행 관계는 해당 행동을 빼면 어느 명시 결과·완료 조건을 충족할 수 없는지 증명하며,
+더 완전한 설계·추가 검토·작업 편의를 선행 필요성으로 바꾸지 않습니다.
+
+전부 `적합`인 범위만 다음 작업으로 보냅니다. 불일치·상충이 하나라도 있으면 그 계약을
+소비하는 조사·계획·위임·작성·검증·Git을 중단하고 차이와 영향을 먼저 알립니다. `미증명`은
+source 복원만 허용합니다. Agent가 만든 계획이 지시와 다른 경우에는 그 계획을 폐기하고
+기존 지시를 보존하는 저상세 후보부터 다시 대조할 수 있지만, 지시나 적용 통제 자체를
+바꿔야 하는 상충은 사용자 결정 없이 해소하지 않습니다. 중단은 영향받지 않은 별도 요청의
+권한을 만들지 않으며, 기술 판단·가역성·시간 압박도 부적합 행동의 예외가 아닙니다.
+
+이 대조는 첫 작업뿐 아니라 계획 변경·재개·검토 결과 반영·실행 계획 전환 전에 반복합니다.
+기존의 유효한 원문·source는 재사용하고 바뀐 행동·의존만 대조하되, 원래 지시를 새 계획으로
+덮어쓰지 않습니다. 결과와 다음 허용 행동은 첫 실질 안내와 해당 phase handoff에 짧게
+표시합니다. 별도 문서·범용 verifier·추가 승인 라운드를 만들거나 단순 질문에 상세 실행
+계획을 강제하지 않습니다.
+
+읽기 전용 답변·검토·standalone audit은 상태 변경용 `Locked` identity를 요구하지 않습니다.
+현재 `ANSWER_ONLY` generation의 exact 대상·문장 기능·audit scope를 별도 읽기 전용 계약으로
+소비하며, 이를 과거 상태 변경 계약이나 후속 mutation 권한으로 승격하지 않습니다.
+
 ### 현재 메시지 입장 상태
 
 Bootstrap은 source discovery를 끝내는 데서 멈추지 않고, 현재 generation의 각 독립 결과
@@ -83,8 +165,18 @@ identity입니다.
 | 상태 | 조건 | 허용 효과 |
 | --- | --- | --- |
 | `ANSWER_ONLY` | batch의 모든 원자가 질문·설명·검토처럼 읽기 전용임 | 질문을 직접 닫는 답변과 필요한 read-only 근거 조사 |
-| `EXECUTE` | 모든 상태 변경 원자에 현재 generation의 positive source가 있고 같은 batch에 미확정 질문·비교·우려·선택이 없음 | exact 승인 범위의 specialist·계획·위임·review·mutation |
+| `EXECUTE` | 모든 상태 변경 원자에 현재 generation의 positive source가 있고 요청 계약이 `Locked`이며 같은 batch에 미확정 질문·비교·우려·선택이 없음 | 잠근 exact 범위의 specialist·계획·위임·review·mutation |
 | `DISCUSS_THEN_REEVALUATE` | 실행 원자와 같은 결과를 결정하는 질문·비교·우려·미확정 선택이 함께 있음 | 질문·미확정 차원의 직접 답변과 논의만 허용; batch의 상태 변경은 금지 |
+
+`ANSWER_ONLY` batch의 첫 실질 출력은 원문의 대상·술어·수식어를 보존한 직접 답변이어야
+합니다. Source read 최소 안내를 제외하면 답보다 앞서 실행 계획, 정정 약속, specialist
+선택이나 mutation을 투영하지 않습니다. 현재 generation에 독립된 `EXECUTE` batch가 없으면
+직접 답변으로 해당 generation을 끝내며, 질문의 강도·반복·실행을 재촉하는 듯한 함의나
+과거 미완료 효과를 positive source로 바꾸지 않습니다.
+
+독립된 `EXECUTE` batch가 같은 generation에 있으면 질문 batch의 직접 답을 첫 실질 명제로
+닫은 뒤 그 실행만 별도 identity로 소비합니다. 실행 원자의 존재를 이유로 질문을 생략하거나,
+질문의 답을 인접 실행의 권한으로 전파하지 않습니다.
 
 상태를 산출하기 전에는 위 source read 최소 안내와 Bootstrap source discovery만 허용합니다.
 그 전에 실행 범위·결정·계획·전문가·완료를 투영한 commentary나 답변이 나왔다면 그 약속은
@@ -124,6 +216,33 @@ reviewer·dispatcher·hook에 넘기지 않습니다.
 질문합니다. 별도 review는 계획·개발 후보·중대한 문서처럼 관련 domain workflow가
 독립 검증을 요구하는 산출물에 적용하며, 현재 요청의 권한을 만들거나 명시된 문장
 기능을 다시 정의하지 않습니다.
+
+### 사용자 질문 생성 admission
+
+현재 Agent가 사용자에게 승인·선택·값·대상·재개 여부를 묻기 전에는 질문 후보마다 다음
+coverage를 실제 source에서 닫습니다.
+
+```text
+질문하려는 exact 값·효과
+→ 그 값을 정할 수 있는 사용자 원문·operation map·canonical workflow·domain source
+→ 필요한 source의 EOF까지 읽은 content identity
+→ 정의됨 / 사용자만 결정 가능 / 접근 불가·미증명
+→ 질문이 필요한 이유와 질문할 최소 차원
+```
+
+- `정의됨`이면 그 값을 현재 권위로 소비하며 같은 승인·선택·값을 다시 묻지 않습니다.
+- `사용자만 결정 가능`이고 현재 source가 하나로 제한하지 못할 때만 그 미정의 차원을
+  묻습니다. 서로 관련된 열린 값은 한 라운드에 모으되 정의된 값을 다시 열지 않습니다.
+- `접근 불가·미증명`이면 실제 공백과 영향을 보고합니다. 사용자가 가진 외부 정보만이
+  공백을 닫을 수 있다는 source가 없으면 이를 사용자 선택 질문으로 바꾸지 않습니다.
+- Sandbox·tool approval의 허용·거절, 명령 실패, Agent의 기억 부족이나 확신 부족은 이미
+  닫힌 의미 권한·결정을 미정의 상태로 되돌리지 않습니다. 해당 workflow의 재시도·차단
+  경계를 적용하고 동일 권한을 사용자에게 다시 묻지 않습니다.
+
+첫 user-facing 질문 consumer는 이 coverage의 같은 generation·candidate identity를 받아야
+합니다. Coverage가 없거나 source read가 잘림·중단됐으면 질문을 만들지 않고 Bootstrap의
+source discovery로 돌아갑니다. 질문을 정중하게 표현했다는 사실, 안전을 이유로 한 재확인과
+tool UI의 별도 승인은 이 admission을 대신하지 않습니다.
 
 ### 요청 원자화 gate
 
@@ -269,6 +388,31 @@ generation의 source에서 먼저 닫습니다.
 선택 항목을 같은 순차 실행 block에 둔 후보는 사용자 실행 안내나 canonical runbook
 writer로 넘기지 않습니다.
 
+### 실행 목적과 절차 생애주기의 결속
+
+사용자에게 상태 변경 명령을 안내하거나 Agent가 상태 변경을 실행하기 전에는 현재 목적과
+후보 절차의 생애주기를 다음 원장으로 대조합니다.
+
+```text
+현재 actor와 대상 환경·resource
+→ 현재 목적과 시작·종료 상태
+→ 후보 절차가 선언한 actor·적용 시점·선행조건·상태 전이·postcondition
+→ 일치 / 불일치 / canonical 절차 없음
+```
+
+같은 resource를 다루거나 우연히 같은 종료 상태를 만들 수 있다는 사실은 절차 일치의
+근거가 아닙니다. 최초 bootstrap, migration, 일상 운영 변경, credential rotation,
+장애 복구, rollback, 진단과 검증은 서로 다른 생애주기입니다. 한 생애주기의 문서·명령을
+다른 생애주기의 실행 경로로 제시하거나 여러 문서의 일부를 조합해 존재하지 않는 canonical
+절차처럼 표현하지 않습니다. 하위 helper를 공유하려면 현재 생애주기의 canonical 절차가
+그 helper의 선행조건·실패 중단·복구·postcondition을 직접 소유해야 합니다.
+
+현재 목적에 맞는 canonical 절차가 없으면 `없음`을 명시하고, 접근 가능한 authoritative
+source에서 확인한 적용 범위와 공백의 근거를 함께 보고한 뒤 그 상태 변경을 중단합니다.
+금지 문구가 없거나 다른 생애주기 절차가 존재한다는 사실을 실행 권한이나 우회 경로로
+사용하지 않습니다. 누락된 절차의 설계·구현·검증은 현재 사용자 원문이 그 변경을 명시적으로
+승인한 별도 실행 원자일 때만 시작합니다.
+
 과거 답변·판단·행동이 왜 발생했는지 설명할 때에는 현재 상태 source를 과거 actor의 입력으로
 소급하지 않습니다. 첫 원인 주장 전에 다음 시간 방향과 실제 소비 증거를 복원합니다.
 
@@ -356,6 +500,47 @@ operation map을 실제로 복원했다는 invocation evidence가 아닙니다. 
 
 후속 표현은 명시적으로 바꾼 차원만 갱신합니다. 우려를 새 요구사항으로 승격하거나,
 추천을 확정 결정으로 바꾸거나, 하위 순서 변경으로 상위 결과를 지우지 않습니다.
+
+저장소 작업의 대상·결과·제약·산출물 범위에서 사용자와 논의해 확정한 활성 결과는
+현재 작업의 최상위 의미 기준입니다. Authoritative source와 workflow는 사실, 실행 가능성,
+필수 안전 경계와 권한을 결정하지만 활성 사용자 결과를 조용히 취소·대체·완화하거나
+Agent가 선호하는 결과로 바꾸는 권위가 아닙니다. 상위 system·platform 안전 경계 때문에
+그대로 실행할 수 없는 경우에도 기존 결과를 다른 산출물로 바꾸지 않고 아래 충돌 gate에서
+중단합니다.
+
+### 확정 논의 보존과 충돌 중단 gate
+
+선행 논의의 결과를 소비하는 상태 변경 경로의 첫 계획 projection, 첫 mutation, review,
+Git 인계와 terminal 보고 전에 사용자 요청 계약 잠금 gate의 `Locked` identity를 입력으로
+받아 다음 기준선을 같은 identity로 복원합니다. 잘못되거나 미증명인 요청 계약을 이 gate에서
+사후 보정하지 않습니다. 독립된 읽기 전용 답변·검토는 현재 `ANSWER_ONLY` generation과 exact
+scope를 소비하며 이 `Locked` 전이를 요구하지 않습니다.
+
+```text
+사용자가 확정한 활성 결과·제약·제외·산출물 형태·완료 조건
+→ 이후 사용자가 명시적으로 취소·대체한 항목 또는 없음
+→ 현재 phase의 후보 효과와 새 source·workflow·도구 제약
+→ 전부 보존 / 충돌 / 누락 / 미증명
+```
+
+- `전부 보존`일 때만 다음 phase로 진행합니다. 기술적 세부는 이 기준선을 모두 만족하는
+  후보 사이에서만 Agent가 선택합니다.
+- 새 source·workflow·도구 제약이 활성 결과와 양립하지 않거나 변경을 요구하면 어느 쪽을
+  임의로 우선하지 않습니다. 영향받는 계획·writer·mutation·review·Git·외부 효과를
+  시작 전 또는 발견 즉시 중단하고, 충돌하는 exact 항목, 그대로 진행할 수 없는 이유,
+  달라질 결과와 선택 가능한 대안을 사용자에게 한 번에 제시합니다. 사용자가 새 결과를
+  확정한 generation에서만 기준선을 갱신하고 재개합니다.
+- 후보가 활성 결과를 하나라도 빠뜨리면 관련 후보와 그 검증을 `Invalidated`로 돌립니다.
+  요청하지 않은 추가 artifact·자동화·문서와 그 내부 test 성공은 누락을 보충하지 않으며,
+  누락한 결과를 제외한 축소본을 부분 완료나 최종 산출물로 제출하지 않습니다.
+- 현재 source로 보존 여부를 판정하지 못하면 `미증명`입니다. 추측으로 진행하거나 더 쉬운
+  결과로 바꾸지 않고, 접근 가능한 source 확인 뒤에도 남는 exact 공백만 사용자에게
+  알립니다.
+
+이 gate의 중단은 authoritative source를 무시하라는 뜻이 아닙니다. Source가 밝힌 사실·안전·
+실행 가능성은 그대로 보존하되, 그 영향으로 사용자와 확정한 결과를 바꿔야 하는 결정권을
+Agent나 source에 귀속하지 않는 경계입니다. 충돌 보고와 재논의 없이 만든 대체 결과는
+기술적으로 옳거나 더 안전해도 현재 작업의 유효한 후보가 아닙니다.
 
 어떤 값을 `사용자 결정·요구·승인`이라고 귀속하려면 사용자가 그 차원의 값을 긍정적으로
 선택한 원문 source가 있어야 합니다. 설명 질문, 우려·평가 기준, 인접 차원의 승인, 값을
@@ -593,6 +778,9 @@ I = 실제로 읽은 control 기준선 R
   바꾸면 더 편한 쪽을 고르지 않고 control source 충돌과 영향 범위를 먼저 반환합니다.
 - `G`는 Bootstrap이 확정한 현재 사용자 원자와 carry-forward·무효화 관계입니다. 이의나
   대체로 무효화된 원자의 이전 generation 결과는 내용이 유용해도 현재 evidence가 아닙니다.
+  상태 변경 경로의 `G`에는 사용자 요청 계약 잠금의 exact 원문 span, `Locked` 판정, 대상·
+  결과·사용자 지정 reference와 그 역할·형식·순서·허용 및 금지 효과·완료 oracle이 모두
+  포함됩니다. 이 값이 없거나 actor의 입력과 다르면 handoff를 시작하지 않습니다.
 - `C`는 repository·worktree, fixed base, `HEAD`, index, tracked diff, untracked path·content와
   적용되는 외부 상태를 포함한 exact snapshot입니다. Writer가 후보를 바꾸면 새 `C`를
   동결하고 이전 review·Git 인계를 승계하지 않습니다.
@@ -602,6 +790,11 @@ I = 실제로 읽은 control 기준선 R
   그 결과가 candidate 어디에 반영됐는지 대조하고, 충돌하거나 누락되면 해당 결과와 이후
   review를 `Invalidated`로 돌립니다. 비슷한 축을 본 generic review나 reviewer 이름은 `P`의
   exact 결과·phase·verdict를 대신하지 않습니다.
+  `P`는 `G`의 요구·권한이나 `R`의 필수 절차를 바꾸는 상위 source가 아닙니다. 인계받는
+  actor는 본문 작성·기술 검토 전에 원문·적용 조항과 예정 행동의 적합성 대조를 직접
+  확인합니다. 앞 actor의 `통과` label·요약·수정 지시만 받았거나 원문과 달라지면 해당
+  작업을 시작하지 않고 exact 차이를 반환합니다. Root가 직접 작성·검증할 때도 동일하며,
+  이미 끝난 검토나 현재 후보의 완성도를 이유로 이 대조를 생략하지 않습니다.
 - 결과에는 입력 `I`를 귀속합니다. 현재 Agent는 결과를 소비하기 직전에 target 상태 `S1`을
   다시 읽고 `S0`과 대조합니다. 설명되지 않은 drift나 identity 불일치는 기존 candidate와
   그 review를 `Invalidated`로 바꾸며 actor·command를 추측하거나 clean 상태를 완료로 쓰지
@@ -648,8 +841,9 @@ I = 실제로 읽은 control 기준선 R
 
 ### 완료 oracle 출처
 
-완료 oracle은 원래 활성 요구가 제기된 시점의 사용자 원문과 당시 유효한 독립
-authoritative source에서 고정합니다. 같은 작업에서 새로 만든 정책·SOT·test·fixture,
+완료 oracle은 원래 활성 요구와 이후 논의에서 사용자가 확정해 현재까지 취소·대체하지 않은
+결과·제약·산출물 형태, 그리고 각 시점에 유효한 독립 authoritative source에서 고정합니다.
+같은 작업에서 새로 만든 정책·SOT·test·fixture,
 실패한 시도와 그 후속 회고는 변경 결과나 증거 후보일 수 있지만 선행 요구를
 재정의하거나 스스로 충족한 근거가 될 수 없습니다.
 
@@ -672,12 +866,13 @@ self-authored source를 제외한 원래 요구와 유효한 변경 결정에서
 대조해 판정합니다.
 
 ```text
-E = 원래 활성 요구의 기대 효과
+E_total = 원래 활성 요구와 이후 확정 논의에서 누적된 기대 효과·제약·산출물 형태
+X = 사용자가 최신 원문에서 명시적으로 취소·제외·대체한 효과
+E = E_total \ X로 계산한 현재 활성 기대 효과·제약·산출물 형태
 K = final candidate·commit에서 실제 관찰되는 효과
-X = 최신 유효 권한으로 취소·제외된 효과
 D = candidate 밖에 남은 task-owned staged·tracked·untracked·외부 residual
 
-closure ⇔ E = K ∪ X
+closure ⇔ E = K
        ∧ D = ∅
        ∧ K가 final artifact에서 실제로 관찰됨
 ```
@@ -760,16 +955,43 @@ workflow의 삭제 admission으로 인계합니다. 허락 전에는 기존 파�
 필요하면 영향받은 부분을 `재검토 대기`로 표시합니다. 사용자가 작업 프로세스 보완이나
 문서 수정 전체를 요청했더라도 삭제 효과를 따로 명시하지 않았다면 이 권한은 없습니다.
 
-저장소의 상시 예외는 다음 두 가지뿐입니다.
+저장소의 상시 예외는 다음 세 가지뿐입니다.
 
 - `$dev-plan`이 계획 자체를 결과로 작성하거나, 승인된 구현 결과의 불가피한 선행
   dependency로 설계 closure를 먼저 만들어야 할 때 검증된 계획 checkpoint와 필수 router를
   exact path로 local commit합니다.
 - 사용자가 재발 방지 회고의 실행을 명시적으로 요청했을 때 통제 owner 변경만
   exact path로 local commit합니다.
+- 사용자가 규칙·통제·workflow·skill을 저장소의 영구 기준으로 변경하라고 명시했을 때
+  검증된 영구 owner와 필수 consumer 변경을 의미 단위별 exact path로 local commit합니다.
+  `영구화`, `앞으로 적용`처럼 저장소 기준으로 계속 사용하라는 뜻이 명확해야 하며, 일반
+  문서·설정 변경이나 일회성 작업을 이 예외로 확대하지 않습니다.
 
-두 예외 모두 다른 작업 변경, plan이 선행하는 production mutation, 사건 대상 artifact
-복구와 push 권한을 만들지 않습니다.
+세 예외 모두 각 결과의 의미 단위 지도와 검증을 생략하지 않으며, 다른 작업 변경, plan이
+선행하는 production mutation, 사건 대상 artifact 복구와 push 권한을 만들지 않습니다.
+
+### 계획 checkpoint의 fail-closed 전이
+
+`$dev-plan`의 검증된 안정 상태는 다음 checkpoint 상태 중 하나를 operation map에 둡니다.
+
+| 상태 | 뜻 | 허용되는 다음 전이 |
+| --- | --- | --- |
+| `Not-Required` | 아직 복구 지점이 아니거나 repository 계획이 결과가 아님 | 원래 계획 작업 계속 |
+| `Required-Pending` | 다음 actor가 복원할 안정 상태와 exact path·hunk가 검증됨 | `$git-finalize`의 exact-path local commit |
+| `Committed` | 고정한 parent 뒤 실제 commit object·tree·patch와 잔여 dirty를 확인함 | 원래 계획 oracle로 복귀 |
+| `Blocked` | 다른 dirty와의 분리 불가나 Git 실행 차단을 실제 source로 확인함 | blocker 해제 뒤 같은 checkpoint 재개 |
+
+`Required-Pending` 전이에는 같은 후보 digest, 계획 lifecycle 상태, fixed-base `HEAD`, exact
+path·hunk, 제외 dirty와 `push 없음` 경계를 결속합니다. 검증 verdict를 소비해 이 상태를 만든
+plan actor는 `$git-finalize`를 즉시 다음 consumer로 호출하며, 별도 `commit` 요청이나 사용자
+재확인을 기다리지 않습니다. 실제 commit 증거만 `Committed`를 만들 수 있고 문서 검증 통과,
+clean 예상, commit 의도나 보고 문장은 이를 대신하지 않습니다.
+
+`Required-Pending`에서 허용되는 handoff는 `$git-finalize` 호출 하나뿐입니다. 사용자 대기,
+다른 phase handoff, 다음 rewrite와 terminal 보고는 허용하지 않습니다. Git adapter가 실제
+차단을 반환한 경우에만 공통 blocker gate를 거쳐 `Blocked`로 바꿀 수 있으며, `commit 요청
+없음`은 blocker가 아닙니다. `Committed` 뒤에도 checkpoint는 계획 완료가 아니므로 원래 계획
+oracle과 사용자 행동 유무를 다시 읽고 안전한 다음 계획 단위가 있으면 계속합니다.
 
 상시 예외를 적용하면 해당 효과를 첫 mutation 전에 끝나는 내부 판정으로만 두지 않습니다.
 사용자 원문 원자, 선택한 예외, exact 효과·path와 제외 효과를 operation map에 결속하고,
@@ -1156,6 +1378,12 @@ writer나 다른 reviewer를 호출하지 않습니다. `ClosureRunning`의 실�
   필드가 없거나 stale이거나 자신의 identity가 예정 집합과 다르거나 이미 closure가 끝났으면
   content audit을 시작하지 않고 `검증 불가` 또는 `Invalidated`를 반환합니다. Caller가 같은
   state를 기억하고 있다는 선언은 이 consumer 대조를 대신하지 않습니다.
+  이 반환을 받은 caller는 같은 후보의 writer·추가 내용 검토를 호출하지 않습니다. 필수
+  gate 누락·기준 불일치를 `형식 문제`, `과거 기준`, `실제 내용만 검토`로 바꿔 제외하거나,
+  reviewer에게 해당 기준을 적용하지 말라고 지시해 우회하지 않습니다. 해당 판정이 잘못됐다고
+  판단해도 원래 원문·독립 source와 실제 선행 증거로 반박을 닫기 전에는 중단을 유지합니다.
+  새 이름·reviewer·digest만으로 실패 상태를 초기화하지 않으며, 지시와 일치하는 복구 계획,
+  원래 gate를 충족한 증거와 유효한 새 인계가 있어야 다음 phase를 시작합니다.
 - 사용자가 독립 read-only audit 자체를 직접 요청한 경우에는 active writer round가 없는
   `standalone` audit 한 번을 허용합니다. 이 결과는 correction·closure 권한이나 실행 라운드
   완료 증거가 아니며, 이후 writer가 결과를 소비하려면 정식 round admission을 별도로 닫습니다.
@@ -1168,6 +1396,63 @@ writer나 다른 reviewer를 호출하지 않습니다. `ClosureRunning`의 실�
 이 phase state는 세션 원장의 기존 `I`와 `C`를 소비하며 별도 repository artifact·registry·
 자동 verifier를 만들지 않습니다. Review tool의 실행 성공, reviewer 한 명의 조기 finding,
 상태 보고와 commentary는 phase 전이 증거를 대신하지 않습니다.
+
+### 사용자 결정 계획 문서의 구조 선행 round
+
+`$dev-plan`이 `Proposed`·`Planned` 또는 planning-`Blocked` work item과 현재 단계에서 허용된
+`-design`을 실질적으로 작성·변경하고, 그 결과를 사용자의 값 선택이나 단계 확정에 인계할
+때에는 content round보다 먼저 별도 structure round를 닫습니다. 읽기 전용 질문, 상태 보고,
+사용자 handoff가 없는 내부 계획, plan content를 바꾸지 않는 국소 교정과 일반
+Decision/Design에는 적용하지 않습니다.
+
+```text
+plan-structure round Closed
+→ 단일 content writer
+→ plan-content round Closed
+→ 안정 복구 지점이면 Required-Pending → $git-finalize → Committed
+→ 사용자 또는 다음 Agent handoff
+```
+
+- 각 round는 위의 기존 `discovery → finding 전체 단일 처분 → correction 0..1 → closure 1회`
+  state를 그대로 사용합니다. Receipt에서 `audit domain`과 `discovery|closure` phase를 분리합니다.
+- Structure active review set에는 `$verify-plan structure`를 항상 두고, 문서화 workflow가
+  `중대한 구조`로 판정하면 `$verify-documentation proposal`도 별도 identity로 둡니다.
+- Content active review set에는 `$verify-plan content`를 항상 두고, `중대한 final` 또는
+  `중대한 구조`이면 `$verify-documentation final`도 별도 identity로 둡니다.
+- Structure discovery correction은 전체 finding 처분 뒤 계획 의미·결정 권위·단계가 원인이면
+  `$dev-plan`, hierarchy·first-screen·owner·보존 map이 원인이면 `$documentation` 순서로 한
+  batch 안에서 직렬 실행합니다. `$dev-plan`은 structure map을 직접 고치지 않고
+  `$documentation`은 계획 의미를 선택하지 않습니다. 새 map과 digest를 하나의 새 Frozen으로
+  만든 뒤 closure set만 호출합니다.
+- Structure closure가 없거나 candidate map·digest가 stale이면 writer와 content reviewer는
+  시작 전에 `검증 불가` 또는 `Invalidated`를 반환합니다. Content writer가 heading,
+  first-screen field, 활성 결정 block이나 결정 권위·상태를 바꾸면 structure verdict도
+  `Invalidated`입니다.
+- Structure map은 writer가 붙인 D/R 번호를 원자 단위로 신뢰하지 않습니다. 최초 사용자
+  요구, authoritative source, 선택 후보와 추천 결과의 모든 값을 `다른 값을 고정한 채 이
+  값만 바꿔도 유효한 후보·다른 consumer·다른 재검토 조건이 생기는가`로 대조해 독립 결정
+  축을 먼저 복원합니다. 성립하면 주제·계층·같은 구현 block·한 번의 응답 여부와 무관하게
+  별도 ID로 분리하고, 각 축을 `사용자 확정 요구 / source 파생 계약 / Agent 기술 선택 /
+  열린 사용자 결정 / 입력 부재 gate` 중 하나와 그 권위에 맞는 단일 표현에 1:1로 연결합니다.
+  열린 사용자 결정만 활성 카드, Agent 기술 선택은 비교 결정 block, 사용자 확정 요구는
+  고정 입력·닫힌 결과, source 파생은 source 파생 block, 입력 부재는 gate block으로 둡니다.
+- 여러 열린 사용자 축은 하나의 활성 결정 block이나 응답 형식으로 함께 제시할 수 있지만 한
+  카드·비교표로 합칠 수 없습니다. 둘 이상의 값을 하나의 결정으로 유지하려면 한 값만 바꾼
+  후보가 source나 논리상 성립하지 않는다는 불가분 근거를 기록합니다. 비교 결정·활성 카드는
+  하나의 공통 질문·option set·owner·consumer·재검토 조건, 사용자 확정 요구·고정 입력은
+  하나의 authoritative 요구·적용 범위·consumer·재검토 조건, source 파생은 하나의 source·
+  파생 규칙·consumer·재검토 조건, 입력 부재 gate는 하나의 부족 입력·입력 owner·획득/재개
+  조건·처음 막는 consumer를 가져야 합니다. 같은 기능명, 함께 구현됨, 비용·편의와 상관관계는
+  불가분 근거가 아닙니다.
+- Structure map은 `원문·source·후보의 독립 축 → ID·권위·권위별 표현`과 `모든 추천·선택·세부값
+  → 축 ID 또는 고정·파생 source`를 양방향으로 닫습니다. Content가 map에 없는 default,
+  소유자, 경계, 표현·저장 위치, version·호환성, 운영 수단이나 다른 선택값을 추가하면 prose
+  상세로 보지 않고 숨은 결정 축으로 판정해 structure verdict를 `Invalidated`로 바꿉니다.
+- Closure 실패 뒤에는 원인·구조 map·대표 결과를 다시 계획할 `$dev-plan`만 다음 actor로
+  허용합니다. 새 Frozen 없이 reviewer나 writer를 바꾸어 같은 round를 반복하지 않습니다.
+- 통과한 안정 candidate가 복구 지점이면 사용자 대기보다 local checkpoint를 먼저 닫습니다.
+  Review 중 candidate의 다음 안정 handoff와 실제 live actor의 차이는 문서 정보 구조 가이드와
+  문서화 workflow의 candidate 계약을 따릅니다.
 
 실행 중 처음 드러난 source·환경·검증 증거는 이 문서의 새 발견·실제 차단 판정으로
 분류합니다. 안전한 단위는 계속 수행하고, 새 증거로 생긴 사용자 소유 결정이 남은 결과에
@@ -1494,6 +1779,14 @@ history 문구·독립 hunk가 바뀌었다는 이유로 유효한 verdict를 �
   실제 사건과 같은 선행 문맥·후속 표현·routing 경계에서 올바른 owner가 영향 전에
   호출되는지 별도로 확인합니다. 후보를 직접 지정한 isolated 성공을 실제 routing
   성공으로 확대하지 않습니다.
+
+기존 방어가 있는 재발 사건에서는 최초 요청을 올바르게 분류하는 사례만으로 closure하지
+않습니다. Evaluator는 실제 우회가 발생한 phase 경계에서 앞선 원문·통제·판정과 후속
+계획·호출을 함께 준 입력을 포함합니다. 최초에 적합했어도 뒤 계획이 어긋나거나 필수
+검증이 실패했을 때 다음 actor가 실제로 무엇을 중단하는지 관찰합니다. 앞선 실패 판정을
+보존한 채 정상적인 범위 내 복구·읽기 전용 답변은 가능한지도 같은 최소 사례 집합에서
+대조합니다. 이 사례 역시 모델링된 효과이며, 원래 작업에 돌아간 실제 actor의 실행을
+관찰하지 않았다면 그 복귀 전이까지 검증됐다고 보고하지 않습니다.
 
 행동 verdict는 증거 등급을 섞지 않고 다음처럼 분리합니다.
 

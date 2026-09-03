@@ -1,6 +1,6 @@
 ---
 name: git-finalize
-description: "검증된 local 변경을 exact path의 Conventional Commit으로 기록하고, 별도 push 요청이 있으면 exact branch를 push한 뒤 해당 SHA의 required CI와 Sonar revision·Quality Gate·Open issues를 확인하는 Git orchestration adapter다. 사용자가 stage, commit, push 또는 Git 마무리 실행을 요청했을 때 사용한다. skill 이름이나 호출은 Git 권한을 만들지 않으며 질문·감사·상태 확인만 요청됐으면 read-only discovery만 수행한다. PR, history rewrite, image publish·ECR과 production 적용은 각각 별도 요청일 때만 범위에 포함한다."
+description: "검증된 local 변경을 의미 단위별 exact path의 Conventional Commit으로 기록하고, 승인된 exact branch push 또는 검증된 통합 완료 branch의 remote 삭제를 실행·확인하는 Git orchestration adapter다. 사용자가 stage, commit, push, Git 마무리, 완료 branch 정리 또는 저장소 규칙의 영구화를 요청했거나, dev-plan이 검증된 계획 checkpoint를 Required-Pending으로 인계했을 때 사용한다. Code push 뒤에는 해당 SHA의 required CI와 Sonar revision·Quality Gate·Open issues를 확인한다. skill 이름이나 호출은 Git 권한을 만들지 않으며 질문·감사·상태 확인만 요청됐으면 read-only discovery만 수행한다. PR, history rewrite, image publish·ECR과 production 적용은 각각 별도 요청일 때만 범위에 포함한다."
 ---
 
 # Git 마무리
@@ -58,6 +58,18 @@ fixed base 자체인 경우도 유효하며, 같은 staged candidate나 뒤 comm
 
 operation map에 stage·commit이 있으면 커밋 workflow를 순서대로 실행한다.
 
+작업 실행 workflow의 영구 규칙 변경 상시 예외가 적용됐으면 별도 `commit` 표현이 없어도
+검증된 영구 owner와 필수 consumer를 의미 단위별 local commit까지 닫는다. 규칙마다 적용
+조건·관찰 결과·consumer·복구·revert 경계를 대조하고, 서로 독립적인 기존 작업이나 다른
+규칙을 상위 `영구화` 이름으로 합치지 않는다. 이 예외는 push·새 branch·PR 권한이 아니다.
+
+`$dev-plan`이 검증된 계획 checkpoint를 `Required-Pending`으로 인계했으면 별도 `commit`
+표현 없이 같은 candidate digest·lifecycle 상태·fixed-base `HEAD`·exact path·hunk·제외 dirty를
+확인하고 local commit까지 닫는다. Commit object·parent·tree·full patch와 잔여 dirty를 확인한
+뒤에만 `Committed`를 반환한다. 안전한 exact-path 분리가 불가능하거나 실제 Git gate가
+차단한 경우에만 공통 blocker evidence와 함께 `Blocked`를 반환한다. 이 인계는 push·새 branch·
+PR 권한이 아니며, `Required-Pending`을 정상적인 commit 미수행 상태로 반환하지 않는다.
+
 첫 Git mutation 전에 커밋 workflow의 분할 반증 gate를 실행한다. 예정 subject와 상위 작업명을
 입력에서 제외하고 final diff의 실제 consumer·재시작·복구·revert 경계에서 가장 이른 유효
 prefix를 먼저 찾으며, 각 prefix의 source·compile·직접 test 결과 또는 더 이른 prefix가
@@ -113,12 +125,19 @@ Git 명령의 sandbox·tool approval이 거절돼도 이미 확정된 operation 
 gate가 owner·막힌 효과·재개 조건을 판정하게 한다. 새 Git 효과나 사용자만 제공할 수 있는
 입력이 실제로 필요한 경우에만 해당 새 결정으로 admission을 다시 연다.
 
-## 4. Push와 exact SHA closure
+## 4. Push·remote branch 삭제와 exact closure
 
 별도 push 효과가 operation map에 있을 때만 커밋 workflow의 `Exact branch push`를
 실행한다. live remote SHA와 fast-forward를 확인하고 exact refspec을 한 번 push한 뒤
 `git ls-remote --refs`에서 expected SHA를 확인한다. force, 자동 merge·rebase와 history
 rewrite를 사용하지 않는다.
+
+검증된 통합 완료 branch의 remote 삭제 효과가 operation map에 있으면 커밋 workflow의
+`Exact remote branch 삭제`를 실행한다. Live remote tip과 expected source SHA, target 포함
+관계, 열린 pull request·다른 consumer 부재를 다시 확인하고 expected SHA lease를 건 empty
+refspec을 한 번 push한다. 삭제 뒤 live remote ref와 local remote-tracking ref 부재를
+확인한다. Ref가 이동했거나 consumer 상태가 달라지면 lease 없는 삭제나 재시도로 우회하지
+않고 현재 operation map으로 반환한다.
 
 repository 품질 계약이 적용되는 code push이면 같은 workflow의 `Pushed SHA의 CI와
 Sonar`를 끝까지 실행한다. exact pushed SHA의 required CI가 성공한 뒤 repository
@@ -133,6 +152,6 @@ workflow로 돌려보내 판정한다. image publish·ECR, PR과 production 적�
 ## 5. Evidence 반환
 
 commit SHA·subject·parent·tree·exact path, fixed-base diff, 남은 dirty·staged·unpushed
-상태, exact remote ref, CI URL·conclusion과 Sonar 결과를
+상태, exact remote ref의 갱신 또는 expected-SHA 삭제와 live 부재, CI URL·conclusion과 Sonar 결과를
 `docs/workflow/140-completion-reporting-workflow.md`의 입력으로 반환한다. adapter의
 명령 성공을 전체 결과의 완료로 선언하지 않는다.

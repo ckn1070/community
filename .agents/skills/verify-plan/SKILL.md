@@ -1,6 +1,6 @@
 ---
 name: verify-plan
-description: "완성 후보인 개발 계획을 구현 전에 최초 사용자 목적, 확정 결정과 관련 코드·문서·설정·데이터·운영 source부터 독립 검증할 때 사용한다. 계획 수립·수정 자체, 구현 결과 검증이나 반복적인 아이디어 탐색에는 사용하지 않는다."
+description: "사용자 결정·단계 확정용 개발 계획의 content 작성 전 구조 map 또는 완성 후보를 구현 전에 최초 사용자 목적, 확정 결정과 관련 코드·문서·설정·데이터·운영 source부터 독립 검증할 때 사용한다. structure mode는 lifecycle 골격·first-screen·권위·보존 관계를, content mode는 그 closure를 소비한 최종 내용을 감사한다. 계획 수립·수정 자체, 구현 결과 검증이나 반복적인 아이디어 탐색에는 사용하지 않는다."
 ---
 
 # 계획 검증
@@ -36,11 +36,30 @@ closure만 감사 범위로 연다. 선행 단계가 닫히기 전에 생성된 
 section·후보 상세는 내용 품질과 무관한 필수 결함이다. 다음 단계에서만 필요한 검토 축은
 현재 후보의 누락으로 판정하지 않고 `해당 없음`으로 닫는다.
 
+호출 receipt의 `audit domain`은 `structure` 또는 `content`로 고정한다.
+
+- `structure`는 상세 prose 작성 전의 map·대표 골격만 감사한다. Lifecycle artifact·section,
+  heading별 독자 질문·owner·순서, 두 열 first-screen field와 안정 handoff, 결정 identity별
+  권위·활성/닫힘 상태, 카드 7개 field와 단일 결합 응답 형식, body·design·router·rollback
+  보존 관계를 확인한다. 추천 결론과 기술 내용의 옳고 그름은 이 domain에서 판정하지 않는다.
+- `content`는 exact `structure` closure receipt와 같은 map·digest가 있을 때만 시작한다.
+  누락·stale이면 `판정 불가`, writer가 heading·first-screen field·활성 결정 block·결정
+  권위나 상태를 바꿨으면 `Invalidated`로 반환한다. 구조가 유지된 후보에 한해 아래 전체
+  dependency·내용 축을 감사하며, 같은 Frozen 후보의 final content round는 한 번만 수행한다.
+
+Structure mode에서는 writer의 결정 ID와 카드 경계를 source로 받아들이지 않는다. 최초 사용자
+요구, authoritative source, 실제 후보와 추천 결과의 결과값·default·owner·경계·표현·저장
+위치·version·운영 수단을 독립적으로 inventory한다. 다른 값을 고정한 채 한 값만 바꿔도
+유효한 후보이거나 다른 consumer·영향·재검토 조건이 생기면 별도 결정 축으로 복원한다. 그
+뒤에만 writer의 `독립 축 → ID·권위·상태·권위별 표현` map과 양방향으로 대조한다. 열린 사용자
+결정은 활성 카드, Agent 기술 선택은 비교 결정 block, 사용자 확정 요구는 고정 입력·닫힌
+결과, source 파생은 source 파생 block, 입력 부재는 gate block이어야 한다.
+
 ### 실행 라운드 admission
 
 Writer가 만든 후보의 discovery·closure로 위임받은 검증은 작업 실행 workflow의 review
 state를 content audit보다 먼저 소비한다. 호출 입력에는 operation generation, round id,
-`discovery|closure`, candidate identity·digest, 예정 reviewer identity, active writer 수,
+`structure|content` audit domain, `discovery|closure`, candidate identity·digest, 예정 reviewer identity, active writer 수,
 앞선 reviewer terminal 상태, correction 처분과 이전 closure verdict가 있어야 한다. 현재
 verifier는 자신의 identity와 실제 thread·handoff에서 이 값을 대조하고, 누락·불일치·stale을
 호출자의 설명으로 보충하지 않는다.
@@ -106,6 +125,9 @@ data, build, deployment, operations, test와 책임 문서를 추적한다. 다�
 
 - 최초 목적·범위와 양방향 추적성
 - 결정별 추천·선택 주체와 값, 확정 주체·범위·source 및 영향받는 관련 문서의 일치
+- 원문·source·후보에서 독립적으로 바뀌는 모든 값과 결정 ID·권위별 표현의 1:1 coverage.
+  비교 결정·활성 카드는 단일 질문·option set을, 고정 입력·source 파생·입력 부재 gate는
+  해당 유형의 source·파생·금지·owner·consumer·재검토 field를 갖는지 조건별로 확인
 - 선택한 기술 결정의 목표 보존과 목표 약화 대안의 사용자 권위
 - 정상·실패·경계 동작과 기존 회귀
 - 구조·모듈·외부 계약
@@ -139,6 +161,22 @@ data, build, deployment, operations, test와 책임 문서를 추적한다. 다�
 이해가 확인되지 않은 새 명사는 `최초 사용 문장 안의 일상어 설명 / 쉬운 표현으로 교체 / 기술
 상세로 이동` 중 하나여야 한다. 뒤쪽 용어집이나 다른 미정의 영어·역할명은 통과 근거가 아니다.
 이 공백 때문에 사용자가 결정 질문을 이해할 수 없으면 문서·용어 축의 필수 결함이다.
+
+한 카드에 대표 비교표가 있어도 prose·요약·목표 계약에서 별도 default, owner, module 경계,
+payload 범위, 표현·저장 위치, version·호환성 또는 운영 수단을 정하면 각각의 독립 변경
+가능성을 다시 검사한다. 단독 변경이 가능하면 숨은 결정 축이므로 structure mode는 실패한다.
+여러 열린 사용자 축을 같은 활성 block에서 한 번에 제시하는 것은 허용하지만 별도 카드와 ID가
+필요하다. 다른 권위의 축은 각각의 비교 결정·고정 입력·source 파생·gate block이 필요하다. 둘을
+한 축으로 유지한 후보는 개별 변경이 source·논리상 불가능해야 한다. 비교 결정·활성 카드는
+하나의 공통 질문·option set·owner·consumer·재검토 조건, 사용자 확정 요구·고정 입력은
+하나의 authoritative 요구·적용 범위·consumer·재검토 조건, source 파생은 하나의 source·
+파생 규칙·consumer·재검토 조건, 입력 부재 gate는 하나의 부족 입력·입력 owner·획득/재개
+조건·처음 막는 consumer를 가진다는 근거가 없으면 실패한다.
+
+Content mode는 닫힌 structure map의 축 목록을 다시 대조한다. 상세 prose·표·요약에서 map에
+없는 선택값이 하나라도 나타나면 내용 보완으로 통과시키지 않고 structure verdict를
+`Invalidated`로 반환한다. 반대로 map의 각 축이 상세 카드나 고정·파생 block에 정확히 한 번
+구현되지 않아도 실패한다.
 
 API path, HTTP method, field, enum과 표준 식별자처럼 exact 구현·검증 계약인 literal은 쉬운
 문장 요구를 이유로 번역·삭제하지 않는다. 필요한 역할만 같은 단위에서 설명한다. 직접 선행

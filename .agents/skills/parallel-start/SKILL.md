@@ -1,6 +1,6 @@
 ---
 name: parallel-start
-description: "현재 checkout과 main ref를 바꾸지 않고 별도 Git worktree와 local 실행 설정을 준비하는 adapter다. 사용자가 병렬 작업 시작, 독립 작업 공간, 새 worktree 또는 다른 작업과 분리된 local 환경 생성을 요청했을 때 사용한다. workflow가 정한 branch·path·base를 bundled script에 전달해 `.claude/`와 `.env`를 내용 노출 없이 복사하고 등록·clean·ignore·원본 보존 상태를 확인한다. 실제 기능 구현, commit, merge, push나 기존 worktree 정리만 요청한 경우에는 사용하지 않는다."
+description: "현재 checkout과 main ref를 바꾸지 않고 별도 Git worktree와 local 실행 설정을 준비하는 adapter다. 사용자가 새 작업 branch 생성, 브랜치를 파서 작업, 병렬 작업 시작, 독립 작업 공간, 새 worktree 또는 다른 작업과 분리된 local 환경 생성을 요청했을 때 사용한다. workflow가 정한 branch·path·base를 bundled script에 전달해 `.claude/`와 `.env`를 내용 노출 없이 복사하고 등록·clean·ignore·원본 보존 상태를 확인한다. 기존 branch의 조회·통합·삭제·이름 변경, 실제 기능 구현, commit, push나 기존 worktree 정리만 요청한 경우에는 사용하지 않는다."
 ---
 
 # 병렬 작업 시작
@@ -28,6 +28,10 @@ workflow에 따라 다음 세 값을 만든다.
 skill 호출, dry-run 성공과 helper metadata는 생성 권한이나 후속 구현·Git 권한을 만들지
 않는다. 명시 요청 없이 `fetch`, `pull`, ref 갱신과 기존 branch·path 재사용을 하지
 않는다.
+
+새 작업 branch 요청은 branch 이름만 언급하고 worktree를 생략했어도 이 adapter로
+처리한다. 현재 checkout에서 수동 Git 명령으로 branch를 생성·전환하거나 이름을 바꾸어
+대체하지 않는다. Preflight가 실패하면 workflow에 blocker를 반환한다.
 
 ## 2. Script preflight
 

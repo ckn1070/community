@@ -8,4 +8,4 @@
 - 계획 중에는 [작업 문서 생명주기](../100-work-item-lifecycle.md#계획-단계와-최소-artifact)의 현재 단계 artifact만 작성합니다.
 - 완료된 장기 기준은 관련 domain, project, tech-stack, workflow SOT에 승격합니다.
 
-템플릿: [improvement-template.md](../templates/improvement-template.md)
+계획 lifecycle 기준: [공통 계획·설계 템플릿](../templates/000-index.md)

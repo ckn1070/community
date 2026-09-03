@@ -26,4 +26,15 @@ class CommunityDeploymentManifestContractTest {
     String deployment = Files.readString(Path.of("deploy/base/deployment.yaml"));
     assertThat(deployment).contains("name: COMMUNITY_ENABLED", "value: \"false\"");
   }
+
+  @Test
+  void stagingOverlayEnablesCommunityCapability() throws Exception {
+    String deploymentPatch =
+        Files.readString(Path.of("deploy/overlays/stg/deployment-profile-patch.yaml"));
+    String kustomization = Files.readString(Path.of("deploy/overlays/stg/kustomization.yaml"));
+
+    assertThat(deploymentPatch)
+        .contains("- name: COMMUNITY_ENABLED\n              value: \"true\"");
+    assertThat(kustomization).contains("path: deployment-profile-patch.yaml");
+  }
 }

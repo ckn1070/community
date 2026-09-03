@@ -6,6 +6,23 @@
 규칙·field·fixture·verifier를 추가하지 않는 구조를 만듭니다. 공통 책임은 한 owner에
 모으고 전문 workflow·skill은 실제 차이만 소유합니다.
 
+## 현재 설계 결론과 실행 gate
+
+현재 활성 결론은 [결정 38](#결정-38-계획-checkpoint는-검증-뒤-종료보다-먼저-git-consumer가-닫습니다)이며,
+canonical 통제와 필수 consumer 반영 및 독립 문서 감사는 완료했습니다. 현재 작업 전체
+상태는 [work item 본문](003-work-execution-traceability.md)이 소유하며 `In Progress`입니다.
+
+| 구분 | 현재 상태와 actor·행동 |
+| --- | --- |
+| 닫힌 결과 | 기존 exact-path checkpoint 예외를 유지하면서 `Required-Pending`의 fail-closed consumer를 [작업 실행 workflow](../../../workflow/100-work-execution-workflow.md#계획-checkpoint의-fail-closed-전이), [`$dev-plan`](../../../../.agents/skills/dev-plan/SKILL.md#6-계획-문서-checkpoint), [`$git-finalize`](../../../../.agents/skills/git-finalize/SKILL.md#3-local-git-orchestration)와 [완료 보고 workflow](../../../workflow/140-completion-reporting-workflow.md#1-보고-입력)에 반영했습니다. Kafka 전용 규칙이나 새 문서 유형은 만들지 않았습니다. |
+| 검증 결과 | Regression·renamed transfer의 checkpoint 효과와 읽기 전용 false-block은 모델링된 fixture에서 통과했습니다. Canonical 7경로의 독립 final 문서 감사도 통과했습니다. |
+| 남은 gate | 실제 미래 계획 요청의 routing과 closure 소비, commit 뒤 다음 plan·report consumer invocation은 아직 관찰하지 않아 `검증 불가`입니다. 모델링된 효과나 이번 통제 commit으로 채우지 않습니다. |
+| 지금 actor | 사용자 입력은 필요하지 않습니다. 다음으로 검증된 안정 계획 checkpoint를 만드는 `$dev-plan` actor가 같은 candidate·HEAD·exact path·제외 dirty를 `Required-Pending`으로 인계하고 실제 Git·보고 증거를 남깁니다. |
+| 다음 전환 | 해당 live invocation이 통과하면 그 전이만 직접 증거로 닫습니다. 같은 불변식이 다시 실패하면 현재 통제 완료 주장을 무효화하고 심화 회고로 돌아갑니다. |
+
+현재 상태와 세부 규칙은 위 canonical owner가 소유하며 이 design은 선택·근거·재검토 조건만
+보존합니다.
+
 ## 결정 1. 공통 lifecycle은 한 owner만 둡니다
 
 ### 배경
@@ -1353,6 +1370,124 @@ production에 입장하거나 같은 commit·후발 plan으로 선행 조건이 
 ancestry consumer의 호출 위치를 다시 엽니다. 사용자가 단계적 migration을 목표로 명시하면
 완전한 최종 상태가 아니라 승인된 transitional scope를 별도 목표 identity로 검증하되 전체
 DDD 완료로 확대하지 않습니다.
+
+## 결정 35. 질문 batch의 첫 실질 출력은 직접 답변으로 고정합니다
+
+### 배경
+
+질문과 실행의 권한 분리, generation별 입장 상태와 첫 effect 결속은 이미 적용돼 있었습니다.
+그런데 Agent는 사용자가 이전 행동의 이유를 묻는 문장을 실행 독촉으로 해석하고, 질문에
+답하기 전에 정정 작업을 약속했습니다. 기존 통제는 mutation admission을 막았지만
+`ANSWER_ONLY`가 어떤 출력으로 소비돼야 하는지와 질문의 화용적 강도를 positive source로
+바꾸지 않는 경계를 첫 응답 interface에 충분히 고정하지 못했습니다.
+
+### 선택
+
+- `ANSWER_ONLY` batch는 source read 최소 안내 뒤 첫 실질 명제에서 원문의 대상·술어·수식어를
+  보존한 직접 답을 반환합니다.
+- 현재 generation에 독립된 명시 `EXECUTE` batch가 없으면 실행 계획·정정 약속·specialist
+  선택·mutation으로 전환하지 않고 답변으로 끝냅니다.
+- 같은 generation에 독립된 실행 원자가 있으면 질문을 먼저 직접 닫고, 그 원자의 exact
+  효과만 별도 identity로 실행합니다.
+- 질문의 강도·반복·재촉처럼 보이는 함의와 과거 미완료 요청은 현재 실행 권한을 만들지
+  않습니다.
+
+### 대안과 재검토 조건
+
+모든 질문이 있는 메시지의 실행을 전역 금지하면 독립된 명시 실행까지 불필요하게 막으므로
+배제했습니다. 반대로 답변 뒤 임의 실행을 허용하면 같은 확대가 반복되므로 현재 generation의
+positive source를 계속 요구합니다. 질문을 직접 답했는데도 독립 실행이 막히거나, 직접 답
+전에 실행 약속이 다시 나오면 batch 분리와 첫 출력 consumer를 다시 엽니다.
+
+## 결정 36. 새 작업 branch는 격리 worktree helper로만 생성합니다
+
+### 배경
+
+Worktree workflow는 현재 checkout의 branch 전환 금지와 bundled helper를 이미 규정했습니다.
+하지만 `$parallel-start`의 discovery trigger가 병렬 작업·새 worktree 표현에 치우쳐 있어
+`새 브랜치 파서 작업`을 일반 Git branch 요청으로 분류할 수 있었습니다. 그 결과 current
+checkout에서 branch를 직접 만들고 전환해 사용자의 main 관찰 상태와 병렬 작업 기반을
+동시에 훼손했습니다.
+
+### 선택
+
+- 새 작업 branch, 브랜치를 파서 작업, 병렬 작업 공간과 새 worktree 요청은 모두
+  `$parallel-start`로 route합니다.
+- 생성은 bundled helper의 dry-run과 실행으로만 수행하며 primary checkout의 branch·HEAD·
+  index·worktree 상태를 보존합니다.
+- 현재 checkout의 `git switch -c`, `git checkout -b`, `git branch`와 branch rename을
+  작업 branch 생성의 대체 경로로 사용하지 않습니다.
+- Naming·base·branch·path 충돌은 수동 ref mutation으로 우회하지 않고 blocker로 반환합니다.
+  기존 branch의 조회·통합·삭제·명시 이름 변경은 각각의 exact Git 효과로 별도 판정합니다.
+
+### 대안과 재검토 조건
+
+사용자가 `worktree`라는 단어를 말한 경우에만 adapter를 호출하는 안은 같은 표현 누락을
+재현하므로 배제했습니다. 모든 branch 동작을 parallel-start로 보내는 안은 기존 branch
+관리 요청을 오분류하므로 생성 요청에만 한정했습니다. 작업 branch 생성이 current checkout을
+다시 바꾸거나 기존 branch 관리가 과잉 차단되면 trigger와 생성·관리 경계를 다시 검토합니다.
+
+## 결정 37. 사용자 질문은 미정의 사용자 결정만 입장시킵니다
+
+### 배경
+
+실행 회고와 영구 규칙 변경은 별도 `commit` 표현 없이 exact-path local commit까지 수행하는
+상시 예외였고, 외부 gate가 승인 없음으로 거절해도 같은 승인을 다시 묻지 않는 규칙도
+존재했습니다. 그런데 Agent는 tool gate의 거절을 operation map의 실행 가능성 증거가 아니라
+새 사용자 권한 공백으로 해석해 이미 정의된 commit 권한을 다시 물었습니다.
+
+### 선택
+
+- 모든 user-facing 질문 직전에 질문할 exact 값·효과, 이를 정할 수 있는 원문·operation
+  map·canonical workflow·domain source와 실제 EOF read identity를 대조합니다.
+- 결과는 `정의됨 / 사용자만 결정 가능 / 접근 불가·미증명` 중 하나로 분류합니다.
+- 정의된 값은 현재 권위로 소비하고, source가 제한하지 못하며 사용자만 결정할 수 있는
+  미정의 차원만 질문합니다.
+- Tool 승인·거절, 명령 실패와 Agent의 불확실성은 닫힌 의미 권한을 다시 열지 않습니다.
+  기존 retry·blocker 경계로 반환합니다.
+
+실제 질문 admission과 상태 전이는
+[100 작업 실행 워크플로우](../../../workflow/100-work-execution-workflow.md#사용자-질문-생성-admission)가
+소유합니다.
+
+### 대안과 재검토 조건
+
+질문마다 새 문서나 자동 hook을 만드는 안은 질문 의미를 외부 verifier에 넘기고 단순 응답의
+비용을 늘려 배제했습니다. 모든 미증명을 사용자에게 묻는 안도 source 접근 장애와 사용자
+결정을 혼동하므로 배제했습니다. 정의된 값을 다시 묻거나, 실제 사용자 소유 결정이 Agent
+판단으로 채워지면 source coverage와 첫 질문 consumer를 함께 다시 검토합니다.
+
+## 결정 38. 계획 checkpoint는 검증 뒤 종료보다 먼저 Git consumer가 닫습니다
+
+### 배경
+
+계획 문서의 안정 checkpoint를 별도 요청 없이 local commit한다는 규칙과 권한은 이미
+존재했습니다. 첫 실패 뒤 이 규칙을 영구 owner에 반영하고 검증까지 했지만, 이후 Agent가
+같은 규칙을 실제로 읽고도 계획 검증 완료를 곧바로 사용자 보고로 넘겨 `commit 없음`을
+정상 상태처럼 종료했습니다. 규칙의 존재와 권한 판정은 닫혔지만, 검증 결과를 Git actor가
+반드시 소비하고 commit 증거를 보고 actor가 확인하는 전이 identity가 없었습니다.
+
+### 선택
+
+- 검증된 안정 계획 상태는 `Not-Required / Required-Pending / Committed / Blocked` 중 하나로
+  관리합니다.
+- `Required-Pending`은 같은 candidate digest, lifecycle 상태, fixed-base `HEAD`, exact
+  path·hunk, 제외 dirty와 `push 없음` 경계를 `$git-finalize`에 즉시 전달합니다.
+- 실제 commit object·parent·tree·patch와 잔여 dirty만 `Committed`를 만들 수 있습니다.
+  실제 분리 불가나 Git 실행 차단만 공통 blocker gate를 거쳐 `Blocked`를 만듭니다.
+- `Required-Pending`에서는 `$git-finalize` handoff만 허용하고 사용자 대기, 다른 phase
+  handoff, 다음 rewrite와 terminal 보고를 금지합니다. `commit 요청 없음`을 미수행 사유로
+  사용할 수 없습니다.
+- Checkpoint는 복구 지점일 뿐 계획 완료가 아니므로 `Committed` 뒤 원래 계획 oracle로
+  복귀해 남은 설계 작업이나 실제 사용자 결정을 계속 판정합니다.
+
+### 대안과 재검토 조건
+
+기존 문구를 한 번 더 강조하는 안은 실제로 읽고도 소비하지 않은 재발을 막지 못해
+배제했습니다. 모든 문서 변경을 자동 commit하는 안은 질문·검토와 일반 문서 권한을 침범하므로
+배제했습니다. 앞으로 `Required-Pending` 상태에서 종료하거나, 계획이 아닌 읽기 전용 질문에서
+Git mutation을 만들거나, checkpoint 뒤 계획 완료로 잘못 승격하면 상태 producer·Git
+consumer·보고 gate를 함께 다시 검토합니다.
 
 ## 서로 다른 first-break family의 owner
 

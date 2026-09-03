@@ -149,12 +149,30 @@ outline을 고르기 전에 다음 두 방향을 닫습니다.
 설명합니다. 내부 설계 분류나 영어 pattern 이름이 이 질문의 직접 답을 대신하지 않습니다.
 파일명, 접미사, 본문·companion과 현재 계획 단계는 이 첫 화면 계약의 적용 여부를 바꾸지
 않습니다. 계획 목적 artifact의 제목과 상태·계획 단계 바로 다음에는 현재 결론, 닫힌 결과,
-남은 gate와 source-backed 상태, 지금 actor와 exact 행동, 사용자 차례의 조건·응답 방식,
-현재 행동 뒤 결과와 다음 단계 전환 조건을 둡니다. 사용자보다 먼저 닫을 Agent gate가 있으면
-그 상태를 숨긴 채 사용자의 확정을 현재 행동으로 앞당기지 않고, 모든 gate가 닫혔으면 새
-질문이나 중복 확정을 만들지 않습니다. 결론·gate 상태·actor·다음 행동이 바뀌는 후보 작성,
-검증 결과, 재검토와 단계 전환에서는 사용자 검토나 다음 actor 인계 전에 첫 화면도 같은
-candidate 상태로 갱신합니다.
+다음 안정 handoff에 남을 gate와 terminal 상태, 모든 선행 gate·checkpoint 뒤의 안정 actor와
+exact 행동, 사용자 차례의 조건·응답 방식, 그 행동 뒤 결과와 다음 단계 전환 조건을 둡니다.
+Writer·reviewer·Git actor와 진행 중 gate 상태는 작업 실행 receipt만 소유하며 첫 화면에
+투영하지 않습니다. 모든 gate가 닫혔으면 새 질문이나 중복 확정을 만들지 않습니다. 검증과
+checkpoint가 닫힌 exact candidate의 결론·gate 상태·안정 actor·다음 행동이 바뀌면 사용자
+검토나 다음 actor 인계 전에 첫 화면을 새 handoff 상태로 갱신합니다.
+
+`$dev-plan`의 사용자 값 선택·단계 확정 artifact는 이 의미 gate 뒤 상세 prose를 쓰기 전에
+작업 실행 workflow의 `plan-structure` round를 먼저 통과합니다. 현재 작업의 세션 map에는
+artifact path·baseline, 문서 유형·상태·현재 또는 차단 전 단계, lifecycle이 허용한 artifact와
+section, heading별 독자 질문·상세 owner·순서, 안정 first-screen field, 결정별 기존 권위와
+추천·선택·값 확정·source 제약·Agent 기술 선택·단계 확정 상태, 활성 질문과 닫힌 결정,
+보존·rollback·router projection, 금지한 다음 단계 section을 연결합니다. 또한 원문·source·
+후보·추천 결과에 등장하는 모든 독립 변경값을 먼저 나열하고, 각 값을 하나의 결정 축 ID와
+권위·상태·owner·consumer·재검토 조건과 권위별 표현에 연결합니다. 열린 사용자 결정은 활성
+카드, Agent 기술 선택은 비교 결정 block, 사용자 확정 요구는 고정 입력·닫힌 결과, source
+파생은 source 파생 block, 입력 부재는 gate block으로 둡니다. `다른 값을 고정한 채 이 값만
+바꿔도 유효한 후보나 다른 영향 경계가 남는가`가 분리 기준입니다. 여러 축을 한 block에서
+함께 질문하는 것은 열린 사용자 결정 카드끼리만 허용하며 한 카드로 합치지 않습니다.
+불가분으로 유지한 tuple은 개별 변경이 source·논리상 성립하지 않는 근거와 권위별 oracle을 map에
+남깁니다. 비교 결정·활성 카드는 공통 질문·option set, 사용자 확정 요구·고정 입력은
+authoritative 요구·적용 범위, source 파생은 source·파생 규칙, 입력 부재 gate는 부족 입력·
+입력 owner·획득/재개 조건·처음 막는 consumer로 증명합니다. 새 schema나 별도 repository
+artifact를 만들지 않고 기존 Frozen candidate identity에 이 관계를 결속합니다.
 
 초안에서 독자가 다시 `그 말은 무엇인가`라고 물을 가능성이 있는 명사를 표시하고, 각 명사는
 다음 중 하나로 닫습니다.
@@ -172,6 +190,22 @@ field, enum과 표준 식별자처럼 구현·검증에서 exact 값이 필요�
 ## 4. 구조 gate
 
 의미 gate를 통과한 정보에 문서 정보 구조 가이드를 적용합니다.
+신규 문서나 번호 corpus 개편은 path·이름을 후보로 만들기 전에 다음 순서로
+topology를 고정합니다.
+
+```text
+direct directory의 실제 문서 inventory
+→ direct router의 번호 group·읽기 순서
+→ 기존 owner와 새 책임의 일반·특수 포함 관계
+→ 기존 owner의 모든 inbound link·consumer
+→ 기존 문서 확장·병합·신설·이동·삭제 후보 선택
+```
+
+일반 owner가 같은 독자 행동·source·갱신 주기에서 특수 상황을 포함하면 기존
+번호·owner의 일반화와 짧은 하위 절을 먼저 선택합니다. 별도 특수 문서가 필요한
+예외에서는 [문서 정보 구조 가이드의 새 문서와 분리 기준](../100-documentation-guide.md#새-문서와-분리-기준)이
+요구하는 근거·관리 비용·비분리 대안을 한 번에 설명하고, 현재 generation의 명시적
+사용자 승인을 받기 전에는 둘을 따로 작성하지 않습니다.
 
 1. 독자 행동과 정보 수명에 맞는 문서 유형을 선택합니다.
 2. 독자 질문, source, 갱신 주기와 보존 기간으로 병합·분리를 정합니다.
@@ -200,9 +234,32 @@ field, enum과 표준 식별자처럼 구현·검증에서 exact 값이 필요�
     차례의 조건과 응답 방식·다음 전환을 설명할 수 있는지 대조합니다. 사용자 입력이 현재
     필요하면 선택할 값·차이·추천·영향도 같은 첫 화면에서 복원해야 합니다. 미정의 용어나
     하단 section·다른 문서 link가 이 의미를 대신 운반하면 구조 gate를 통과하지 않습니다.
-13. Work item은 [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)에서
+13. 사용자 검토용 Plan·Decision·Design의 각 결정 ID가 하나의 독립 변경값만 소유하고 권위에
+    맞는 표현을 사용하는지 확인합니다. 제목·대표 비교표가 하나여도 prose·요약·목표 계약에서
+    별도 선택값을 고정하거나, 후보마다 owner·consumer·재검토 조건이 둘 이상이면 축을
+    나눕니다. 같은 주제나 구현 단위라는 이유로 묶지 않습니다. 열린 사용자 축은 같은 활성 block 안의 별도
+    카드로 인접 배치하고, 다른 축은 고정 입력·비교 결정·source 파생·gate block으로 분리합니다.
+14. Work item은 [작업 문서 생명주기](../work-items/100-work-item-lifecycle.md#계획-단계와-최소-artifact)에서
     현재 단계, 허용 artifact와 선행 closure를 확인합니다. 선행 결과에 따라 달라지는 다음
     단계 문서·section·후보 상세가 있으면 exact write target에서 제외합니다.
+
+위 plan-structure 대상이면 구조 gate가 만든 session map을 `$verify-plan structure`에 보내고,
+중대한 구조는 같은 round에서 `$verify-documentation proposal` verdict도 별도로 받습니다.
+Structure closure 전에는 상세 content writer를 호출하지 않습니다. Closure 뒤 `$documentation`
+writer는 동결한 heading·first-screen field·활성 결정 block을 추가·삭제·재배치하지 않고 값과
+설명만 채웁니다. 발견으로 계획 의미를 바꿔야 하면 직접 선택하지 않고 `$dev-plan`으로
+반환합니다.
+
+직접 `$documentation`으로 들어온 요청은 다음 셋을 모두 만족할 때만 mutation 전에
+`$dev-plan`으로 반환합니다.
+
+1. 대상이 lifecycle의 Proposed·Planned·planning-Blocked body 또는 허용된 `-design`입니다.
+2. 첫 화면, 결정 카드·색인, 단계별 section, 계획 결과·설계·실행 계획을 실질 변경합니다.
+3. 변경 뒤 사용자의 값 선택 또는 단계 확정을 받을 artifact가 됩니다.
+
+읽기 전용, 오탈자·link·source로 유일한 값의 국소 교정, 일반 Decision/Design과 사용자
+handoff가 없는 내부 계획은 기존 문서화 경로를 유지합니다. Predicate가 source로 확정되지
+않으면 writer 전에 작업 실행 admission으로 반환합니다.
 
 시스템 설명과 운영 절차가 함께 있는 corpus를 신설·개편할 때는 exact write target을
 고정하기 전에 다음 세션 매트릭스를 실제 문서 section 단위까지 작성합니다.
@@ -242,6 +299,23 @@ Procedure를 쓰거나 실질적으로 확장하기 전에는 정상·실패 경
 → 직접 관찰할 기대 결과
 → 실패 시 중단·재실행 entrypoint
 ```
+
+공용 Procedure 후보는 section을 쓰기 전에 현재 scope의 동급 대상 둘 이상을 raw source에서
+선택해 다음 치환 대조를 수행합니다.
+
+```text
+공용 입력과 공통 시작 상태
+→ 대상 A에 적용한 단계·actor·완료·복구
+→ 대상 B로 이름만 바꿔도 같은 계약이 성립하는가
+→ 성립하지 않는 최초 단계와 그 전용 owner
+→ 공용 본문에 남길 공통 전이와 전용 owner로 보낼 handoff
+```
+
+한 대상의 현재 executable이 존재하거나 상세 절차가 이미 작성돼 있다는 사실은 공용 본문
+편입 근거가 아닙니다. 치환 뒤 provider Console, resource 고유 schema, 별도 폐기나 기능 확인
+때문에 계약이 달라지면 그 부분은 공용 Procedure에서 제거하고 전용 owner로 연결합니다.
+동급 대상이 source에 하나뿐이면 가상의 이름만 바꿔 합격시키지 않고, 공용 범위를 입증할
+두 번째 실제 대상이 생길 때까지 특수 Procedure로 유지합니다.
 
 Runbook에 이 계약을 표현할 때에는 각 실행 단계를 다음 순서로 작성합니다.
 
@@ -464,8 +538,8 @@ Markdown topology는 다음 깊이로 직접 확인합니다.
 - Proposed·Planned work item은 현재 `계획 단계`, 허용 artifact 수와 section, 선행 closure를
   lifecycle에 다시 대조합니다. 다음 단계 상세나 목적이 겹치는 owner가 하나라도 남으면
   문장 완성도와 무관하게 실패합니다.
-- Plan·Decision·Design 목적 artifact의 첫 화면에서 현재 결론, 닫힌 결과, 남은 gate의
-  source-backed 상태, 지금 actor·exact 행동, 사용자 차례와 응답 방식, 다음 전환 중 하나를
+- Plan·Decision·Design 목적 artifact의 첫 화면에서 현재 결론, 닫힌 결과, 다음 안정 handoff에
+  남은 gate의 terminal 상태, 안정 actor·exact 행동, 사용자 차례와 응답 방식, 다음 전환 중 하나를
   하단 section이나 다른 문서에서 찾아야 하면 실패합니다. 일반 본문에는 적용하고 같은 계획
   목적의 `-design`·companion에는 적용하지 않거나, 모든 gate가 닫힌 문서에 새 결정·재확인을
   만들 때도 실패합니다.
@@ -474,7 +548,7 @@ Markdown topology는 다음 깊이로 직접 확인합니다.
   각 값을 행 label이나 목록 marker로 바로 찾을 수 있어야 합니다.
 - 기존 prose를 표의 셀이나 목록 항목으로 옮기기만 했거나, 한 행·항목이 독립적인 판단·근거·
   조건·예외를 함께 소유하면 실패합니다. 결론 한 문장과 행 label·요약값 또는 목록 marker만
-  훑어 전체 판정, 닫힌 결과와 남은 일, 현재 actor·행동, 다음 전환·조건을 복원할 수 있어야
+  훑어 전체 판정, 닫힌 결과와 남은 일, 안정 actor·행동, 다음 전환·조건을 복원할 수 있어야
   합니다. 상세를 읽어야만 이 값을 분리할 수 있으면 정보 분류·압축부터 다시 수행합니다.
 - 새 numbered document link 또는 현재 작업에서 target·anchor·표시 이름 중 하나를
   실질적으로 수정한 numbered document link는 대상 파일의 세 자리 번호와 책임을 함께

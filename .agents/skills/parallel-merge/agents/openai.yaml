@@ -1,5 +1,5 @@
 # 병렬 worktree 병합 스킬의 discovery UI 메타데이터를 정의합니다.
 interface:
   display_name: "병렬 작업 병합"
-  short_description: "병합 topology와 검증 후 기본 cleanup 경로를 발견"
-  default_prompt: "Use $parallel-merge to inspect the main and source worktrees, bind the merge and its default verified local cleanup to the current user-message generation unless retention is explicit, and return dirty or denied preconditions without inventing substitute mutations."
+  short_description: "병합 검증 후 local·remote cleanup 경로를 발견"
+  default_prompt: "Use $parallel-merge to inspect the main and source worktrees, bind the merge and its verified local and remote source cleanup to the current user-message generation unless retention is explicit, and return dirty or denied preconditions without inventing substitute mutations."

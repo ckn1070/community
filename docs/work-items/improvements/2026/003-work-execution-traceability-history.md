@@ -981,3 +981,143 @@ Root 제거 반사실에서 현재 DDD 사건의 분할안은 `refresh token lif
 이 변경의 모델링된 효과와 현재 검증 actor의 invocation은 별도 판정합니다. 미래 architecture
 작업에서 첫 mutation 전에 실제로 호출된다는 보장은 이번 commit으로 완료했다고 선언하지
 않습니다.
+
+## 질문을 실행 독촉으로 바꾸고 답변보다 정정을 앞세운 재발
+
+### 사건과 영향
+
+사용자는 Agent가 이전 질문에 왜 답하지 않고 정정 작업으로 넘어갔는지 반복해서 물었습니다.
+Agent는 그 질문의 이유를 직접 설명하지 않고, 정정을 요구하는 독촉으로 확대해 실행을
+약속했습니다. 사용자는 질문과 실행 명령의 차이를 다시 설명해야 했고 원래 질문은 여러
+응답 동안 닫히지 않았습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+최초 단절은 `현재 질문 원자 → 첫 실질 응답`입니다. 질문·실행 분리, generation별
+`ANSWER_ONLY`와 첫 effect 결속은 `8174135a`를 포함한 기존 통제로 이미 main에 있었지만,
+Agent는 입장 상태를 첫 문장에 소비하지 않고 과거 미완료 작업과 강한 표현을 실행 권한으로
+사용했습니다. 뒤늦은 규칙 인지는 이미 생략한 답을 복구하지 못했습니다.
+
+다섯 단계의 원인은 질문 대신 실행 의도를 추측한 직접 오류, 반복된 문제 제기를 독촉으로
+읽은 의미 확대, 과거 실행 권한을 현재 generation에 전파한 권한 오류, `ANSWER_ONLY`를
+mutation 금지로만 보고 첫 출력 형식으로 소비하지 않은 interface 공백, 모델링된 규칙 존재를
+live invocation으로 확대한 이전 검증입니다. 2차 시스템 root는 규칙 내용이 아니라
+`현재 질문 → 입장 상태 → 첫 실질 명제` consumer가 실제 응답 경로에 결속되지 않은 것입니다.
+
+### 통제 처분과 남은 위험
+
+기존 원자화·질문 읽기 전용·generation 권한 통제는 유지하고, workflow/100의
+`ANSWER_ONLY` consumer를 직접 답변 우선과 무권한 실행 전환 금지로 강화했습니다. Root가
+제거됐다면 이유 질문에는 이유를 첫 명제로 답하고 그 generation에서 정정 작업을 시작하지
+않았을 것입니다. 명사를 배포나 문서 검토로 바꾼 질문도 같고, 독립된 명시 실행 원자가 같은
+메시지에 있으면 그 질문을 답한 뒤 exact 실행은 막지 않아야 합니다.
+
+## 새 작업 branch를 primary checkout에서 직접 생성·전환한 재발
+
+### 사건과 영향
+
+사용자는 새 branch에서 계획 작업을 시작하라고 했고 저장소의 병렬 작업 절차는 별도
+worktree 사용을 요구했습니다. Agent는 primary checkout에서 branch를 직접 생성하고
+checkout했습니다. 사용자가 보고 있던 main checkout이 바뀌었고 독립 작업 공간이라는
+요청의 전제가 깨졌으며, 사용자는 기존 절차를 다시 설명해야 했습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+최초 단절은 `새 작업 branch 요청 → 생성 adapter routing`입니다. 현재 worktree의 branch
+전환 금지는 `6aeadabd2`부터 workflow/310에 있었고 bundled helper와 `$parallel-start`도
+canonical 경로였습니다. 그러나 skill trigger는 병렬 작업·독립 공간·새 worktree 표현만
+명시해, branch라는 표현만 있는 요청을 일반 Git mutation으로 우회할 여지를 남겼습니다.
+
+다섯 단계의 원인은 primary checkout에서 직접 branch를 만든 명령 선택, branch 생성과
+worktree 생성을 별개로 본 분류, `브랜치 파서 작업`을 parallel-start trigger가 소비하지
+않은 routing 공백, preflight·source 보존 oracle이 호출되지 않은 실행 경로, 규칙의 존재를
+실제 ref mutation 전 invocation으로 검증하지 않은 완료 판단입니다. 2차 시스템 root는
+`작업 branch 생성 표현 → parallel-start → bundled helper`가 하나의 강제 interface가 아니었던
+것입니다.
+
+### 통제 처분과 남은 위험
+
+기존 source checkout 보존·helper mechanics는 유지하고, workflow/310의 생성 routing과
+`$parallel-start` discovery trigger를 강화했습니다. Root가 제거됐다면 같은 요청은 current
+checkout을 그대로 둔 채 helper dry-run으로 입장했을 것입니다. `fix branch 만들어서 작업`도
+같이 처리하되, 기존 branch를 조회·통합·삭제하거나 명시적으로 이름만 바꾸는 요청은 작업
+branch 생성으로 오분류하지 않아야 합니다. 당시 생성된 branch의 삭제나 Kafka 계획 재개는
+이번 통제 변경 권한에 포함되지 않습니다.
+
+## 정의된 실행 회고 commit 권한을 사용자에게 다시 물은 재발
+
+### 사건과 영향
+
+사용자는 실행 회고와 영구문서 반영을 명령했습니다. 해당 workflow는 통제 변경의
+exact-path local commit을 상시 예외로 이미 허용했지만, Agent는 tool gate가 commit을
+거절하자 사용자에게 같은 commit 권한을 다시 물었습니다. 사용자는 이미 정리한 프로세스를
+다시 설명하고 작업 마무리를 재차 명령해야 했습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+최초 단절은 `tool 실행 결과 → 다음 user-facing 질문 admission`입니다. Workflow/100,
+retrospective와 git-finalize에는 영구 통제의 local commit 예외, 거절 뒤 근거를 결속한 1회
+재시도와 동일 승인 재질문 금지가 사건 전에 존재했고 Agent도 해당 source를 읽었습니다.
+그럼에도 거절 결과를 실행 경로의 차단 증거가 아니라 사용자 권한의 부재로 다시 분류했습니다.
+
+다섯 단계의 원인은 정의된 commit 권한을 다시 물은 직접 오류, tool 거절을 의미 권한
+판정으로 승격한 상태 혼동, 현재 operation map보다 외부 gate의 일반 사유를 우선한 authority
+역전, 질문 직전 source closure를 소비하지 않은 interface 공백, source를 읽었다는 사실을
+실제 질문 consumer invocation으로 확대한 이전 방어입니다. 2차 시스템 root는 규칙 부재가
+아니라 `실행 결과 → 정의 여부 재대조 → 사용자 질문` 전이에 exact 값의 source coverage가
+전달되지 않은 것입니다.
+
+### 통제 처분과 남은 위험
+
+기존 상시 예외·retry·동일 승인 재질문 금지는 유지하고, workflow/100의 모든 user-facing
+질문 앞에 source coverage admission을 강화했습니다. Root가 제거됐다면 tool 거절 뒤 원래
+명령과 상시 예외를 결속해 지원 경로로 재시도하고, 재차 거절되면 interface blocker로
+보고했을 뿐 commit 권한을 다시 묻지 않았을 것입니다. 배포·문서 선택처럼 명사를 바꿔도
+정의된 값은 묻지 않되, source가 제한하지 못하는 실제 사용자 소유 결정은 과잉 차단하지
+않아야 합니다.
+
+## 계획 checkpoint를 검증하고도 local commit 없이 종료한 재발
+
+### 사건과 영향
+
+첫 사건에서는 안정된 계획 문서가 검증 뒤 working tree에만 남았고 후속 rewrite에서 일부
+결정이 소실됐습니다. 이를 막기 위해 계획 checkpoint의 exact-path local commit 상시 예외를
+영구화하고 검증했습니다. 이후 Community Kafka 계획에서 결과 정의의 독립 closure까지
+통과했지만 Agent는 `commit·push 없음`을 정상 상태로 보고하고 종료했습니다. 해당 계획은
+나중에 `a39b6107` checkpoint로 복구됐지만, 후속 복구가 당시의 절차 위반을 소급해 없애지는
+않습니다.
+
+### 최초 단절과 기존 방어의 생애주기
+
+두 사건의 공통 최초 단절은 `검증된 안정 계획 상태 → Git consumer 인계`입니다. 첫 사건 뒤
+`5925b071`에서 별도 요청 없는 local checkpoint, exact path, commit object와 잔여 dirty
+검증을 도입했고 후속 통합·복귀 통제도 추가했습니다. 재발 당시 이 규칙은 canonical source에
+존재했고 Agent도 읽었지만, 독립 closure 결과를 `Required-Pending` 같은 실행 상태로 만들지
+않아 `$git-finalize` 호출보다 사용자 보고가 먼저 실행됐습니다.
+
+직접 오류는 commit 없이 정상 종료한 것이고, 상태 오류는 검증 통과를 checkpoint 완료로
+간주한 것이며, routing 오류는 계획 상시 예외가 `$git-finalize`의 discovery trigger에 없었던
+것입니다. Interface 공백은 같은 candidate·HEAD·exact path·제외 dirty가 검증 actor에서 Git
+actor와 보고 actor까지 전달되지 않은 것이고, 이전 검증 오류는 정적 규칙의 존재와 예상 답을
+실제 live consumer invocation으로 확대한 것입니다. 2차 시스템 root는 규칙 부재가 아니라
+`검증 완료 → Git 실행 → commit 증거 → 보고`의 fail-closed 전이가 없었던 데 있습니다.
+
+### 통제 처분과 남은 위험
+
+기존 checkpoint 상시 예외와 exact-path 검증은 유지합니다. Workflow/100이 checkpoint 상태와
+금지 전이를 소유하고, `$dev-plan`이 `Required-Pending`을 생산하며, `$git-finalize`와 commit
+workflow가 실제 commit 증거를 반환하고, reporting workflow가 pending 상태의 종료를
+거부하도록 consumer를 결속했습니다. Root가 제거됐다면 Community Kafka 계획의 독립 closure
+직후 local checkpoint가 먼저 생성·검증되고 그 뒤에만 다음 계획 행동이나 사용자 보고가
+가능했을 것입니다.
+
+Canonical 통제와 필수 consumer는 `72207104`에서 exact-path local commit으로 적용됐습니다.
+이 commit object는 현재 통제 적용과 이번 Git actor invocation의 증거일 뿐, 미래 계획 요청의
+routing·closure 소비나 그 checkpoint 뒤 plan·report consumer invocation을 증명하지 않습니다.
+
+독립 evaluator가 동결한 regression, 이름을 바꾼 계획 transfer와 읽기 전용 false-block을
+후보 검증 기준으로 사용합니다. Isolated fixture는 해당 입력에서의 모델링된 통제 효과만
+증명합니다. 현재 회고의 writer·reviewer invocation과 이후 생성할 실제 local commit object는
+각각의 직접 source로만 판정하며 이 문서 후보가 Git invocation을 미리 증명하지 않습니다.
+미래 계획 actor가 실제로 이 전이를 호출하는지도 그 live invocation 전까지 완료로 확대하지
+않습니다.

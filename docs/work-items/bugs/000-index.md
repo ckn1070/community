@@ -7,4 +7,4 @@
 - 기능 요구 변경은 버그로 숨기지 않고 feature 또는 improvement로 분리합니다.
 - [2026 버그](2026/000-index.md): 현재 확인된 기대 동작과 실제 동작의 결함
 
-템플릿: [bug-template.md](../templates/bug-template.md)
+계획 lifecycle 기준: [공통 계획·설계 템플릿](../templates/000-index.md)

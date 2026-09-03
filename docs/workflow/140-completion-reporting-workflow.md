@@ -22,6 +22,12 @@
 보고는 상태를 새로 판정하거나 전문 owner의 결정을 다시 설계하지 않습니다. 입력이
 모순되면 임의로 해소하지 않고 owner와 불일치를 밝힙니다.
 
+계획 checkpoint가 `Required-Pending`이면 보고 actor는 이를 정상적인 `commit 없음`이나
+사용자 차례로 투영하지 않습니다. 사용자 대기, Git 이외 phase handoff와 terminal 보고를
+중단하고 `$git-finalize`로 반환합니다. 실제 commit object·parent·tree·patch·잔여 dirty가
+확인된 `Committed` 또는 공통 blocker gate가 직접 증명한 `Blocked`만 다음 보고 상태로
+소비합니다. 별도 commit 요청 부재와 push 미승인은 `Blocked`의 근거가 아닙니다.
+
 실행 회고 보고는 작업 실행 workflow가 확정한 closure identity를 그대로 소비합니다.
 통제별 처분, canonical owner의 실제 적용 효과 또는 이미 적용된 exact control identity,
 모델링된 통제 효과와 필요한 실제 invocation의 개별 verdict, Git 자격과 전체 회고 상태 중
