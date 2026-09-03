@@ -31,7 +31,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
   @Test
   void findsRefreshTokenByHashWithAccountPublicId() {
     UUID publicId = UUID.fromString("0f3445fd-5f22-4f74-9a9d-1ff0c68a924a");
-    Long accountId = createAccount(publicId, "refresh-lookup@example.com", "ACTIVE");
+    createAccount(publicId, "refresh-lookup@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("6e74f192-9256-4569-8579-6b8f557d9cb1");
     Long tokenId = createRefreshToken(publicId, "a".repeat(64), familyId);
 
@@ -46,7 +46,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
   @Test
   void rotatesRefreshTokenAndRecordsRefreshEvent() {
     UUID publicId = UUID.fromString("38d1dcb8-7bbf-4390-8e28-c3a8cd3e2f0d");
-    Long accountId = createAccount(publicId, "refresh-rotate@example.com", "ACTIVE");
+    createAccount(publicId, "refresh-rotate@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("154c0fef-4f88-449f-a070-c8b0ed201501");
     Long oldTokenId = createRefreshToken(publicId, "b".repeat(64), familyId);
     RefreshSession current = adapter.findByHashForUpdate("b".repeat(64)).orElseThrow();
@@ -89,7 +89,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
   @Test
   void revokesActiveFamilyTokensForReuseDetectionAndRecordsEvent() {
     UUID publicId = UUID.fromString("bbd1502f-fc98-4c73-a5b2-bc53558e1b62");
-    Long accountId = createAccount(publicId, "refresh-reuse@example.com", "ACTIVE");
+    createAccount(publicId, "refresh-reuse@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("c1c60ef3-5571-42fb-a46a-a10cadc14e2f");
     Long reusedTokenId = createRefreshToken(publicId, "d".repeat(64), familyId);
     Long activeTokenId = createRefreshToken(publicId, "e".repeat(64), familyId);
@@ -123,7 +123,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
   @Test
   void revokesSingleRefreshTokenForLogoutAndRecordsEvent() {
     UUID publicId = UUID.fromString("c8f7975b-6601-4bea-a448-dfd630a7f983");
-    Long accountId = createAccount(publicId, "refresh-logout@example.com", "ACTIVE");
+    createAccount(publicId, "refresh-logout@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("33f8ae96-1ef1-4c97-b4de-3b239284d19c");
     Long logoutTokenId = createRefreshToken(publicId, "f".repeat(64), familyId);
     Long otherTokenId = createRefreshToken(publicId, "0".repeat(64), familyId);

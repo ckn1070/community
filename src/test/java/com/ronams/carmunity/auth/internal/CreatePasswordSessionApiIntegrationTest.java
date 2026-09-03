@@ -52,7 +52,6 @@ class CreatePasswordSessionApiIntegrationTest extends PostgreSqlIntegrationTestS
             .andExpect(jsonPath("$.sessionAccess").value("FULL"))
             .andReturnJson();
 
-    Long internalAccountId = internalId(accountPublicId);
     String refreshToken = response.get("refreshToken").asString();
 
     assertThat(response.get("accessToken").asString()).isNotBlank();
