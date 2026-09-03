@@ -6,19 +6,19 @@ Proposed
 
 ## 계획 단계
 
-해결 설계
+실행 계획
 
 ## 현재 결론과 다음 행동
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 결론 | R1-A와 단일-node Kubernetes 범위를 보존한 D2~D9 해결 설계 후보를 Redis 계획과 같은 판단 구조로 정리했고 fresh 독립 검증을 통과했습니다. |
-| 닫힌 결과 경계 | Community 댓글·답글 생성에서 서비스 안 알림까지의 첫 수직 흐름, Kafka 사용, 현재 Kubernetes의 단일-node qualification 범위는 다시 고르는 값이 아닙니다. |
-| 선행 외부 gate | 현재 해결 설계의 사용자 판단을 막는 외부 gate는 없습니다. Production topology는 peak·SLO·RPO·RTO·비용·운영 책임이 확정되기 전에는 선택하지 않습니다. |
-| 남은 gate | D2~D9의 기술 선택·목표 보존·source 관계는 최종 내용 검증을 통과했습니다. 사용자가 이 exact 해결 설계 후보를 확정해야 합니다. |
-| 현재 행동 주체 | 사용자가 전체 후보를 확정하거나 바꿀 결정 ID와 값을 지정합니다. |
-| 사용자 차례 | `현재 해결 설계 후보 전체를 그대로 확정해줘` 또는 바꿀 `D번호/R1: <변경 요구>`를 답합니다. |
-| 현재 행동 뒤 결과 | 사용자 확정 뒤 실행 계획을 엽니다. 별도 명시 요청 전에는 구현·배포를 시작하지 않습니다. |
+| 현재 결론 | 기술·구조 선택을 반영해 해결 설계를 완료했습니다. 다음은 실행 계획 작성이며 아직 미착수입니다. 전체 계획 상태는 `Proposed`입니다. |
+| 닫힌 결과 경계 | 이번에는 Strimzi 단일-node Kafka 구축과 Community 댓글·답글 → 서비스 안 알림 연결에 집중합니다. 업무 저장 보호, 누락·사용자 중복 방지와 재시작·데이터 손실 복구 검증을 포함합니다. |
+| 선행 외부 gate | 별도 부하·장애 시험 플랫폼과 다중 failure-domain 검증은 후속 범위입니다. Production 판단에는 peak·SLO·RPO·RTO·비용·운영 책임이 필요하며 현재 실행 계획 작성의 선행 조건은 아닙니다. |
+| 남은 gate | 실행 계획의 결과 단위·의존 순서·검증·전환·복구 책임 작성과 계획 검증·확정이 남았습니다. 해결 설계의 추가 사용자 선택은 없습니다. |
+| 현재 행동 주체 | 다음 단계의 작성자는 Agent입니다. 확정된 설계를 입력으로 작업 본문에 실행 계획을 작성합니다. |
+| 사용자 차례 | 추가 기술 선택 없이 실행 계획 단계로 진행할 수 있습니다. 실행 계획은 미작성 상태이며 구현·배포는 별도 후속 단계입니다. |
+| 현재 행동 뒤 결과 | 실행 계획을 작성·검증한 후보를 확정하면 `Planned`로 전환합니다. 현재는 해결 설계까지 완료한 상태입니다. |
 
 ## 문서 책임과 설계 입력
 
@@ -29,7 +29,7 @@ test 명령·설치 명령·exact version·image digest·resource
 수치·retention 기간·운영 replay 절차는 해결 설계가 확정된 뒤 실행 계획과 영구 SOT·runbook이
 소유합니다.
 
-현재 source는 다음 제약을 만듭니다.
+설계 입력으로 확인한 source 제약은 다음과 같습니다. Live 수치는 당시 입력이며 현재 환경 상태의 재검증 결과가 아닙니다.
 
 - `CommunityService.createComment()`는 댓글과 수신 후보를 계산한 뒤 같은 transaction에서
   `CommunityConversationNotification.store()`를 호출합니다. Store 실패 시 댓글도 rollback하는
@@ -67,7 +67,7 @@ R1은 사용자가 이미 고정한 Kafka 적용 경계이지 비교표가 아�
 | 1. 필수 | 정확성·내구 원본 | 댓글 transaction과 event 인계를 함께 보존하고 PostgreSQL을 복구 가능한 원본으로 유지합니다. | DB·Kafka dual-write 유실, 미완료 outbox 삭제, 사용자 중복이 있으면 탈락합니다. |
 | 2. 필수 | 장애 격리·복구 | Broker·relay·consumer 장애가 댓글 성공을 rollback하지 않고, 복구 뒤 누락 없이 수렴합니다. | Request가 broker ack를 기다리거나 재전달을 유실로 바꾸는 안을 탈락시킵니다. |
 | 3. 필수 | 단일 node 안전성·보안 | 현재 자원 한계, private TLS, 역할별 최소 권한과 secret 비노출을 지킵니다. | HA 과장, public·anonymous 접근, 무제한 자원 사용을 탈락시킵니다. |
-| 4. 핵심 효과 | 사용자 write 분리 | 현재 동기 경로보다 지속 처리량을 낮추지 않으면서 API latency를 broker 상태에서 분리합니다. | 비동기화 자체를 성공으로 간주하지 않고 같은 workload 결과를 대조합니다. |
+| 4. 핵심 효과 | 사용자 write 분리 | API 성공을 broker 상태에서 분리합니다. 지속 처리량·latency 목표는 후속 부하 qualification에서 판정합니다. | 이번에는 장애 중 write 보존을 검증하고, 성능 향상 주장은 같은 workload 비교 뒤에만 합니다. |
 | 5. 핵심 증거 | 전달·복구 판정 가능성 | Outbox·broker·receipt·inbox를 연결해 누락·중복·backlog와 병목을 구분합니다. | Lag·Pod Ready·count 0 하나만으로 전체 성공을 주장하는 안을 배제합니다. |
 | 6. 최적화 | 유지보수성·확장성·비용 | 위 기준을 모두 통과한 안 중 현재 첫 수직 흐름에 불필요한 platform과 영구 운영 표면이 가장 적은 안을 고릅니다. | 미래 production HA를 미리 확정하지 않되 교체할 계약 경계를 남깁니다. |
 
@@ -79,69 +79,65 @@ R1은 사용자가 이미 고정한 Kafka 적용 경계이지 비교표가 아�
 
 | 역할 | 반영 내용 |
 | --- | --- |
-| 사용자 의견 요약 | 기존 Kafka 문서는 이미 결정된 입력과 지금 판단할 기술 선택을 한 화면에서 구별하지 못했고, Redis 문서와 구조적으로 유사하지 않아 전체 상황과 사용자 차례를 판단하기 어려웠습니다. |
-| Agent 답변·판단 요약 | Kafka 적용 경계, 전달 원본, consumer 수렴, runtime·storage, 보안, qualification과 production gate는 서로 다른 결정입니다. 같은 시작·종료 상태의 대안끼리만 묶어야 합니다. |
-| 최종 반영 | Redis 문서의 first-screen·비교 방법·고정 입력·목표 구조·결정·도구 lifecycle·위험·근거 순서를 그대로 사용합니다. R1은 고정 입력으로 격리하고 D2~D9에 동일한 평가축, 선택, 감수 비용과 재검토 조건을 둡니다. |
+| 사용자 의견 요약 | 기술 선택을 판단할 수 있는 분해와 비교가 필요합니다. 필드명별 선택과 대안 없는 기존 사실은 판단할 기술 선택이 아니며, 전체 선택과 이유를 한눈에 읽을 수 있어야 합니다. |
+| Agent 답변·판단 요약 | 분해 기준은 구조·동작·비용을 달리하는 실질 대안입니다. 바꿀 수 있는 문자열이나 수치마다 선택을 요구한 구성을 폐기하고, 기존 사실·필수 계약과 기술 비교를 구분합니다. |
+| 최종 반영 | 기술 대안 비교와 선택 요약을 먼저 배치하고, 기존 제약·필드명은 상세 계약으로 보존합니다. 사용자 선택과 Agent 기술 선택을 구분해 해결 설계를 닫았습니다. |
+| 사용자 의견 요약 | 이번에는 Kafka 구축에 집중하고 장애 관련 시험 플랫폼은 나중에 독립적으로 진행합니다. |
+| Agent 답변·판단 요약 | 부하 도구·범용 장애 harness·별도 시험 환경 구축은 첫 수직 흐름과 분리할 수 있습니다. 실제 전달·중복 방지·재시작·데이터 손실 복구 증명은 구축 결과의 정확성을 확인하므로 이번에 유지합니다. |
+| 최종 반영 | D8-B·D8-C와 별도 부하·장애 플랫폼을 후속 범위로 옮겼습니다. 수치 목표는 후속 qualification 기준으로 보존하며 이번 구축 완료로 성능·HA 달성을 주장하지 않습니다. |
 
-### 무엇이 같은 비교군이고 무엇이 아닌가
+### 비교표를 읽는 방법
 
-| ID | 하나의 결정 질문 | 같은 비교군인 이유 | 이 표에서 비교하지 않는 것 |
+기술 결정 ID는 하나의 설계 질문을 가리킵니다. 각 표는 같은 목적의 대안을 동일 기준에서
+비교하며, 추천 뒤에는 감수 비용과 재검토 조건을 둡니다. 기존 요구를 위반하는 안은
+채택 가능한 대안처럼 꾸미지 않습니다. 각 카드의 선택 상태가 결정 권위를 표시합니다.
+D8-B·D8-C는 후속 참고이며 이번 선택 대기 항목이 아닙니다. D9-A는 Agent 기술 선택입니다.
+
+### 기술 선택을 한눈에 보는 판정
+
+| ID | 기술 질문 | 유지하는 추천 | 감수 비용 |
 | --- | --- | --- | --- |
-| R1 | Kafka 첫 적용에서 무엇이 이미 고정됐는가 | 비교군이 아니라 D2~D9가 공유하는 상위 입력입니다. | Redis·RabbitMQ·동기 호출과의 제품 재선택 |
-| D2 | PostgreSQL과 Kafka 사이의 내구 전달 원본은 무엇인가 | 모두 같은 댓글 commit 뒤 event를 유실 없이 인계하는 경로입니다. | Event payload와 consumer 실패 수렴 |
-| D3 | 어떤 event와 module 계약을 공개할 것인가 | 모두 같은 Community 사실을 consumer에 전달하되 의미 owner와 결합도가 다릅니다. | Topic·relay runtime |
-| D4 | Request와 publish를 어떤 relay·topic 경계로 분리할 것인가 | 모두 같은 outbox를 Kafka에 전달하되 장애 분리·순서·운영 비용이 다릅니다. | Consumer DB transaction |
-| D5-A | Consumer DB 결과와 offset을 어떻게 수렴할 것인가 | 모두 같은 record의 중복·중단에서 inbox 결과를 하나로 만듭니다. | 공개 시각·poison event 처분 |
-| D5-B | 지연 event의 공개 시각과 cursor 의미를 어떻게 보존할 것인가 | 같은 inbox 결과를 공개하되 기존 API 의미와 정렬 호환성이 다릅니다. | Retry와 DLQ |
-| D5-C | 처리 불가 event를 어떻게 retry·격리·replay할 것인가 | 모두 후속 record를 막지 않으면서 exact 미완료 결과를 복구하는 경로입니다. | 정상 record transaction |
-| D6-A | 현재 Kubernetes에서 Kafka lifecycle을 누가 소유할 것인가 | 같은 broker 기능을 operator·직접 운영·managed 경로로 제공합니다. | Broker storage 내구성과 production 최종 선택 |
-| D6-B | Broker data loss를 허용하고 어떻게 복구할 것인가 | 같은 단일-node qualification에서 storage와 복구 owner만 다릅니다. | 다중-node HA |
-| D6-C | 각 환경은 무엇까지 증명할 수 있는가 | 동일 계약을 환경별 failure domain과 evidence 한계로 구분합니다. | Exact version·resource 수치 |
-| D7-A | Kafka listener와 network 경계를 어디까지 열 것인가 | 같은 client 연결을 서로 다른 노출 면적으로 제공합니다. | Kafka ACL과 certificate lifecycle |
-| D7-B | Producer·consumer·DLQ·replay 권한을 어떻게 나눌 것인가 | 같은 event 경로의 actor별 최소 권한을 비교합니다. | Pod 수준 credential 격리 |
-| D7-C | Certificate·credential을 어떻게 교체하고 workload를 격리할 것인가 | 같은 역할 자격의 생명주기와 침해 반경을 다르게 만듭니다. | Network listener 공개 범위 |
-| D8-A | 어떤 신호와 oracle로 전달 결과를 판정할 것인가 | 모두 같은 수직 흐름을 관측하되 원인 분리력과 운영 표면이 다릅니다. | 부하 생성기 선택 |
-| D8-B | 같은 workload를 어떤 도구로 재현할 것인가 | 모두 외부에서 요청 부하를 만들되 재현성과 artifact 책임이 다릅니다. | 합격 수치 자체 |
-| D8-C | 어떤 측정 경로와 환경별 주장으로 합격시킬 것인가 | 동일 workload의 결과를 구간·환경별로 제한해 해석합니다. | Production SLO 입력 결정 |
-| D9-A | 기존 동기 경로를 어떤 순서로 전환할 것인가 | 같은 최종 비동기 경로를 사용자 중복과 rollback 가능성만 다르게 달성합니다. | 장애 후 exact replay |
-| D9-B | 장애·rollback 때 어떤 원본과 상태를 보존할 것인가 | 같은 사용자 결과로 돌아오되 미처리 event 처분 방식이 다릅니다. | Production topology 선택 |
-| D9-C | 언제 production topology를 선택할 수 있는가 | 필수 운영 입력과 qualification evidence의 충족 여부를 판정하는 gate입니다. | 현재 single-node manifest의 단순 확대 |
+| D2-A | 전달할 이벤트 기록을 직접 관리할지 프레임워크에 맡길지 | 명시적 PostgreSQL outbox | schema, worker와 정리 작업 유지 |
+| D2-B | 알림 처리 완료를 발행 측에 어떻게 전달할지 | Notification 공개 batch port | 정리 시 Notification 조회 가능성에 의존 |
+| D3-A | 발생한 사실을 알릴지 알림 생성을 지시할지 | 생성 사실 event | 소비자별 해석과 정책 처리 |
+| D3-B | 댓글과 답글을 하나의 이벤트 계약으로 다룰지 | 공통 event 하나 | 종류별 변화가 공통 계약에 영향 |
+| D3-C | 최종 알림 수신자를 어느 module이 정할지 | Notification에서 확정 | Notification에 수신 정책 구현 |
+| D3-D | 발생 당시 관계를 담을지 소비할 때 다시 조회할지 | 발생 당시 관계 public ID 포함 | 관계 ID 노출과 전송량 증가; 새 표시 정보 요구는 별도 검토 |
+| D3-E | 공개 이벤트 DTO를 어디에 둘지 | shared :: integration | 공유 public surface와 mapping code 유지 |
+| D3-F | 전송 데이터를 JSON으로 보낼지 Avro로 보낼지 | JSON | 호환 규칙을 DTO·test에 정확히 반영해야 함 |
+| D3-G | 호환성 검사를 repository에서 할지 중앙 서비스로 강제할지 | Repository contract test | version 병행·제거와 호환 test 관리 |
+| D4-A | Outbox를 조회해서 발행할지 DB 변경 로그를 읽을지 | Application polling relay | polling 부하와 worker 운영 |
+| D4-B | Relay를 같은 배포 산출물로 만들지 분리할지 | 현재 application artifact | application release 결합 |
+| D4-C | Relay를 API process 안에서 실행할지 분리할지 | API process의 bounded worker | API와 CPU·heap·DB budget 공유 |
+| D4-D | 댓글과 답글을 같은 topic에 보낼지 | 공용 conversation topic | 종류별 운영 독립성 제한 |
+| D4-E | 호환되지 않는 version을 topic으로 분리할지 | Version별 topic | version별 topic 관리 |
+| D4-F | 게시글별로 묶을지 개별 대화별로 분산할지 | postId | hot post 편중; 전역·게시글별 알림 순서 비보증 |
+| D4-G | 여러 relay가 작업을 나눌지 한 leader만 발행할지 | DB atomic claim + lease | DB contention과 lease 만료까지 지연 |
+| D5-B | 실패 record를 제자리에서 재시도할지 별도 topic으로 보낼지 | 제한된 제자리 재시도 후 DLT | 재시도 구간의 partition 지연; 강한 업무 순서 비보증 |
+| D5-C | 처리 불가 이벤트를 Kafka에 격리할지 DB에 저장할지 | Kafka DLT | broker 장애 때 격리도 지연; topic·retention 운영 |
+| D5-D | 복구 시 정상 소비자를 재사용할지 DB를 직접 보정할지 | 같은 멱등 consumer로 replay | 승인 대기와 정상 consumer 가용성 의존 |
+| D6-A | 단일-node 시험에서 broker와 controller를 합칠지 | dual-role | 역할 간 간섭과 HA 비보증 |
+| D6-B | 시험 broker의 데이터를 보존할지 재생성할지 | 현재 기능·복구 qualification용 ephemeral | broker 데이터 전손·offset 소실; production 사용 불가 |
+| D6-C | Cluster 설치와 application 설정을 누가 관리할지 | Bootstrap과 application GitOps 분리 | CRD·operator 설치와 AppProject 허용의 선행 관계 관리 |
+| D7-B | Consumer를 API와 같이 실행할지 전용 workload로 나눌지 | 현재 application workload | 동일 Pod 침해 시 producer·consumer·DLT credential 권한 합집합 |
+| D8-A | 기존 진단 신호를 묶을지 전용 관측 플랫폼을 도입할지 | 단일-node에는 기존 신호 종합 | 수동 시간 정렬과 장기 분석 한계 |
+| D8-B | HTTP 부하를 어떤 도구로 재현할지 | 후속 검토: k6 / Gatling | 이번 도입 없음 |
+| D8-C | 장애 시험을 수동으로 할지 반복 실행 도구로 만들지 | 후속 검토: 수동 / scripted harness | 이번 범용 도구 구축 없음 |
+| D8-D | Kafka client lifecycle을 Spring에 맡길지 직접 관리할지 | Spring for Apache Kafka | framework 설정·upgrade 의존 |
+| D8-E | 통합 test용 Kafka를 어떻게 준비할지 | Testcontainers Kafka module | Docker·ARM64 image 호환과 test flake 관리 |
+| D9-A | 비동기 결과를 비교한 뒤 전환할지 한 번에 교체할지 | Shadow 비교 후 flag cutover | 동기·비동기 병행 부하와 독립 flag 관리 |
 
 ### 결정 의존 관계
 
 ```text
-R1 Kafka 적용 경계 고정 입력
-  -> D2 PostgreSQL/Kafka 전달 원본 -> D3 event·module 계약 -> D4 relay·topic·독립성
-       -> D5-A receipt·inbox·offset -> D5-B 공개 시각·cursor -> D5-C retry·DLQ·replay
-  -> D6-A runtime·controller -> D6-B storage·data-loss 복구 -> D6-C 환경별 증명
-       -> D7-A listener·network -> D7-B client role·ACL -> D7-C credential·workload 격리
-  -> D8-A 관측 oracle -> D8-B 부하 생성 -> D8-C 측정·합격 주장
-  -> D9-A 전환 -> D9-B rollback·복구 -> D9-C production 승격 gate
+R1 댓글 저장과 Kafka 장애 분리
+  → D2 전달 원본·완료 확인 → D3 이벤트 의미·데이터·호환 계약
+  → D4 발행 작업·topic·분산 → D5 재시도·격리·복구
+D6 시험 runtime·storage·GitOps와 D7 workload 보안은 배치에서 합류
+  → D8 실제 전달·중복·복구 증거 → D9 전환·rollback
+  후속 독립 범위: D8 부하·장애 시험 플랫폼과 성능·HA qualification
+Production은 별도 요구·비용·운영 입력과 failure-domain 검증 뒤 판단
 ```
-
-### 최종 선택을 한눈에 보는 판정
-
-| ID | 선택 | 이 선택으로 달성하는 것 | 선택 때문에 감수하는 것 | 결정적 근거 |
-| --- | --- | --- | --- | --- |
-| R1 | Community 댓글·답글에서 서비스 안 알림까지 Kafka 첫 수직 흐름 | 사용자 확정 범위를 바꾸지 않고 end-to-end 판단 가능 | 다른 도메인·채널은 이번 결론에 포함하지 않음 | Kafka 사용과 첫 결과 경계는 사용자 고정 입력 |
-| D2 | 명시적 PostgreSQL transactional outbox | DB commit과 event 인계를 원자화하고 복구 원본 보존 | Schema·relay·정리 lifecycle 추가 | DB/Kafka dual-write 공백 제거 |
-| D3 | Community 사실 event와 versioned JSON 계약 | Producer 사실과 Notification projection 분리 | Explicit mapping·version 관리 | 업무 owner와 persistence/wire 계약 분리 |
-| D4 | Application relay, `postId` key, at-least-once | Request 장애 분리와 게시글 locality | 중복 publish를 정상 경로로 처리 | Outbox claim과 consumer 멱등성으로 수렴 가능 |
-| D5-A | Receipt·inbox 한 transaction 뒤 offset 확정 | 중단·재전달에도 사용자 결과 하나로 수렴 | 처리 영수증 schema·운영 필요 | Kafka/PostgreSQL 분산 transaction 없이 유실 방지 |
-| D5-B | 기존 `createdAt`과 `created_at,id` cursor 유지 | 지연 event에도 공개 API 호환성 보존 | 발생 시각 순 정렬은 제공하지 않음 | 기존 공개 의미를 바꿀 제품 요구가 없음 |
-| D5-C | 제한 retry, DLQ 격리, exact replay | Poison event가 후속 처리를 막지 않음 | DLQ·승인 replay lifecycle 추가 | 실패 event도 추적 가능한 미완료 상태로 보존 |
-| D6-A | Strimzi KRaft 단일 dual-role node | 현재 GitOps/Kubernetes에서 broker lifecycle 검증 | Operator·CRD·upgrade 책임 | 현재 닫힌 self-managed qualification 범위 |
-| D6-B | Ephemeral broker storage와 outbox 재발행 | 새 storage platform 없이 파괴 복구 검증 | Broker log·offset 소실 허용 | Kafka는 transport, PostgreSQL이 내구 원본 |
-| D6-C | Local/CI·single-node·multi-node·production 증명 분리 | 작은 환경의 성공을 HA·capacity로 과장하지 않음 | 환경별 별도 evidence 비용 | Failure domain이 다르면 증명 범위도 다름 |
-| D7-A | 내부 TLS listener와 deny-by-default NetworkPolicy | Public·anonymous 접근 차단 | Network·certificate 운영 추가 | 현재 cluster 내부 client만 필요 |
-| D7-B | Client role별 principal·ACL | Producer·consumer·DLQ·replay 최소 권한 | ACL·identity 관리 증가 | Actor별 실패·침해 반경을 구분해야 함 |
-| D7-C | Kubernetes Secret lifecycle, 현재 co-resident 위험 명시 | Git·image·log secret 노출 방지 | 같은 Pod에서는 권한 합집합 위험 잔존 | 현재 artifact를 보존하되 격리 수준을 과장하지 않음 |
-| D8-A | Cross-layer signal과 DB 결과 oracle | 멈춘 구간·누락·중복·병목 구분 | Evidence 수집·정렬 책임 | Broker health만으로 사용자 결과를 판정할 수 없음 |
-| D8-B | 외부 재현 가능 부하 생성 능력, k6 우선 비교 | Arrival-rate·threshold·종료 code 재현 | Runner·version·artifact 관리 | Ad-hoc 요청으로는 공정한 반복 불가 |
-| D8-C | 구간별 측정과 환경별 합격 주장 | API·relay·Kafka·consumer의 병목과 증명 한계 분리 | 여러 oracle 대조 비용 | Single-node 결과에 최대 RPS·HA를 붙이지 않음 |
-| D9-A | Additive schema와 shadow 뒤 비동기 전환 | 사용자 중복을 관찰하며 가역적으로 전환 | 병행 기간의 비용·복잡도 | Big-bang보다 결과 비교와 rollback 가능 |
-| D9-B | Flag-off, outbox·receipt 보존, exact 미완료 replay | 장애 뒤 누락 없이 이전 경로로 복귀 | 보존·처분 owner 필요 | 완료 증거 없는 삭제·무차별 replay 방지 |
-| D9-C | Peak·SLO·RPO·RTO·비용·운영 책임 뒤 별도 선택 | 근거 없는 production topology 확정 방지 | 현재 production 결론 보류 | 필수 제품·운영 입력이 아직 없음 |
 
 ## R1. Kafka 적용 경계와 사용자 결과는 현재 해결 설계에서 다시 고르는 값이 아님
 
@@ -187,7 +183,7 @@ Notification consumer
   -> GitOps·network·credential·resource 상한과 실제 수직 흐름
   -> 기능·복구 qualification만 증명
 
-별도 다중 node·다중 AZ qualification
+후속 별도 다중 node·다중 AZ qualification
   -> broker 장애, replication, rebalance, 처리량, backlog 복구
   -> 큰 부하·고가용성 후보를 증명
 
@@ -202,24 +198,55 @@ event 계약은 topology와 분리하지만, storage·replication·failure domai
 
 ## D2. PostgreSQL과 Kafka 사이의 전달 원본
 
-**결정 질문:** Community DB transaction과 Kafka publish 사이에서 한쪽만 남는 dual-write
-유실을 어떤 내구 원본과 relay 경계로 막아야 합니까?
+### D2-A. 전달할 이벤트 기록을 직접 관리할지 프레임워크에 맡길지
 
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | 명시적 PostgreSQL transactional outbox와 application relay |
-| 공통 비교 축 | Dual-write 유실, 현재 source 재사용, 새 runtime·운영 표면, 관찰·복구 가능성 |
-| 영향 | Schema·claim·retry·보존·정리 lifecycle을 project가 소유 |
-| 배제 대안 | DB/Kafka 선후 전송, Spring Modulith registry, Debezium CDC |
-| 재검토 조건 | 여러 producer의 publication lifecycle 공유 또는 polling 병목이 실측됨 |
+댓글과 같은 DB transaction에 전달 기록을 남기는 outbox 방식은 유지합니다. 기록의 상태·재전송·정리를 누가 구현할지 비교합니다.
 
-| 대안 | 장점 | 결함·비용 |
+| 비교 기준 | 프로젝트 전용 PostgreSQL outbox | Spring Modulith publication registry |
 | --- | --- | --- |
-| DB commit 뒤 `KafkaTemplate.send()` | 정상 경로가 짧음 | DB commit과 publish 사이 process 중단에서 event 유실 |
-| Kafka publish 뒤 DB commit | Kafka에 먼저 기록 | DB rollback 시 존재하지 않는 업무 상태의 event가 남음 |
-| Spring Modulith publication registry | 현재 dependency와 transaction 통합 재사용 | Kafka 전송 상태·순서·보존·운영 계약이 framework lifecycle에 묶임 |
-| 명시적 outbox와 application relay | Transaction·claim·상태·정리 계약을 project가 직접 소유 | Schema·relay·운영 책임이 생김 |
-| Debezium CDC outbox | Application polling 제거와 다수 producer 확장 | Kafka Connect·WAL·connector 운영을 첫 수직 흐름에 추가 |
+| 상태 표현 | 발행·소비 완료·예외 종료를 프로젝트 schema에 명시 | 프레임워크 publication 상태와 확장점에 맞춤 |
+| 복구·정리 | 알림 완료 증거와 보존 조건을 직접 연결 | 기본 재발행 기능을 쓰되 알림 완료 조건은 추가 연결 |
+| 유지보수 | schema·worker를 직접 검증 | 라이브러리 규약·upgrade에 의존 |
+
+**추천: 명시적 PostgreSQL outbox.** 현재에는 알림 처리 완료와 예외 종료를 구분한 보존 제어가 필요하므로 상태를 직접 소유하는 기존 선택을 유지합니다.
+
+**감수 비용:** schema, worker와 정리 작업 유지
+
+**재검토 조건:** 여러 module이 같은 publication lifecycle을 공유하거나 직접 관리 비용이 더 커질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D2-B. 알림 처리 완료를 발행 측에 어떻게 전달할지
+
+Community가 outbox 삭제 적격 여부를 확인할 때 Notification의 완료 결과를 어떤 경계로 받을지 비교합니다.
+
+| 비교 기준 | 공개 application port로 batch 조회 | 완료 이벤트로 별도 projection 유지 |
+| --- | --- | --- |
+| 완료 확인 | 정리 시점에 Notification의 실제 receipt 조회 | 완료 이벤트를 받아 Community 쪽에 상태 축적 |
+| 장애 처리 | 조회 실패면 원본 보존·다음 정리 때 재조회 | 완료 이벤트 자체의 유실·중복과 재처리도 관리 |
+| 결합·비용 | 같은 application의 호출 의존 | 호출 분리 대신 producer·consumer·상태 저장 추가 |
+
+**추천: Notification 공개 batch port.** 현재 같은 application 안에서 새 전달 경로 없이 완료 증거를 읽을 수 있습니다. 상대 receipt table 직접 조회는 module 경계 위반이므로 후보에서 제외합니다.
+
+**감수 비용:** 정리 시 Notification 조회 가능성에 의존
+
+**재검토 조건:** module이 별도 service로 분리되거나 조회 비용이 실제 병목이 될 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 원자 저장·완료 증거·보존 계약
+
+다음은 기존에 사용자 동의가 붙은 계약을 유지한 것입니다. 각각을 다시 선택받지 않습니다.
+
+| 책임 | 유지하는 계약 | 이유·재검토 경계 |
+| --- | --- | --- |
+| 원자 인계 | Community 저장과 outbox 기록은 같은 PostgreSQL transaction | DB commit 전후의 별도 publish는 유실 또는 유령 event를 만듦 |
+| 발행 완료 | Broker acknowledgement 뒤 publish 상태 갱신 | Client send 반환은 broker 수락 증거가 아님; ack 정책 변경 시 재검토 |
+| 소비 완료 | Notification이 event ID별 receipt의 유일한 writer | 0건 정상 처리도 완료로 구별; 결과 저장소 분리 시 재검토 |
+| 예외 종료 | 근거 있는 terminal disposition 허용, 운영자 승인 필요 | 자동 오판에 따른 원본 삭제 방지; 원인·영향·재처리 불가 근거를 보존 |
+| 상태 소유 | Terminal disposition과 outbox cleanup은 Community 소유 | 상대 module table을 직접 변경하지 않음 |
+| 보존 | 삭제 적격 이후 유한 보존 창, bounded batch 정리 | 즉시 삭제는 replay 증거 부족, 영구 보존은 무제한 storage; exact 기간은 실행 계획 |
+| 불확실한 완료 | 조회 실패·불일치·미완료는 보존 | 정상 완료 증거 또는 승인된 terminal 처분 없이는 삭제하지 않음 |
 
 명시적 outbox를 선택합니다. Community content와 outbox row는 같은 transaction에 저장되고,
 transaction rollback이면 둘 다 남지 않습니다. Outbox는 최소한 event identity·type·version,
@@ -240,29 +267,165 @@ outbox cleanup worker는 이 port에서 완료 event ID를 읽거나, 원인·�
 조회 실패·불일치·Notification 미완료는 보존으로 수렴합니다. 이렇게 Notification의 완료
 owner와 Community의 outbox 보존·정리 owner를 직접 table 결합 없이 연결합니다.
 
+**감수 비용·재검토:** Batch application port 유지; module 경계나 receipt store 변경 시 재검토합니다.
+
 ## D3. Event 계약과 module 소유권
 
-**결정 질문:** 어떤 업무 사실을 공개 계약으로 넘기고, Community와 Notification은 각각
-어떤 상태를 소유해야 현재 module 경계를 보존할 수 있습니까?
+### D3-A. 발생한 사실을 알릴지 알림 생성을 지시할지
 
-| 항목 | 내용 |
+같은 댓글로 알림을 만들더라도 Kafka 메시지가 무엇을 뜻하느냐에 따라 생산자와 소비자의 결합이 달라집니다.
+
+| 비교 기준 | 댓글·답글 생성 사실 event | 알림 생성 command |
+| --- | --- | --- |
+| 메시지 의미 | 무슨 일이 발생했는지 전달 | 수행할 알림 행동을 지정 |
+| 정책 변경 | Notification이 자기 정책으로 해석 | Community가 알림 명령 계약을 알아야 함 |
+| 다른 소비자 | 같은 사실을 별도 목적에 재사용 가능 | 알림 명령 의미와 목적이 맞지 않을 수 있음 |
+
+**추천: 생성 사실 event.** 첫 흐름의 알림 처리를 분리하면서 Community가 후속 행동을 지시하지 않게 합니다.
+
+**감수 비용:** 소비자별 해석과 정책 처리
+
+**재검토 조건:** 사실만으로 요구한 결과를 재현할 수 없거나 메시지 목적이 명령으로 바뀔 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D3-B. 댓글과 답글을 하나의 이벤트 계약으로 다룰지
+
+두 종류가 공유하는 데이터와 처리 흐름을 한 계약에 둘지, 종류별로 독립 진화시키는지 비교합니다.
+
+| 비교 기준 | 공통 event + 종류 구분 | 댓글·답글 event 분리 |
+| --- | --- | --- |
+| 중복 구현 | 공통 field·handler 공유 | 공통 field도 두 계약에서 관리 |
+| 독립 진화 | kind 분기와 호환 규칙 유지 | 종류별 version·consumer 변화 가능 |
+| 현재 적합성 | 같은 수신자 계산 흐름에 작음 | 독립 lifecycle이 아직 없어 관리점 증가 |
+
+**추천: 공통 event 하나.** 현재 댓글과 답글은 동일한 알림 처리 계약을 공유합니다.
+
+**감수 비용:** 종류별 변화가 공통 계약에 영향
+
+**재검토 조건:** 종류별 보존·보안·소비 lifecycle이 달라질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D3-C. 최종 알림 수신자를 어느 module이 정할지
+
+작성자 제외·중복 제거 같은 수신자 규칙을 생산자와 소비자 중 어디에 둘지 비교합니다.
+
+| 비교 기준 | Community에서 확정 | Notification에서 확정 |
+| --- | --- | --- |
+| 생산자 책임 | 대화 저장과 알림 정책을 함께 소유 | 대화 관계만 전달 |
+| 정책 변경 | Community 수정·배포 필요 | Notification 내부에서 변경 |
+| 전달 데이터 | 최종 수신자 목록 | 판단에 필요한 작성자 관계 |
+
+**추천: Notification에서 확정.** Community는 발생 사실을 소유하고 Notification은 알림 결과를 계산하는 책임을 유지합니다.
+
+**감수 비용:** Notification에 수신 정책 구현
+
+**재검토 조건:** 알림 정책의 업무 owner가 실제로 바뀔 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D3-D. 발생 당시 관계를 담을지 소비할 때 다시 조회할지
+
+Notification이 최종 수신자를 정한다는 조건에서, 판단에 쓸 관계 데이터를 어디서 얻을지 비교합니다.
+
+| 비교 기준 | 발생 당시 관계 public ID 포함 | 대화 ID만 보내고 Community 재조회 |
+| --- | --- | --- |
+| 시간 의미 | 당시 글·부모 작성자 관계 보존 | 조회 시점의 변경·삭제에 영향 |
+| 장애 결합 | 소비 중 Community 조회 불필요 | 추가 조회 실패·재시도 필요 |
+| 데이터 비용 | 관계 ID만큼 payload 증가 | payload는 작고 query 비용 증가 |
+
+**추천: 발생 당시 관계 public ID 포함.** 재처리 때도 같은 관계로 결과를 계산하고 추가 조회 의존을 만들지 않습니다. 본문·이름·email·token·secret·DB 내부 ID는 포함하지 않습니다.
+
+**감수 비용:** 관계 ID 노출과 전송량 증가; 새 표시 정보 요구는 별도 검토
+
+**재검토 조건:** 발생 당시 대신 현재 관계를 적용해야 하는 제품 요구가 생길 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D3-E. 공개 이벤트 DTO를 어디에 둘지
+
+Domain·JPA 객체를 그대로 직렬화하지 않는다는 경계 아래, 명시적인 전송 DTO를 두 module에 어떻게 공개할지 비교합니다.
+
+| 비교 기준 | shared :: integration의 immutable DTO | Community 공개 API package |
+| --- | --- | --- |
+| compile 의존 | 양쪽이 중립 전송 package에 의존 | Notification이 Community 공개 계약에 의존 |
+| 의미 소유권 | Community 소유임을 명시적으로 유지 | package와 의미 owner가 일치 |
+| 관리 위험 | shared에 업무 로직이 새지 않도록 제한 | 생산자 API 변경이 소비자 의존에 노출 |
+
+**추천: shared :: integration.** 기존 선택대로 field·type·version만 공개하고 event 의미는 Community가 소유합니다. Notification API에 생산자 사실을 두는 안은 책임 방향이 맞지 않습니다.
+
+**감수 비용:** 공유 public surface와 mapping code 유지
+
+**재검토 조건:** module 공개 package 정책이나 계약 배포 경계가 달라질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D3-F. 전송 데이터를 JSON으로 보낼지 Avro로 보낼지
+
+같은 event 내용을 표현하는 방식의 차이를 비교합니다. 중앙 호환성 강제 여부는 D3-G에서 별도로 비교합니다.
+
+| 비교 기준 | JSON | Avro |
+| --- | --- | --- |
+| 읽기·진단 | text로 직접 확인 가능 | schema를 사용해 해석 |
+| schema 관리 | DTO·직렬화와 test 규약으로 관리 | writer·reader schema와 toolchain 관리 |
+| 현재 도입 부담 | 기존 JSON stack 재사용 | schema·encoding 경로 추가 |
+
+**추천: JSON.** 첫 producer·consumer에 필요한 명시 계약을 기존 stack으로 표현합니다. 성능 우열은 payload 실측 없이 단정하지 않습니다.
+
+**감수 비용:** 호환 규칙을 DTO·test에 정확히 반영해야 함
+
+**재검토 조건:** 다언어 schema 사용이나 실측 전송 효율 요구가 현재 비용을 넘을 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D3-G. 호환성 검사를 repository에서 할지 중앙 서비스로 강제할지
+
+기존 소비자가 새 event를 읽을 수 있는지 검사하는 위치와 운영 책임을 비교합니다.
+
+| 비교 기준 | Repository contract test | Schema Registry |
+| --- | --- | --- |
+| 적용 범위 | 같은 repository의 producer·consumer 변경 검증 | 여러 배포·조직의 schema 정책을 중앙 관리 |
+| 추가 운영 | test·fixture 유지 | service·schema subject·권한·가용성 관리 |
+| 한계 | repository 밖 소비자는 별도 계약 필요 | 등록 정책·client 연동을 실제 적용해야 강제 가능 |
+
+**추천: Repository contract test.** 현재 두 module의 호환성은 같은 변경에서 검증할 수 있습니다. Optional 추가만 허용하고 삭제·type·의미 변경은 V1/V2 병행을 유지합니다.
+
+**감수 비용:** version 병행·제거와 호환 test 관리
+
+**재검토 조건:** 다조직·다언어 소비자가 늘어 중앙 강제가 필요할 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 기존 구조 제약과 이벤트 상세 계약
+
+Notification은 [200 현재 프로젝트 아키텍처](../../../project/200-current-architecture.md)와
+[210 모듈 지도](../../../project/210-module-map.md)가 정의한 기술 통합 경계입니다.
+독립 Bounded Context 지위는 이번 선택지가 아닙니다. Preference·채널 정책·보존처럼 독립
+업무 lifecycle이 생길 때만 다시 설계합니다.
+
+명시적 wire DTO 사용, Community의 event 의미 소유, 관계 판단용 public ID만 전달하는 범위는
+기존 사용자 동의를 유지합니다. Domain object·JPA entity 직렬화는 업무·저장 모델 변경을
+공개 계약에 전파하므로 사용하지 않습니다. 아래는 선택한 구조의 구체적 표현이며 이름별
+승인 항목이 아닙니다.
+
+| 이름·값 | 역할과 명명 근거 |
 | --- | --- |
-| Agent 선택 | Community 사실 event 하나와 versioned JSON wire contract; 현재 module owner 유지 |
-| 공통 비교 축 | 업무 의미 owner, 호환 배포, 개인정보 최소화, consumer 독립성 |
-| 영향 | Community가 event 의미를, Notification이 수신 정책·inbox projection을 소유 |
-| 배제 대안 | 알림 생성 command, JPA entity 직렬화, 첫 흐름의 Schema Registry, 새 업무 Domain |
-| 재검토 조건 | 다수 조직·언어 consumer의 중앙 compatibility enforcement 또는 Notification의 독립 업무 lifecycle 발생 |
+| `eventId` | transport message가 아닌 논리 사건 identity; 중복 처리 판정 |
+| `eventType = CommunityConversationCreated` | 다른 context의 동명 사건과 구별하는 종류 |
+| `eventVersion = 1` | 날짜 대신 순차적인 호환 version 표현 |
+| `CommunityConversationCreatedV1` | 병행 version을 구별하는 Java DTO 이름; class 수 관리 비용 |
+| `occurredAt` | 원 사건 발생 시각; inbox 생성 시각과 구별 |
+| `postId` | 게시글 관계와 partition locality; 일반 aggregate ID보다 대상 명확 |
+| `conversationId` | 댓글·답글 공통 identity; 막연한 source ID를 쓰지 않음 |
+| `conversationKind = COMMENT / REPLY` | 종류 구분; 생성 의미를 enum에 중복하지 않음 |
+| `actorAccountId` | 행위자의 account public ID |
+| `postAuthorAccountId` | 최종 recipient가 아닌 글 작성자 후보 관계 |
+| `directParentAuthorAccountId?` | 답글에만 존재하는 nullable 직접 부모 작성자 관계 |
 
-| 공통 평가축 | 사실 event + versioned JSON | 알림 생성 command | JPA entity 직렬화 |
-| --- | --- | --- | --- |
-| 의미 owner | Community 사실, Notification 정책 분리 | Producer가 consumer 행동을 지시 | Persistence 구현이 wire 의미를 결정 |
-| 결합·확장 | 새 consumer가 사실을 독립 해석 | 새 consumer마다 command 의미 확대 | Producer schema 변경이 consumer를 직접 파손 |
-| 개인정보 | 필요한 식별 사실만 allowlist | 채널·표현 정보가 섞이기 쉬움 | 내부 column·관계가 과다 노출 |
-| 호환성 | 명시 version과 optional 확장 | Command별 별도 호환 계약 필요 | DB migration과 wire migration 결합 |
-| 판정 | **선택** | R1의 producer/consumer 분리 목표에 불리 | 공개 계약·module owner 위반 |
-
-첫 public event는 `CommunityConversationCreatedV1` 하나입니다. `COMMENT`와 `REPLY`를 별도
-class hierarchy로 노출하지 않고 `conversationKind`로 구분합니다.
+필드·enum의 exact wire 표기는 아래와 같습니다. 명명은 전역 naming/generated DTO 정책 변경 시,
+관계 입력은 수신 정책·개인정보 범위 변경 시, version 표현은 호환 정책 변경 시 재검토합니다.
+계약의 저장·mapping·공개 호환성 관리 비용은 각 이름별 선택 투표가 아닌 DTO 유지 책임입니다.
 
 ```text
 eventId
@@ -277,49 +440,148 @@ postAuthorAccountId
 directParentAuthorAccountId?
 ```
 
-- Event에는 본문, access token, secret, email, display name과 persistence 내부 ID를 넣지
-  않습니다.
-- Community는 사건 당시 대화 관계와 후보 작성자 사실을 소유합니다. Notification은 actor
-  제외와 recipient 중복 제거, inbox type 변환을 소유합니다.
-- Java class·JPA entity·DB row를 그대로 직렬화하지 않고 explicit JSON wire DTO를 둡니다.
-- Wire DTO는 `shared :: integration` named interface에 두되, Community가 event 의미와 version을
-  소유하고 shared에는 persistence·Kafka client·업무 판단을 두지 않습니다.
-- V1 consumer가 읽는 field의 삭제·type·의미 변경은 허용하지 않습니다. Optional field 추가는
-  compatibility test를 통과해야 하며, breaking change는 새 version을 병행합니다.
-- Schema Registry는 첫 producer·consumer의 계약 test만으로 독립 호환성 요구를 충족할 수
-  있으므로 도입하지 않습니다. 조직 단위 producer·consumer가 늘거나 중앙 compatibility
-  enforcement가 필요해지면 다시 평가합니다.
-
 | 경계 | 현재 지위 | 이 설계의 책임 |
 | --- | --- | --- |
 | Community | 게시글·댓글·답글 규칙과 대화 관계를 소유 | Outbox의 유일한 writer이며 request transaction에서 event 사실을 생성 |
 | Notification | 현재 SOT상 발송·inbox 기술 통합 경계 | 처리 영수증과 inbox의 유일한 writer이며 public event를 자기 application 입력으로 번역 |
 | `shared :: integration` | 두 module의 immutable wire DTO | 업무 로직·persistence·Kafka client 없이 JSON field·type·version만 공개 |
 
-Notification에 사용자별 preference·채널 정책·보존처럼 독립 업무 lifecycle이 생기기 전에는
-새 Bounded Context나 Subdomain으로 승격하지 않습니다. Outbox·offset·처리 영수증은 전달 기술
-상태이지 새 업무 Domain이 아닙니다.
+`eventType`, 숫자 version, Java class suffix, kind literal과 각 field 이름은 구현 전 contract
+test에서 이 목록과 exact 일치시킵니다. 명명 변경만으로 앞선 기술 선택이나 제품 요구를 바꾸지 않습니다.
 
 ## D4. Relay, topic과 처리 독립성
 
-**결정 질문:** API 요청을 broker acknowledgement에서 분리하면서 게시글별 locality,
-독립 처리와 at-least-once 재전송을 어떤 경계로 보장해야 합니까?
+### D4-A. Outbox를 조회해서 발행할지 DB 변경 로그를 읽을지
 
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | 같은 artifact의 bounded application relay, `postId` key, at-least-once |
-| 공통 비교 축 | 요청 장애 분리, 순서 범위, replica 확장, 새 platform 비용 |
-| 영향 | 중복 publish를 정상 경로로 받아들이고 consumer 멱등성을 필수화 |
-| 배제 대안 | Request thread 직접 publish, 전역 순서, 첫 흐름의 Kafka Connect·별도 service |
-| 재검토 조건 | Relay 자원 간섭이나 polling이 수용 기준의 실제 병목으로 확인됨 |
+업무 transaction 밖에서 전달 기록을 Kafka로 옮기는 두 방식입니다. 요청에서 직접 publish하는 방식은 장애 분리·원자 인계 요구를 충족하지 않아 제외합니다.
 
-| 공통 평가축 | Request 직접 publish | Application outbox relay | Debezium/Kafka Connect |
+| 비교 기준 | Application polling relay | Debezium / Kafka Connect CDC |
+| --- | --- | --- |
+| 발견 방식 | 미발행 row를 주기적으로 claim | DB 변경 로그에서 outbox 변경 포착 |
+| DB·운영 부담 | polling query·claim·worker 유지 | WAL·connector offset·Connect 운영 |
+| 확장 조건 | 현재 첫 producer에 관리 범위가 작음 | 여러 producer에서 공통 CDC 운영 가능 |
+
+**추천: Application polling relay.** 첫 흐름에서는 별도 CDC platform 없이 outbox 상태와 발행을 직접 연결합니다.
+
+**감수 비용:** polling 부하와 worker 운영
+
+**재검토 조건:** 실측 polling 병목 또는 여러 producer의 공통 CDC 요구
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D4-B. Relay를 같은 배포 산출물로 만들지 분리할지
+
+코드가 포함되는 artifact의 release 경계를 비교합니다. 실행 process 배치는 D4-C가 다룹니다.
+
+| 비교 기준 | 현재 application artifact | 별도 relay artifact |
+| --- | --- | --- |
+| version 정합 | Community·wire 변경과 같은 release | 호환 version을 별도로 조율 |
+| 독립 배포 | application과 함께 release | relay만 독립 release 가능 |
+| 관리 비용 | 기존 build·배포 재사용 | build·배포·rollback owner 추가 |
+
+**추천: 현재 application artifact.** 독립 release 요구가 없는 첫 흐름에 기존 build 경계를 사용합니다.
+
+**감수 비용:** application release 결합
+
+**재검토 조건:** relay만 독립 release할 필요가 생길 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D4-C. Relay를 API process 안에서 실행할지 분리할지
+
+같은 artifact를 사용하면서도 실행 자원과 장애 영향을 어디까지 분리할지 비교합니다.
+
+| 비교 기준 | API process의 bounded worker | 같은 Pod의 별도 process | Relay 전용 workload |
 | --- | --- | --- | --- |
-| API 장애 분리 | Broker ack·timeout이 요청에 전파 | DB commit 뒤 별도 worker가 처리 | DB commit 뒤 CDC가 처리 |
-| 유실 복구 | DB/Kafka 사이 공백 존재 | Outbox 상태·claim으로 project가 복구 | WAL·connector offset으로 platform이 복구 |
-| 새 운영 표면 | 작지만 목표 불충족 | Schema·worker 책임 추가 | Connect·connector·WAL 책임 추가 |
-| 확장 | Request와 producer 함께 확장 | Worker 상한과 별도 workload 분리 가능 | 다수 producer에 유리 |
-| 판정 | 제외 | **선택** | 첫 수직 흐름에는 순효과가 작음 |
+| 자원 경계 | thread·connection 상한, heap 공유 | process 분리, Pod 자원 공유 | Pod 자원·scaling 독립 |
+| 장애 영향 | process 종료가 API·relay에 함께 영향 | Pod 종료는 함께 영향 | 배포·종료 영향 분리 |
+| 운영 비용 | 현재 배치 재사용 | sidecar 시작·종료 관리 | 별도 deployment·capacity 관리 |
+
+**추천: API process의 bounded worker.** 현재 단일-node 범위에서 bounded worker로 시작합니다. 기능 검증에서 자원 고갈을 확인하고 부하별 간섭 수치는 후속 qualification에서 판정합니다.
+
+**감수 비용:** API와 CPU·heap·DB budget 공유
+
+**재검토 조건:** 실측 API 간섭이 수용 기준을 깨면 같은 artifact의 전용 workload 검토
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D4-D. 댓글과 답글을 같은 topic에 보낼지
+
+이벤트 종류 수와 별도로 Kafka 보존·접근·소비 운영 단위를 나눌지 비교합니다.
+
+| 비교 기준 | 공용 conversation topic | 종류별 topic |
+| --- | --- | --- |
+| 정책 | 같은 보존·ACL 적용 | 종류별 보존·ACL 가능 |
+| 소비 설정 | kind를 해석하는 공통 listener | topic별 listener·운영 설정 |
+| 관리점 | 작음 | topic·partition·관측 관리 증가 |
+
+**추천: 공용 conversation topic.** 현재 두 종류에 독립 보존·보안 요구가 없습니다.
+
+**감수 비용:** 종류별 운영 독립성 제한
+
+**재검토 조건:** 종류별 retention·보안·consumer 요구가 달라질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D4-E. 호환되지 않는 version을 topic으로 분리할지
+
+V1과 V2를 병행할 때 Kafka 배치 단위를 비교합니다.
+
+| 비교 기준 | Version별 topic | 한 topic에서 version 혼합 |
+| --- | --- | --- |
+| 소비 전환 | topic 단위로 구·신 소비자 분리 | listener가 여러 version을 판별 |
+| 장애 진단 | version별 lag·오류 분리 | 관측에서 version을 별도 분리 |
+| 비용 | topic·ACL·제거 관리 증가 | decoder 분기·혼재 처리 증가 |
+
+**추천: Version별 topic.** 호환되지 않는 계약의 전환과 제거 경계를 분명히 합니다.
+
+**감수 비용:** version별 topic 관리
+
+**재검토 조건:** 공통 migration 표준이나 소비 모델이 바뀔 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D4-F. 게시글별로 묶을지 개별 대화별로 분산할지
+
+Partition key는 어느 record를 같은 Kafka partition에 모을지 정합니다. 공개 inbox 정렬 순서를 정하는 선택은 아닙니다.
+
+| 비교 기준 | postId | conversationId |
+| --- | --- | --- |
+| 분산 단위 | 같은 게시글 event 결집 | 댓글·답글 건별 분산 |
+| 부하 편중 | 인기 게시글이 hot partition 가능 | 개별 대화로 더 잘 분산 |
+| 관계 locality | 같은 게시글 처리 경로가 모임 | 같은 게시글도 여러 partition 사용 |
+
+**추천: postId.** 기존 선택인 게시글 관계 locality를 유지합니다. 최종 수신자가 소비 단계에서 정해지므로 recipientId는 현재 발행 key 후보가 아닙니다.
+
+**감수 비용:** hot post 편중; 전역·게시글별 알림 순서 비보증
+
+**재검토 조건:** locality보다 균등 분산이 중요해지는 실측 결과
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D4-G. 여러 relay가 작업을 나눌지 한 leader만 발행할지
+
+Replica가 늘어도 작업이 고착되지 않도록 발행 작업의 소유권과 crash 복구를 비교합니다.
+
+| 비교 기준 | DB atomic claim + lease | Leader 한 개 + failover |
+| --- | --- | --- |
+| 작업 분배 | row별로 여러 worker가 나눔 | 선출된 leader가 처리 |
+| crash 복구 | lease 만료 뒤 다른 worker가 재획득 | leader 실패 탐지·재선출 |
+| 관리 비용 | claim contention·lease tuning | 선출 수단과 fencing; 단일 worker 병목 |
+
+**추천: DB atomic claim + lease.** 현재 PostgreSQL을 사용해 row별 소유권과 회수를 함께 관리합니다.
+
+**감수 비용:** DB contention과 lease 만료까지 지연
+
+**재검토 조건:** 확장 모델 또는 claim 고착·중복 증거가 달라질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 발행·작업 소유권 상세 계약
+
+At-least-once 전달은 기존 사용자 동의를 유지합니다. Broker ack 뒤 DB 갱신 전 중단으로
+중복이 생길 수 있으므로 소비자가 멱등 처리합니다. At-most-once 유실이나 Kafka transaction만으로
+PostgreSQL까지 exactly-once라는 주장은 현재 요구를 만족하는 대안이 아닙니다.
 
 첫 topic은 Community 대화 생성 사실 전용 versioned topic 하나이며 partition key는 `postId`입니다.
 같은 게시글 record를 같은 partition에 모아 locality를 얻고 서로 다른 게시글을 병렬 처리합니다. Topic 이름,
@@ -341,28 +603,84 @@ Relay 처리량이나 API resource 간섭이 실제 병목이 되면 같은 arti
 분리합니다. 이 전환은 outbox·event·consumer 계약을 바꾸지 않습니다. 여러 producer와 CDC
 운영 필요가 확인되기 전에는 Kafka Connect를 추가하지 않습니다.
 
+**감수 비용·재검토:** Lease 만료까지 복구 지연; claim 고착·중복 증거가 생기면 재검토합니다.
+
 ## D5. Notification consumer와 실패 수렴
 
-### D5-A. 처리 영수증·inbox transaction과 offset
+### D5-B. 실패 record를 제자리에서 재시도할지 별도 topic으로 보낼지
 
-**결정 질문:** 중복 전달·중단·처리 불가 event 뒤에도 inbox가 사용자에게 한 결과로
+일시 오류의 재시도 동안 같은 partition의 후속 record를 기다리게 할지 비교합니다.
+
+| 비교 기준 | 제한된 제자리 재시도 후 DLT | Retry topic으로 이동 후 재시도 |
+| --- | --- | --- |
+| 후속 record | 재시도 중 지연, 상한 뒤 격리하면 진행 | 원본 partition은 먼저 진행 |
+| 전달·순서 | 원본 offset과 오류 처리를 한 경계에서 관리 | topic 이동 ack·지연·순서 변화 추가 관리 |
+| 운영 비용 | 추가 retry topic 없이 backoff·상한 설정 | retry topic·listener·ACL·보존 관리 |
+
+**추천: 제한된 제자리 재시도 후 DLT.** 첫 흐름의 기존 제한 retry 계약을 구체적으로 비교합니다. Record 단위·상한 있는 exponential backoff·명시 retryable allowlist를 사용하고, 처리 불가 오류는 격리합니다.
+
+**감수 비용:** 재시도 구간의 partition 지연; 강한 업무 순서 비보증
+
+**재검토 조건:** 일시 실패가 다른 event의 지연 목표를 반복해서 깨는 경우
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D5-C. 처리 불가 이벤트를 Kafka에 격리할지 DB에 저장할지
+
+정상 처리가 끝나지 않은 record를 버리지 않고 복구 대상으로 보관하는 매체를 비교합니다.
+
+| 비교 기준 | Kafka dead-letter topic(DLT) | DB 실패 기록 table |
+| --- | --- | --- |
+| 복구 입력 | 원본 record와 Kafka 위치를 함께 유지 | DB schema에 payload·실패 상태 저장 |
+| 장애 의존 | DLT publish 실패면 원본 offset 진행 금지 | DB 저장 실패면 원본 offset 진행 금지 |
+| 운영 비용 | topic·retention·ACL·재전달 운영 | table·query·cleanup·replay adapter 운영 |
+
+**추천: Kafka DLT.** 현재 Kafka 전달 경로에서 격리·재처리를 이어갑니다. DLT는 성공한 알림이 아니며 원본 outbox는 완료 증거 전까지 남습니다.
+
+**감수 비용:** broker 장애 때 격리도 지연; topic·retention 운영
+
+**재검토 조건:** broker 밖 독립 복구 저장소가 필요할 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D5-D. 복구 시 정상 소비자를 재사용할지 DB를 직접 보정할지
+
+원인을 고친 뒤 승인된 실패 event 집합을 어떤 실행 경로로 복구할지 비교합니다.
+
+| 비교 기준 | 같은 멱등 consumer로 replay | 별도 DB backfill |
+| --- | --- | --- |
+| 정책 일치 | 정상 recipient·receipt·inbox 처리 재사용 | 동일 정책을 별도 구현·검증 |
+| 복구 가능 조건 | 정상 consumer를 복원할 수 있음 | consumer 복원이 어려워도 별도 작업 가능 |
+| 실패 위험 | 기존 오류가 남으면 재실패 | 정상 계약과 보정 script가 어긋날 위험 |
+
+**추천: 같은 멱등 consumer로 replay.** 운영자가 원인 수정과 exact event ID·offset 집합을 승인한 뒤 정상 계약으로 복구합니다.
+
+**감수 비용:** 승인 대기와 정상 consumer 가용성 의존
+
+**재검토 조건:** consumer 복원이 불가능해 독립 backfill 검증이 필요한 경우
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 처리 완료와 실패 분류 계약
+
+| 항목 | 유지하는 계약 | 필요한 이유 |
+| --- | --- | --- |
+| 멱등·완료 | Event ID receipt와 inbox를 한 PostgreSQL transaction에 기록 | Inbox unique 단독으로는 0건 정상 처리와 미처리 구별 불가 |
+| Offset | DB commit 뒤 완료 처리 | Commit 전 offset 확정은 DB 결과 유실 가능 |
+| 실패 분류 | Consumer adapter의 명시 retryable allowlist | Domain에 전달 실패 정책을 넣거나 모든 오류를 같은 일시 오류로 보지 않음 |
+| Retry 단위 | Record 단위, 상한 있는 exponential backoff | Batch 전체 재시도로 독립 event 실패 반경을 넓히지 않음 |
+| Retry 종료 | 시도 상한 뒤 DLT, 격리 뒤 후속 record 진행 | 무한 재시도로 partition 고착 금지; exact 횟수·간격은 실행 계획 |
+| DLT 보존 | 원본 identity·topic·partition·offset·실패 분류 | Payload만으로 복구 대상을 잃지 않음; 개인정보 추가 금지 |
+| DLT offset | DLT acknowledgement 뒤 원본 offset 완료 | 격리 record 자체가 유실되지 않게 함 |
+| Replay | 운영자 승인된 exact ID·offset 집합만 정상 consumer로 처리 | 무차별 전체 replay와 자동 재실패 방지 |
+
+실패 분류는 업무 실패 의미가 생길 때, 재시도는 batch 원자성·지연 목표가 바뀔 때,
+격리·replay는 복구 매체·승인 정책·정상 consumer 복원 가능성이 바뀔 때 재검토합니다.
+
+### 상세 계약: 처리 영수증·inbox transaction과 offset
+
+**계약의 목적:** 중복 전달·중단·처리 불가 event 뒤에도 inbox가 사용자에게 한 결과로
 수렴하도록 DB transaction과 offset·격리 경계를 어떻게 나눠야 합니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | 처리 영수증과 inbox를 한 DB transaction에 저장한 뒤 offset 확정 |
-| 공통 비교 축 | 중단 지점별 중복·유실, 0건 정상 처리, poison event 격리, replay 안전성 |
-| 영향·감수 비용 | Event ID와 기존 inbox unique constraint가 모두 필요하며 delivery는 at-least-once |
-| 배제 대안 | 처리 전 offset 확정, offset만으로 중복 방지, 무한 retry, Kafka-DB 분산 transaction |
-| 재검토 조건 | 한 event가 여러 database 결과를 원자적으로 바꿔야 하는 새 요구 발생 |
-
-| 공통 평가축 | Offset 먼저 확정 | DB 영수증·inbox commit 뒤 offset | Kafka-DB transaction 결합 |
-| --- | --- | --- | --- |
-| DB 실패 | Record 유실 가능 | Offset 미완료로 재전달 | 서로 다른 transaction manager 실패 경계 필요 |
-| Commit 뒤 중단 | 재전달 없음이나 DB 전 실패 취약 | 재전달되며 영수증으로 no-op | Kafka commit 실패 시 재전달·DB 멱등성은 여전히 필요 |
-| 0건·중복 | 완료 증거 없음 | 0건도 영수증, inbox unique와 이중 방어 | DB 멱등성 없이는 해결되지 않음 |
-| 운영 복잡도 | 낮지만 정확성 목표 실패 | 현재 PostgreSQL 안에서 관찰 가능 | 분산 commit 오판·복구 표면 증가 |
-| 판정 | 제외 | **선택** | 추가 복잡도 대비 정확성 이득 없음 |
 
 Consumer의 한 record 처리 계약은 다음과 같습니다.
 
@@ -376,49 +694,20 @@ constraint는 같은 event 처리 반복을, 기존 `(recipient, source comment)
 동기·비동기 경로가 겹칠 때 사용자 중복을 막습니다. Inbox가 0건인 event도 처리 영수증을
 남겨 성공과 미처리를 구분합니다.
 
-### D5-B. Inbox 공개 시각과 cursor 의미
+### 상세 계약: Inbox 공개 시각과 cursor 의미
 
-**결정 질문:** 지연 도착한 event의 공개 시각과 cursor를 어떤 의미로 유지해야 기존 inbox
+**계약의 목적:** 지연 도착한 event의 공개 시각과 cursor를 어떤 의미로 유지해야 기존 inbox
 API와 새 비동기 전달을 함께 보존할 수 있습니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | `createdAt`은 inbox 생성 시각, 정렬·cursor는 `created_at,id`로 유지 |
-| 공통 비교 축 | 공개 API 의미, 기존 cursor 호환, 지연 event 표시, migration 비용 |
-| 영향·감수 비용 | Event 발생 시각 순 정렬은 제공하지 않고 `occurredAt`은 내부 evidence로만 보존 |
-| 배제 대안 | 기존 `createdAt` 의미 변경, 새 발생 시각 필드와 cursor version을 현재 범위에 추가 |
-| 재검토 조건 | 사용자가 원 활동 시각 기준 inbox 정렬·표시를 제품 요구로 확정 |
-
-| 공개 시간·cursor 대안 | 기존 `createdAt = inbox 생성 시각` 유지 | `createdAt`을 event 발생 시각으로 변경 | 발생 시각을 새 필드로 추가하고 정렬도 변경 |
-| --- | --- | --- | --- |
-| 기존 API 의미 | 보존 | 같은 필드 의미 변경 | 기존 필드는 보존 |
-| 기존 cursor | `created_at,id` 그대로 호환 | 구 cursor 처분·backfill 필요 | Cursor version·backfill 필요 |
-| 지연 event 표시 | 복구 시 새 알림으로 도착 | 원래 활동 시점에 삽입 | 새 시각 노출과 정렬 정책 필요 |
-| 판정 | **선택**. 알림이 실제 생성된 시각·현재 cursor 계약 보존 | 제외 | 별도 제품 요구가 생길 때 재검토 |
 
 Public `createdAt`은 현재처럼 inbox projection이 DB에 생성된 시각을 뜻하고 정렬·cursor도
 `created_at,id`를 유지합니다. Event의 `occurredAt`은 전달 지연·추적 evidence로 보존하되
 현재 공개 정렬 의미를 바꾸지 않습니다. 사용자가 “원 활동 시각 기준 inbox”를 요구할 때만
 새 공개 필드·cursor version·backfill을 함께 설계합니다.
 
-### D5-C. Retry, DLQ와 replay
+### 상세 계약: Retry, DLQ와 replay
 
-**결정 질문:** 일시 실패와 처리 불가 event를 어떻게 구분해 후속 record를 막지 않으면서
+**계약의 목적:** 일시 실패와 처리 불가 event를 어떻게 구분해 후속 record를 막지 않으면서
 exact 미완료 결과를 복구합니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | 제한된 backoff retry 뒤 원본 identity를 보존한 DLQ 격리, 승인된 exact replay |
-| 공통 비교 축 | 일시 실패 회복, poison event 격리, offset 안전성, replay 감사 가능성 |
-| 영향·감수 비용 | DLQ topic·failure 분류·승인 replay와 terminal disposition 운영 책임 추가 |
-| 배제 대안 | 무한 retry, DLQ 확인 전 offset 확정, 전체 기간 무차별 replay, 실패 record 폐기 |
-| 재검토 조건 | Broker 기능이나 운영 표준이 동일한 격리·identity·감사 결과를 더 작은 표면으로 제공 |
-
-| 공통 평가축 | 무한 retry | 제한 retry + DLQ + exact replay | 실패 뒤 offset 확정·폐기 |
-| --- | --- | --- | --- |
-| 후속 처리 | Poison event가 partition을 계속 막음 | 격리 뒤 독립 event 진행 | 진행되지만 실패 결과 유실 |
-| 복구·감사 | 종료·대상 불명확 | Event ID·topic·partition·offset으로 exact 대상 보존 | 원본과 실패 이유 없음 |
-| 판정 | 제외 | **선택** | 제외 |
 
 일시적 broker·network·DB 오류는 제한된 backoff 뒤 같은 record를 다시 처리합니다. 지원하지
 않는 계약이나 반복 처리 불가 payload는 원본 event ID, topic·partition·offset과 실패 분류를
@@ -428,24 +717,76 @@ exact 미완료 결과를 복구합니까?
 
 ## D6. Runtime, storage와 환경별 증명 범위
 
-### D6-A. Kafka runtime과 controller
+### D6-A. 단일-node 시험에서 broker와 controller를 합칠지
 
-**결정 질문:** 확정된 현재 Kubernetes의 단일-node Kafka lifecycle을 어떤 runtime과
+확정된 Strimzi 단일-node qualification 안에서 record 처리와 cluster metadata 역할의 process 배치를 비교합니다.
+
+| 비교 기준 | 한 dual-role process | 역할별 process 분리 |
+| --- | --- | --- |
+| 자원 | process 기본 비용이 작음 | 각 JVM·Pod의 기본 비용 증가 |
+| 격리 | broker 부하가 controller에도 영향 | process 간 영향 일부 분리 |
+| 증명 범위 | 단일 failure domain; HA 아님 | 같은 node라 여전히 HA 아님 |
+
+**추천: dual-role.** 현재 자원에서 기능·복구 경로를 확인하는 시험 구성입니다.
+
+**감수 비용:** 역할 간 간섭과 HA 비보증
+
+**재검토 조건:** 별도 failure-domain qualification 또는 production 설계를 열 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D6-B. 시험 broker의 데이터를 보존할지 재생성할지
+
+Kafka 자체의 데이터 보존과 PostgreSQL 원본에서 사용자 결과를 복구하는 것은 구별해서 비교합니다.
+
+| 비교 기준 | Ephemeral emptyDir | Persistent block storage |
+| --- | --- | --- |
+| Pod 교체 | record·metadata·offset 소실 가능 | volume 재연결로 log 보존 가능 |
+| 복구 | 미완료 outbox 재발행·receipt 대조 | volume·Kafka log 복구와 application 대조 |
+| 운영 책임 | node disk 상한·파괴 시험 | CSI·StorageClass·volume·backup·비용 |
+
+**추천: 현재 기능·복구 qualification용 ephemeral.** Strimzi 공식 문서는 replication factor 1에서 ephemeral을 부적합하다고 경고합니다. 이 구성은 broker 내구성을 보장하지 않는 시험 한정 선택이며 outbox 복구 시험 통과가 필요합니다. Persistent 안이 내구성 면에서 유리하다는 사실을 숨기지 않습니다.
+
+**감수 비용:** broker 데이터 전손·offset 소실; production 사용 불가
+
+**재검토 조건:** 시험 기준 실패 또는 지속 내구성이 필요하면 비용·owner와 함께 persistent/topology 재검토
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D6-C. Cluster 설치와 application 설정을 누가 관리할지
+
+Operator·CRD 같은 cluster 자원과 namespace Kafka 설정의 변경 책임을 비교합니다.
+
+| 비교 기준 | Bootstrap과 application GitOps 분리 | Platform owner가 둘 다 관리 |
+| --- | --- | --- |
+| 권한 | application에는 필요한 namespace kind만 허용 | application 권한은 작지만 모든 변경이 platform 경유 |
+| 변경 속도 | topic·user·Kafka CR을 application 흐름에서 변경 | platform 작업 일정·검토에 의존 |
+| 관리 비용 | 두 owner의 선행 상태 연결 | 한 owner에 업무별 Kafka 설정 누적 |
+
+**추천: Bootstrap과 application GitOps 분리.** 기존 cluster 권한 경계를 유지하면서 namespace 변경을 application delivery로 관리합니다.
+
+**감수 비용:** CRD·operator 설치와 AppProject 허용의 선행 관계 관리
+
+**재검토 조건:** platform 운영 책임이나 GitOps resource 소유 정책이 바뀔 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 고정된 실행 범위와 적용 제약
+
+현재 Kubernetes에서 Strimzi 단일-node qualification을 수행하는 범위는 이미 확정돼 있습니다.
+Raw StatefulSet이나 managed Kafka로 이 범위를 다시 선택받지 않습니다. KRaft는 현재 지원
+경로의 제약이며 ZooKeeper를 신규 동등 대안으로 내놓지 않습니다. Exact 지원 version은 아래
+호환성 확인을 거쳐 실행 계획에서 고정합니다.
+
+CRD·operator → AppProject의 필요한 kind 허용 → namespace Kafka CR의 선행 관계를 지킵니다.
+CRD가 이미 관리됨이 확인된 경우에만 설치 중복을 생략합니다. Wildcard 권한은 사용하지 않습니다.
+Community readiness는 durable outbox를 쓰는 PostgreSQL에 의존하며 Kafka 장애와 분리합니다.
+Broker·relay·consumer 상태는 별도 health·backlog로 관측합니다. 이는 R1에서 따라오는 계약입니다.
+
+### 상세 계약: Kafka runtime과 controller
+
+**계약의 목적:** 확정된 현재 Kubernetes의 단일-node Kafka lifecycle을 어떤 runtime과
 controller가 소유해야 합니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Strimzi가 관리하는 KRaft 단일 dual-role node |
-| 공통 비교 축 | 현재 Kubernetes 적합성, 선언적 lifecycle, 새 운영 표면, 확장·제거 경계 |
-| 영향·감수 비용 | Operator·CRD·RBAC·certificate·upgrade와 별도 bootstrap 책임 추가 |
-| 배제 대안 | 직접 StatefulSet·script, 현재 단계의 managed Kafka |
-| 재검토 조건 | Production 입력이 확정되거나 operator lifecycle 비용이 현재 범위의 순효과를 초과 |
-
-| Runtime·controller 대안 | 장점 | 비용·새 실패 표면 | 판정 |
-| --- | --- | --- | --- |
-| Strimzi KRaft | 현재 GitOps·NetworkPolicy 안에서 operator·broker·user·topic lifecycle을 선언적으로 관리 | Operator·CRD·RBAC·certificate와 upgrade 책임 추가 | **선택**. 현재 self-managed Kubernetes qualification 범위를 직접 충족 |
-| Managed Kafka | Broker·storage·quorum 운영을 provider에 위임 | 지속 비용, private network·IAM·quota·provider 장애·삭제 책임 | 현재 닫힌 범위가 아니며 production topology 결정 때 재검토 |
-| 직접 StatefulSet·script | Operator dependency 없음 | Certificate·user·topic·rolling update를 project가 재구현 | 제외 |
 
 현재 AppProject whitelist에는 `kafka.strimzi.io` CR과 `NetworkPolicy`가 없습니다. Cluster-scoped
 CRD·operator·RBAC 설치는 platform bootstrap owner가 별도 운영 경계에서 수행하고, application
@@ -455,60 +796,32 @@ cluster-scoped resource 허용은 금지하며, 이 permission 확대가 검토�
 application manifest를 sync하지 않습니다. Operator bootstrap 실패와 application sync 실패는
 각 owner의 evidence로 분리합니다.
 
-### D6-B. Broker storage와 data-loss 복구
+### 상세 계약: Broker storage와 data-loss 복구
 
-**결정 질문:** 현재 단일-node qualification에서 broker data를 보존할 것인지, 손실 시 어떤
+**계약의 목적:** 현재 단일-node qualification에서 broker data를 보존할 것인지, 손실 시 어떤
 원본과 actor로 사용자 결과를 복구할 것인지 결정합니다.
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Ephemeral broker storage와 PostgreSQL outbox 기반 exact 미완료 재발행 |
-| 공통 비교 축 | 내구 원본, 새 storage lifecycle, 파괴 복구 가능성, 현재 자원·비용 |
-| 영향·감수 비용 | Broker record·metadata·offset 소실을 허용하고 cluster·topic 재생성과 재발행 절차를 소유 |
-| 배제 대안 | 현재부터 전용 persistent block storage, Kafka data 자체 복원을 사용자 결과 복구로 간주 |
-| 재검토 조건 | Ephemeral 경로가 수용 기준을 실패하고 사용자가 CSI·backup·비용·처분 범위를 승인 |
-
-| Broker storage 대안 | 장점 | 비용·새 실패 표면 | 판정 |
-| --- | --- | --- | --- |
-| Ephemeral broker storage | 새 storage platform 없이 현재 단일-node 파괴 복구 경로를 검증 | Application과 failure domain·root disk를 공유하며 broker data·offset을 잃을 수 있음 | **선택**. PostgreSQL outbox를 유일한 내구 원본으로 둔 qualification 전용 예외 |
-| 전용 persistent block storage | Broker 재시작 뒤 log·offset을 보존 | CSI/PV·attach·backup·용량·orphan cost라는 별도 lifecycle 추가 | 현재 최소 경로가 수용 기준에 실패하고 사용자가 추가 범위를 승인할 때 재검토 |
 
 Broker pod·storage·offset이 소실되면 Kafka data 복원을 주장하지 않습니다. 새 broker·topic을
 만든 뒤 downstream receipt도 승인된 terminal disposition도 없는 PostgreSQL outbox만
 재발행해 receipt·inbox로 수렴시킵니다. Ephemeral storage도 node disk를 사용하므로
 retention·용량·DiskPressure 경계는 실행 계획에서 workload로 계산합니다. 이 최소 경로가
-닫힌 부하·복구 기준을 충족하지 못하면 합격 실패로 기록하고, persistent storage나 별도
+이번 기능·데이터 복구 기준을 충족하지 못하면 합격 실패로 기록하고, persistent storage나 별도
 topology는 영향·비용·owner를 제시해 새 승인을 받습니다.
 
 Qualification broker가 ephemeral storage의 유일한 caller이고 infrastructure operations
 owner가 생성·파괴와 DiskPressure evidence를 소유합니다. Kafka 제거 때 함께 폐기하며,
 수용 기준 실패 전에는 persistent storage를 현재 필수 범위로 승격하지 않습니다.
 
-### D6-C. 환경별 증명 범위
+### 상세 계약: 환경별 증명 범위
 
-**결정 질문:** Local/CI, 현재 single-node, 별도 failure-domain 환경과 production 후보가 각각
+**계약의 목적:** Local/CI, 현재 single-node, 별도 failure-domain 환경과 production 후보가 각각
 어떤 주장까지만 증명할 수 있습니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | 환경의 실제 failure domain별로 contract·기능 복구·capacity/HA·production 적합 주장을 분리 |
-| 공통 비교 축 | 실제 topology, 장애 독립성, workload 재현성, 증거가 허용하는 주장 |
-| 영향·감수 비용 | 같은 계약도 환경별 evidence를 별도로 만들며 single-node 결과에 최대 RPS·HA를 붙이지 않음 |
-| 배제 대안 | Local test를 Kubernetes 증거로 확대, single-node 성공을 production 적합성으로 확대 |
-| 재검토 조건 | 환경 topology·failure domain 또는 확정 SLO·RPO·RTO가 변경됨 |
-
-| 공통 평가축 | 모든 환경에 하나의 합격 주장 | 환경별 증거 계층 분리 | 모든 검증을 production-like 환경에서만 수행 |
-| --- | --- | --- | --- |
-| 계약 feedback | 환경 차이를 숨기고 빠른 contract test의 역할도 불명확 | Local/CI에서 빠른 계약, 실제 환경에서 운영 경계를 단계적으로 검증 | 실제 환경 준비 전 feedback이 막힘 |
-| 주장 정확성 | Single-node 성공을 HA·capacity로 확대할 위험 | 각 failure domain이 실제로 증명한 범위만 주장 | 실제성은 높지만 모든 변경에 과도한 비용·권한 필요 |
-| 비용·가역성 | 작아 보이나 false pass 비용이 큼 | 필요한 evidence만 다음 환경으로 승격 | 외부 환경 유지·운영 표면이 현재 목표보다 큼 |
-| 판정 | 제외 | **선택** | 현재 첫 수직 흐름의 최소 end-to-end 경로로는 제외 |
 
 | 환경 | 고정된 최소 형태 | 증명할 수 있는 것 | 증명할 수 없는 것 |
 | --- | --- | --- | --- |
 | 로컬·CI | Testcontainers가 시작·제거하는 KRaft single broker | 실제 serialization, publish·consume, retry·DLQ·멱등성 계약 | Kubernetes 운영, HA, 장시간 capacity |
 | 공유 기능 qualification | 현재 Kubernetes의 Strimzi KRaft 단일 dual-role node | 실제 network·identity·중단·복구와 수직 흐름 | HA, production SLO, 독립 failure domain |
-| 부하·장애 qualification | Application과 broker가 분리된 최소 3 failure domain·다중 AZ | Replication, quorum, broker 장애, rebalance, 처리량, backlog 복구 | 장기 production 운영과 확정 SLO |
+| 후속 부하·장애 qualification | Application과 broker가 분리된 최소 3 failure domain·다중 AZ | Replication, quorum, broker 장애, rebalance, 처리량, backlog 복구 | 장기 production 운영과 확정 SLO |
 | Production 후보 | 확정 SLO·RPO·RTO·비용·운영 책임에 맞춘 dedicated Strimzi 또는 managed Kafka | 승인된 운영 목표 | 별도 region DR 등 계획 밖 보장 |
 
 Exact Strimzi·Kafka·client version과 image digest는 ARM64, 현재 Kubernetes·Spring Boot
@@ -516,50 +829,68 @@ compatibility와 지원 기간을 공식 source로 확인해 실행 계획에서
 
 ## D7. Network, 인증·인가와 secret
 
-### D7-A. Listener와 network 경계
+### D7-B. Consumer를 API와 같이 실행할지 전용 workload로 나눌지
 
-**결정 질문:** Kafka listener를 어디에 열고 어떤 network 경계의 workload만 접근하게
-해야 합니까?
+역할별 credential은 유지한 채, 실제 process 침해와 자원 간섭을 어느 수준까지 분리할지 비교합니다.
 
-| 항목 | 내용 |
+| 비교 기준 | 현재 application workload | Notification 전용 workload |
+| --- | --- | --- |
+| credential 침해 | 같은 process에서 접근 가능한 권한 합집합 | Secret mount와 process를 분리할 수 있음 |
+| 자원·장애 | API와 CPU·heap·종료 영향 공유 | consumer 자원·종료·scaling 분리 |
+| 현재 운영 비용 | 기존 배치 재사용 | deployment·capacity·배포 관리 추가 |
+
+**추천: 현재 application workload.** 첫 단일-node 범위에서 사용하되 논리 ACL 분리를 process 보안 격리라고 부르지 않습니다.
+
+**감수 비용:** 동일 Pod 침해 시 producer·consumer·DLT credential 권한 합집합
+
+**재검토 조건:** Secret mount 격리 요구나 실측 간섭·위험이 추가 workload 비용을 정당화할 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 보안 요구와 역할별 권한 계약
+
+Public 노출 금지, TLS, deny-by-default NetworkPolicy, Git 밖 Kubernetes Secret은 기존 보안
+요구입니다. 평문·익명 접근·credential의 Git 저장을 선택 가능한 대안으로 만들지 않습니다.
+
+| 역할 | 별도 principal·credential의 허용 범위 |
 | --- | --- |
-| Agent 선택 | Kubernetes 내부 TLS listener와 deny-by-default NetworkPolicy |
-| 공통 비교 축 | 노출 면적, transport 인증·암호화, 허용 workload, 장애 진단 |
-| 영향·감수 비용 | Certificate와 NetworkPolicy 운영이 추가되고 AppProject exact allowlist 확대가 선행 |
-| 배제 대안 | Public·anonymous·PLAINTEXT listener, broker 연동형 API readiness |
-| 재검토 조건 | 외부 managed endpoint나 cluster identity/network 표준이 별도 topology에서 채택됨 |
+| Relay producer | 원본 topic write |
+| Notification consumer | 원본 topic read와 자기 consumer group |
+| DLT writer | Consumer와 별도 principal·credential, dead-letter write |
+| Replay operator | 승인된 operation 전용 identity; 상시 application 권한과 분리 |
 
-| Listener·network 대안 | Public·anonymous listener | 내부 TLS와 허용 workload만 연결 | 판정 |
-| --- | --- | --- | --- |
-| 노출 면적 | Internet·cluster 전체에서 접근 가능 | Kubernetes 내부에서 operator와 허용 producer·consumer만 접근 | **내부 TLS 선택** |
-| 인증·암호화 | 익명 또는 평문 접근 위험 | TLS 인증과 암호화 | Public·anonymous 경로 제외 |
-| 운영 비용 | 작지만 필수 보안 기준 실패 | NetworkPolicy·certificate 운영 추가 | 현재 cluster 내부 경로에 필요한 최소 경계 |
+ACL은 exact topic·group에 적용합니다. Role·topic·group이 바뀌면 해당 ACL을 갱신하며 공유
+superuser나 prefix wildcard로 해결하지 않습니다. DNS·operator 등 필수 flow만 network에
+허용합니다. 역할별 credential 증가와 allowlist 관리는 현재 보안 계약의 운영 비용입니다.
+
+### 실행 계획에서 구체화할 credential lifecycle
+
+기존에 유예된 값의 상태를 보존합니다. 이 문서 수정으로 새 issuer·운영 주체를 채택하지 않습니다.
+
+| 구체화 항목 | 현재 경계 | 실행 계획의 확인 내용 |
+| --- | --- | --- |
+| Certificate issuer | Strimzi/Kubernetes Secret lifecycle 사용 | Strimzi CA와 별도 승인 issuer의 지원·신뢰 관계 |
+| 생성 진입점·owner | Kafka 전용 operation으로 설계 | 기존 bootstrap 확장과 전용 owner 중 실제 책임 경계 |
+| Rotation | Exact 방식 미정 | In-place 교체와 overlap 후 rollout의 지원·실패·복구 |
+| 구 credential 폐기 | Exact gate 미정 | Rotation·rollout 검증 뒤 폐기 증거 |
+| Rollout owner | Exact 실행 책임 미정 | Kafka operation과 기존 GitOps delivery의 실제 인계 |
+
+### 상세 계약: Listener와 network 경계
+
+**계약의 목적:** Kafka listener를 어디에 열고 어떤 network 경계의 workload만 접근하게
+해야 합니까?
 
 - Kafka listener는 public internet에 노출하지 않고 Kubernetes 내부에서만 엽니다.
 - Broker 통신은 TLS로 암호화하고 client-role별 principal과 ACL을 사용합니다. 익명
   PLAINTEXT listener는 두지 않습니다.
 - Calico NetworkPolicy는 operator와 허용한 producer·consumer의 DNS·broker traffic만 엽니다.
-  현재 AppProject에 허용되지 않은 `NetworkPolicy`는 D6-A의 application GitOps exact
+  현재 AppProject에 허용되지 않은 `NetworkPolicy`는 D6의 application GitOps exact
   allowlist 변경과 보안 검토가 끝난 뒤에만 적용합니다.
 
-### D7-B. Client role과 Kafka ACL
+### 상세 계약: Client role과 Kafka ACL
 
-**결정 질문:** Relay, consumer, DLQ와 replay actor에 어떤 Kafka principal·resource 권한을
+**계약의 목적:** Relay, consumer, DLQ와 replay actor에 어떤 Kafka principal·resource 권한을
 부여해야 한 actor의 침해나 오설정이 전체 topic 권한으로 번지지 않습니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Client role별 principal과 topic·consumer-group 최소 ACL, shared superuser 금지 |
-| 공통 비교 축 | Actor 식별, topic·group 최소 권한, audit 가능성, 침해 반경 |
-| 영향·감수 비용 | Principal·ACL 발급·회전·폐기와 role별 연결 설정 관리가 늘어남 |
-| 배제 대안 | 익명 접근, application 공용 credential, 평상시 identity로 운영 replay |
-| 재검토 조건 | Workload identity 표준이 같은 actor 분리와 최소 권한을 대체 |
-
-| 공통 평가축 | 익명·공유 credential | Role별 principal·ACL |
-| --- | --- | --- |
-| Actor 구분 | 불가 | Produce·consume·DLQ·replay audit 분리 |
-| 침해 반경 | 모든 topic·group 권한 | 해당 role의 topic·group으로 제한 |
-| 판정 | 제외 | **선택** |
 
 - Relay producer는 원본 topic write, Notification consumer는 원본 topic read와 자기 consumer
   group, DLQ writer는 dead-letter write에 필요한 권한만 가집니다. Replay identity는 평상시
@@ -567,25 +898,10 @@ compatibility와 지원 기간을 공식 source로 확인해 실행 계획에서
 - Client role은 별도 principal과 ACL로 구분하고 공유 superuser credential을 application에
   배포하지 않습니다.
 
-### D7-C. Certificate·credential lifecycle과 workload 격리
+### 상세 계약: Certificate·credential lifecycle과 workload 격리
 
-**결정 질문:** Role credential을 어디에서 생성·교체·폐기하고, 현재 같은 Pod에 놓이는
+**계약의 목적:** Role credential을 어디에서 생성·교체·폐기하고, 현재 같은 Pod에 놓이는
 producer·consumer의 실제 침해 반경을 어떻게 표현합니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Strimzi/Kubernetes Secret lifecycle과 role별 credential, 현재 co-resident process 위험 명시 |
-| 공통 비교 축 | Secret 비노출, rotation·rollout, Pod 침해 반경, 추가 workload 비용 |
-| 영향·감수 비용 | 논리 ACL은 분리하지만 같은 process·Pod 침해 시 mount된 role 권한 합집합이 노출됨 |
-| 배제 대안 | Git·image·event·log에 secret 저장, 현재 단계에서 보안 격리라고 과장 |
-| 재검토 조건 | Role별 Secret mount 격리가 요구되거나 실측 위험이 별도 workload 비용을 정당화 |
-
-| 공통 평가축 | 익명·공유 credential | Role별 principal, 같은 process에 co-resident | Role별 별도 workload·Secret mount |
-| --- | --- | --- | --- |
-| 권한 구분 | 불가 | Kafka ACL·audit에서 producer/consumer 구분 | ACL과 Pod credential 노출 모두 구분 |
-| 침해 반경 | 전체 권한 | Process가 가진 role credential의 합집합 | 침해된 workload의 role로 제한 |
-| 현재 자원·배치 | 단순하지만 보안 목표 실패 | 현재 단일 artifact·node에서 가능 | Pod·resource·mode·배포 lifecycle 추가 |
-| 판정 | 제외 | **현재 선택**. 논리적 client-role 분리라고만 주장 | 격리 요구·실측 위험이 비용을 정당화할 때 분리 |
 
 - Certificate와 credential은 Kubernetes Secret lifecycle을 사용합니다. 값을 Git·image·event·
   log에 남기거나 application과 broker credential을 합치지 않습니다.
@@ -598,27 +914,118 @@ producer·consumer의 실제 침해 반경을 어떻게 표현합니까?
 - Kafka 장애는 API readiness 실패가 아닙니다. PostgreSQL에 outbox를 기록할 수 없는 경우만
   Community write 실패이며, relay·consumer·broker 상태는 별도 health·backlog 신호입니다.
 
-## D8. 관측·부하·장애 qualification
+## D8. 구축 검증과 후속 부하·장애 qualification
 
-### D8-A. 관측과 결과 oracle
+### D8-A. 기존 진단 신호를 묶을지 전용 관측 플랫폼을 도입할지
 
-**결정 질문:** 닫힌 성능·복구 기준을 어떤 구간별 신호와 재현 가능한 시나리오로 판정해야
-Kafka 외부 병목이나 작은 환경의 성공을 Kafka 확장성으로 오판하지 않습니까?
+API·outbox·Kafka·consumer·DB 중 어디에서 막히는지 판정할 방법을 비교합니다.
 
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Request→outbox→broker→consumer→inbox 구간별 신호와 DB 결과 oracle의 교차 대조 |
-| 공통 비교 축 | 재현성, 병목 귀속, 사용자 결과 정확성, 환경별 주장 한계, 도구 lifecycle |
-| 영향·감수 비용 | API 지표만으로 합격시키지 않고 닫힌 threshold와 backlog·resource를 함께 판정하며 evidence 수집 책임이 늘어남 |
-| 배제 대안 | Broker health/lag/count 0 단독 판정, target node 내부 부하 생성, single-node HA 주장 |
-| 재검토 조건 | 현재 신호로 60분 시계열·장애 구간·종료 판정을 재현할 수 없음이 확인됨 |
+| 비교 기준 | 기존 metric·admin·DB·log 시간 정렬 | 전용 collector·dashboard·alert |
+| --- | --- | --- |
+| 단기 기능 시험 | 필요 구간을 직접 대조 가능 | 같은 신호를 지속 수집 |
+| 장기 운영 | retention·alert 재현이 제한됨 | 시계열·경보·장기 분석 가능 |
+| 새 운영 | query·correlation 유지 | collector 가용성·저장·권한·alert owner |
 
-| 공통 평가축 | Broker 단독 health·lag | 현재 source의 cross-layer snapshot·DB oracle | 전용 collector·dashboard·alert stack |
+**추천: 단일-node에는 기존 신호 종합.** 첫 기능 qualification에 적용하고 장기 시계열이 없으면 운영 관측 완료로 주장하지 않습니다. 다중-node 부하 qualification의 collector·retention·dashboard·alert는 별도 도입 검증 대상입니다.
+
+**감수 비용:** 수동 시간 정렬과 장기 분석 한계
+
+**재검토 조건:** 기존 신호로 원인을 구분할 수 없거나 상시 관측을 증명해야 할 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D8-B. 후속 검토: HTTP 부하를 어떤 도구로 재현할지
+
+같은 요청 집합·도착률·합격 기준으로 반복 실행하고 실패를 종료 코드로 알릴 도구를 비교합니다.
+
+| 비교 기준 | k6 | Gatling |
+| --- | --- | --- |
+| 시나리오 표현 | JavaScript 기반 workload·threshold | Java·Kotlin·Scala 또는 JS/TS SDK의 simulation·assertion |
+| 실행 경계 | application 밖 runner에서 실행 | application 밖 runner에서 선택 SDK로 실행 |
+| 현재 관리 선택 | 독립 load script·version/image 유지 | 선택 SDK의 build·CLI 유지 |
+
+**후속 검토 기준:** k6와 Gatling은 모두 유효 대안입니다. 부하·장애 시험 플랫폼 작업에서 workload·runner·유지관리 책임을 정한 뒤 선택합니다. 이번에는 도구를 도입하거나 k6로 확정하지 않습니다.
+
+**감수 비용:** 외부 runner·script·version 관리
+
+**재검토 조건:** protocol·시나리오 요구가 도구 한계를 만나거나 JVM 도구 표준이 정해질 때
+
+**선택 상태:** 후속 범위로 분리. 도구 미선택이며 현재 해결 설계의 열린 결정이 아닙니다.
+
+### D8-C. 후속 검토: 장애 시험을 수동으로 할지 반복 실행 도구로 만들지
+
+Broker 재시작·데이터 소실·복구 시험의 입력과 결과를 반복 가능하게 만들 방법을 비교합니다.
+
+| 비교 기준 | Runbook에 따른 수동 시험 | Repository scripted harness |
+| --- | --- | --- |
+| 반복 정확도 | 운영자가 시점·대상을 맞춤 | 동일 입력·장애 주입·결과 수집 반복 |
+| 중단·실패 | 각 단계의 사람 확인 | script의 중단·복구 계약 필요 |
+| 비용 | 초기 작성 작음, 반복 인건비 | harness 작성·검증·갱신 |
+
+**후속 검토 기준:** 반복 빈도와 장애 주입 범위가 정해진 뒤 수동 시험과 scripted harness를 비교해 선택합니다. 이번에는 범용 장애 플랫폼을 구축하지 않습니다. 첫 흐름의 복구 검증은 통합 테스트와 대상별 운영 절차로 수행하며 정확한 actor·권한·중단 경계는 실행 계획에서 구체화합니다.
+
+**감수 비용:** harness 유지보수와 파괴 시험 비용
+
+**재검토 조건:** 기존 시험 platform이 같은 결과 oracle을 제공할 때
+
+**선택 상태:** 후속 범위로 분리. 도구 미선택이며 현재 해결 설계의 열린 결정이 아닙니다.
+
+### D8-D. Kafka client lifecycle을 Spring에 맡길지 직접 관리할지
+
+Producer·listener 시작·종료, offset과 오류 처리를 어느 수준에서 구현할지 비교합니다.
+
+| 비교 기준 | Spring for Apache Kafka | Raw kafka-clients |
+| --- | --- | --- |
+| lifecycle | Spring container·설정 통합 | poll loop·thread·종료 직접 구현 |
+| 오류·commit | framework 계약을 설정·검증 | commit·retry orchestration 직접 검증 |
+| 유지보수 | Boot 호환 version과 설정 관리 | 직접 제어 범위가 크지만 관리 코드 증가 |
+
+**추천: Spring for Apache Kafka.** 현재 Spring Boot application의 lifecycle에 맞춰 첫 adapter를 구성합니다.
+
+**감수 비용:** framework 설정·upgrade 의존
+
+**재검토 조건:** Spring compatibility나 직접 client 제어 요구가 달라질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### D8-E. 통합 test용 Kafka를 어떻게 준비할지
+
+Test마다 실제 broker를 사용하면서 격리와 시작 설정의 책임을 비교합니다.
+
+| 비교 기준 | Testcontainers Kafka module | GenericContainer | 공유 broker |
 | --- | --- | --- | --- |
-| 사용자 결과 | Inbox 누락·중복 판정 불가 | Outbox·receipt·inbox 기대 집합 대조 | 같은 DB oracle을 별도로 연결해야 함 |
-| 병목 귀속 | Application·DB·generator 누락 | API·DB·Kafka·node를 시간 정렬 | 장시간 상관·alert에 유리 |
-| 추가 운영 | 작지만 합격 oracle 불충분 | 실행 artifact와 evidence 정리 필요 | Collector·storage·retention·upgrade 추가 |
-| 판정 | 제외 | **단일-node 선택** | 현재 방식이 60분 evidence를 재현하지 못할 때 별도 도입 |
+| 격리 | test process가 생성·제거 | 직접 생성·제거 구성 | 다른 test·사용자와 상태 공유 |
+| listener 설정 | Kafka 전용 API 활용 | listener·port wiring 직접 관리 | 외부 환경 설정에 의존 |
+| 비용 | container runtime·image 호환 | 같은 runtime + 관리 코드 | 시작 비용 절감, 정리·충돌 위험 |
+
+**추천: Testcontainers Kafka module.** 기존 BOM을 활용해 실제 protocol·직렬화·중복·실패를 격리해서 검증합니다.
+
+**감수 비용:** Docker·ARM64 image 호환과 test flake 관리
+
+**재검토 조건:** test infrastructure 또는 공식 image 지원이 달라질 때
+
+**선택 상태:** 사용자 확정. 위 추천안을 선택했으며 비교 대안과 재검토 조건은 유지합니다.
+
+### 이번 구축의 수용 기준과 후속 측정 계약
+
+이번 구축은 실제 Kafka를 거친 댓글·답글 → 알림 결과, 업무 저장과 outbox의 원자성,
+중복 전달의 멱등성, retry·DLT·replay, broker·consumer 재시작과 ephemeral 데이터 손실 후
+복구를 검증합니다. 유실·사용자 중복 허용값은 각각 0입니다. PostgreSQL event·receipt·inbox의
+기대 집합과 실제 결과를 대조하며 metric count·log만으로 성공을 선언하지 않습니다.
+
+장시간 부하, 정상 운영점, 처리량·latency·복구 시간의 수치 목표는
+[작업 본문의 후속 부하·장애 qualification 기준](010-community-kafka-event-delivery.md#후속-부하장애-qualification-기준)이
+소유합니다. 이 수치의 검증과 별도 시험 플랫폼 구축은 이번 완료 gate가 아닙니다.
+같은 corpus·snapshot·resource·warm-up과 node 밖 generator를 사용하는 비교 원칙은
+후속 시험에 유지합니다. 이번 구축 완료는 성능·capacity·HA 목표 달성을 뜻하지 않습니다.
+
+Metric은 bounded stage·result label만, 진단 log는 event identity와 실패 class만 허용합니다.
+본문·계정·credential을 진단 편의로 추가하지 않습니다.
+
+### 상세 계약: 관측과 결과 oracle
+
+**계약의 목적:** 이번 전달·복구 결과와 후속 성능 기준을 어떤 구간별 신호로 구분해 판정해야
+Kafka 외부 병목이나 작은 환경의 성공을 Kafka 확장성으로 오판하지 않습니까?
 
 | 독자 질문 | 필요한 신호 | 판정 경계 |
 | --- | --- | --- |
@@ -638,49 +1045,20 @@ alert를 재현할 수 없으면 기능 qualification까지만 통과시키고 �
 않습니다. 다중 node 부하 qualification에는 Prometheus-compatible collector·retention·dashboard와
 alert routing을 별도 도구 도입으로 검증합니다.
 
-### D8-B. 부하 생성 도구
+### 후속 계약: 부하 생성 도구
 
-**결정 질문:** 같은 HTTP workload의 arrival-rate, percentile·오류 threshold와 종료 code를
+**계약의 목적:** 같은 HTTP workload의 arrival-rate, percentile·오류 threshold와 종료 code를
 어떤 도구로 재현하고 evidence artifact를 남깁니까?
 
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Target node 밖에서 실행하는 k6 scenario와 threshold artifact |
-| 공통 비교 축 | Arrival-rate 제어, percentile·오류 threshold, deterministic input, CI/외부 runner 재현성 |
-| 영향·감수 비용 | 별도 k6 runtime·script·version/image와 result artifact lifecycle 추가 |
-| 배제 대안 | Ad-hoc curl loop, target node 내부 실행, 현재 범위의 Gatling·JMeter harness |
-| 재검토 조건 | k6가 필요한 protocol·workload·artifact를 재현하지 못하거나 저장소 표준 도구가 같은 결과를 더 적게 소유 |
-
-| 공통 평가축 | Ad-hoc 요청 script | k6 | Gatling·JMeter 새 harness |
-| --- | --- | --- | --- |
-| Arrival-rate·threshold | 직접 구현·종료 판정 취약 | Scenario·threshold·exit code를 선언 | 가능하지만 JVM/GUI 중심 harness와 결과 관리 추가 |
-| 재현 artifact | 입력·seed·summary 규약을 새로 소유 | Script·option·JSON summary로 고정 | 별도 project/plugin lifecycle 필요 |
-| 판정 | 제외 | **선택** | 현재 HTTP 수직 흐름에는 추가 비용이 큼 |
-
 부하 생성기는 target Kubernetes node 밖에서 실행해 application·Kafka와 CPU·network를
-경쟁하지 않습니다. 현재 저장소에 표준 부하 도구가 없으므로 실행 계획은 arrival-rate,
-percentile·error threshold, 고정 seed와 종료 code를 재현 가능한 k6 artifact로 구체화하고
-공식 지원 범위에서 exact version·image를 고정합니다.
+경쟁하지 않습니다. 후속 시험 플랫폼 작업에서 arrival-rate, percentile·error threshold,
+고정 seed와 종료 code의 재현 방식을 정합니다. D8-B에서 도구를 선택한 뒤 해당 작업의
+계획에서 exact version·image를 고정하며 이번 Kafka 구축 실행 계획에는 포함하지 않습니다.
 
-### D8-C. 측정 경로와 환경별 합격 주장
+### 상세 계약: 측정 경로와 환경별 합격 주장
 
-**결정 질문:** 어떤 구간의 신호와 환경별 oracle을 함께 만족해야 Kafka 도입 효과·병목·복구와
+**계약의 목적:** 어떤 구간의 신호와 환경별 oracle을 함께 만족해야 Kafka 도입 효과·병목·복구와
 주장 한계를 판정할 수 있습니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | API→outbox→Kafka→consumer→inbox 측정과 환경별 합격 주장을 묶되 failure domain 밖으로 확대 금지 |
-| 공통 비교 축 | 사용자 결과, 병목 귀속, 장시간 안정성, 장애·backlog 복구, topology 증명 한계 |
-| 영향·감수 비용 | 동일 workload·resource identity와 여러 source의 시간 정렬·evidence 보존 필요 |
-| 배제 대안 | API latency, Kafka lag, Pod Ready 또는 count 0 하나만으로 합격 |
-| 재검토 조건 | 확정 workload·SLO·topology가 바뀌거나 현재 cross-layer evidence로 종료 판정이 불가능 |
-
-| 공통 평가축 | API threshold 단독 | Kafka throughput·lag 단독 | Paired cross-layer 측정 + DB 결과 oracle |
-| --- | --- | --- | --- |
-| 도입 효과 귀속 | Request 변화만 보고 relay·consumer 병목 누락 | Broker 경로만 보고 API·DB·generator 병목 누락 | 동일 workload에서 API·relay·broker·consumer 자원을 함께 귀속 |
-| 사용자 결과 | 알림 누락·중복·backlog 완료를 판정 못함 | Record·offset과 inbox 결과가 어긋날 수 있음 | Outbox·receipt·inbox 기대 집합으로 누락·중복·완료 판정 |
-| 환경 주장 | 작은 환경 수치를 확대하기 쉬움 | Broker 수치를 production capacity로 오판 가능 | D6-C 환경의 failure domain 안에서만 합격 주장 |
-| 판정 | 제외 | 제외 | **선택**. 비용은 늘지만 R1 결과와 성능 원인을 함께 증명 |
 
 | 경로 | 측정할 결과 |
 | --- | --- |
@@ -690,18 +1068,18 @@ percentile·error threshold, 고정 seed와 종료 code를 재현 가능한 k6 a
 | Consumer | Consume rate, lag, retry·DLQ, DB transaction, inbox 도착 지연, backlog 해소 시간 |
 
 - 로컬·CI는 결정론적인 contract·failure test만 통과시킵니다.
-- 단일 node staging의 정상 운영점은 가장 먼저 포화되는 자원의 70% 이하입니다. 같은 자원·
+- 후속 부하 qualification에서 단일 node staging의 정상 운영점은 가장 먼저 포화되는 자원의 70% 이하입니다. 같은 자원·
   workload의 현재 동기 경로보다 지속 가능한 대화 쓰기 처리량이 낮아지지 않고 API p95가
   10% 넘게 악화되지 않아야 합니다.
-- 정상 운영점의 60분 test에서 API 오류율은 0.1% 미만, 알림 도착 p99는 5초 이내이고 event
+- 후속 qualification의 정상 운영점 60분 test에서 API 오류율은 0.1% 미만, 알림 도착 p99는 5초 이내이고 event
   유실과 사용자 중복 알림이 없어야 합니다. Broker를 10분 중단해도 댓글·답글 작성은
   성공하며, 복구 뒤 새 event를 처리하면서 20분 안에 중단 중 backlog를 해소해야 합니다.
-- 별도의 필수 파괴 시나리오에서 broker Pod와 `emptyDir`을 소실시켜 KRaft metadata,
+- 이번 구축의 별도 필수 복구 시나리오에서 broker Pod와 `emptyDir`을 소실시켜 KRaft metadata,
   record와 consumer offset이 없는 상태를 만듭니다. Cluster·topic을 재생성하고
   downstream receipt 또는 승인된 terminal disposition이 없는 outbox만 재발행한 뒤,
   기대 event 집합의 누락 0, 사용자 중복 0, 모든 미완료 receipt의 완료를 확인해야 합니다.
 - 이 single-node 결과에는 최대 RPS·HA 주장을 붙이지 않습니다.
-- 다중 node qualification은 정상·점증·급증·장시간 부하, broker 하나 중단, leader 변경,
+- 후속 다중 node qualification은 정상·점증·급증·장시간 부하, broker 하나 중단, leader 변경,
   consumer rebalance, network 지연, backlog recovery를 같은 workload와 resource identity로
   반복합니다.
 - Production 용량은 제품 owner가 확정한 peak·burst·SLO·RPO·RTO가 있어야 계산합니다. 값이
@@ -713,31 +1091,67 @@ RDS connection·CPU, node pressure가 먼저 한계를 만들면 Kafka 성공이
 
 ## D9. 전환, rollback과 production 승격
 
-### D9-A. 전환 계약
+### D9-A. 비동기 결과를 비교한 뒤 전환할지 한 번에 교체할지
 
-**결정 질문:** 기존 동기 알림 경로를 어떤 호환 순서로 새 비동기 경로로 전환해야 누락·사용자
-중복을 관찰하면서 되돌릴 수 있습니까?
+같은 최종 비동기 경로로 옮기면서 전환 결함을 발견하고 되돌리는 방법을 비교합니다.
 
-| 항목 | 내용 |
+| 비교 기준 | Shadow 비교 후 flag cutover | 한 번의 배포로 replacement |
+| --- | --- | --- |
+| 전환 전 증거 | 동기·비동기 결과를 같은 corpus로 비교 | 사전 test 후 전환된 경로에서 확인 |
+| 장애 복구 | flag로 소비·발행을 멈추고 동기 경로 복귀 | 이전 artifact 배포가 필요 |
+| 비용·위험 | 병행 부하·unique 충돌·flag 상태 관리 | 구조는 작지만 결함이 바로 primary 결과에 영향 |
+
+**추천: Shadow 비교 후 flag cutover.** 기존 inbox unique의 no-op과 event receipt로 병행 결과를 대조하고 수용 증거 뒤 primary 경로를 바꿉니다.
+
+**감수 비용:** 동기·비동기 병행 부하와 독립 flag 관리
+
+**재검토 조건:** 안전한 shadow가 불가능하거나 배포·rollback 체계가 바뀔 때
+
+**선택 상태:** Agent 기술 선택. 비교 가능한 결과를 확보하고 flag로 복귀할 수 있는 위 추천안을 유지합니다. 사용자 개별 승인으로 기록하지 않습니다.
+
+### 전환·중단·보존 계약
+
+| 대상 | 기존 계약 |
 | --- | --- |
-| Agent 선택 | Additive schema → shadow 수렴 → 비동기 전환 → 검증 뒤 동기 의존 제거 |
-| 공통 비교 축 | 누락·중복 관찰, 이전 artifact 호환, 가역성, 병행 종료 조건 |
-| 영향·감수 비용 | 동기·비동기 경로가 겹치는 기간의 write·관측 비용과 feature flag 운영 추가 |
-| 배제 대안 | Big-bang 전환, 동기·비동기 무기한 병행 |
-| 재검토 조건 | 기존 unique constraint로 shadow 결과를 안전하게 수렴할 수 없음이 source/test에서 확인됨 |
+| Schema | Additive first, 이전 application이 새 nullable table·column을 무시할 수 있음 |
+| 제어 | Relay·consumer 독립 flag; 상시 동기 fallback은 async-off일 때만 사용 |
+| Shadow | 전환 전 비교 기간에만 동기·비동기 병행; 영구 fallback과 구별 |
+| Async-off | Outbox 기록 계속 유지 |
+| Rollback | Outbox·receipt·DLT 보존, 원본 purge 중단 |
+| 동기 code 제거 | 장애·재시작·rollback 수용 증거 통과 및 보존 창 종료 뒤 검토 |
+| 파괴적 schema 제거 | Outbox 보존·replay window 종료 뒤 |
+| Broker data-loss | 정상 receipt도 승인 terminal 처분도 없는 outbox만 재발행 |
 
-| 공통 평가축 | Big-bang 비동기 전환 | Shadow 수렴 뒤 단계 전환 | 동기·비동기 무기한 병행 |
-| --- | --- | --- | --- |
-| 누락·중복 관찰 | 전환 뒤에만 발견 | 같은 source 결과를 unique·receipt로 대조 | 중복 write 비용과 owner가 상시 남음 |
-| Rollback | 이전 artifact·schema 호환에 의존 | Flag-off와 보존 outbox로 되돌림 | 전환 종료 조건이 없음 |
-| 부하·복구 | 실제 traffic에서 즉시 위험 | Gate별 evidence 뒤 다음 단계 | 두 경로 비용이 capacity를 왜곡 |
-| 판정 | 제외 | **선택** | 제외 |
+Broker record·offset까지 소실된 상황에서 offset rewind는 복구 대안이 아닙니다. 복구 원본,
+완료 판정, flag 상태와 보존 창의 관계를 유지하며 exact 실행 명령은 후속 실행 계획이 다룹니다.
+
+### Production 기술 선택의 선행 입력
+
+현재는 production provider를 고를 입력이 없습니다. 아래 값을 각 담당자가 정하고 실제
+qualification 증거가 있어야 Dedicated Strimzi와 managed Kafka를 같은 조건에서 비교합니다.
+
+| 필요한 입력 | 입력 책임 | 처음 영향을 받는 판단 |
+| --- | --- | --- |
+| Peak API·event rate, burst, 최대 backlog | 제품·운영 요구 owner | 처리 용량·partition·buffer·retention |
+| API·알림 latency SLO | 제품·운영 요구 owner | 지연 목표; 현재 10%·5초 시험 기준과 구별 |
+| RPO·RTO·허용 장애 | 제품·운영 요구 owner | 원본 보존·복구 topology·failure domain |
+| 비용 상한 | 비용 책임자 | 같은 기간·traffic의 self-managed/managed 비교 |
+| 24×7 on-call·upgrade·incident 책임 | 운영 책임자 | 유지 가능한 운영 모델 |
+
+Dedicated Strimzi는 controller·broker·storage·DR를 직접 운영하고, managed Kafka는 provider와
+network·IAM·quota·비용 책임을 나눕니다. 현재 single-node의 replica만 늘리는 안은 HA 증거가
+없으므로 production 후보가 아닙니다. 이 입력 공백은 현재 문서의 구조 수정 작업을 막지 않습니다.
+
+### 상세 계약: 전환 계약
+
+**계약의 목적:** 기존 동기 알림 경로를 어떤 호환 순서로 새 비동기 경로로 전환해야 누락·사용자
+중복을 관찰하면서 되돌릴 수 있습니까?
 
 1. Outbox·처리 영수증·event contract를 기존 application이 무시할 수 있는 additive schema로
    먼저 준비합니다.
 2. 기존 동기 inbox를 유지한 채 outbox write·relay·consumer를 shadow로 켜고, 두 경로가 기존
    unique constraint를 통해 같은 사용자 결과로 수렴하는지 비교합니다.
-3. Event 누락·중복, backlog, latency와 단일 node 기능 qualification이 닫히면 동기 Notification
+3. Event 누락·중복 0, backlog 복구와 단일 node 기능 검증이 닫히면 동기 Notification
    호출을 끄고 outbox를 최종 경로로 사용합니다.
 4. 장애·재시작·flag-off rollback을 통과하고 보존 창이 끝난 뒤에만 동기 코드 제거를 검토합니다.
 
@@ -745,24 +1159,10 @@ Shadow 기간에는 동기와 consumer가 동일 inbox row를 만들 수 있으�
 충돌을 정상 no-op으로 처리해야 합니다. 처리 영수증은 inbox가 이미 존재해도 event가 완료된
 사실을 기록합니다.
 
-### D9-B. Rollback과 복구
+### 상세 계약: Rollback과 복구
 
-**결정 질문:** Application 결함, Kafka 중단 또는 broker data 손실 때 어떤 경로를 끄고 어떤
+**계약의 목적:** Application 결함, Kafka 중단 또는 broker data 손실 때 어떤 경로를 끄고 어떤
 상태를 보존·재발행해야 exact 미완료 결과만 복구합니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | Relay·consumer flag-off와 동기 경로 복귀, outbox·receipt 보존, exact 미완료 재발행 |
-| 공통 비교 축 | 사용자 write 지속, backlog owner, 이전 artifact 호환, 중복 없는 replay |
-| 영향·감수 비용 | 보존 창·terminal disposition·복구 승인과 cluster/topic 재생성 절차 필요 |
-| 배제 대안 | Kafka 장애 때 outbox write 중단, 미완료 전체 삭제, 기간 전체 무차별 replay |
-| 재검토 조건 | Runtime topology나 event completion owner가 바뀌어 현재 exact 미완료 계산이 성립하지 않음 |
-
-| 공통 평가축 | 상태 삭제 후 복귀 | 보존 + exact 미완료 replay | 전체 기간 replay |
-| --- | --- | --- | --- |
-| 누락 위험 | 미처리 event 상실 | Receipt·disposition 없는 event 보존 | 완료 event까지 재처리 |
-| 중복·감사 | 복구 근거 없음 | Event ID와 승인 범위로 추적 | 불필요한 중복·대상 과다 |
-| 판정 | 제외 | **선택** | 제외 |
 
 - 새 비동기 경로의 application 결함이면 relay·consumer를 멈추고 동기 경로를 다시 켤 수
   있습니다. 이미 저장된 outbox·Kafka record·receipt는 삭제하지 않습니다.
@@ -774,24 +1174,10 @@ Shadow 기간에는 동기와 consumer가 동일 inbox row를 만들 수 있으�
 - Schema rollback은 이전 application이 새 nullable table·column을 무시할 수 있어야 하며,
   destructive migration은 보존·replay window가 끝나기 전에 수행하지 않습니다.
 
-### D9-C. Production 승격 조건
+### 상세 계약: Production 승격 조건
 
-**결정 질문:** 어떤 제품·운영 입력과 실제 qualification evidence가 모두 있어야 production
+**계약의 목적:** 어떤 제품·운영 입력과 실제 qualification evidence가 모두 있어야 production
 Kafka topology를 비교·선택할 수 있습니까?
-
-| 항목 | 내용 |
-| --- | --- |
-| Agent 선택 | 현재 production 선택 보류; 입력과 evidence가 닫힌 뒤 dedicated Strimzi와 managed Kafka를 별도 비교 |
-| 공통 비교 축 | Peak·burst, SLO·RPO·RTO, 다중 failure domain, 비용, on-call·backup·upgrade 책임 |
-| 영향·감수 비용 | 현재 계획에서 production topology·partition·retention·capacity 확정을 미룸 |
-| 배제 대안 | Single-node manifest의 replica 수만 확대, 입력 없이 self-managed/managed를 미리 확정 |
-| 재검토 조건 | 아래 필수 입력과 다중-node qualification evidence가 모두 확정됨 |
-
-| 공통 평가축 | Dedicated Strimzi | Managed Kafka | 현재 single-node 확대 |
-| --- | --- | --- | --- |
-| 운영 책임 | Controller·broker·storage·DR를 project가 소유 | Provider와 project가 network·IAM·quota·비용 책임 분담 | HA·failure-domain 증거 없음 |
-| 선택 가능 시점 | SLO·비용·on-call과 다중-node 증거 뒤 | 같은 입력과 provider 제약 검증 뒤 | Production 후보에서 제외 |
-| 현재 판정 | 조건부 미래 후보 | 조건부 미래 후보 | 제외 |
 
 다음이 모두 있어야 production topology를 선택합니다.
 
@@ -853,18 +1239,18 @@ publish·consume과 DB 결과까지 대조합니다. 어느 경로도 단일 nod
 | 실행자·실패 경계 | Messaging integration test에서만 실행하고 application production runtime에는 포함하지 않습니다. |
 | Owner·갱신·제거 | Messaging integration-test owner가 기존 Testcontainers BOM과 module·image를 함께 갱신합니다. 제거하려면 대체 real-broker oracle이 먼저 필요합니다. |
 
-### 부하 생성 도구
+### 후속 부하 생성 도구
 
 | 판정 축 | 현재 결론 |
 | --- | --- |
 | 근본 문제·증거 | 닫힌 arrival-rate·percentile·오류율·종료 code를 같은 workload로 반복할 수 있어야 합니다. |
-| 대안과 선택 또는 도입 경계 | Ad-hoc 요청은 재현성과 종료 판정이 부족합니다. D8-B에서 외부 k6를 선택했고 실행 계획은 exact version·image만 고정합니다. |
+| 대안과 선택 또는 도입 경계 | D8-B의 k6·Gatling 비교는 후속 참고입니다. 이번 도입은 없으며 독립 시험 플랫폼 작업에서 도구·version·image를 선택합니다. |
 | 독립 oracle | 고정 seed·resource identity와 API·DB·Kafka·inbox 결과를 교차 대조합니다. |
 | 오판·새 실패 표면 | Generator 포화, network 차이와 짧은 evidence retention을 Kafka 한계로 오판할 수 있습니다. |
 | 실행자·실패 경계 | Qualification actor가 target Kubernetes node 밖에서 실행하며 generator 실패를 system-under-test 실패와 분리합니다. |
-| Owner·갱신·제거 | Qualification evidence owner가 k6 script·version/image·결과 보존을 소유하고 시험 runner와 artifact를 제거합니다. 전용 관측 stack은 D8-A evidence가 실제로 부족할 때만 별도 심사합니다. |
+| Owner·갱신·제거 | 후속 작업에서 정할 qualification evidence owner가 선택 도구의 script·version/image·결과 보존과 시험 runner 제거를 소유합니다. 전용 관측 stack은 D8-A evidence가 실제로 부족할 때만 별도 심사합니다. |
 
-Ephemeral broker storage는 D6-B, managed Kafka는 D6-A와 D9-C, 전용 block storage는 D6-B,
+Ephemeral broker storage는 D6-B, managed Kafka는 D6의 고정 실행 범위와 D9의 production 선행 입력, 전용 block storage는 D6-B,
 Debezium·Kafka Connect는 D2와 D4, Schema Registry는 D3, 전용 관측 stack은 D8-A에서 각각
 대안·재검토 조건과 제거되지 않은 미래 경계로 보존합니다.
 
@@ -894,7 +1280,7 @@ Debezium·Kafka Connect는 D2와 D4, Schema Registry는 D3, 전용 관측 stack�
 | 독립 알림 처리 | Post key는 locality만 제공하고 event ID로 각각 수렴 | Kafka 순서를 inbox 표시 순서로 오판하지 않아야 함 |
 | 전체 상황의 확장성 | 환경별 topology와 증명 범위 분리 | Production SLO·비용·운영 책임은 아직 조건부 |
 | 단일 node 비용 제한 | 새 persistent storage lifecycle 없이 broker를 폐기 가능한 transport buffer로 제한 | 4 GiB memory·20 GiB root disk와 단일 failure domain은 그대로 |
-| 큰 부하 목표 | 별도 다중 node qualification에서만 capacity·HA 판정 | 실제 환경 mutation·비용 권한과 workload 값 필요 |
+| 큰 부하 목표 | 후속 독립 qualification에서 capacity·HA 판정 | 이번 구축 완료로 미검증 성능을 주장하지 않으며 별도 환경·비용·workload 입력 필요 |
 | 보안 | TLS·client-role별 ACL·NetworkPolicy·Secret lifecycle | Co-resident process 침해 시 role credential 권한이 합쳐짐 |
 | 운영 증거 | 구간별 signal과 environment-specific oracle | 상시 collector 부재 시 single-node 관측 완료 불가 |
 
@@ -919,3 +1305,8 @@ Debezium·Kafka Connect는 D2와 D4, Schema Registry는 D3, 전용 관측 stack�
 - [Testcontainers Kafka module](https://java.testcontainers.org/modules/kafka/)
 - [Grafana k6 scenarios와 thresholds](https://grafana.com/docs/k6/latest/using-k6/scenarios/)
 - [Debezium outbox pattern](https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html)
+
+- **추가 비교 근거**: [Spring Modulith publication registry](https://docs.spring.io/spring-modulith/reference/events.html),
+  [Spring Kafka retry topic](https://docs.spring.io/spring-kafka/reference/retrytopic.html),
+  [Avro schema 명세](https://avro.apache.org/docs/1.12.0/specification/),
+  [Gatling 시나리오 문서](https://docs.gatling.io/concepts/simulation/)

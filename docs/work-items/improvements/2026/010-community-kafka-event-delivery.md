@@ -6,19 +6,19 @@ Proposed
 
 ## 계획 단계
 
-해결 설계
+실행 계획
 
 ## 현재 결론과 다음 행동
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 결론 | Community 댓글·답글 저장을 Kafka 장애와 분리하고 서비스 안 알림은 복구 뒤 누락·사용자 중복 없이 생성하는 R1-A를 반영했습니다. 결과 정의는 닫혔고, 이 결과를 구현할 D2~D9 해결 설계 후보가 준비돼 있습니다. |
-| 닫힌 결과 경계 | 첫 적용 대상은 Community 댓글·답글 생성에서 서비스 안 알림까지 한 수직 흐름입니다. 댓글 저장은 Kafka 장애와 분리되고 복구 뒤 알림은 누락·사용자 중복 없이 수렴해야 합니다. 현재 Kubernetes의 Strimzi 단일-node Kafka 범위는 qualification일 뿐 production 고가용성이나 큰 부하 보장을 뜻하지 않습니다. |
-| 선행 외부 gate | 별도 failure-domain 부하·장애 qualification과 production 환경 생성·적용은 실행 시점의 비용·운영·외부 변경 권한이 있어야 수행합니다. 이 gate는 현재 해결 설계의 검증·사용자 확정을 막지 않습니다. |
-| 남은 gate | D2~D9 전체 해결 설계 후보는 fresh 독립 검증을 통과했습니다. 사용자가 이 exact 후보를 확정해야 실행 계획으로 전환할 수 있습니다. |
-| 현재 행동 주체 | 사용자가 [해결 설계](010-community-kafka-event-delivery-design.md)의 D2~D9 전체 후보를 확정하거나 바꿀 결정 ID와 값을 지정합니다. |
-| 사용자 차례 | `현재 해결 설계 후보 전체를 그대로 확정해줘` 또는 바꿀 결정 ID와 값을 답합니다. |
-| 현재 행동 뒤 결과 | 사용자 확정 뒤 이 해결 설계를 입력으로 실행 계획의 구조와 검증 가능한 결과 단위를 작성합니다. 별도 개발·live 적용 요청 전에는 구현하거나 환경을 변경하지 않습니다. |
+| 현재 결론 | 기술·구조 선택을 반영해 해결 설계를 완료했습니다. 다음은 실행 계획 작성이며 아직 미착수입니다. 전체 계획 상태는 `Proposed`입니다. |
+| 닫힌 결과 경계 | 이번에는 Strimzi 단일-node Kafka 구축과 Community 댓글·답글 → 서비스 안 알림 연결에 집중합니다. 업무 저장 보호, 누락·사용자 중복 방지와 재시작·데이터 손실 복구 검증을 포함합니다. |
+| 선행 외부 gate | 별도 부하·장애 시험 플랫폼과 다중 failure-domain 검증은 후속 범위입니다. Production 판단에는 peak·SLO·RPO·RTO·비용·운영 책임이 필요하며 현재 실행 계획 작성의 선행 조건은 아닙니다. |
+| 남은 gate | 실행 계획의 결과 단위·의존 순서·검증·전환·복구 책임 작성과 계획 검증·확정이 남았습니다. 해결 설계의 추가 사용자 선택은 없습니다. |
+| 현재 행동 주체 | 다음 단계의 작성자는 Agent입니다. 확정된 설계를 입력으로 작업 본문에 실행 계획을 작성합니다. |
+| 사용자 차례 | 추가 기술 선택 없이 실행 계획 단계로 진행할 수 있습니다. 실행 계획은 미작성 상태이며 구현·배포는 별도 후속 단계입니다. |
+| 현재 행동 뒤 결과 | 실행 계획을 작성·검증한 후보를 확정하면 `Planned`로 전환합니다. 현재는 해결 설계까지 완료한 상태입니다. |
 
 ## 진행 지도
 
@@ -26,8 +26,8 @@ Proposed
 | --- | --- | --- | --- |
 | 범위·결정 정규화 | 완료 | Kafka 첫 적용을 Community 댓글·답글 생성에서 서비스 안 알림까지로 고정하고 account·catalog·media와 새 제품 기능은 제외했습니다. | 사용자 작업 없음 |
 | 결과 정의 | 완료 | R1-A에 따라 Community write와 Kafka 장애를 분리하고 복구 뒤 알림이 누락·사용자 중복 없이 수렴하는 결과를 확정했습니다. | 사용자 작업 없음 |
-| 해결 설계 | 현재 | R1 고정 입력과 D2~D9 비교 후보를 작성했고 fresh 독립 검증을 통과했습니다. 사용자 단계 확정이 남았습니다. | 사용자가 현재 전체 후보를 확정하거나 바꿀 결정 ID와 값을 지정합니다. |
-| 실행 계획 | 후속 | 검증 가능한 결과 단위, 실제 의존 순서, test·문서·운영 책임과 완료 증거를 확정합니다. | 해결 설계 closure 뒤 Agent가 진행합니다. |
+| 해결 설계 | 완료 | 사용자 기술 선택과 Kafka 구축 우선 범위를 반영했습니다. D9-A는 Agent 기술 선택이며 부하·장애 플랫폼은 후속 범위입니다. | 추가 사용자 선택 없음 |
+| 실행 계획 | 다음 | 미착수입니다. 확정 설계를 입력으로 결과 단위·의존 순서·test·문서·운영 책임과 완료 증거를 작성합니다. | 다음 단계 작성자는 Agent입니다. |
 | 계획 검증·확정 | 후속 | 최초 목적·확정 결정·current source를 기준으로 완성 후보를 검증하고 사용자 채택 뒤 `Planned`로 전환합니다. | 실행 계획 후보와 필수 검증이 준비된 뒤 진행합니다. |
 | 개발·결과 검증 | 조건부 후속 | 별도 개발 요청과 `Planned` baseline 뒤 repository 구현·자동 검증을 수행합니다. Kafka 전환 qualification은 `In Progress`인 Community 기반 배포와 `COMMUNITY_ENABLED=false` 상태의 선행 활성화 검증에 순서를 맞춥니다. | 이 계획 작업의 terminal이 아니며 이후 실행 요청과 Community 선행 결과가 필요합니다. |
 | 영구 SOT·Git 마무리 | 조건부 후속 | 검증된 실제 event·module·운영 계약만 canonical 문서에 승격하고 승인된 Git·remote 효과만 수행합니다. | 구현·검증 결과가 생긴 뒤 해당 권한 범위에서 진행합니다. |
@@ -39,13 +39,10 @@ Proposed
   사용자 중복 없이 생성됩니다.
 - 첫 producer와 consumer는 실제 사용자 결과까지 이어지며, consumer 없는 event 복사는
   완료로 보지 않습니다.
-- 로컬·CI contract, 공유 기능 qualification, 별도 failure-domain 부하·장애 qualification과
-  production 승격 판단은 서로 다른 환경과 증거로 구분합니다.
-- 큰 부하 목표는 API 처리량뿐 아니라 event 발행률, consumer lag, backlog 해소 시간과
-  application·PostgreSQL·Kafka·node 병목을 함께 측정합니다.
-- 큰 부하·고가용성 주장은 application과 broker의 failure domain을 분리한 별도 환경에서
-  broker 중단·확장 중 재배치·처리량·backlog 복구를 실제 검증한 결과에만 허용합니다. 환경
-  생성 비용과 운영 권한은 실행 시점에 별도로 승인받습니다.
+- 이번에는 로컬·CI의 실제 Kafka 통합 테스트와 현재 단일-node 환경의 구축·전달·복구를 검증합니다.
+- 부하·장애 시험 플랫폼과 다중 failure-domain qualification은 후속 독립 범위입니다.
+  기존 수치 목표를 후속 검증 기준으로 보존하며 이번 구축 완료로 처리량·latency·HA 달성을
+  주장하지 않습니다.
 - Production topology와 수치는 peak·SLO·RPO·RTO·예산·운영 책임이 정해진 뒤 별도 승인합니다.
 
 ## 현재 문제
@@ -71,10 +68,13 @@ Proposed
 - Community 댓글·답글 생성에서 서비스 안 알림까지 한 수직 흐름
 - 업무 저장과 event 전달 사이의 유실·중복·재시작·처리 불가 event·복구 결과
 - 변경 호환성, 책임 경계, 보안·관측·운영·rollback 결과
-- 로컬·CI, 공유 기능 환경과 별도 failure-domain 부하·장애 qualification
+- 로컬·CI의 실제 Kafka 통합 테스트와 공유 단일-node의 기능·재시작·데이터 손실 복구 검증
 - 구현 뒤 현재 구조·계약과 운영 절차의 영구 문서 인계
 
 ## 제외 범위
+
+- 범용 부하·장애 시험 플랫폼, k6·Gatling 도입, scripted fault harness와 별도 다중 failure-domain 시험 환경 구축
+- 장시간 부하·capacity·HA qualification의 실행과 합격 판정(후속 독립 범위)
 
 - Community 외 account·auth·catalog·media event의 이번 구현 연결
 - Kafka 도입을 이유로 modular monolith를 microservice로 분리하는 것
@@ -94,6 +94,24 @@ Proposed
 - 변경·배포 뒤에도 이전 application과 이미 대기 중인 작업을 일방적으로 깨지 않습니다.
 - Rollback과 전달 시스템 data 손실 복구 뒤에도 미처리 결과의 책임을 잃지 않습니다.
 
+- 실제 Kafka protocol을 사용하는 통합 테스트에서 원자성, 중복 전달, retry·DLT·replay와
+  broker·consumer 재시작을 검증합니다. 현재 ephemeral 구성은 broker 데이터·offset 소실 뒤
+  미완료 outbox 재발행으로 누락 0·사용자 중복 0을 증명해야 합니다.
+- 기존 API·Kafka·DB·node 신호로 전달 경로와 오류를 구분하고 bounded worker·resource 경계를
+  확인합니다. 성능과 복구 시간의 수치 합격 판정은 아래 후속 범위에 둡니다.
+
+- Kafka는 public internet에 노출하지 않고 허용한 producer·consumer만 인증된 암호화 통신을
+  사용합니다.
+- Secret과 불필요한 개인정보를 event·Git·image·metric·일반 log에 남기지 않습니다.
+- 업무 책임은 상대의 내부 구현을 우회하지 않고 한 결과의 변경 주체를 하나로 유지합니다.
+- 도입 도구마다 official source, 실제 caller·독립 oracle, 지원·upgrade·rollback·제거 조건과
+  새 실패 표면을 계획합니다.
+
+### 후속 부하·장애 qualification 기준
+
+별도 시험 플랫폼을 구축하는 후속 작업의 검증 목표입니다. 이번 Kafka 구축의 완료 조건과
+분리하며 값을 완화하거나 이미 달성한 것으로 처리하지 않습니다.
+
 - 동기 API, event 전달, broker와 consumer를 분리 측정하고 PostgreSQL·node·network 병목을
   Kafka 성능으로 오판하지 않습니다.
 - 정상·점증·급증·장시간 부하와 broker·consumer 장애·backlog 복구를 재현 가능한 입력과
@@ -109,13 +127,6 @@ Proposed
 - 정상 운영점에서 broker를 10분 중단해도 댓글·답글 작성은 성공해야 합니다. 복구 뒤
   consumer는 새 event를 처리하면서 20분 안에 중단 중 backlog를 해소해야 합니다.
 
-- Kafka는 public internet에 노출하지 않고 허용한 producer·consumer만 인증된 암호화 통신을
-  사용합니다.
-- Secret과 불필요한 개인정보를 event·Git·image·metric·일반 log에 남기지 않습니다.
-- 업무 책임은 상대의 내부 구현을 우회하지 않고 한 결과의 변경 주체를 하나로 유지합니다.
-- 도입 도구마다 official source, 실제 caller·독립 oracle, 지원·upgrade·rollback·제거 조건과
-  새 실패 표면을 계획합니다.
-
 ## 결과 결정
 
 ### 확정
@@ -125,8 +136,8 @@ Proposed
   생성합니다.
 - 현재 Kubernetes에는 Strimzi 기반 단일 Kafka node를 qualification 용도로 구축하는 범위를
   사용합니다.
-- 부하 시험은 선택 기능이 아니라 동기 기준선, 비동기 도입 효과와 다음 병목을 입증하는 완료
-  증거입니다.
+- 이번에는 Kafka 구축과 첫 알림 흐름에 집중합니다. 부하·장애 시험 플랫폼은 후속 독립
+  범위이며, 동기 대비 도입 효과·병목·수치 목표의 판정은 그 후속 검증에서 수행합니다.
 - 현재 단일-node 환경은 기능·복구·resource 경계를 검증하는 출발점이며 production
   고가용성이나 큰 부하를 증명하지 않습니다.
 - 큰 부하·HA 주장은 application과 broker의 failure domain을 분리한 별도 환경에서만 검증합니다.
@@ -159,9 +170,10 @@ Proposed
   runtime·storage·환경별 증명, 보안, 관측·qualification, 전환·rollback·production 승격은
   [010 Community Kafka 이벤트 전달 상세 설계](010-community-kafka-event-delivery-design.md)의
   R1과 D2~D9가 소유합니다.
-- D2~D9는 source·대안·trade-off로 선택한 Agent 기술 후보이며 사용자 결정으로 기록하지
-  않습니다. 현재 후보는 fresh 독립 검증을 통과했지만 사용자가 해결 설계 단계 전체를
-  확정하기 전에는 실행 계획이나 구현 입력이 아닙니다.
+- D2~D9의 비교표는 기술 선택과 그 근거를 소유합니다. 기존 사용자 동의가 있는 범위는 해당
+  선택·계약에서 확정으로 반영했습니다. D9-A는 Agent 기술 선택이며 D8-B·D8-C는 후속
+  미선택입니다. 필드명·기존 구조 제약은 개별 선택 카드가 아닙니다. 해결 설계는 실행 계획의
+  입력으로 사용할 수 있으며 구현은 검증된 `Planned` baseline과 별도 실행 요청 뒤에 진행합니다.
 - Managed Kafka, persistent block storage, Debezium·Kafka Connect, Schema Registry와 전용
   관측 stack은 현재 선택이 아닙니다. 각 재검토 조건은 관련 D section이 소유합니다.
 
