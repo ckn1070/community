@@ -129,6 +129,9 @@ data, build, deployment, operations, test와 책임 문서를 추적한다. 다�
   비교 결정·활성 카드는 단일 질문·option set을, 고정 입력·source 파생·입력 부재 gate는
   해당 유형의 source·파생·금지·owner·consumer·재검토 field를 갖는지 조건별로 확인
 - 선택한 기술 결정의 목표 보존과 목표 약화 대안의 사용자 권위
+- 목표 구조와 전환 방식이 독립적으로 바뀔 수 있는데 하나로 숨겨지지 않았는지, 후보별 임시
+  trigger·function·column·compatibility adapter·routing·dual write·backfill, 추가
+  migration·release·관찰·제거 작업, data 폐기와 rollback 책임이 선택 전에 노출됐는지
 - 정상·실패·경계 동작과 기존 회귀
 - 구조·모듈·외부 계약
 - data·transaction·동시성
@@ -172,6 +175,10 @@ payload 범위, 표현·저장 위치, version·호환성 또는 운영 수단�
 하나의 authoritative 요구·적용 범위·consumer·재검토 조건, source 파생은 하나의 source·
 파생 규칙·consumer·재검토 조건, 입력 부재 gate는 하나의 부족 입력·입력 owner·획득/재개
 조건·처음 막는 consumer를 가진다는 근거가 없으면 실패한다.
+
+같은 최종 상태를 만드는 직접 전환·호환 전환·환경 초기화 전환을 서로 바꿀 수 있으면 전환
+방식도 독립 축입니다. 후보에만 생기는 임시 구조나 후속 제거 작업이 결정 카드 밖의 구현
+계획에서 처음 나타나면 숨은 선택이므로 structure mode와 content mode 모두 실패합니다.
 
 Content mode는 닫힌 structure map의 축 목록을 다시 대조한다. 상세 prose·표·요약에서 map에
 없는 선택값이 하나라도 나타나면 내용 보완으로 통과시키지 않고 structure verdict를

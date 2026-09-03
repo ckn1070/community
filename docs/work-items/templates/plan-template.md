@@ -285,7 +285,12 @@ Agent 기술 선택을 서로 바꾸어 기록하지 않습니다. 대화의 지
 | 요구·결정 | 정상 | 실패 | 경계 | 회귀 | 통과 기준 |
 
 ## 전환과 복구
-| 시작 상태 | 전환 event | 목표 상태 | 중단 조건 | rollback | postcondition |
+| 시작 상태 | 전환 event·actor | 임시 구조·추가 작업 | 목표 상태 | 중단 조건 | rollback | postcondition |
+
+선택된 전환 방식 때문에만 필요한 trigger·function·compatibility adapter·routing·dual
+write·backfill·추가 migration·release·관찰·제거 작업을 `임시 구조·추가 작업`에 전부
+연결합니다. 해결 설계의 전환 결정에 없던 비용이나 작업이 여기서 처음 나타나면 실행 계획을
+중단하고 해결 설계로 되돌립니다.
 
 ## 영구 SOT
 | 현재 개념·계약 | canonical owner | 승격 조건 |

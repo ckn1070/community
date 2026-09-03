@@ -254,6 +254,10 @@ section을 찾아가라는 안내나 열린 결정의 요약만으로 대신하�
 3. 문서 정보 구조 가이드의 새 문서 분리 기준을 만족합니다.
 
 `-design`은 결정 질문, 대안, 선택, 이유, trade-off, 재검토 조건과 목표 계약만 소유합니다.
+목표 구조와 독립적으로 선택할 수 있는 전환 방식은 별도 결정 ID로 소유합니다. 전환 후보에만
+생기는 임시 trigger·function·column·compatibility adapter·routing·dual write·backfill,
+추가 migration·release·관찰·제거 작업, data 폐기와 rollback 책임은 선택 전 비용으로 기록하며
+실행 계획에서 처음 추가하지 않습니다.
 task, 실행 순서와 test 실행은 소유하지 않습니다. 국소적이고 쉽게 되돌릴 수 있는 기술
 선택은 실행 계획에서 정확한 source 관계와 선택으로 기록하고, 일회성 Spike 실험 방법도
 실행 계획에 둡니다.
