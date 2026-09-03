@@ -33,7 +33,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     UUID publicId = UUID.fromString("0f3445fd-5f22-4f74-9a9d-1ff0c68a924a");
     Long accountId = createAccount(publicId, "refresh-lookup@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("6e74f192-9256-4569-8579-6b8f557d9cb1");
-    Long tokenId = createRefreshToken(accountId, "a".repeat(64), familyId);
+    Long tokenId = createRefreshToken(publicId, "a".repeat(64), familyId);
 
     RefreshSession token = adapter.findByHashForUpdate("a".repeat(64)).orElseThrow();
 
@@ -48,7 +48,7 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     UUID publicId = UUID.fromString("38d1dcb8-7bbf-4390-8e28-c3a8cd3e2f0d");
     Long accountId = createAccount(publicId, "refresh-rotate@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("154c0fef-4f88-449f-a070-c8b0ed201501");
-    Long oldTokenId = createRefreshToken(accountId, "b".repeat(64), familyId);
+    Long oldTokenId = createRefreshToken(publicId, "b".repeat(64), familyId);
     RefreshSession current = adapter.findByHashForUpdate("b".repeat(64)).orElseThrow();
     IssuedRefreshToken replacement =
         new IssuedRefreshToken(
@@ -78,10 +78,10 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
                 """
                 select count(*)
                 from auth_event
-                where account_id = ? and event_type = 'TOKEN_REFRESH' and result = 'SUCCESS'
+                where account_public_id = ? and event_type = 'TOKEN_REFRESH' and result = 'SUCCESS'
                 """,
                 Integer.class,
-                accountId))
+                publicId))
         .isOne();
   }
 
@@ -91,8 +91,8 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     UUID publicId = UUID.fromString("bbd1502f-fc98-4c73-a5b2-bc53558e1b62");
     Long accountId = createAccount(publicId, "refresh-reuse@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("c1c60ef3-5571-42fb-a46a-a10cadc14e2f");
-    Long reusedTokenId = createRefreshToken(accountId, "d".repeat(64), familyId);
-    Long activeTokenId = createRefreshToken(accountId, "e".repeat(64), familyId);
+    Long reusedTokenId = createRefreshToken(publicId, "d".repeat(64), familyId);
+    Long activeTokenId = createRefreshToken(publicId, "e".repeat(64), familyId);
     markRotated(reusedTokenId, activeTokenId);
     RefreshSession reused = adapter.findByHashForUpdate("d".repeat(64)).orElseThrow();
 
@@ -109,13 +109,13 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                   and event_type = 'TOKEN_REFRESH'
                   and result = 'FAILURE'
                   and reason_code = 'TOKEN_REUSE_DETECTED'
                 """,
                 Integer.class,
-                accountId))
+                publicId))
         .isOne();
   }
 
@@ -125,8 +125,8 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
     UUID publicId = UUID.fromString("c8f7975b-6601-4bea-a448-dfd630a7f983");
     Long accountId = createAccount(publicId, "refresh-logout@example.com", "ACTIVE");
     UUID familyId = UUID.fromString("33f8ae96-1ef1-4c97-b4de-3b239284d19c");
-    Long logoutTokenId = createRefreshToken(accountId, "f".repeat(64), familyId);
-    Long otherTokenId = createRefreshToken(accountId, "0".repeat(64), familyId);
+    Long logoutTokenId = createRefreshToken(publicId, "f".repeat(64), familyId);
+    Long otherTokenId = createRefreshToken(publicId, "0".repeat(64), familyId);
     RefreshSession current = adapter.findByHashForUpdate("f".repeat(64)).orElseThrow();
 
     adapter.revokeForLogout(current, NOW);
@@ -154,13 +154,13 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                   and event_type = 'LOGOUT'
                   and result = 'SUCCESS'
                   and metadata = '{}'::jsonb
                 """,
                 Integer.class,
-                accountId))
+                publicId))
         .isOne();
   }
 
@@ -178,15 +178,15 @@ class RefreshTokenPersistenceAdapterTest extends PostgreSqlIntegrationTestSuppor
         status);
   }
 
-  private Long createRefreshToken(Long accountId, String tokenHash, UUID familyId) {
+  private Long createRefreshToken(UUID accountPublicId, String tokenHash, UUID familyId) {
     return jdbcTemplate.queryForObject(
         """
-        insert into refresh_token (account_id, token_hash, family_id, issued_at, expires_at)
+        insert into refresh_token (account_public_id, token_hash, family_id, issued_at, expires_at)
         values (?, ?, ?, ?, ?)
         returning id
         """,
         Long.class,
-        accountId,
+        accountPublicId,
         tokenHash,
         familyId,
         Timestamp.from(NOW.minusSeconds(60)),

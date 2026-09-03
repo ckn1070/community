@@ -112,7 +112,8 @@ record로 변환할 수 있고, 로그인 실패처럼 보안 추적용 사실�
 - event type·result·reason taxonomy 의미는 현재 Blocked인 `001-auth-event-taxonomy-redesign`과
   충돌시키지 않고 현재 enum·constraint를 보존합니다. 다만 module 간 내부 DB id 금지를 위해
   `ADMIN_INVITATION_ACCEPTED.invitedByAccountId` metadata는
-  `invitedByAccountPublicId`로 바꾸고 기존 JSON row를 account join으로 backfill합니다.
+  `invitedByAccountPublicId`로 바꿉니다. 선택한 DB 초기화 전환에는 기존 JSON row가 없으므로
+  backfill을 만들지 않습니다.
 - 보존 기간·조회 API·보안 알림은 기존 backlog 범위이며 이번 구조 이동으로 결정하지 않습니다.
 
 ## 결정 3. Account 내부 전술 모델
@@ -134,40 +135,38 @@ JPA 상태를 직접 조합하지 않게 합니다.
 `notification`, `shared`, `config`에는 현재 독립 업무 상태가 없으므로 Aggregate·Repository를
 추가하지 않습니다. 이 생략은 DDD 미적용이 아니라 source에 근거한 전술 패턴 `해당 없음`입니다.
 
-## 데이터 전환
+## 결정 4. 데이터 전환 방식
 
-### `refresh_token`
+**결정 질문:** `refresh_token`과 `auth_event`가 account 내부 id 대신 public id만 참조하는
+같은 최종 schema로 이동할 때, 기존 data와 구 application 호환성을 유지할 것인가, 전체 DB를
+초기화하고 최종 schema를 처음부터 만들 것인가?
 
-Context 밖 account 내부 id를 session 모델에 유지하지 않도록 `account_public_id UUID`로
-전환합니다.
+**공통 전제:** 두 후보 모두 최종적으로 `refresh_token.account_public_id UUID NOT NULL`과
+nullable `auth_event.account_public_id UUID`만 유지하며, 구 `account_id` FK·column과 호환
+trigger·function은 남기지 않습니다.
 
-1. Expand migration에서 nullable `account_public_id`와 index를 추가하고 기존 `account_id`
-   join으로 기존 row를 backfill합니다. 구 application이 새 row를 계속 쓸 수 있도록 이
-   단계에서는 `NOT NULL`을 적용하지 않습니다.
-2. Expand migration의 임시 DB trigger는 old writer가 `account_id`만 주면 account table에서
-   public id를 채우고, new writer가 `account_public_id`만 주면 legacy `account_id`를 채웁니다.
-   Application module은 내부 id를 전달하거나 account table을 join하지 않습니다. Trigger는
-   두 값이 모두 주어졌는데 같은 account가 아니면 write를 거부합니다.
-3. 전환 release는 public id만 쓰고 public id를 읽습니다. Old application rollback도 trigger가
-   legacy write를 public id와 함께 저장하므로 두 방향이 동작합니다.
-4. Trigger 적용 전이나 비정상 우회로 생긴 null row는 새 forward reconciliation migration이
-   backfill합니다. Reconciliation 완료와 구 application 제거가 확인된 뒤에만
-   `account_public_id NOT NULL`을 적용합니다.
-5. 별도 contract migration에서 compatibility trigger와 `account_id` FK·column을 제거합니다.
-   NOT NULL·trigger·구 column 제거는 application 전환 commit과 분리합니다.
+| 비교 축 | A. expand/contract 호환 전환 | B. DB 초기화 후 최종 schema 재생성 |
+| --- | --- | --- |
+| 적용 방식 | nullable public id 추가·backfill 뒤 구 application과 새 application을 함께 지원하고, 관찰 후 contract migration을 실행합니다. | 모든 적용 환경의 DB와 Flyway 이력을 폐기한 뒤 V1부터 수정된 migration을 실행합니다. |
+| 임시 구조·코드 | 양방향 identity trigger·function, 구·신 column과 FK·index, reconciliation이 필요합니다. | 임시 trigger·function·dual write·backfill이 없습니다. |
+| 추가 작업 | expand migration, application 전환 release, rollback 관찰, reconciliation, 별도 contract migration과 제거 검증이 필요합니다. | V6·V7을 최종 schema로 수정하고 전환 전용 migration을 제거한 뒤 빈 PostgreSQL 재생성을 검증합니다. |
+| data·rollback | 기존 data와 구 image rollback을 유지하지만 중간 schema와 임시 객체를 운영해야 합니다. | 기존 data와 구 image rollback을 포기하며 초기화 대상 환경 전체가 같은 시점에 재생성돼야 합니다. |
+| 실패 경계 | dual identity 불일치, trigger 동작, backfill 누락과 contract 시점 오판이 추가됩니다. | 초기화 누락 환경은 checksum·missing migration으로 실패하며, 재생성 전 backup 외 data 복구 경로가 없습니다. |
 
-### `auth_event`
+**선택: B. DB 초기화 후 최종 schema 재생성.** 현재 production data가 없고 사용자가 이번에
+RDS DB 자체를 초기화하기로 확정했으므로 기존 data·구 application rollback을 보존할 이유가
+없습니다. V6은 `refresh_token`을 처음부터 public id `NOT NULL` FK로 만들고, V7은 미식별
+로그인 실패를 위해 nullable public id FK로 만듭니다. 전환만을 위해 존재하던 migration과
+trigger·function·구 column·구 index는 제거합니다.
 
-같은 dual-write·reconciliation 방식으로 nullable `account_public_id`를 추가·backfill하고
-`securityaudit` writer로 전환합니다. Account를 특정하지 못하는 로그인 실패는 contract 뒤에도
-null을 허용하므로, subject 존재 여부와 column nullability를 event별 test로 구분합니다. 기존
-`account_id` 제거는 metadata public-id 전환과 운영 rollback 상태를 확인한 별도 contract
-단계입니다.
-
-Flyway applied migration을 수정하지 않습니다. Expand 단계가 실패하면 application 배포를
-중단하고 migration을 수정한 새 forward migration으로 복구합니다. Contract 전에는 이전
-image rollback이 가능하고, contract 뒤에는 schema를 되돌리지 않고 호환 application으로
-forward recovery합니다.
+- 감수 비용·위험: 초기화 대상에서 빠진 지속 DB는 수정된 versioned migration과 호환되지
+  않습니다. 따라서 이 결정은 이번 RDS 초기화에만 적용하며 반복 운영 절차로 일반화하지 않습니다.
+- 배제 대안: A는 data와 구 image rollback이 필요한 운영 환경에는 적합하지만, 현재 조건에서는
+  임시 DB 객체와 후속 contract 작업만 추가합니다.
+- 최종 도달 조건: 빈 PostgreSQL에 V1부터 최신 migration을 적용했을 때 두 table에 public id
+  column만 존재하고 transition trigger·function이 0개이며 전체 integration test가 통과합니다.
+- 재검토 조건: DB 초기화 전에 보존해야 할 data나 동시에 실행할 구 application이 발견되면
+  migration 수정을 중단하고 A를 다시 검토합니다.
 
 ## Transaction과 실패 계약
 

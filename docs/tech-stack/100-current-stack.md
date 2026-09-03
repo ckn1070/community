@@ -36,7 +36,7 @@
 
 - PostgreSQL JDBC driver
 - PostgreSQL용 Flyway database module
-- Flyway V1~V17 account/auth·catalog schema
+- Flyway V1~V23 account/auth·catalog·community·notification·moderation·media schema
 
 ## Test
 

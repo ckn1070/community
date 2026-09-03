@@ -90,7 +90,8 @@ class RegisterMemberApiIntegrationTest extends PostgreSqlIntegrationTestSupport 
                 """
                 select count(*)
                 from auth_event
-                where account_id = ? and event_type = 'ACCOUNT_SIGN_UP' and result = 'SUCCESS'
+                where account_public_id = (select public_id from account where id = ?)
+                  and event_type = 'ACCOUNT_SIGN_UP' and result = 'SUCCESS'
                 """,
                 Integer.class,
                 accountId))
@@ -114,7 +115,7 @@ class RegisterMemberApiIntegrationTest extends PostgreSqlIntegrationTestSupport 
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'EMAIL_VERIFICATION_REQUEST'
                 """,
                 Integer.class,

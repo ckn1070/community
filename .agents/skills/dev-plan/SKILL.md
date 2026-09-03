@@ -75,6 +75,9 @@ description: "사용자가 실제 개발 전에 계획 문서 자체를 요청�
 - 배포, 설정, 관측성, 장애 대응과 복구
 - test 전략, fixture, 검증 환경과 품질 gate
 - 호환성, 전환, 점진 배포, 되돌리기와 제거
+- 목표 구조와 독립적으로 선택 가능한 전환 방식. 후보별 임시 trigger·function·column·
+  compatibility adapter·routing·dual write·backfill, 추가 migration·release·관찰·contract 제거,
+  data 폐기와 rollback 책임
 - 문서, 운영 책임, 소유권과 영구 SOT
 
 하위 계획 다수를 무효화할 수 있는 공통 전제는 downstream 상세화 전에 가장 작은 실제
@@ -168,6 +171,12 @@ test·관측성, 비용·소유권과 사용자 경험 중 결론을 바꾸는 �
 경우에만 artifact 후보를 한 번에 반영해 source-first로 대조한다. 대조 뒤 남은 결정이나 새
 사용자 소유 결과가 있으면 exact 범위로 한 번에 제시해 묻는다. 없고 마지막 답변이 값의
 채택·반영을 긍정했다면 같은 원문으로 현재 단계를 닫고 다음 의존 블록이나 다음 단계를 연다.
+
+같은 목표 상태에 도달하는 직접 전환·호환 전환·환경 초기화 전환이 둘 이상이면 전환 방식을
+목표 구조와 별도 결정 축으로 만든다. 후보에만 필요한 임시 DB 객체·dual write·backfill,
+compatibility adapter·routing, 추가 release·migration·관찰·제거 작업은 조건부 후손으로
+숨기지 않고 선택 전 비교표의 실제 비용과 실패 표면으로 공개한다. 일회성 초기화 조건은 공용
+운영 절차로 일반화하지 않는다.
 
 후속 피드백은 [설계 피드백 워크플로우](../../../docs/workflow/120-design-feedback-workflow.md)로
 정규화한다. 직접 취소·대체되지 않은 사용자 확정 요구와 결정은 같은 값·권위로 유지한다.

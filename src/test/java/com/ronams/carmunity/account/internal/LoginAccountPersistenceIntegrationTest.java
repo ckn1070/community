@@ -63,7 +63,7 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
 
     assertThat(
             jdbcTemplate.queryForObject(
-                "select count(*) from refresh_token where account_id = ?",
+                "select count(*) from refresh_token where account_public_id = (select public_id from account where id = ?)",
                 Integer.class,
                 internalAccountId))
         .isZero();
@@ -101,7 +101,7 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
 
     assertThat(
             jdbcTemplate.queryForObject(
-                "select count(*) from refresh_token where account_id = ?",
+                "select count(*) from refresh_token where account_public_id = (select public_id from account where id = ?)",
                 Integer.class,
                 internalAccountId))
         .isZero();
@@ -120,7 +120,8 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
                 """
                 select count(*)
                 from auth_event
-                where account_id = ? and event_type = 'PASSWORD_LOGIN' and result = 'SUCCESS'
+                where account_public_id = (select public_id from account where id = ?)
+                  and event_type = 'PASSWORD_LOGIN' and result = 'SUCCESS'
                 """,
                 Integer.class,
                 internalAccountId))
@@ -155,7 +156,7 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
                 """
                 select identifier_hash
                 from auth_event
-                where account_id = ?
+                where account_public_id = (select public_id from account where id = ?)
                   and event_type = 'PASSWORD_LOGIN'
                   and result = 'FAILURE'
                   and reason_code = 'PASSWORD_MISMATCH'
@@ -165,7 +166,7 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
         .isEqualTo(identifierHash);
   }
 
-  /** account를 특정하지 못한 실패는 account_id 없이 identifier_hash만 남겨 원문 email을 저장하지 않습니다. */
+  /** account를 특정하지 못한 실패는 account public id 없이 identifier_hash만 남겨 원문 email을 저장하지 않습니다. */
   @Test
   void recordsUnknownPasswordLoginFailureWithoutAccountId() {
     String identifierHash = "2".repeat(64);
@@ -177,7 +178,7 @@ class LoginAccountPersistenceIntegrationTest extends PostgreSqlIntegrationTestSu
                 """
                 select count(*)
                 from auth_event
-                where account_id is null
+                where account_public_id is null
                   and identifier_hash = ?
                   and event_type = 'PASSWORD_LOGIN'
                   and result = 'FAILURE'

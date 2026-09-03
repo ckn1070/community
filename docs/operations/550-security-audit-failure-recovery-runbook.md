@@ -25,12 +25,12 @@
 
 ## 2. DB 적용 상태 확인
 
-읽기 전용 조회로 V13 이후 migration과 최근 event를 확인합니다.
+읽기 전용 조회로 account/auth baseline migration과 최근 event를 확인합니다.
 
 ```sql
 SELECT version, description, success
 FROM flyway_schema_history
-WHERE version IN ('13', '14')
+WHERE version IN ('6', '7')
 ORDER BY installed_rank;
 
 SELECT id, account_public_id, event_type, result, reason_code, occurred_at

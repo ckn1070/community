@@ -63,7 +63,7 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             """
             SELECT version
             FROM flyway_schema_history
-            WHERE version::integer BETWEEN 15 AND 19
+            WHERE version::integer BETWEEN 13 AND 17
             ORDER BY installed_rank
             """,
             String.class);
@@ -72,12 +72,12 @@ class CatalogSchemaMigrationTest extends PostgreSqlIntegrationTestSupport {
             """
             SELECT description
             FROM flyway_schema_history
-            WHERE version::integer BETWEEN 15 AND 19
+            WHERE version::integer BETWEEN 13 AND 17
             ORDER BY installed_rank
             """,
             String.class);
 
-    assertThat(versions).containsExactly("15", "16", "17", "18", "19");
+    assertThat(versions).containsExactly("13", "14", "15", "16", "17");
     assertThat(descriptions)
         .containsExactly(
             "create car product hierarchy",

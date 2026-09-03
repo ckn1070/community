@@ -147,7 +147,7 @@ Java module은 Bounded Context를 구현할 수 있는 구조적 수단이지만
 | 업무 후보 → `shared` | 안정된 오류 공개 계약을 사용합니다. | `shared`는 업무 Context가 아니라 공통 계약 경계입니다. |
 | 애플리케이션 → `config` | 전역 Spring wiring과 HTTP·Security 조립을 적용받습니다. | `config`는 업무 Context가 아니라 composition 경계입니다. |
 
-실제 package 의존, writer와 expand 전환 상태는 [210 모듈 지도](210-module-map.md)가
+실제 package 의존, writer와 최종 persistence 상태는 [210 모듈 지도](210-module-map.md)가
 소유합니다. table·transaction별 상세는 [220 Account/Auth 데이터 모델](220-account-auth-data-model.md)이
 소유합니다. 조직적 Context 관계 유형은 현재 문서에서 추측해 확정하지 않습니다.
 

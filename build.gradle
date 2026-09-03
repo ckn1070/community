@@ -81,7 +81,7 @@ jooq {
 				properties {
 					property {
 						key = 'scripts'
-						value = 'src/main/resources/db/migration/V1[5-9]__*.sql'
+						value = 'src/main/resources/db/migration/V1[3-7]__*.sql'
 					}
 					property {
 						key = 'sort'

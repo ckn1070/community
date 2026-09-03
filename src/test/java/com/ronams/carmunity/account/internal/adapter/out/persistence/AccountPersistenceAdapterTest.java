@@ -75,10 +75,10 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
                 """
                 select count(*)
                 from auth_event
-                where account_id = ? and event_type = 'ACCOUNT_SIGN_UP' and result = 'SUCCESS'
+                where account_public_id = ? and event_type = 'ACCOUNT_SIGN_UP' and result = 'SUCCESS'
                 """,
                 Integer.class,
-                accountId))
+                account.publicId()))
         .isOne();
   }
 
@@ -123,22 +123,22 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
                 """
                 select event_type
                 from auth_event
-                where account_id = ? and result = 'SUCCESS'
+                where account_public_id = ? and result = 'SUCCESS'
                 order by event_type
                 """,
                 String.class,
-                accountId))
+                account.publicId()))
         .containsExactly("PASSWORD_CHANGE_REQUIREMENT", "ROLE_CHANGE");
     assertThat(
             jdbcTemplate.queryForList(
                 """
                 select reason_code
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                 order by reason_code
                 """,
                 String.class,
-                accountId))
+                account.publicId()))
         .containsExactly("INITIAL_ADMIN_BOOTSTRAP", "SUPER_ADMIN_BOOTSTRAP");
     assertThat(adapter.findByPublicId(account.publicId()).orElseThrow().passwordChangeRequired())
         .isTrue();
@@ -177,7 +177,7 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
     jdbcTemplate.update(
         "update account_password_credential set password_change_required = true where account_id = ?",
         accountId);
-    createRefreshToken(accountId, "a".repeat(64));
+    createRefreshToken(account.publicId(), "a".repeat(64));
 
     adapter.changePassword(account.publicId(), PasswordHash.from("{argon2}new-password-hash"), NOW);
 
@@ -199,21 +199,21 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
         .isFalse();
     assertThat(
             jdbcTemplate.queryForObject(
-                "select revoked_reason from refresh_token where account_id = ?",
+                "select revoked_reason from refresh_token where account_public_id = ?",
                 String.class,
-                accountId))
+                account.publicId()))
         .isEqualTo("PASSWORD_CHANGED");
     assertThat(
             jdbcTemplate.queryForObject(
                 """
                 select reason_code
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                   and event_type = 'PASSWORD_CHANGE'
                   and result = 'SUCCESS'
                 """,
                 String.class,
-                accountId))
+                account.publicId()))
         .isNull();
   }
 
@@ -226,7 +226,7 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
     jdbcTemplate.update(
         "update account_password_credential set password_change_required = true where account_id = ?",
         accountId);
-    createRefreshToken(accountId, "b".repeat(64));
+    createRefreshToken(account.publicId(), "b".repeat(64));
 
     adapter.resetPassword(accountId, PasswordHash.from("{argon2}reset-password-hash"), NOW);
 
@@ -252,21 +252,21 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
         .isFalse();
     assertThat(
             jdbcTemplate.queryForObject(
-                "select revoked_reason from refresh_token where account_id = ?",
+                "select revoked_reason from refresh_token where account_public_id = ?",
                 String.class,
-                accountId))
+                account.publicId()))
         .isEqualTo("PASSWORD_CHANGED");
     assertThat(
             jdbcTemplate.queryForObject(
                 """
                 select count(*)
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                   and event_type = 'PASSWORD_RESET_COMPLETED'
                   and result = 'SUCCESS'
                 """,
                 Integer.class,
-                accountId))
+                account.publicId()))
         .isOne();
   }
 
@@ -290,12 +290,12 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
                 """
                 select reason_code
                 from auth_event
-                where account_id = ?
+                where account_public_id = ?
                   and event_type = 'PASSWORD_CHANGE'
                   and result = 'FAILURE'
                 """,
                 String.class,
-                accountId))
+                account.publicId()))
         .isEqualTo("CURRENT_PASSWORD_MISMATCH");
   }
 
@@ -368,13 +368,13 @@ class AccountPersistenceAdapterTest extends PostgreSqlIntegrationTestSupport {
         "select id from account where public_id = ?", Long.class, publicId);
   }
 
-  private void createRefreshToken(Long accountId, String tokenHash) {
+  private void createRefreshToken(UUID accountPublicId, String tokenHash) {
     jdbcTemplate.update(
         """
-        insert into refresh_token (account_id, token_hash, family_id, issued_at, expires_at)
+        insert into refresh_token (account_public_id, token_hash, family_id, issued_at, expires_at)
         values (?, ?, ?::uuid, ?, ?)
         """,
-        accountId,
+        accountPublicId,
         tokenHash,
         UUID.randomUUID().toString(),
         java.sql.Timestamp.from(NOW.minusSeconds(60)),

@@ -105,6 +105,12 @@ SOT입니다. Reference는 migration에서 파생되며 둘이 충돌하면 migr
 
 ## 현재 알려진 Migration 호환성 결함
 
+[009 비카탈로그 DDD 보완](../work-items/improvements/2026/009-non-catalog-ddd-hardening.md)은
+프로덕션 데이터가 없고 모든 적용 환경의 DB와 `flyway_schema_history`를 폐기한다는 사용자
+결정에 따라 V6·V7 baseline을 최종 schema로 다시 정의합니다. 기존 DB를 유지한 채 이 source를
+적용하면 안 되며, DB 초기화와 V1부터의 재적용이 하나의 전환 단위입니다. 이 예외는 이후
+versioned migration 수정이나 DB 초기화를 허용하는 반복 가능한 운영 절차가 아닙니다.
+
 Auth Event taxonomy 변경 과정에서 이미 repository에 추가돼 있던 `V7__create_auth_event_table.sql`과 `V10__extend_auth_event_for_email_verification.sql`이 직접 수정됐고 별도 forward migration은 추가되지 않았습니다. 수정본으로 처음 생성한 DB는 현재 taxonomy를 갖지만, 원래 checksum으로 두 version을 적용한 지속 DB는 Flyway validation 실패와 기존 event row 전환 누락 위험이 있습니다.
 
 이 상태에서 `flyway repair`, checksum 수동 변경 또는 기존 migration 재수정을 먼저 수행하지

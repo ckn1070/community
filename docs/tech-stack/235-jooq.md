@@ -16,7 +16,7 @@
 
 ## Code generation
 
-`jooqCodegen`은 카탈로그 schema를 소유하는 Flyway V15~V19를 `DDLDatabase`로 읽어
+`jooqCodegen`은 카탈로그 schema를 소유하는 Flyway V13~V17을 `DDLDatabase`로 읽어
 `build/generated-sources/jooq`에 Java model을 생성합니다. 생성물은 build artifact이므로 Git에
 commit하지 않습니다. 생성 package는
 `catalog.internal.adapter.out.persistence.jooq.generated`로 두어 Spring Modulith가 독립 업무
@@ -24,8 +24,9 @@ commit하지 않습니다. 생성 package는
 `jooqCodegen` 뒤에 실행되어 migration을 해석할 수 없는 상태와 생성 model compile 오류를 먼저
 드러냅니다.
 
-전체 V1~V17을 입력하지 않습니다. V1~V12는 카탈로그 조회가 소비하지 않는 account·auth
-schema이고, 일부 PostgreSQL 전용 DDL은 in-memory DDL simulation 대상이 아닙니다. 이 범위는
+전체 V1~V23을 입력하지 않습니다. V1~V12와 V18~V23은 카탈로그 조회가 소비하지 않는
+account·auth·seed·community 계열 schema이고, 일부 PostgreSQL 전용 DDL은 in-memory DDL
+simulation 대상이 아닙니다. 이 범위는
 편의상 줄인 것이 아니라 카탈로그 adapter의 schema owner와 code generation 입력을 일치시킨
 것입니다.
 

@@ -1,6 +1,7 @@
 # Community 관련 Schema Reference
 
-이 문서는 Flyway `V13`~`V15`를 적용한 뒤의 일반 커뮤니티 관련 현재 물리 schema를 요약합니다.
+이 문서는 Flyway `V20`~`V23`을 적용한 뒤의 일반 커뮤니티·알림·moderation·media 물리
+schema를 요약합니다.
 실행 source of truth는 migration SQL입니다.
 
 ## 소유 경계

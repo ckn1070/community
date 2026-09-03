@@ -71,7 +71,7 @@ index·조회 경로와 현재 설계 이유는
 
 카탈로그 read side만 Spring Boot 4.0.6이 관리하는 jOOQ 3.19.32를 사용하고
 account·authentication의 변경 persistence는
-Spring Data JPA를 유지합니다. Flyway V15~V19를 `DDLDatabase` 입력으로 사용해 compile 전에
+Spring Data JPA를 유지합니다. Flyway V13~V17을 `DDLDatabase` 입력으로 사용해 compile 전에
 schema model을 생성하며 generated source는 `build/` 아래에 두고 commit하지 않습니다.
 
 이 선택으로 얻는 구체적 장점은 다음과 같습니다.
@@ -119,7 +119,7 @@ wrapper 호출이 아니라 jOOQ execute listener에서 실제 statement를 관�
 
 - `compileJava` 전에 code generation이 실행되므로 build 시간이 늘어납니다. catalog migration
   수가 커져 증분 build 비용이 문제가 되면 generation cache와 task input을 측정해 조정합니다.
-- 전체 migration V1~V19가 아니라 catalog owner인 V15~V19만 생성 입력입니다. 다른 schema를
+- 전체 migration V1~V23이 아니라 catalog owner인 V13~V17만 생성 입력입니다. 다른 schema를
   query하기 시작하면 해당 owner migration을 명시적으로 추가합니다.
 - raw SQL column drift가 실제 결함으로 반복되면 해당 query를 생성 field 기반 DSL로 옮깁니다.
 - 중첩 graph의 수동 조립 비용이 병목으로 측정되면 jOOQ `MULTISET`, MyBatis `resultMap`, 현재
@@ -673,14 +673,14 @@ model year 선택은 `(generation_id, market_code, model_year, edition_code)` UN
 
 | migration | 함께 생성하는 table | 이 경계에서 함께 실패·재시도하는 이유 |
 | --- | --- | --- |
-| `V15__create_car_product_hierarchy.sql` | `car_brand`, `car_model`, `car_generation`, `car_model_year` | 뒤의 모든 카탈로그 행이 의존하는 제품 식별 계층이며 일부 계층만으로는 조회 입력이 성립하지 않음 |
-| `V16__create_car_powertrain_schema.sql` | `car_powertrain`, `car_powertrain_component` | 동력계통 본체와 반복 장치가 하나의 기술 사양을 구성함 |
-| `V17__create_car_vehicle_offering.sql` | `car_vehicle_variant`, `car_configuration` | 기술 변형과 공개 가능한 판매 구성이 함께 있어야 현재 조회 대상이 됨 |
-| `V18__create_car_pricing_and_option_history.sql` | `car_configuration_price`, `car_configuration_option` | 판매 구성에 종속된 두 기준일 이력을 같은 상업 정보 단계에서 복구함 |
-| `V19__create_car_certification.sql` | `car_certification` | 판매 구성과 독립적으로 보완·재시도할 수 있는 조건별 측정 정보임 |
+| `V13__create_car_product_hierarchy.sql` | `car_brand`, `car_model`, `car_generation`, `car_model_year` | 뒤의 모든 카탈로그 행이 의존하는 제품 식별 계층이며 일부 계층만으로는 조회 입력이 성립하지 않음 |
+| `V14__create_car_powertrain_schema.sql` | `car_powertrain`, `car_powertrain_component` | 동력계통 본체와 반복 장치가 하나의 기술 사양을 구성함 |
+| `V15__create_car_vehicle_offering.sql` | `car_vehicle_variant`, `car_configuration` | 기술 변형과 공개 가능한 판매 구성이 함께 있어야 현재 조회 대상이 됨 |
+| `V16__create_car_pricing_and_option_history.sql` | `car_configuration_price`, `car_configuration_option` | 판매 구성에 종속된 두 기준일 이력을 같은 상업 정보 단계에서 복구함 |
+| `V17__create_car_certification.sql` | `car_certification` | 판매 구성과 독립적으로 보완·재시도할 수 있는 조건별 측정 정보임 |
 
-기능 전체를 V13 하나에 두면 뒤쪽 DDL 오류도 11개 테이블 전체를 rollback·재적용하게 되고,
-서로 다른 다섯 책임이 한 검토 단위에 섞입니다. 반대로 테이블마다 V13~V23으로 나누면
+기능 전체를 migration 하나에 두면 뒤쪽 DDL 오류도 11개 테이블 전체를 rollback·재적용하게 되고,
+서로 다른 다섯 책임이 한 검토 단위에 섞입니다. 반대로 테이블마다 migration을 하나씩 나누면
 application이 소비하지 않는 부모만의 중간 checkpoint가 생기고 version과 검토 단위만
 늘어납니다. FK 선행 순서는 지키되 내부 테이블이 함께 있어야 의미가 완성되는 다섯 단위를
 각각 PostgreSQL transaction과 Flyway 실패 재시작 경계로 선택했습니다.

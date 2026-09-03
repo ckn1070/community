@@ -6,13 +6,13 @@ In Progress
 
 ## 결과
 
-catalog 공개 enum과 모듈 경계, Flyway V15~V19의 11개 테이블·133개 named constraint·4개 조회
+catalog 공개 enum과 모듈 경계, Flyway V13~V17의 11개 테이블·133개 named constraint·4개 조회
 index, 대표 fixture와 runtime 실제 statement 기반 SELECT-only 권한
 검증에 이어 jOOQ 기반 브랜드 목록·모델 page·모델 상세 조회 persistence와 읽기 전용 application
 경계와 모델 resource 단위 Controller를 포함한 세 공개 GET endpoint까지 구현했습니다. 검색
 정규화·literal escape, 같은
 configuration filter, 기준일 가격, 대표 연식 선택과 목록 2개·상세 5개 고정 SQL 상한을 실제
-PostgreSQL로 검증했습니다. Flyway V15~V19에서 build-time schema model을 생성하며, 첫 진입
+PostgreSQL로 검증했습니다. Flyway V13~V17에서 build-time schema model을 생성하며, 첫 진입
 무필터 모델 page, 선택 filter, 목록에서 상세로 이어지는
 대표 연식, RFC 9457 오류, GET 전용 anonymous allow-list와 OpenAPI 3.1 nullability 계약도
 자동 검증합니다. 실제 production 데이터는 아직 없습니다.
@@ -74,7 +74,7 @@ schema와 읽기 전용 API를 구현합니다. 현재 판매 차량뿐 아니�
 | 1. 기능 범위 | 공개 브랜드·모델·상세 조회와 filter | 완료 | 아래 포함·제외 범위가 유지됨 |
 | 2. 실제 자료 조사 | ICE/HEV·MPV·BEV·FCEV 정보 분류 | 완료 | 공식 자료가 요구하는 관계와 칼럼을 설명함 |
 | 3. DB 설계 | 정확한 11개 테이블, 칼럼, FK·UNIQUE·CHECK·index | 완료 | 상세 설계가 독립 검증을 통과함 |
-| 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V15~V19·133개 제약·4개 index·대표 fixture·실제 권한 검증 통과 |
+| 4. schema 개발 | Flyway migration과 실제 PostgreSQL test | **완료** | V13~V17·133개 제약·4개 index·대표 fixture·실제 권한 검증 통과 |
 | 5. 조회 개발 | 목록·상세 persistence와 application 규칙 | **완료** | filter·가격·과거 조회와 목록 2개·상세 5개 SQL 상한, 대표 SQL 실행 계획 검증 통과 |
 | 6. 공개 API 개발 | Controller·Security·OpenAPI | **완료** | 비회원 세 GET과 오류 계약 통과 |
 | 7. 전체 검증 | `check`, 영구 문서, 독립 구현 검증 | **완료** | 351개 test·Spring Modulith·ArchUnit·JaCoCo·Spotless와 독립 검증 통과 |
@@ -315,21 +315,21 @@ configuration을 대상으로 목록과 같은 상태·출시일·연식·판매
 
 완료 결과는 schema 구현이 만족해야 할 자동화된 입력·실패 계약입니다.
 
-#### 작업 2. V15~V19에 카탈로그 테이블을 구현합니다
+#### 작업 2. V13~V17에 카탈로그 테이블을 구현합니다
 
 - 현재 최신 V12 다음에서 브랜드부터 인증까지 11개 테이블을 FK 의존 순서의 5개
   migration으로 만듭니다.
 
 | migration | 함께 생성하는 table | 이 경계에서 함께 실패·재시도하는 이유 |
 | --- | --- | --- |
-| `V15__create_car_product_hierarchy.sql` | `car_brand`, `car_model`, `car_generation`, `car_model_year` | 뒤의 모든 카탈로그 행이 의존하는 제품 식별 계층이며 일부 계층만으로는 조회 입력이 성립하지 않음 |
-| `V16__create_car_powertrain_schema.sql` | `car_powertrain`, `car_powertrain_component` | 동력계통 본체와 반복 장치가 하나의 기술 사양을 구성함 |
-| `V17__create_car_vehicle_offering.sql` | `car_vehicle_variant`, `car_configuration` | 기술 변형과 공개 가능한 판매 구성이 함께 있어야 현재 조회 대상이 됨 |
-| `V18__create_car_pricing_and_option_history.sql` | `car_configuration_price`, `car_configuration_option` | 판매 구성에 종속된 두 기준일 이력을 같은 상업 정보 단계에서 복구함 |
-| `V19__create_car_certification.sql` | `car_certification` | 판매 구성과 독립적으로 보완·재시도할 수 있는 조건별 측정 정보임 |
+| `V13__create_car_product_hierarchy.sql` | `car_brand`, `car_model`, `car_generation`, `car_model_year` | 뒤의 모든 카탈로그 행이 의존하는 제품 식별 계층이며 일부 계층만으로는 조회 입력이 성립하지 않음 |
+| `V14__create_car_powertrain_schema.sql` | `car_powertrain`, `car_powertrain_component` | 동력계통 본체와 반복 장치가 하나의 기술 사양을 구성함 |
+| `V15__create_car_vehicle_offering.sql` | `car_vehicle_variant`, `car_configuration` | 기술 변형과 공개 가능한 판매 구성이 함께 있어야 현재 조회 대상이 됨 |
+| `V16__create_car_pricing_and_option_history.sql` | `car_configuration_price`, `car_configuration_option` | 판매 구성에 종속된 두 기준일 이력을 같은 상업 정보 단계에서 복구함 |
+| `V17__create_car_certification.sql` | `car_certification` | 판매 구성과 독립적으로 보완·재시도할 수 있는 조건별 측정 정보임 |
 
-기능 전체를 V15 하나에 두면 뒤쪽 DDL 오류도 11개 테이블 전체를 rollback·재적용하게 되고,
-검토 시 서로 다른 다섯 책임이 한 파일에 섞입니다. 반대로 테이블마다 V15~V25로 나누면
+기능 전체를 migration 하나에 두면 뒤쪽 DDL 오류도 11개 테이블 전체를 rollback·재적용하게 되고,
+검토 시 서로 다른 다섯 책임이 한 파일에 섞입니다. 반대로 테이블마다 migration을 하나씩 나누면
 application이 소비하지 않는 부모만의 중간 checkpoint가 생기고 version·검토 단위만 늘어납니다.
 따라서 FK 선행 순서는 유지하되, 내부 table이 함께 있어야 의미가 완성되는 다섯 단위마다
 PostgreSQL transaction과 Flyway 실패 재시작 지점을 둡니다.
