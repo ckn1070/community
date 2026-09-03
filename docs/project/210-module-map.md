@@ -73,10 +73,11 @@ securityaudit persistence ──> auth_event
 
 - `DddOwnershipSourceTest`가 `auth_event`·`refresh_token`의 단일 mapping과 `auth`의
   `account` table 직접 read 금지를 검증합니다.
-- V13·V14 expand migration은 기존 `account_id`와 새 `account_public_id`를 양방향 trigger로
-  동기화하고 불일치를 거부합니다. Application writer는 public id만 사용합니다.
-- 구 `account_id` column·FK·trigger 제거는 이전 application rollback이 필요 없다는 운영 관찰
-  뒤 별도 contract migration으로 수행합니다. 현재 expand 상태를 최종 contract처럼 쓰지 않습니다.
+- `refresh_token`과 `auth_event`는 account 내부 PK를 저장하지 않고 `account_public_id` FK만
+  사용합니다. V6·V7이 이 최종 schema를 직접 생성하며 전환용 trigger·function·legacy column은
+  존재하지 않습니다.
+- 이 baseline 재작성은 모든 적용 환경의 DB와 Flyway 이력을 폐기하는 009의 일회성 전환 선택을
+  전제로 합니다. 지속 DB에 적용할 일반적인 expand/contract 절차로 재사용하지 않습니다.
 
 각 module의 전략적·전술적 DDD 적용 판정과 현재 Context 후보 관계는
 [200 현재 프로젝트 아키텍처](200-current-architecture.md#현재-ddd-적용-판정)가

@@ -48,9 +48,11 @@ admin_invitation ── auth_role
 - PostgreSQL native enum 대신 `VARCHAR`와 `CHECK` constraint를 사용합니다.
 - IP 주소는 PostgreSQL `INET`을 사용합니다.
 - 실제 관리자 비밀번호는 migration에 seed하지 않고, 필수 role 기준값만 versioned migration으로 관리합니다.
-- 기존 migration을 수정하지 않고 새 versioned migration으로 schema를 변경합니다.
-- `refresh_token`과 `auth_event`는 expand 기간에 `account_id`와 `account_public_id`를 함께
-  유지합니다. 새 application writer는 public id만 사용하며 trigger가 구 column을 보완합니다.
+- 기존 migration을 수정하지 않고 새 versioned migration으로 schema를 변경하는 것을 기본으로
+  합니다. 009는 모든 적용 환경의 DB와 Flyway 이력을 폐기하는 일회성 전환을 선택했으므로
+  V6·V7 baseline을 최종 schema로 다시 정의한 예외입니다.
+- `refresh_token`과 `auth_event`는 `account_public_id`만 참조하며 전환용 `account_id`, trigger,
+  function 또는 dual-write 경로를 유지하지 않습니다.
 
 이 결정의 기술 근거는 [Flyway](../tech-stack/240-flyway.md)와 [PostgreSQL](../tech-stack/250-postgresql.md), 현재 적용 결과는 migration과 schema reference가 소유합니다.
 
@@ -78,7 +80,7 @@ provider 결과와 독립 감사 append 결과를 분리했으며, audit gap 복
 
 `refresh_token`은 `auth`, `auth_event`는 `securityaudit`만 JPA mapping·writer를 가집니다.
 `account`의 비밀번호 변경·재설정은 `CredentialChanged`를 동기 발행하고 `auth` listener가 같은
-transaction에서 active session을 폐기합니다. 물리 소유권과 expand 전환 상태의 canonical
+transaction에서 active session을 폐기합니다. 물리 소유권과 최종 schema 상태의 canonical
 설명은 [210 모듈 지도의 Persistence 소유권과 전환 상태](210-module-map.md#persistence-소유권과-전환-상태)가
 소유합니다.
 

@@ -215,8 +215,8 @@ refresh token 재발급 시점에는 account 상태와 role을 다시 조회합�
 이벤트별 생성 조건, `result`, `reason_code`, `metadata`, transaction 경계는 [120-auth-event-policy.md](120-auth-event-policy.md)를 기준으로 합니다.
 
 로그인 실패처럼 account를 특정하지 못하는 경우 `account_public_id`는 null일 수 있습니다.
-현재 expand 기간에는 compatibility를 위해 `account_id`도 유지하지만 application 계약에는
-노출하지 않습니다.
+`auth_event`는 account 내부 PK를 저장하지 않고 공개 계약과 같은 `account_public_id`만
+선택적으로 참조합니다.
 이 경우 `identifier_hash`를 사용해 원문 이메일을 남기지 않고 실패 시도를 추적합니다.
 `identifier_hash`는 JWT secret과 다른 HMAC-SHA256 secret으로 계산해야 합니다. 현재 application은
 각 secret의 최소 길이만 검증하고 두 값의 동일 여부는 거부하지 않습니다. 이 문서가 분리

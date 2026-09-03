@@ -11,12 +11,12 @@ Done
 `account`는 credential·verification/reset·invitation을 소유하며 구조 test와 PostgreSQL
 통합 test가 이 경계를 검증합니다.
 
-Public-id schema는 V13·V14 expand와 application 전환까지 완료했습니다. 구 `account_id`와
-compatibility trigger 제거는 rollback 관찰 뒤 별도 contract migration으로 남겼으며 현재
-완료 범위에 포함하지 않습니다.
+Public-id schema는 이번 RDS 초기화에 한정해 baseline migration을 최종 구조로 재작성했습니다.
+`refresh_token`과 `auth_event`에는 public id 참조만 남고, 전환용 V13·V14와 compatibility
+trigger·function·구 `account_id` column은 제거합니다.
 
 최종 검증은 Docker daemon 준비 확인 뒤
-`./gradlew check --no-daemon --rerun-tasks --console=plain`으로 수행했고 모든 task가
+`./gradlew check --no-daemon --console=plain`으로 수행했고 모든 task가
 통과했습니다. 독립 구현 검증은 단일 writer·transaction·public-id 전환·Domain 전이·Clock
 경계를, 독립 문서 검증은 owner·router·local link·현재 source 대조를 확인했습니다.
 
@@ -45,7 +45,7 @@ compatibility trigger 제거는 rollback 관찰 뒤 별도 contract migration으
 - `account`, `auth`, 신규 `securityaudit`, `notification`, `shared`, `config`의 경계 판정
 - refresh session과 security audit의 단일 writer 전환
 - account credential·verification·reset·invitation, auth session의 전술 모델 보완
-- public id 기반 expand/contract migration과 기존 transaction·보안 결과 보존
+- DB 초기화 뒤 public id 최종 schema를 직접 생성하는 baseline migration과 기존 transaction·보안 결과 보존
 - Spring Modulith·ArchUnit·source 구조 test 강화
 - domain·project·schema·module 문서의 구현 결과 동기화
 
@@ -70,9 +70,9 @@ compatibility trigger 제거는 rollback 관찰 뒤 별도 contract migration으
 | Session 규칙 모델링 | issue·rotate·reuse·logout과 금지 전이가 framework 없는 Domain test로 고정됩니다. |
 | Account 규칙 모델링 | verification·reset·invitation의 TTL·cooldown·terminal 전이·금지 전이가 Domain test로 고정됩니다. |
 | 보안 결과 보존 | 비밀번호 변경·reset과 session 폐기가 원자적이며 reuse·상태 거부 감사도 기존 401 뒤 남습니다. |
-| 호환 전환 | nullable public-id expand, 양방향 DB compatibility trigger, reconciliation과 구 application 제거를 거친 뒤에만 NOT NULL·trigger·내부 id column 제거를 수행합니다. |
+| 직접 전환 | 빈 DB에 V1부터 migration을 적용하면 public-id 최종 schema만 생성되고 구 account id column·trigger·function이 존재하지 않습니다. |
 | 기술 경계 절제 | `notification`, `shared`, `config`에 업무 Domain Model이 없고 업무 규칙 유입을 architecture test가 차단합니다. |
-| 전체 회귀 | module·architecture·migration·account/auth integration test와 `./gradlew check --no-daemon --rerun-tasks --console=plain`이 통과합니다. |
+| 전체 회귀 | module·architecture·migration·account/auth integration test와 `./gradlew check --no-daemon --console=plain`이 통과합니다. |
 | 문서 현재성 | DDD 판정, Context 후보, writer·transaction과 schema reference가 final source와 일치합니다. |
 
 ## 남은 결정
@@ -92,7 +92,7 @@ Agent 기술 결정이며 [상세 설계](009-non-catalog-ddd-hardening-design.m
 - 다른 Context 참조 식별자: 내부 DB id가 아닌 account public id
 - 전술 모델: 확인된 상태 전이가 있는 account/auth 생명주기에만 적용
 - 기술 경계: `notification`, `shared`, `config`는 DDD 전술 패턴 `해당 없음`
-- migration: expand → application 전환 → 관찰 → 별도 contract
+- migration: 이번 RDS 초기화에 한정한 baseline 재작성 → public-id 최종 schema 직접 생성
 - 공용 시간: `config` 소유 `Clock` bean을 account/auth가 주입받음
 
 근거와 배제 대안은 [009 상세 설계](009-non-catalog-ddd-hardening-design.md)를 기준으로 합니다.
@@ -135,14 +135,13 @@ Agent 기술 결정이며 [상세 설계](009-non-catalog-ddd-hardening-design.m
   JPA entity·repository를 제거합니다.
 - Bug 005의 provider 결과·audit 저장 실패 분리를 먼저 구현해 독립 append의 `FAILED` 결과가
   notification 실패로 다시 분류되지 않고 별도 audit gap 신호로 남게 합니다.
-- `account_public_id` nullable expand/backfill과 양방향 compatibility trigger를 추가하고 invitation actor
-  metadata의 내부 id를 public id로 migration합니다.
+- `auth_event`를 nullable `account_public_id` FK로 처음부터 생성하고 invitation actor metadata의
+  내부 id를 public id로 전환합니다.
 - Blocked인 taxonomy 개선 001과 migration 번호·constraint 변경 충돌을 먼저 대조합니다.
 
 검증·복구: 각 account/auth lifecycle에서 event 수·값·rollback/no-rollback을 PostgreSQL
-integration test로 검증합니다. 구 application rollback 중 생긴 null public-id row는 forward
-reconciliation migration으로 채우며, reconciliation과 구 application 제거 전에는 NOT NULL을
-적용하지 않습니다. Migration 실패는 applied file 수정 없이 forward migration으로 복구합니다.
+integration test로 검증합니다. 빈 DB 재생성 전 보존 data나 지속 DB가 발견되면 baseline
+재작성을 중단하고 상세 설계의 호환 전환 대안을 다시 엽니다.
 
 완료 결과: `auth_event` production writer와 mapping이 `securityaudit` 하나가 됩니다.
 
@@ -159,16 +158,14 @@ repository를 사용합니다.
 - `RefreshSession` Aggregate와 repository port를 만들고 issue·rotate·reuse·logout 전이를
   기존 policy 순서대로 옮깁니다.
 - 로그인 성공에서 auth가 refresh session을 저장하고 account에는 로그인 계측만 요청합니다.
-- nullable `account_public_id` expand/backfill과 compatibility trigger 후 auth의 `account` native SQL과
-  account의 refresh JPA mapping·repository를 제거합니다. Expand migration의 양방향 trigger가
-  old `account_id` write와 new public-id write를 서로 보완하고 불일치한 두 값을 거부합니다.
-  Auth production repository는 public id만 쓰며 account table을 join하지 않습니다. NOT NULL·
-  trigger·구 FK 제거는 rollback 관찰과 forward reconciliation 뒤 별도 contract로 남깁니다.
+- `refresh_token`을 `account_public_id NOT NULL` FK로 처음부터 생성하고 auth의 `account` native
+  SQL과 account의 refresh JPA mapping·repository를 제거합니다. Auth production repository는
+  public id만 쓰며 account table을 join하지 않습니다.
 - row lock, family 폐기와 `noRollbackFor` 의미를 유지합니다.
 
 검증·복구: 최초 발급, 동시 rotation 한 건 성공, 만료와 reuse 우선순위, logout 멱등성,
-account 상태 거부를 Domain·adapter·API test로 검증합니다. Contract 전 rollback은 이전 image와
-구 column을 사용합니다.
+account 상태 거부를 Domain·adapter·API test로 검증합니다. 초기화 뒤에는 구 column을 사용하는
+이전 image rollback을 지원하지 않습니다.
 
 완료 결과: `refresh_token` writer·상태 규칙·transaction owner가 모두 `auth`와 일치합니다.
 
@@ -260,12 +257,11 @@ test, 운영 runbook과 문서가 직접 소비합니다.
 - `550 Security Audit 장애 복구` runbook과 operations router를 추가해 append 실패 signal,
   복원 source 판정, audit gap 기록과 중단 조건을 소유하게 합니다. `430`은 qualification
   SQL 동기화만 소유합니다.
-- 관찰 기간 뒤 `account_id` contract migration을 독립 작업으로 실행할지 final data와 rollback
-  준비 상태로 판정합니다.
+- schema migration test가 구 account id column·transition trigger·function 부재와 public-id FK·
+  nullability를 검증합니다.
 
 검증·복구: focused test 뒤 전체 Gradle check, 문서 link·anchor·source 대조, 독립 개발 검증을
-수행합니다. Contract migration은 이전 image rollback이 더는 필요 없다는 별도 확인 전에는
-실행하지 않습니다.
+수행합니다. DB 초기화 전 지속 DB가 발견되면 migration 재작성을 적용하지 않습니다.
 
 완료 결과: 전략적 DDD 판정은 owner·협력·물리 writer의 actual source에 근거해 갱신되고,
 전술적 DDD는 필요한 영역의 적용과 기술 경계의 생략이 모두 자동 보호됩니다.
@@ -292,10 +288,11 @@ Bug 003 목표 계약 ─> 작업 6 config Clock provider
 ## 검증·전환·복구
 
 - TDD는 구조 실패 test와 Domain 상태 전이 실패 test부터 시작합니다.
-- DB 통합 test는 실제 PostgreSQL에서 backfill, lock, transaction과 constraint를 검증합니다.
+- DB 통합 test는 실제 PostgreSQL에서 final baseline schema, lock, transaction과 constraint를
+  검증합니다.
 - Public API contract는 변경하지 않으며 기존 OpenAPI·Security test를 회귀시킵니다.
-- Expand migration과 application 전환을 같은 release 결과로 검증하되, 내부 id 제거 contract는
-  별도 checkpoint와 rollback 판단 뒤 수행합니다.
+- 빈 PostgreSQL에 baseline migration 전체를 적용해 public-id 최종 schema와 전환 artifact 부재를
+  한 번에 검증합니다.
 - Push가 별도로 요청된 코드 작업만 exact SHA의 required CI·Sonar gate까지 진행합니다.
 
 ## 영구 SOT 승격
@@ -307,7 +304,8 @@ Bug 003 목표 계약 ─> 작업 6 config Clock provider
 - audit 장애 분류·복구: 신규 `docs/operations/550-security-audit-failure-recovery-runbook.md`와 operations router
 - 업무 언어·상태 전이: `docs/domain/100-account.md`, `110-account-auth-policy.md`,
   `120-auth-event-policy.md`와 필요한 security audit domain 문서
-- 일반 DDD 개념과 workflow gate는 변경하지 않고 실제 구현이 결함을 드러낼 때만 별도 수정합니다.
+- 일반 DDD 개념 문서는 유지하고, 설계 workflow·template·계획 skill에는 목표 구조와 전환
+  방식을 별도 결정 축으로 검증하는 gate를 반영합니다.
 
 ## 관련 문서
 
