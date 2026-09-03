@@ -10,7 +10,7 @@ Done
 구현·검증한 11개 database table과 조회 기능을 입력 계약으로 사용합니다. 첫 공개 범위는
 현대자동차·기아의 대한민국 일반 개인 구매용 현재 판매 승용·SUV·MPV이며, 이미지 파일과
 외부 이미지 URL은 모두 제외합니다. 2026-08-31 기준 The 2027 K5 2.0 가솔린 스마트 셀렉션으로
-적재 계약을 검증한 뒤 작성한 V20·V21의 대표 구성 적재는 전체 트림·옵션·인증 누락 0건
+적재 계약을 검증한 뒤 작성한 V18·V19의 대표 구성 적재는 전체 트림·옵션·인증 누락 0건
 계약을 충족하지 못해 완료 후보에서 제외했습니다. 차량별 migration을 만들지 않고 같은
 inventory snapshot과 source revision을 공유하는 제조사 배치로 수집·가공·적재하되, 외부
 구조화 입력과 결정적 generator가 공식 원문 전체를 변환하도록 다시 구축합니다.
@@ -59,8 +59,8 @@ schema 변경 계획을 먼저 열고, 이 작업에서 JSONB나 수기 추정�
 | 4. 공개 source 사전 조사 | 완료 | 대표 4모델의 현재 판매 여부와 공개된 가격·제원·인증 정보, 제조사·공공·유료 후보의 권리 공백을 확인했습니다. |
 | 5. exact source qualification | 완료 | KEA 원본과 기아 공식 현재 판매 목록·가격표·카탈로그 44개를 확보하고 source별 checksum과 provenance를 기록했습니다. |
 | 6. 입력 방식·계획 확정 | 완료 | 외부 구조화 입력과 일회성 생성 도구로 제조사별 batch migration을 만들고 차량별 migration과 임시 seed table을 사용하지 않습니다. 생성 도구는 외부 데이터 아카이브에 보존합니다. |
-| 7. 전체 데이터 작성 | 완료 | 공식 PDF 108개의 페이지·표·단어 좌표와 checksum을 보존하고, 기아 22개·142구성과 현대 31개·146구성을 V20·V21 제조사 batch로 생성했습니다. 임시 seed table은 사용하지 않습니다. |
-| 8. 결과 검증·영구 문서 반영 | 완료 | 양사 release `READY`, PostgreSQL V1~V21 적용, K5 상세·공개 조회 adapter·전체 `check`와 독립 개발 검증을 완료하고 결과를 동기화했습니다. |
+| 7. 전체 데이터 작성 | 완료 | 공식 PDF 108개의 페이지·표·단어 좌표와 checksum을 보존하고, 기아 22개·142구성과 현대 31개·146구성을 V18·V19 제조사 batch로 생성했습니다. 임시 seed table은 사용하지 않습니다. |
+| 8. 결과 검증·영구 문서 반영 | 완료 | 양사 release `READY`, PostgreSQL V1~V19 적용, K5 상세·공개 조회 adapter·전체 `check`와 독립 개발 검증을 완료하고 결과를 동기화했습니다. |
 | 9. Git·환경 적용 | 완료 | 검증된 repository 결과를 결과 단위별 local commit으로 기록합니다. push·staging·production 적용은 이 작업의 제외 범위입니다. |
 
 현재 V20은 기아 22개 모델·142개 일반 개인용 configuration·142개 가격·477개 옵션 적용 관계·
@@ -91,7 +91,7 @@ batch 안에서 보존합니다. 외부 연락은
   판매·연식·조건 식별 필드가 부족하므로 이 source만으로 DB 인증 행을 만들 수 없습니다.
 - 202개 column을 **KEA 단일 source**와 대조한 coverage에서는 게시 가능한 configuration과
   완성 certification이 모두 0건이었고, 기아 공개 원본을 결합한 K5 수직 단위는 각각 1건입니다.
-- 첫 수직 단위 K5는 전체 mapping의 깊이 기준으로 유지합니다. 대표 구성만 추가했던 V20·V21과
+- 첫 수직 단위 K5는 전체 mapping의 깊이 기준으로 유지합니다. 대표 구성만 추가했던 V18·V19와
   SQL 내부 임시 seed table 방식은 폐기하고, 외부 구조화 입력과 generator로 같은 깊이를 전체
   제조사 inventory에 적용합니다. 차량 identity는 Flyway 파일 경계로 사용하지 않습니다.
 
@@ -109,12 +109,12 @@ batch 안에서 보존합니다. 외부 연락은
 - `manifests/`는 exact source·취득 recipe·checksum·권리 근거를 소유합니다.
 - `normalized/qualification/`의 모든 행은 source ID·revision·원문 위치를 포함합니다.
 - `changes/`는 계획과 달라진 source·경로·필드·권리·변환 결정을 소유합니다.
-- `tools/initial-seed-2026-08-31/`은 V20·V21을 만든 일회성 생성 도구와 사용법을 소유합니다.
+- `tools/initial-seed-2026-08-31/`은 V18·V19를 만든 일회성 생성 도구와 사용법을 소유합니다.
 
 현재 저장된 원본은 KEA `2026-04-24` CSV, 기아 22개 차종의 PDF 44개, 현대 31개 차종의
 PDF 62개와 두 제조사의 공식 판매 목록 snapshot입니다. Kia batch manifest는
 `manifests/kia-current-catalog-2026-08-31.yaml`, K5 상세 source manifest는
-`manifests/kia-k5-2027-2026-08-31.yaml`, 실제 V20
+`manifests/kia-k5-2027-2026-08-31.yaml`, 실제 V18
 입력의 column provenance는 `normalized/kia/k5/2027/initial-catalog.csv`가 소유합니다. 기존
 `public-source-column-coverage-2026-08-31.csv`는 KEA 단일 source 진단 결과로 보존합니다.
 현대 batch는 `manifests/hyundai-current-catalog-2026-08-31.yaml`과
@@ -205,7 +205,7 @@ source 후보 발견
 - 한 source만으로 완료 조건을 충족하지 못하면 공개 제조사·공공 source를 조합하고, 그래도
   필수값이 없는 행은 release validation에서 실패하도록 했습니다.
 
-V15~V19의 202개 column을 KEA 단일 source와 대조한 결과는 게시 가능한 configuration 0건이었지만,
+V13~V17의 202개 column을 KEA 단일 source와 대조한 결과는 게시 가능한 configuration 0건이었지만,
 기아 공식 공개 원본을 결합한 첫 K5 mapping에서 게시 configuration과 완성 인증을 확보하고,
 PostgreSQL과 공개 조회로 검증한 같은 계약을 양사 전체 범위로 확장했습니다.
 
@@ -224,7 +224,7 @@ PostgreSQL과 공개 조회로 검증한 같은 계약을 양사 전체 범위�
 - 현대·기아의 범위 안 전체 모델 목록부터 연식별 가격·catalog·제원·인증 source를 batch
   inventory에 등록했습니다.
 - 선택한 입력 방식으로 dependency 순서의 결정적 SQL을 만들었습니다.
-- 같은 입력 재실행과 fresh PostgreSQL의 V1~V21 적용 결과를 검증했습니다.
+- 같은 입력 재실행과 fresh PostgreSQL의 V1~V19 적용 결과를 검증했습니다.
 
 ### 작업 5. coverage·API·정정 경로 검증
 

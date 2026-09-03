@@ -149,14 +149,14 @@ trigger·function은 남기지 않습니다.
 | --- | --- | --- |
 | 적용 방식 | nullable public id 추가·backfill 뒤 구 application과 새 application을 함께 지원하고, 관찰 후 contract migration을 실행합니다. | 모든 적용 환경의 DB와 Flyway 이력을 폐기한 뒤 V1부터 수정된 migration을 실행합니다. |
 | 임시 구조·코드 | 양방향 identity trigger·function, 구·신 column과 FK·index, reconciliation이 필요합니다. | 임시 trigger·function·dual write·backfill이 없습니다. |
-| 추가 작업 | expand migration, application 전환 release, rollback 관찰, reconciliation, 별도 contract migration과 제거 검증이 필요합니다. | V6·V7을 최종 schema로 수정하고 전환 전용 V13·V14를 제거한 뒤 빈 PostgreSQL 재생성을 검증합니다. |
+| 추가 작업 | expand migration, application 전환 release, rollback 관찰, reconciliation, 별도 contract migration과 제거 검증이 필요합니다. | V6·V7을 최종 schema로 수정하고 전환 전용 migration을 제거한 뒤 빈 PostgreSQL 재생성을 검증합니다. |
 | data·rollback | 기존 data와 구 image rollback을 유지하지만 중간 schema와 임시 객체를 운영해야 합니다. | 기존 data와 구 image rollback을 포기하며 초기화 대상 환경 전체가 같은 시점에 재생성돼야 합니다. |
 | 실패 경계 | dual identity 불일치, trigger 동작, backfill 누락과 contract 시점 오판이 추가됩니다. | 초기화 누락 환경은 checksum·missing migration으로 실패하며, 재생성 전 backup 외 data 복구 경로가 없습니다. |
 
 **선택: B. DB 초기화 후 최종 schema 재생성.** 현재 production data가 없고 사용자가 이번에
 RDS DB 자체를 초기화하기로 확정했으므로 기존 data·구 application rollback을 보존할 이유가
 없습니다. V6은 `refresh_token`을 처음부터 public id `NOT NULL` FK로 만들고, V7은 미식별
-로그인 실패를 위해 nullable public id FK로 만듭니다. 전환만을 위해 존재하던 V13·V14와
+로그인 실패를 위해 nullable public id FK로 만듭니다. 전환만을 위해 존재하던 migration과
 trigger·function·구 column·구 index는 제거합니다.
 
 - 감수 비용·위험: 초기화 대상에서 빠진 지속 DB는 수정된 versioned migration과 호환되지

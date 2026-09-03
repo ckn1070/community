@@ -1,6 +1,6 @@
 # 자동차 카탈로그 Schema Reference
 
-이 문서는 카탈로그 migration V15~V19 적용 뒤의 현재 관계형 구조, 테이블 분리 이유와 조회에
+이 문서는 카탈로그 migration V13~V17 적용 뒤의 현재 관계형 구조, 테이블 분리 이유와 조회에
 필요한 물리 계약을 소유합니다. 업무 용어·상태·공개 규칙은
 [130 자동차 카탈로그 도메인](../../domain/130-car-catalog.md)이 소유하고, 실행 가능한 DDL의
 source of truth는 migration입니다.
@@ -22,11 +22,11 @@ car_brand
 ```
 
 - migration:
-  - `V15__create_car_product_hierarchy.sql`: 브랜드·모델·세대·연식
-  - `V16__create_car_powertrain_schema.sql`: 동력계통·구성 장치
-  - `V17__create_car_vehicle_offering.sql`: 기술 변형·판매 구성
-  - `V18__create_car_pricing_and_option_history.sql`: 가격·선택 품목 이력
-  - `V19__create_car_certification.sql`: 조건별 인증
+  - `V13__create_car_product_hierarchy.sql`: 브랜드·모델·세대·연식
+  - `V14__create_car_powertrain_schema.sql`: 동력계통·구성 장치
+  - `V15__create_car_vehicle_offering.sql`: 기술 변형·판매 구성
+  - `V16__create_car_pricing_and_option_history.sql`: 가격·선택 품목 이력
+  - `V17__create_car_certification.sql`: 조건별 인증
 - runtime 권한: 11개 테이블 `SELECT`만 허용, DML·`TRUNCATE`·sequence 권한 없음
 - 삭제 정책: 제품 관계는 `RESTRICT`, configuration의 가격·옵션 이력만 `CASCADE`
 - 외부 식별자: 공개 대상 7개 테이블은 UUID `public_id`, 내부 관계는 `BIGINT id`
@@ -194,7 +194,7 @@ identity sequence 사용은 거부합니다.
 
 ## 조회 경로
 
-카탈로그 조회 adapter는 jOOQ를 사용합니다. Flyway V15~V19에서 build-time schema model을
+카탈로그 조회 adapter는 jOOQ를 사용합니다. Flyway V13~V17에서 build-time schema model을
 생성하고 브랜드, 모델 검색의 기반 관계, 상세의 모델·연식 조회는 generated table·field DSL로
 구성합니다. CTE 논리 column 집계와 상세 wide projection의 PostgreSQL SQL은 검증된 형태를
 유지한 채 jOOQ가 parameter binding, 실행과 record 변환을 담당합니다. 적용 범위와 raw SQL·DSL 경계는
@@ -256,7 +256,7 @@ configuration/price/option을 고정된 묶음 query로 읽습니다. 현재 per
 
 ## 관련 문서
 
-- **실행 source**: 위에 열거한 V15~V19 migration
+- **실행 source**: 위에 열거한 V13~V17 migration
 - **현재 업무 개념과 조회 의미**: [130 자동차 카탈로그 도메인](../../domain/130-car-catalog.md)
 - **작업 상태와 공개 조회 API**: [016 신차 카탈로그 schema·조회 API](../../work-items/features/2026/016-new-car-catalog-query-api.md)
 - **결정 근거**: [016 DB 설계 결정 기록](../../work-items/features/2026/016-new-car-catalog-query-api-design.md)

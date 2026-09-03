@@ -10,7 +10,7 @@ Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 ac
 자동차 카탈로그의 현재 개념은 [130 자동차 카탈로그 도메인](../domain/130-car-catalog.md), 11개
 테이블의 분리 이유와 물리 계약은
 [110 자동차 카탈로그 Schema Reference](schema/110-car-catalog.md)가 소유합니다. 현재 `catalog`
-모듈 공개 enum, Flyway V15~V19의 11개 테이블, 실제 PostgreSQL schema·대표 fixture와
+모듈 공개 enum, Flyway V13~V17의 11개 테이블, 실제 PostgreSQL schema·대표 fixture와
 runtime statement 기반 SELECT-only 권한 검증, 브랜드 목록·모델 page·모델 상세의 읽기 전용
 application/persistence와 세 공개 GET Web API가 구현됐습니다. 첫 진입의 무필터 모델 page,
 선택 filter, 대표 연식 상세, GET 전용 anonymous allow-list와 OpenAPI 계약을 자동 검증합니다.
@@ -44,7 +44,7 @@ application/persistence와 세 공개 GET Web API가 구현됐습니다. 첫 진
 - Java 21과 Spring Boot 4 기반 단일 애플리케이션
 - `account`, `auth`, `notification`, `catalog`, `shared`, `config` package
 - Spring Modulith와 ArchUnit module boundary 검증
-- PostgreSQL과 Flyway V1~V17 schema
+- PostgreSQL과 Flyway V1~V23 schema
 - Spring Security Resource Server 기반 stateless Bearer JWT
 - Resend 기반 이메일 발송 adapter
 - Gradle check, Spotless, JaCoCo, SonarQube Cloud 품질 흐름

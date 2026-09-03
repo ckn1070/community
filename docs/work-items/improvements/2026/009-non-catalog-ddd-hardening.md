@@ -12,7 +12,7 @@ Done
 통합 test가 이 경계를 검증합니다.
 
 Public-id schema는 이번 RDS 초기화에 한정해 baseline migration을 최종 구조로 재작성했습니다.
-`refresh_token`과 `auth_event`에는 public id 참조만 남고, 전환용 V13·V14와 compatibility
+`refresh_token`과 `auth_event`에는 public id 참조만 남고, 전환용 migration과 compatibility
 trigger·function·구 `account_id` column은 제거합니다.
 
 최종 검증은 Docker daemon 준비 확인 뒤
