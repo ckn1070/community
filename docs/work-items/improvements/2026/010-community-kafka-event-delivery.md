@@ -2,23 +2,23 @@
 
 ## 상태
 
-Proposed
+Planned
 
 ## 계획 단계
 
-실행 계획
+계획 완료
 
 ## 현재 결론과 다음 행동
 
 | 구분 | 현재 내용 |
 | --- | --- |
-| 현재 결론 | 기술·구조 선택을 반영해 해결 설계를 완료했습니다. 다음은 실행 계획 작성이며 아직 미착수입니다. 전체 계획 상태는 `Proposed`입니다. |
-| 닫힌 결과 경계 | 이번에는 Strimzi 단일-node Kafka 구축과 Community 댓글·답글 → 서비스 안 알림 연결에 집중합니다. 업무 저장 보호, 누락·사용자 중복 방지와 재시작·데이터 손실 복구 검증을 포함합니다. |
-| 선행 외부 gate | 별도 부하·장애 시험 플랫폼과 다중 failure-domain 검증은 후속 범위입니다. Production 판단에는 peak·SLO·RPO·RTO·비용·운영 책임이 필요하며 현재 실행 계획 작성의 선행 조건은 아닙니다. |
-| 남은 gate | 실행 계획의 결과 단위·의존 순서·검증·전환·복구 책임 작성과 계획 검증·확정이 남았습니다. 해결 설계의 추가 사용자 선택은 없습니다. |
-| 현재 행동 주체 | 다음 단계의 작성자는 Agent입니다. 확정된 설계를 입력으로 작업 본문에 실행 계획을 작성합니다. |
-| 사용자 차례 | 추가 기술 선택 없이 실행 계획 단계로 진행할 수 있습니다. 실행 계획은 미작성 상태이며 구현·배포는 별도 후속 단계입니다. |
-| 현재 행동 뒤 결과 | 실행 계획을 작성·검증한 후보를 확정하면 `Planned`로 전환합니다. 현재는 해결 설계까지 완료한 상태입니다. |
+| 현재 결론 | 해결 설계와 U1~U8 실행 계획을 확정했습니다. 전체 상태는 `Planned`, 계획 단계는 `계획 완료`입니다. 다음 단계는 구현입니다. |
+| 닫힌 결과 경계 | Strimzi 단일-node Kafka와 Community 댓글·답글 → 서비스 안 알림 연결, 누락·사용자 중복 방지, 재시작·데이터 손실 복구를 포함합니다. 별도 부하·장애 시험 플랫폼은 후속 범위입니다. |
+| 선행 외부 gate | 실제 cluster 자원·환경 권한은 U6 적용부터, Community 기반 활성화 증거는 U7 전환부터 필요합니다. 이 입력 없이도 U1~U5의 repository 작업을 준비할 수 있습니다. |
+| 남은 gate | 계획 확정에 남은 gate는 없습니다. U6의 실제 환경 적용과 U7의 Community 전환 조건은 각 실행 단계에서 확인합니다. |
+| 현재 행동 주체 | 다음 단계의 구현자가 U1의 댓글·이벤트 원자 저장부터 구현·자동 검증을 진행합니다. U5의 배포 산출물 준비는 독립적으로 진행할 수 있습니다. |
+| 사용자 차례 | 계획에 대한 추가 선택·재확정은 없습니다. |
+| 현재 행동 뒤 결과 | 구현 착수 시 `In Progress`로 전환하고 각 실행 단위의 완료 증거를 확인합니다. 실제 환경 적용은 U6·U7의 선행 조건을 충족한 뒤 진행합니다. |
 
 ## 진행 지도
 
@@ -27,9 +27,9 @@ Proposed
 | 범위·결정 정규화 | 완료 | Kafka 첫 적용을 Community 댓글·답글 생성에서 서비스 안 알림까지로 고정하고 account·catalog·media와 새 제품 기능은 제외했습니다. | 사용자 작업 없음 |
 | 결과 정의 | 완료 | R1-A에 따라 Community write와 Kafka 장애를 분리하고 복구 뒤 알림이 누락·사용자 중복 없이 수렴하는 결과를 확정했습니다. | 사용자 작업 없음 |
 | 해결 설계 | 완료 | 사용자 기술 선택과 Kafka 구축 우선 범위를 반영했습니다. D9-A는 Agent 기술 선택이며 부하·장애 플랫폼은 후속 범위입니다. | 추가 사용자 선택 없음 |
-| 실행 계획 | 다음 | 미착수입니다. 확정 설계를 입력으로 결과 단위·의존 순서·test·문서·운영 책임과 완료 증거를 작성합니다. | 다음 단계 작성자는 Agent입니다. |
-| 계획 검증·확정 | 후속 | 최초 목적·확정 결정·current source를 기준으로 완성 후보를 검증하고 사용자 채택 뒤 `Planned`로 전환합니다. | 실행 계획 후보와 필수 검증이 준비된 뒤 진행합니다. |
-| 개발·결과 검증 | 조건부 후속 | 별도 개발 요청과 `Planned` baseline 뒤 repository 구현·자동 검증을 수행합니다. Kafka 전환 qualification은 `In Progress`인 Community 기반 배포와 `COMMUNITY_ENABLED=false` 상태의 선행 활성화 검증에 순서를 맞춥니다. | 이 계획 작업의 terminal이 아니며 이후 실행 요청과 Community 선행 결과가 필요합니다. |
+| 실행 계획 | 완료 | U1~U8에 결과·의존·검증·전환·복구와 문서 책임을 연결했습니다. | 확정된 순서와 합류점을 구현 입력으로 사용합니다. |
+| 계획 검증·확정 | 완료 | 실행 계획의 source·구조·내용 검증과 사용자 확정을 마쳤습니다. 검증된 `Planned` 계획이 구현 기준선입니다. | 추가 사용자 선택·재확정 없음 |
+| 개발·결과 검증 | 다음 | 확정된 `Planned` baseline에서 U1 구현·자동 검증을 시작할 수 있습니다. Kafka 전환 qualification은 U7에서 Community 기반 배포·활성화 검증에 순서를 맞춥니다. | 구현 요청 시 U1부터 착수합니다. U5는 독립 준비할 수 있습니다. |
 | 영구 SOT·Git 마무리 | 조건부 후속 | 검증된 실제 event·module·운영 계약만 canonical 문서에 승격하고 승인된 Git·remote 효과만 수행합니다. | 구현·검증 결과가 생긴 뒤 해당 권한 범위에서 진행합니다. |
 
 ## 달성할 결과
@@ -176,6 +176,307 @@ Proposed
   입력으로 사용할 수 있으며 구현은 검증된 `Planned` baseline과 별도 실행 요청 뒤에 진행합니다.
 - Managed Kafka, persistent block storage, Debezium·Kafka Connect, Schema Registry와 전용
   관측 stack은 현재 선택이 아닙니다. 각 재검토 조건은 관련 D section이 소유합니다.
+
+## 실행 입력과 적용 전 확인
+
+아래 값은 확정 설계를 구현하기 위한 **Agent 기술 설정값**입니다. 제품 성능 보장이나 추가
+사용자 선택지가 아닙니다. 실제 source에서 달라진 입력을 발견하면 영향받는 단위부터 다시
+확인하며, 미확인 image·자원·권한을 성공으로 가정하고 배포하지 않습니다.
+
+| 입력 | 계획값·source | 확인할 단위 |
+| --- | --- | --- |
+| Application | 현재 `build.gradle`의 Java 21·Spring Boot 4.0.6 유지. `spring-boot-starter-kafka`를 version 없이 추가하며 Boot BOM의 Spring Kafka 4.0.5·`kafka-clients` 4.1.2를 사용 | U2에서 `dependencyInsight`와 실제 송수신 확인. Kafka 때문에 Boot 전체를 upgrade하지 않음 |
+| 통합 테스트 | 기존 Testcontainers BOM 2.0.5에 `org.testcontainers:testcontainers-kafka` 추가. `org.testcontainers.kafka.KafkaContainer`와 `apache/kafka:4.2.1` 사용 | U2 시작 전 registry manifest의 ARM64·CI AMD64 및 digest 확인 후 test support에 고정. Docker 부재는 skip 성공이 아닌 실패 |
+| Kubernetes broker | Strimzi 1.2.0·Kafka 4.2.1·`kafka.strimzi.io/v1`. 현재 Kubernetes 1.36 계열과 공식 지원표가 겹침 | U5에서 공식 release artifact 고정, U6에서 실제 cluster version·ARM64 실행 확인 |
+| Operator image | `quay.io/strimzi/operator@sha256:77f8fa8121a67561c3418de985783d197f51b8931e9a47f793dc0437dc6bb21f` | U5에서 manifest pin, U6에서 실제 architecture·image identity 대조 |
+| Broker image | `quay.io/strimzi/kafka@sha256:47ea0bd5cd416a92cbcfa248ae4b4b01a1e5d6b87aeafa67a691abdc29e20d0d` | Kafka 4.2.1용 release digest. 실제 broker와 operator가 생성하는 component image를 함께 확인 |
+| Topic·group | 원본 `community.conversation-created.v1`, DLT `community.conversation-created.v1.dlt`, group `notification.community-conversation.v1` | U2·U5가 동일 설정 계약을 소비. 원본·DLT 각 3 partition, RF 1·min ISR 1은 시험 환경 한정 |
+| Namespace·listener | 기존 application namespace 안의 internal TLS listener, Strimzi CA와 `KafkaUser`의 mTLS 사용 | U5·U6. 외부 listener·익명 접속·topic 자동 생성 금지 |
+| Migration | 기존 V22~V25는 보존하고 outbox·receipt를 추가 migration으로 생성 | U1·U2 구현 시 최신 migration 목록에서 다음 번호 확인. 기존 checksum 변경 금지 |
+
+Spring Boot의 starter 선택은 [Spring Kafka 공식 안내](https://docs.spring.io/spring-kafka/reference/quick-tour.html),
+Testcontainers class·module은 [공식 Kafka module](https://java.testcontainers.org/modules/kafka/)을 따릅니다.
+Strimzi 조합은 [지원표](https://strimzi.io/downloads/)와
+[1.2.0 release의 image 목록](https://github.com/strimzi/strimzi-kafka-operator/releases/tag/1.2.0)을
+기준으로 골랐습니다. BOM 숫자는 현재 4.0.6 artifact에서 확인한 값이며 최신 4.0 문서의 숫자로
+대체하지 않습니다. 지원표 일치는 실제 통합·ARM64 기동 검증을 대신하지 않습니다.
+
+| 제한할 대상 | 초기 설정과 이유 | 실패·변경 경계 |
+| --- | --- | --- |
+| Wire payload | JSON 16 KiB 이하. 게시글·댓글 본문을 싣지 않는 D3 계약에 충분한 상한 | 상한 초과·알 수 없는 type/version은 명시 오류. Type header에 따른 임의 class 역직렬화 금지 |
+| Relay | Worker 1개, 한 번에 claim 1개, in-flight 1개, idle polling 500 ms. Lease 30초, publish 완료 대기 10초, `max.block.ms` 1초 | Network 대기 중 DB transaction·connection을 보유하지 않음. Lease token이 다른 update는 거부. `acks=all`과 producer idempotence 사용 |
+| Consumer | Concurrency 1, `max.poll.records=10`, auto commit 해제. 최초 처리 뒤 일시 오류만 1·2·4초 간격으로 최대 3회 추가 시도 | 전체 처리·retry·DLT 대기가 `max.poll.interval.ms` 안에 들어오는지 검증. 상한 초과·영구 오류는 DLT로 격리 |
+| Outbox 정리 | 완료 receipt 또는 승인된 terminal 처분으로 삭제 적격이 된 시점부터 7일 보존, 한 batch 최대 100개 | 미완료·조회 실패는 기간과 무관하게 보존. Rollback·복구 중 cleanup 중지. Receipt는 replay 가능 범위를 닫기 전 자동 삭제하지 않음 |
+| Broker buffer | 원본·DLT 모두 24시간, partition별 `retention.bytes=64 MiB`, segment 16 MiB. Ephemeral volume 상한 2 GiB | 6개 partition의 명목 data 예산은 384 MiB이며 segment·index·내부 topic·metadata를 별도로 계산. Retention은 즉시 삭제되는 hard disk quota가 아님 |
+| Node 자원 | Broker·operator·entity operator의 heap·request·limit·ephemeral-storage를 U5 manifest에 명시. Application의 동시 rollout Pod와 migration Job까지 합산 | U6 적용 전 allocatable·현재 사용량·eviction 여유와 맞춰 최종값 고정. Source의 4 GiB memory·20 GiB root disk만으로 배치 가능하다고 판단하지 않음 |
+
+메모리·disk 여유 부족이 관측되면 운영자가 relay를 중지하고 outbox를 보존해 전달 원본을 보호합니다. Topic
+만료·broker 손실 뒤에도 미완료 outbox는 복구 원본으로 남습니다. 자원 부족을 원본 삭제나
+무단 node 증설로 해결하지 않으며, 현재 범위로 합격할 수 없는 경우 자원·storage 변경의
+영향을 별도 판단합니다. 이 제한값의 검증은 작은 고정 corpus와 경계 테스트로 수행하며
+부하 시험 플랫폼을 다시 이번 범위로 들이지 않습니다.
+
+Relay·consumer·cleanup은 각각 기본 비활성, 기존 동기 알림은 기본 활성으로 시작합니다.
+Kafka 설정·Secret이 없는 상태에서도 비활성 application은 기동해야 하고, 활성 role의
+누락·잘못된 설정만 명시 실패시킵니다. Readiness는 현재처럼 DB에 의존하며 Kafka·worker
+장애와 pending outbox는 별도 진단 신호로 확인합니다.
+
+## 작업 순서와 합류점
+
+번호는 결과를 식별하며 모든 작업을 일렬로 실행하라는 뜻이 아닙니다. U1 안에서는 공유
+wire 계약과 원자 저장의 대표 결과를 먼저 검증한 뒤 consumer 작업으로 확장합니다.
+
+```text
+Application: U1 원자 저장 → U2 실제 Kafka 알림 ┬→ U3 장애·중복 수렴 ─┐
+                                             └→ U4 보존·재발행 ───┤
+Infrastructure: U5 배포 산출물 → U6 Kafka·인증 연결 ────────────────┤
+Community 기존 배포·활성화 증거 + live 적용 권한 ──────────────────┤
+                                                               ↓
+                                                     U7 전환·복구 검증
+                                                               ↓
+                                                     U8 결과·운영 인계
+```
+
+| 단위 | 필수 입력 → 처음 소비하는 행동 | 독립성·합류 |
+| --- | --- | --- |
+| U1 | 확정 D2·D3 → 공유 계약과 업무 transaction 변경 | 최초 application 단위 |
+| U2 | U1의 검증된 wire·outbox → relay와 Notification consumer 연결 | 실제 Kafka의 첫 사용자 결과를 대표 검증 |
+| U3 | U2의 정상 publish·receipt·inbox → 중단·오류 경계 확장 | U4와 착수 의존은 없음. 같은 adapter 수정은 직렬 조정 |
+| U4 | U2의 event receipt → 공개 완료 조회·기본 보존·cleanup | U3 뒤 구현을 권장하나 필수 선행은 아님. Crash·DLT·재발행 최종 검증에서 U3와 합류 |
+| U5 | 위 runtime·topic·보안 입력 → 설치 및 GitOps manifest 작성 | U1~U4의 application 코드와 독립적으로 준비 가능 |
+| U6 | U5의 검증된 manifest·runbook → 실제 cluster 설치·인증 시험 | 환경 권한·실제 자원 gate가 이 단위부터 필요 |
+| U7 | U3·U4의 복구 증거 + U6 endpoint·identity + Community 활성화 증거 → 실제 비동기 전환 | 각 트랙의 최초 실제 환경 합류점 |
+| U8 | U7 수용 증거 + 최종 code 품질 결과 → SOT·운영·완료 상태 정합화 | 미완료 live 검증을 local test 통과로 대체하지 않음 |
+
+## 실행 단위
+
+### U1. 댓글과 전달할 이벤트를 함께 저장
+
+**목표·근거:** D2·D3의 원자 인계를 구현합니다. 댓글 성공과 이벤트 인계가 같은 DB commit에
+남아야 하며, 동일 작성 요청을 재시도해도 새 outbox가 늘지 않아야 합니다.
+
+- 개발자가 `shared::integration`에 `CommunityConversationCreatedV1`과 named interface를
+  만들고 D3 wire literal·version·공개 ID·nullable 관계를 contract fixture로 고정합니다.
+  Community·Notification의 Modulith 허용 의존을 이 공개 경계에만 추가합니다.
+- Community 소유 outbox table과 저장 port/adapter를 추가하고 `CommunityService.createComment()`의
+  댓글 transaction에서 기록합니다. 기존 생성 idempotency가 반환하는 경로는 재기록하지 않습니다.
+  이 단위에서는 기존 동기 알림을 유지합니다.
+- 기존 `CommunityNotificationTransactionIntegrationTest`의 동기 mode rollback 검증을 유지하고,
+  outbox 저장 실패 시 댓글 rollback, 댓글 실패 시 outbox 부재, 재요청·동시 동일 요청의
+  event identity 유일성을 먼저 실패 테스트로 작성한 뒤 구현합니다.
+- **검증:** 예정 `CommunityOutboxTransactionIntegrationTest`와 wire contract test,
+  기존 Community transaction·schema test, `ApplicationModuleVerificationTest`를 실행합니다.
+  DB row를 직접 대조해 댓글과 outbox가 함께 0건 또는 함께 1건인지 확인합니다.
+- **문서·완료:** event·module 계약의 변경 위치를 해당 SOT에 연결합니다. 다른 module의
+  내부 table을 직접 쓰지 않는 원자 저장과 공개 계약이 검증되면 U2가 이를 소비할 수 있습니다.
+- **복귀:** 외부 발행이 아직 없으므로 기존 동기 동작으로 유지합니다. 적용된 추가 table을
+  지우거나 이미 실행한 migration을 수정하는 rollback은 하지 않습니다.
+
+### U2. 실제 Kafka를 거쳐 첫 알림을 생성
+
+**목표·근거:** U1 결과를 D4·D5·D8-D/E의 relay·consumer에 연결해 댓글 하나가 실제 broker를
+거쳐 Notification의 receipt와 inbox로 수렴하는 대표 경로를 만듭니다.
+
+- 개발자가 Spring Kafka starter와 Testcontainers module을 추가하고 공식 broker image의
+  digest·platform을 고정합니다. JSON은 adapter가 명시된 V1 type으로 읽고 domain·JPA 객체를
+  wire로 직렬화하지 않습니다.
+- Community relay는 outbox를 읽어 broker ack를 받은 뒤 발행 상태를 갱신합니다. Notification
+  listener는 공개 관계 ID로 최종 수신자를 계산하고 **receipt와 inbox를 같은 DB transaction**에
+  저장합니다. Transaction 성공이 반환된 뒤 offset을 확정합니다. 수신자 0명도 receipt를 남깁니다.
+- 기존 동기·새 비동기 경로는 Notification의 동일 수신자 규칙을 소비합니다. Shadow 기간의
+  정책 복사본을 두지 않으며 기존 inbox unique와 `created_at, id` 조회 계약을 유지합니다.
+- **검증:** 예정 `CommunityKafkaDeliveryIntegrationTest`에서 동기 회귀, 제한된 shadow,
+  **동기 저장을 끈 async-only** corpus를 분리합니다. 새 댓글·답글의 기대 recipient를 fixture에서
+  독립 계산해 receipt와 정확한 inbox 집합을 비교합니다. 0·1·2명 수신, 자기 알림 제외와
+  겹친 수신자 제거를 포함합니다. Sync가 만든 row·전체 count만으로 async 성공을 판정하지 않습니다.
+- **문서·완료:** local 실행과 test 설정을 개발 문서·test stack에 연결합니다. 실제 publish·consume과
+  async-only 알림 결과가 확인돼야 U3·U4로 확장합니다. 이 단계만으로 live 활성화하지 않습니다.
+- **복귀:** relay·consumer를 비활성화하고 동기 경로를 유지합니다. 이미 기록된 outbox·receipt를
+  보존하고 dependency 제거는 아직 소비하는 코드·설정이 없는 경우에만 합니다.
+
+### U3. 중단·중복·처리 불가 이벤트를 수렴
+
+**목표·근거:** U2 대표 경로의 각 중단 지점에 D4-G·D5의 at-least-once·멱등·실패 격리를 적용합니다.
+
+- 개발자가 PostgreSQL의 원자 claim·lease 회수와 소유 token 조건부 갱신을 구현합니다.
+  두 relay가 경쟁해도 유효 owner가 하나이며, 만료된 owner의 늦은 ack가 새 owner 상태를
+  덮지 못해야 합니다. Kafka 대기와 DB transaction을 분리하고 worker·connection·queue 상한을 검증합니다.
+- Notification의 동일 event 동시 처리에서 receipt unique와 inbox 저장이 같은 transaction으로
+  묶이도록 합니다. DB commit 전 실패는 offset을 남기지 않고, commit 뒤 재전달은 중복을 만들지 않습니다.
+- Allowlist에 든 일시 오류만 제한 재시도합니다. 지원하지 않는 version·역직렬화 실패·영구 오류는
+  DLT로 격리하고, **DLT ack 후에만 원본 offset을 전진**시킵니다. DLT 저장도 실패하면
+  원본을 완료 처리하지 않습니다. Poison event 뒤의 독립 정상 event가 처리되는지 확인합니다.
+- **검증:** 예정 `CommunityKafkaFailureIntegrationTest`에서 ack 뒤 DB 갱신 전 중단,
+  consumer commit 전·후 중단, 동시 중복, lease 만료·오래된 owner, retry 소진, DLT 장애,
+  poison 다음 record 처리를 실제 Kafka·PostgreSQL로 검증합니다. 고정 지연 sleep에 기대지 않고
+  fault 주입 지점과 bounded await로 각 중단을 재현합니다.
+- **문서·완료:** 실패 분류·관측 신호·offset 의미를 SOT·Kafka 운영 owner에 연결합니다.
+  업무 write는 broker 장애 중 성공하고 누락·사용자 중복은 0이어야 합니다.
+- **복귀:** 소비·발행을 각각 멈추고 outbox·receipt·DLT를 보존합니다. 실패 record를 삭제하거나
+  offset을 임의 rewind하는 것을 복구 수단으로 삼지 않습니다.
+
+### U4. 원본 보존·재발행·정리를 연결
+
+**목표·근거:** D2-B·D5-D·D6-B가 요구하는 복구 원본과 유한 cleanup을 만듭니다. 기본 구현의
+선행은 U2 receipt입니다. U3의 crash·DLT 증거는 최종 복구 검증에서 필요합니다.
+
+- Notification이 event ID 묶음의 완료 결과를 공개 port로 제공합니다. Community는 그 결과나
+  승인된 terminal 처분으로만 삭제 적격을 표시하고, 7일 보존 창 뒤 최대 100건씩 정리합니다.
+  조회 실패·누락·불일치·미완료이면 보존하며 상대 module receipt table에 직접 접근하지 않습니다.
+- 운영 재발행은 동일 application artifact의 **일회 실행 operation**으로 준비합니다. 대상 event ID,
+  이유·범위·예상 건수를 dry-run으로 확인한 뒤 운영자 승인 범위만 처리합니다. Web 관리 API나
+  범용 장애 시험 도구를 새로 만들지 않습니다.
+- DLT 재처리는 원본 event ID를 유지해 정상 topic으로 보내고, broker data·offset 소실은
+  **이미 publish된 것까지 포함해 완료 receipt·terminal 처분이 없는 outbox**를 대상으로 합니다.
+  둘 다 기존 멱등 consumer를 통과합니다. 재발행의 broker ack와 downstream 완료를 구분합니다.
+- Terminal 처분은 Community가 원인·영향·재처리 불가 근거·운영자 승인을 기록한 경우에만
+  가능합니다. 일시 DB 오류나 receipt 조회 실패를 terminal로 자동 변환하지 않습니다.
+- **검증:** 예정 `CommunityOutboxLifecycleIntegrationTest`에서 제어 가능한 clock으로 보존
+  경계·batch 상한·조회 장애를 검증합니다. U3 결과와 합류해 DLT 재발행, broker 교체 후
+  미완료 집합 복구, 재실행·중간 중단을 검증하고 유실·사용자 중복 0을 대조합니다.
+- **문서·완료:** Kafka lifecycle runbook에 actor·권한·dry-run·승인·중단·재개·결과 oracle을
+  완성합니다. 원본을 무조건 삭제하지 않으면서 완료 event만 정리할 수 있어야 합니다.
+- **복귀:** cleanup을 먼저 끄고 재발행을 중지합니다. Receipt와 원본을 보존하며 새로운
+  terminal 처분 없이 중단된 operation의 같은 대상에서 재개합니다.
+
+### U5. Kubernetes 배포 산출물을 준비
+
+**목표·근거:** D6·D7의 단일-node Kafka와 권한 경계를 선언형 산출물로 준비합니다.
+U1~U4의 코드 완료를 기다릴 필요는 없습니다.
+
+- Infrastructure 담당자가 공식 고정 release의 CRD·RBAC·Cluster Operator 설치 파일을
+  `scripts/bootstrap/kafka/manifests/`에 준비합니다. 기존 `kubectl`·Kustomize와 공식 manifest를
+  사용하며 새 installer framework·Helm·Connect·관측 stack을 도입하지 않습니다.
+- Kafka·KafkaNodePool·KafkaTopic·KafkaUser·NetworkPolicy desired state는 별도 Kustomize 구성으로
+  준비하고 U6의 CRD·operator·allowlist 준비 전에는 자동 sync되는 staging overlay에 포함하지 않습니다. 기존 AppProject에는 이 작업에 필요한 namespace kind만 추가하고
+  `clusterResourceWhitelist: []`는 유지합니다. Cluster-scoped 설치와 권한은 platform이 소유합니다.
+- Topic/User Operator가 생성하는 Secret·Service·Pod 등은 operator가 관리합니다. Secret 값이나
+  생성 resource 사본을 GitOps에 넣지 않습니다. CRD 설치 전 CR을 자동 sync하는 순서 오류를 막습니다.
+- Kafka 전용 정책은 broker·operator·허용 workload에 필요한 흐름만 허용합니다. 기존 API의
+  RDS·DNS·외부 연동을 namespace 전체 deny 정책으로 끊지 않도록 selector·egress를 대조합니다.
+- **검증:** local `kubectl kustomize deploy/overlays/stg`와 설치용 경로 render에서 source·namespace·
+  RBAC·image·Secret reference·resource 상한을 확인합니다. 예정 `KafkaDeploymentManifestContractTest`는
+  public listener·wildcard ACL·cluster 권한의 우회 같은 실제 금지 계약을 검사합니다.
+  Server dry-run은 CRD가 설치된 승인 환경에서 U6가 수행합니다.
+- **문서·완료:** Kafka 전용 lifecycle runbook에 최초 설치·생성 owner·검증·취소 절차를 준비합니다.
+  공용 Application bootstrap과 환경변수 router는 전용 owner로 연결하는 진입점만 유지합니다.
+- **복귀:** 아직 적용 전이면 해당 산출물만 수정합니다. 이미 설치된 CRD를 먼저 지우는 취소는
+  금지하며 U6의 resource·사용자 data 처분 순서를 따릅니다.
+
+### U6. 실제 Kafka와 인증을 연결
+
+**목표·근거:** U5 산출물을 승인된 qualification 환경에 적용하고 D6·D7의 실제 실행 증거를 만듭니다.
+이 단위부터 환경 mutation 권한이 필요하며, 없는 동안 local 구현·검증은 계속할 수 있습니다.
+
+- 운영자가 target cluster·namespace·현재 revision을 확인하고, Kubernetes version·ARM64 image·
+  실제 여유 자원을 대조합니다. Broker·operator·entity operator뿐 아니라 기존 platform,
+  application rollout의 동시 Pod·migration Job과 eviction 여유까지 맞춰 resource 값을 고정합니다.
+  부족하면 설치를 중단하고 범위·비용 변경 판단으로 반환합니다.
+- CRD·operator 설치와 readiness → AppProject allowlist 적용 → 준비한 Kafka Kustomize 구성을
+  staging overlay에 연결·전달 → Kafka/NodePool·Topic/User·NetworkPolicy 생성·검증 순서로 진행합니다. Application의 relay·consumer는 아직 비활성입니다.
+- Strimzi CA·User Operator로 relay, Notification consumer, DLT writer, replay의 별도 principal을
+  생성합니다. 각 topic·group에 필요한 최소 ACL만 부여하고 application은 읽기 전용 Secret
+  mount를 소비합니다. Replay 자격은 평상시 application에 mount하지 않습니다.
+- 자격 교체는 새 principal·Secret·ACL 생성 → mount 전환·application rollout → 새 자격으로
+  실제 허용 작업 검증 → 이전 principal의 ACL·User 폐기 순서입니다. 폐기 전에는 이전 자격으로
+  복귀할 수 있어야 하며, 폐기 뒤에는 이전 자격의 접근 거부까지 확인합니다. CA 갱신·만료와
+  application trust reload도 같은 Kafka owner의 운영 절차에 포함합니다.
+- **검증:** 승인된 환경에서 server dry-run, CR status·operator reconciliation·기동 image를 확인한 뒤
+  각 role의 허용 publish/read와 잘못된 topic/group·무자격·비허용 Pod의 거부를 실제 client로 확인합니다.
+  TLS 연결 성공만으로 ACL·NetworkPolicy 검증을 통과시키지 않습니다.
+- **문서·완료:** endpoint·identity·인증서 trust·role별 접근·교체·자원 증거가 준비되면 U7이
+  소비합니다. Secret 실제값과 live inventory는 문서에 복제하지 않습니다.
+- **복귀:** application의 Kafka role을 끄고 rollout 상태를 복구합니다. 사용자 data·outbox의
+  복구 책임을 먼저 확인한 뒤 Kafka CR, 전용 identity와 마지막으로 operator를 처분합니다.
+  다른 cluster가 소비하는 공용 CRD·RBAC는 삭제하지 않습니다.
+
+### U7. 비동기로 전환하고 되돌릴 수 있음을 검증
+
+**목표·근거:** U3·U4·U6 결과를 D9의 shadow·flag 전환에 합류시킵니다. 기존 Community 기반
+배포·활성화 증거가 필요하며 현재 `COMMUNITY_ENABLED=false`를 임의로 바꾸지 않습니다.
+
+- 개발자·운영자가 동일 release의 additive migration, 새/이전 application 호환성, feature flag와
+  Secret 준비를 대조합니다. Application delivery·Community 활성화는 기존 전용 runbook을 소비합니다.
+- 고정 corpus에서 **동기 회귀 → 제한된 shadow → 별도의 async-only 결과**를 구분해 확인합니다.
+  Event ID마다 예상 수신자와 실제 receipt·inbox를 비교하고 자기 알림 제외·0명 처리·읽음 상태·
+  cursor 조회를 확인합니다. Async-only 증명 전 primary를 전환하지 않습니다.
+- 승격은 동기 알림을 끄고 relay·consumer로 처리하도록 합니다. Broker 중단 중에도 댓글·답글은
+  outbox와 함께 commit돼야 하고, 복구 후 pending event가 누락·사용자 중복 없이 처리돼야 합니다.
+- 승인된 시험 대상에서 broker process 재시작과 Pod·ephemeral storage·offset 손실을 구분해
+  검증합니다. 원본 DB는 유지하고 cleanup을 중지한 뒤 broker·topic을 재생성하고 U4의 미완료
+  집합을 재발행합니다. 마지막에는 정상 신규 event도 처리되는지 확인합니다.
+- **검증·완료:** 새/기존 알림의 정확한 집합, DB commit·offset 경계, API write 보호,
+  재시작·data-loss 복구, flag-off rollback을 모두 통과해야 합니다. 같은 corpus의 수신자
+  기대 집합이 독립 oracle이며 Pod Ready·lag 0만으로 완료하지 않습니다.
+- **문서·복귀:** Kafka runbook의 검증된 절차와 기존 배포 runbook을 연결합니다. 문제 시
+  cleanup 중지 → 비동기 consumer·relay 중지/진행 중 처리 종료 확인 → 동기 경로 복귀 순서입니다.
+  Outbox는 계속 저장하고 기존 미완료 event의 후속 복구 책임을 유지합니다. 동기 복귀가 이미
+  쌓인 비동기 backlog까지 처리했다고 보고하지 않습니다.
+
+### U8. 최종 결과와 운영 책임을 인계
+
+**목표·근거:** 기능·복구 증거와 실제 코드·설정·영구 문서를 맞추고 이번 구축 범위를 종료합니다.
+
+- 개발자가 아래 품질 검증을 최종 변경에 수행하고, 운영자는 U6·U7의 실제 환경 증거와
+  Kafka lifecycle runbook의 시작·중단·재개·제거 절차를 대조합니다. 각 단위에서 갱신한 SOT를
+  마지막에 한 번 맞추며 모든 문서 작성을 이 단위까지 미루지 않습니다.
+- 승인된 Git 전달 뒤에는 최종 SHA의 required CI와 Sonar revision·Quality Gate·Open issues를
+  확인합니다. 현재 CI는 `main` push·PR에서 실행되므로 feature branch push만으로 검증 완료를
+  주장하지 않습니다. 계획이나 구현 요청으로 push·PR·image 게시 권한을 만들지 않습니다.
+- **완료:** U1~U7의 이번 수용 기준·회귀·보안·환경 증거와 영구 문서가 모두 닫혀야 합니다.
+  환경 권한이나 실제 검증이 남으면 local 구현 완료와 전체 미완료를 구분합니다.
+- **복귀·조건부 제거:** 동기 코드·schema·복구 원본의 제거는 이번 기본 완료 조건에 포함하지
+  않습니다. 최소 보존 창이 끝나고 전환·복구 증거가 유지되는 경우에만 별도 제거를 검토합니다.
+  장시간 부하·HA·범용 장애 시험 플랫폼은 후속 범위로 남습니다.
+
+## 검증과 완료 판정
+
+아래 명령은 **구현 후 수행할 계획**입니다. 현재 문서 작성 중 실행한 테스트 결과가 아닙니다.
+새 test class 이름은 예정 이름이며 실제 구현 이름과 함께 명령을 갱신합니다.
+
+| 검증 묶음 | 실행 명령·진입점 | 통과 기준 |
+| --- | --- | --- |
+| 공유 계약·원자 저장 | `./gradlew test --tests '*CommunityOutboxTransactionIntegrationTest' --tests '*ApplicationModuleVerificationTest'` | rollback·재요청·module 공개 경계가 U1 oracle과 일치 |
+| 실제 전달·실패·보존 | `./gradlew test --tests '*CommunityKafkaDeliveryIntegrationTest' --tests '*CommunityKafkaFailureIntegrationTest' --tests '*CommunityOutboxLifecycleIntegrationTest'` | 실제 Kafka·PostgreSQL에서 async-only·중복·crash·DLT·재발행·정리 경계 통과 |
+| 의존 version | `./gradlew dependencyInsight --dependency spring-kafka --configuration runtimeClasspath` 및 `kafka-clients` 조회 | Boot BOM과 실제 해석 version이 일치, 수동 override 없음 |
+| 전체 application 회귀 | `./gradlew spotlessCheck check --no-daemon --rerun-tasks --console=plain` | 기존 Community 동기 mode·cursor·Notification·보안·schema·모듈 test와 새 test 통과 |
+| 배포 source | `kubectl kustomize deploy/overlays/stg`, 고정 operator 설치 파일 render, 기존 GitOps bootstrap 계약 test | 설치 owner·allowlist·비활성 기본값·필요 network flow·Secret 비노출 보존 |
+| 실제 환경 | U6의 role별 허용/거부, U7의 전환·중단·재시작·data-loss·rollback 절차 | 예상 event/recipient 집합의 누락 0·사용자 중복 0, 중단 중 댓글 저장 보존 |
+| 최종 revision | 현재 CI와 Sonar 검증 workflow | 정확한 최종 SHA의 required CI 성공, Sonar revision 일치·Quality Gate·Open issues gate 통과 |
+
+Outbox write 보호는 U1·U3·U7, 실제 알림은 U2·U7, 보존·복구는 U3·U4·U7,
+보안과 자원 경계는 U3·U5·U6, 배포 호환성·rollback은 U1·U5·U7, 운영·문서 인계는
+각 단위와 U8이 증명합니다. 후속 수치 부하 기준을 이 표의 합격 항목으로 끌어오지 않습니다.
+
+## 전환과 복구
+
+| 상태 | 동기 알림 | Relay·consumer | Cleanup·복구 책임 |
+| --- | --- | --- | --- |
+| 준비 | 유지 | 비활성 | 추가 schema·outbox를 보존, Kafka 없이 application 기동 가능 |
+| 제한된 shadow | 유지 | 지정 검증 범위에서 활성 | Cleanup 중지. Inbox unique가 중복을 막으며 별도 async-only corpus가 필요 |
+| 비동기 primary | 비활성 | 활성 | 완료 증거와 보존 창을 충족한 row만 정리. Pending age·DLT·disk 신호 확인 |
+| Application rollback | 비활성화 완료 확인 뒤 복귀 | 먼저 멈추고 진행 중 작업을 정리 | Cleanup 중지, outbox 계속 기록, 이미 쌓인 backlog는 U4로 복구 |
+| Broker data-loss | 승인된 mode 유지 | 새 broker 확인 전 중지 | 원본 DB 보존, 완료 증거 없는 event를 재발행하고 정상 신규 처리 확인 |
+
+Schema는 추가 방식으로 배포하며 과거 version의 실행 가능성을 먼저 확인합니다. 이전 artifact가
+outbox 기록을 지원하지 않는다면 일반 flag rollback 대상이 될 수 없습니다. 원본 기록을 유지하는
+동기 mode를 우선 사용하고, 전달 원본을 빠뜨리는 artifact rollback은 수행하지 않습니다.
+
+## 영구 문서 반영
+
+| 구현 결과 | 기존 owner와 반영 내용 | 반영 시점 |
+| --- | --- | --- |
+| Module·event·transaction | `docs/project/200-current-architecture.md`, `210-module-map.md`에 실제 공개 경계·Community 원본·Notification receipt 책임 반영 | U1~U4 구현과 함께 |
+| Runtime·test | `docs/tech-stack/100-current-stack.md`, `300-testing-stack.md`, `.env.example`, `docs/development/100-local-development.md`에 dependency·비활성 기본값·실제 Kafka 테스트·Secret 주입 계약 | U2~U3 |
+| Kafka·GitOps | 기존 infrastructure overview·Kubernetes·Argo CD 설명에 component와 권한·설치 관계 반영. Generic architecture 규칙을 Kafka 전용으로 바꾸지 않음 | U5~U6 |
+| Kafka 전용 lifecycle | 예정 `docs/operations/380-kafka-lifecycle-runbook.md` 한 owner에 설치·자격 교체·관측·replay·data-loss·제거 절차 작성 | U4~U6에서 준비하고 U7 증거로 검증 |
+| 공용 운영 진입점 | 기존 `350` Application bootstrap, `420` 배포·rollback, `540` 환경변수 router, `560` Community 활성화를 재사용하고 Kafka 전용 owner 링크만 필요한 곳에 추가 | U5~U7 |
+| 최종 상태 | 본 work item과 연도 router를 실제 완료 증거에 맞춰 갱신 | U8 |
+
+Kafka lifecycle은 기존 `350`의 최초 application 연결이나 `540`의 source 발견만으로 수행할 수
+없습니다. 전용 owner 하나는 인증·재발행·데이터 손실 복구의 실행 책임을 남기는 데 필요합니다.
+현재 비어 있는 `380` 후보는 구현 시 direct directory·번호·inbound link를 다시 확인해 배치합니다.
+이번 계획 작성에서는 그 runbook이나 별도 backlog·시험 플랫폼 문서를 만들지 않습니다.
 
 ## 관련 문서
 

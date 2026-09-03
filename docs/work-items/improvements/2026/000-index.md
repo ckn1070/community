@@ -11,7 +11,7 @@
 | 007 | Done | [OpenAPI 실제 응답 계약 동기화](007-openapi-response-contract.md) | - | 실제 응답 schema·보안·공통 오류와 생성 OpenAPI 자동 동기화 |
 | 008 | Done | [Staging Swagger 관리자 접근 보호](008-staging-swagger-admin-access.md) | [설계](008-staging-swagger-admin-access-design.md) | staging 전용 Swagger를 기존 관리자 계정 Form Login으로 보호 |
 | 009 | Done | [비카탈로그 DDD 보완](009-non-catalog-ddd-hardening.md) | [설계](009-non-catalog-ddd-hardening-design.md) | refresh·security audit 단일 writer와 필요한 전술 모델·구조 gate 구현 완료 |
-| 010 | Proposed | [010 Community Kafka 이벤트 전달 기반](010-community-kafka-event-delivery.md) | [010 해결 설계](010-community-kafka-event-delivery-design.md) | 해결 설계 완료; Kafka 구축·첫 알림 흐름 우선, 시험 플랫폼 후속 분리; 다음 실행 계획 작성 |
+| 010 | Planned | [010 Community Kafka 이벤트 전달 기반](010-community-kafka-event-delivery.md) | [010 해결 설계](010-community-kafka-event-delivery-design.md) | 해결 설계·U1~U8 실행 계획 확정, 다음은 U1 구현; 실제 환경 적용 조건은 U6·U7에서 확인, 시험 플랫폼 후속 유지 |
 
 ## 관련 문서
 
