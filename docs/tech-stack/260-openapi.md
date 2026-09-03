@@ -54,9 +54,11 @@ session 또는 공유 Spring Session 저장소를 재검토합니다.
   소유하고, 중앙 구성은 공통 오류·보안 계약을 소유합니다.
 
 생성된 `/v3/api-docs` 계약 테스트는 전체 operation 수와 path, 실제 response code 집합,
-public·protected 분류, 성공 response 필수 field, `Location` header와 공통 오류 schema를
-검증합니다. 새 API나 응답 변경이 이 집합을 바꾸면 표준 Gradle `test`와 `check`가 실패하므로
-실제 Controller·Security·오류 처리와 함께 명세 기대값을 검토해야 합니다.
+public·protected 분류, 모든 operation의 비어 있지 않은 `summary`·`description`, 성공 response
+필수 field, `Location` header와 공통 오류 schema를 검증합니다. 기능 flag로 조건부 등록되는
+Controller도 테스트 context에서 활성화해 전체 집합에 포함합니다. 새 API나 응답 변경이 이
+집합을 바꾸거나 설명을 빠뜨리면 표준 Gradle `test`와 `check`가 실패하므로 실제 Controller·
+Security·오류 처리와 함께 명세 기대값을 검토해야 합니다.
 
 카탈로그의 세 GET도 같은 전체 operation 집합에 포함합니다. 모델 목록 parameter에는 첫 진입
 기본값(`ON_SALE`, `NAME_ASC`, page `0`, size `20`, 서울 현재 날짜)을 설명하고, 목록·상세
@@ -78,8 +80,8 @@ Spring Boot 4 지원은 springdoc v3 라인을 기준으로 확인합니다.
 
 ## Controller 문서화 기준
 
-- endpoint 목적을 summary로 설명합니다.
-- 복잡한 API는 description을 추가합니다.
+- 모든 endpoint의 목적을 비어 있지 않은 summary로 설명합니다.
+- 모든 endpoint에 API 소비자가 대상·행동·핵심 조건을 이해할 수 있는 description을 추가합니다.
 - request/response DTO field description을 필요한 범위에서 작성합니다.
 - 오류 응답은 공통 error schema와 HTTP status를 명시합니다.
 - 인증/인가 조건이 있으면 문서에 드러냅니다.

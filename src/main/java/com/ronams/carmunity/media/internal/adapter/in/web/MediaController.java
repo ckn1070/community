@@ -4,6 +4,8 @@ import com.ronams.carmunity.media.internal.application.MediaDeliveryBudget;
 import com.ronams.carmunity.media.internal.application.MediaErrorCode;
 import com.ronams.carmunity.media.internal.application.MediaService;
 import com.ronams.carmunity.shared.error.ApiException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -25,6 +27,8 @@ public class MediaController {
   private final MediaService service;
   private final MediaDeliveryBudget deliveryBudget;
 
+  @Operation(summary = "게시글 이미지 업로드", description = "인증된 사용자의 이미지 파일을 검증 대기 상태로 접수합니다.")
+  @ApiResponse(responseCode = "202", description = "이미지 업로드 접수")
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<Map<String, Object>> upload(
       @RequestHeader("Idempotency-Key") UUID key,
@@ -60,11 +64,15 @@ public class MediaController {
     }
   }
 
+  @Operation(summary = "이미지 처리 상태 조회", description = "업로드한 이미지의 검증 및 사용 가능 상태를 조회합니다.")
+  @ApiResponse(responseCode = "200", description = "이미지 처리 상태 조회 성공")
   @GetMapping("/{mediaId}")
   public Map<String, Object> status(@PathVariable UUID mediaId, Principal principal) {
     return service.status(actor(principal), mediaId);
   }
 
+  @Operation(summary = "이미지 콘텐츠 조회", description = "사용 가능한 이미지의 binary 콘텐츠를 반환합니다.")
+  @ApiResponse(responseCode = "200", description = "이미지 콘텐츠 조회 성공")
   @GetMapping("/{mediaId}/content")
   public ResponseEntity<byte[]> content(@PathVariable UUID mediaId) {
     MediaService.MediaContent content = service.content(mediaId);
