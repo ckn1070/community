@@ -44,6 +44,8 @@ class PostgreSqlIntegrationTestSupportContractTest {
         .doNotHaveFullyQualifiedName(SUPPORT_CLASS)
         .and()
         .doNotHaveFullyQualifiedName(CONTRACT_CLASS)
+        .and()
+        .doNotHaveFullyQualifiedName("com.ronams.carmunity.support.KafkaIntegrationTestSupport")
         .should()
         .dependOnClassesThat()
         .resideInAnyPackage("org.testcontainers..")

@@ -1,4 +1,4 @@
-/** notification 모듈입니다. 외부 발송 provider, template, 발송 설정과 오류 변환을 소유합니다. */
+/** notification 모듈입니다. 외부 발송과 Community inbox·event receipt, 완료 조회, Kafka 소비 경계를 소유합니다. */
 @org.springframework.modulith.ApplicationModule(
-    allowedDependencies = {"shared :: pagination", "shared :: error"})
+    allowedDependencies = {"shared :: pagination", "shared :: error", "shared :: integration"})
 package com.ronams.carmunity.notification;
