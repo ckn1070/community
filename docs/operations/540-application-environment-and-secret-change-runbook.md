@@ -286,11 +286,11 @@ fi
 TARGET_SECRET_VALUE_BASE64="$(printf '%s' "${TARGET_SECRET_VALUE}" | base64 | tr -d '\n')"
 
 printf '%s' "${TARGET_SECRET_VALUE}" \
-  | kubectl create secret generic "${TARGET_SECRET_NAME}" \
+  | KUBERC=off KUBECONFIG=/dev/null kubectl create secret generic "${TARGET_SECRET_NAME}" \
       --namespace="${TARGET_NAMESPACE}" \
       --from-file="${TARGET_SECRET_KEY}=/dev/stdin" \
       --dry-run=client -o yaml \
-  | kubectl label --local -f - \
+  | KUBERC=off KUBECONFIG=/dev/null kubectl label --local -f - \
       "app.kubernetes.io/managed-by=${TARGET_SECRET_OWNER}" -o yaml \
   | sudo KUBECONFIG=/etc/kubernetes/admin.conf \
       kubectl apply --server-side \
