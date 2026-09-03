@@ -19,6 +19,13 @@ import com.ronams.carmunity.auth.internal.application.port.in.RotateRefreshToken
 import com.ronams.carmunity.catalog.internal.application.port.in.GetCatalogModelDetailUseCase;
 import com.ronams.carmunity.catalog.internal.application.port.in.ListCatalogBrandsUseCase;
 import com.ronams.carmunity.catalog.internal.application.port.in.SearchCatalogModelsUseCase;
+import com.ronams.carmunity.community.internal.application.service.CommunityService;
+import com.ronams.carmunity.media.api.MediaAvailability;
+import com.ronams.carmunity.media.internal.application.MediaDeliveryBudget;
+import com.ronams.carmunity.media.internal.application.MediaService;
+import com.ronams.carmunity.moderation.internal.application.ModerationService;
+import com.ronams.carmunity.shared.pagination.CursorTokens;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -31,6 +38,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.JsonNode;
@@ -42,6 +51,7 @@ import tools.jackson.databind.json.JsonMapper;
 @Import({ApiErrorResponseFactory.class, OpenApiConfiguration.class})
 @ImportAutoConfiguration({SpringDocConfiguration.class, SpringDocWebMvcConfiguration.class})
 @EnableConfigurationProperties(SpringDocConfigProperties.class)
+@TestPropertySource(properties = "carmunity.community.enabled=true")
 class OpenApiContractTest {
 
   private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
@@ -80,7 +90,66 @@ class OpenApiContractTest {
               "500"),
           operation("get", "/api/v1/car/brands", "200", "405", "500"),
           operation("get", "/api/v1/car/models", "200", "400", "405", "500"),
-          operation("get", "/api/v1/car/models/{carModelId}", "200", "400", "404", "405", "500"));
+          operation("get", "/api/v1/car/models/{carModelId}", "200", "400", "404", "405", "500"),
+          operation("get", "/api/v1/boards/free/posts", "200", "500"),
+          operation("post", "/api/v1/boards/free/posts", "201", "400", "401", "403", "415", "500"),
+          operation("get", "/api/v1/posts/{postId}", "200", "500"),
+          operation("patch", "/api/v1/posts/{postId}", "200", "400", "401", "403", "415", "500"),
+          operation("delete", "/api/v1/posts/{postId}", "204", "401", "403", "500"),
+          operation("get", "/api/v1/posts/{postId}/comments", "200", "500"),
+          operation("get", "/api/v1/comments/{commentId}/replies", "200", "500"),
+          operation(
+              "post", "/api/v1/posts/{postId}/comments", "201", "400", "401", "403", "415", "500"),
+          operation("delete", "/api/v1/comments/{commentId}", "204", "401", "403", "500"),
+          operation(
+              "patch", "/api/v1/comments/{commentId}", "200", "400", "401", "403", "415", "500"),
+          operation(
+              "put",
+              "/api/v1/posts/{contentId}/reaction",
+              "200",
+              "400",
+              "401",
+              "403",
+              "415",
+              "500"),
+          operation(
+              "put",
+              "/api/v1/comments/{contentId}/reaction",
+              "200",
+              "400",
+              "401",
+              "403",
+              "415",
+              "500"),
+          operation("delete", "/api/v1/posts/{contentId}/reaction", "204", "401", "403", "500"),
+          operation("delete", "/api/v1/comments/{contentId}/reaction", "204", "401", "403", "500"),
+          operation("post", "/api/v1/posts/{targetId}/reports", "201", "401", "403", "500"),
+          operation("post", "/api/v1/comments/{targetId}/reports", "201", "401", "403", "500"),
+          operation("get", "/api/v1/admin/community/reports", "200", "401", "403", "500"),
+          operation(
+              "get", "/api/v1/admin/community/reports/{reportId}", "200", "401", "403", "500"),
+          operation(
+              "patch",
+              "/api/v1/admin/community/reports/{reportId}",
+              "200",
+              "400",
+              "401",
+              "403",
+              "415",
+              "500"),
+          operation("post", "/api/v1/media/images", "202", "400", "401", "403", "415", "500"),
+          operation("get", "/api/v1/media/images/{mediaId}", "200", "401", "403", "500"),
+          operation("get", "/api/v1/media/images/{mediaId}/content", "200", "500"),
+          operation("get", "/api/v1/notifications", "200", "401", "403", "500"),
+          operation(
+              "patch",
+              "/api/v1/notifications/{notificationId}",
+              "200",
+              "400",
+              "401",
+              "403",
+              "415",
+              "500"));
 
   private static final Set<OperationKey> CATALOG_OPERATIONS =
       Set.of(
@@ -193,13 +262,36 @@ class OpenApiContractTest {
       Set.of(
           new OperationKey("put", "/api/v1/auth/password"),
           new OperationKey("post", "/api/v1/admin/invitations"),
-          new OperationKey("delete", "/api/v1/admin/invitations/{invitationId}"));
+          new OperationKey("delete", "/api/v1/admin/invitations/{invitationId}"),
+          new OperationKey("post", "/api/v1/boards/free/posts"),
+          new OperationKey("patch", "/api/v1/posts/{postId}"),
+          new OperationKey("delete", "/api/v1/posts/{postId}"),
+          new OperationKey("post", "/api/v1/posts/{postId}/comments"),
+          new OperationKey("delete", "/api/v1/comments/{commentId}"),
+          new OperationKey("patch", "/api/v1/comments/{commentId}"),
+          new OperationKey("put", "/api/v1/posts/{contentId}/reaction"),
+          new OperationKey("put", "/api/v1/comments/{contentId}/reaction"),
+          new OperationKey("delete", "/api/v1/posts/{contentId}/reaction"),
+          new OperationKey("delete", "/api/v1/comments/{contentId}/reaction"),
+          new OperationKey("post", "/api/v1/posts/{targetId}/reports"),
+          new OperationKey("post", "/api/v1/comments/{targetId}/reports"),
+          new OperationKey("get", "/api/v1/admin/community/reports"),
+          new OperationKey("get", "/api/v1/admin/community/reports/{reportId}"),
+          new OperationKey("patch", "/api/v1/admin/community/reports/{reportId}"),
+          new OperationKey("post", "/api/v1/media/images"),
+          new OperationKey("get", "/api/v1/media/images/{mediaId}"),
+          new OperationKey("get", "/api/v1/notifications"),
+          new OperationKey("patch", "/api/v1/notifications/{notificationId}"));
 
   private static final Set<OperationKey> LOCATION_RESPONSE_OPERATIONS =
       Set.of(
           new OperationKey("post", "/api/v1/members"),
           new OperationKey("post", "/api/v1/admin/invitations"),
-          new OperationKey("post", "/api/v1/admin/invitations/{invitationId}/acceptances"));
+          new OperationKey("post", "/api/v1/admin/invitations/{invitationId}/acceptances"),
+          new OperationKey("post", "/api/v1/boards/free/posts"),
+          new OperationKey("post", "/api/v1/posts/{postId}/comments"),
+          new OperationKey("post", "/api/v1/posts/{targetId}/reports"),
+          new OperationKey("post", "/api/v1/comments/{targetId}/reports"));
 
   @Autowired private MockMvc mockMvc;
 
@@ -218,8 +310,16 @@ class OpenApiContractTest {
   @MockitoBean private ListCatalogBrandsUseCase listCatalogBrandsUseCase;
   @MockitoBean private SearchCatalogModelsUseCase searchCatalogModelsUseCase;
   @MockitoBean private GetCatalogModelDetailUseCase getCatalogModelDetailUseCase;
+  @MockitoBean private CommunityService communityService;
+  @MockitoBean private MediaService mediaService;
+  @MockitoBean private MediaDeliveryBudget mediaDeliveryBudget;
+  @MockitoBean private MediaAvailability mediaAvailability;
+  @MockitoBean private ModerationService moderationService;
+  @MockitoBean private JdbcClient jdbcClient;
+  @MockitoBean private CursorTokens cursorTokens;
+  @MockitoBean private MeterRegistry meterRegistry;
 
-  /** 새 API가 추가되면 operation 수와 응답 집합이 달라져 실제 계약 검토 없이 명세가 통과하지 못합니다. */
+  /** 새 API의 설명·응답·보안 계약을 검토하지 않으면 생성 명세 검증이 실패합니다. */
   @Test
   void documentsEveryOperationWithItsActualResponsesAndSecurity() throws Exception {
     JsonNode document = generatedOpenApi();
@@ -230,6 +330,10 @@ class OpenApiContractTest {
         (key, expectedResponses) -> {
           JsonNode operation = paths.get(key.path()).get(key.method());
           assertThat(operation).as(key.toString()).isNotNull();
+          assertThat(operation.path("summary").stringValue()).as("%s summary", key).isNotBlank();
+          assertThat(operation.path("description").stringValue())
+              .as("%s description", key)
+              .isNotBlank();
           assertThat(fieldNames(operation.get("responses")))
               .as("%s responses", key)
               .containsExactlyInAnyOrderElementsOf(expectedResponses);
@@ -355,7 +459,7 @@ class OpenApiContractTest {
             .orElseThrow()
             .getValue();
     JsonNode schema = successResponse.at("/content/application~1json/schema");
-    if (!schema.isMissingNode() && !CATALOG_OPERATIONS.contains(key)) {
+    if (!schema.isMissingNode() && schema.has("$ref") && !CATALOG_OPERATIONS.contains(key)) {
       String componentName = schema.get("$ref").stringValue().replace("#/components/schemas/", "");
       JsonNode component = document.at("/components/schemas/" + componentName);
       assertThat(arrayValues(component.get("required")))

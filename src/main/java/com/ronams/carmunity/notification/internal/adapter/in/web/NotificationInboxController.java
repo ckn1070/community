@@ -3,6 +3,8 @@ package com.ronams.carmunity.notification.internal.adapter.in.web;
 import com.ronams.carmunity.notification.internal.application.NotificationErrorCode;
 import com.ronams.carmunity.shared.error.ApiException;
 import com.ronams.carmunity.shared.pagination.CursorTokens;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -33,6 +35,8 @@ public class NotificationInboxController {
   private final JdbcClient jdbc;
   private final CursorTokens cursors;
 
+  @Operation(summary = "내 알림 목록", description = "인증된 사용자의 알림을 최신순 cursor 기반으로 조회합니다.")
+  @ApiResponse(responseCode = "200", description = "알림 목록 조회 성공")
   @GetMapping
   @Transactional(readOnly = true)
   public Map<String, Object> list(
@@ -68,6 +72,8 @@ public class NotificationInboxController {
     return result;
   }
 
+  @Operation(summary = "알림 읽음 처리", description = "인증된 사용자가 자신의 알림을 읽음 상태로 변경합니다.")
+  @ApiResponse(responseCode = "200", description = "알림 읽음 처리 성공")
   @PatchMapping("/{notificationId}")
   @Transactional
   public Map<String, Object> read(
