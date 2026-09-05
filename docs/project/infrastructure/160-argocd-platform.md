@@ -130,7 +130,7 @@ server-side apply하고 fresh reconciliation까지 검증합니다. Script는 �
 | --- | --- | --- |
 | Repository Secret | `car-community` project scope, exact Git URL | 다른 project가 credential을 일반 사용하지 않게 합니다. |
 | AppProject | `car-community` | Application의 source·destination·cluster-scoped resource 경계를 분리합니다. |
-| Source | Exact `https://github.com/ckn1070/car-community.git` | 다른 repository를 읽지 않습니다. Application path는 별도로 제한합니다. |
+| Source | Exact `https://github.com/example-org/car-community.git` | 다른 repository를 읽지 않습니다. Application path는 별도로 제한합니다. |
 | Destination | In-cluster exact server·`car-community` namespace | 현재 application target 한 곳만 허용합니다. |
 | Cluster-scoped allow | 없음 | `car-community` Namespace는 actual Secret을 적용하는 application bootstrap만 생성합니다. Argo CD가 owner를 나누지 않습니다. |
 | Namespaced allow-list | Core `ConfigMap`·`Service`, `apps/Deployment`, `batch/Job`, `networking.k8s.io/Ingress` | Git manifest가 직접 소유하는 kind만 허용합니다. ALB·Target Group·listener·SG는 LBC가 AWS에 만들므로 Argo에 cluster-scoped wildcard가 필요하지 않고 Git 밖 Secret도 허용하지 않습니다. |

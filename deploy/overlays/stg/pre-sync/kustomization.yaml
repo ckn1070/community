@@ -5,7 +5,7 @@ configMapGenerator:
   - name: car-community-config
     literals:
       # 현재 staging RDS endpoint를 TLS hostname·CA 검증과 함께 사용합니다.
-      - DB_URL=jdbc:postgresql://stg-car-community-postgres.cjemi62mqsl6.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem
+      - DB_URL=jdbc:postgresql://example-staging-postgres.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem
   - name: car-community-rds-ca
     files:
       - ap-northeast-2-bundle.pem

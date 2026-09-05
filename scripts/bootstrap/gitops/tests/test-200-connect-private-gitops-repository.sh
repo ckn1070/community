@@ -88,7 +88,7 @@ test_tracked_manifests_define_restricted_project_and_application() {
   local application_path="${APPLICATION_MANIFEST}"
 
   assert_file_contains "${project_path}" \
-    '    - https://github.com/ckn1070/car-community.git' \
+    '    - https://github.com/example-org/car-community.git' \
     "AppProject source를 현재 private application repository로 제한해야 합니다."
   assert_file_contains "${project_path}" '  clusterResourceWhitelist: []' \
     "Application bootstrap 소유 Namespace를 Argo CD가 생성하면 안 됩니다."
@@ -285,7 +285,7 @@ test_repository_secret_does_not_log_private_key() (
   apply_repository_secret 123 456 "${private_key_path}"
 
   grep -Fq -- '--from-file=githubAppPrivateKey=' "${action_log}"
-  grep -Fq -- '--from-literal=url=https://github.com/ckn1070/car-community.git' "${action_log}"
+  grep -Fq -- '--from-literal=url=https://github.com/example-org/car-community.git' "${action_log}"
   grep -Fq -- '--from-literal=project=car-community' "${action_log}"
   if grep -Fq -- "${private_key_content}" "${action_log}"; then
     echo "FAIL: GitHub App private key가 command argument나 log에 나타나면 안 됩니다." >&2

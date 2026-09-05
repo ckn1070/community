@@ -8,7 +8,7 @@ metadata:
 spec:
   description: car-community staging GitOps deployment boundary
   sourceRepos:
-    - https://github.com/ckn1070/car-community.git
+    - https://github.com/example-org/car-community.git
   destinations:
     - namespace: car-community
       server: https://kubernetes.default.svc

@@ -19,7 +19,7 @@ AWS Console에서 Kubernetes control plane과 worker를 함께 실행할 단일 
 
 - region은 `ap-northeast-2`입니다.
 - VPC `stg-car-community-vpc`와 2a public subnet이 존재합니다.
-- key pair `namc-sa-ec2`와 대응 private key를 운영자가 안전하게 보관하고 있습니다.
+- key pair `example-staging-key`와 대응 private key를 운영자가 안전하게 보관하고 있습니다.
   private key는 repository에 저장하지 않습니다.
 - node에 배포할 image는 `linux/arm64`를 지원해야 합니다. 이 launch 절차는 application
   image 호환성을 증명하지 않습니다.
@@ -44,7 +44,7 @@ AWS Console에서 Kubernetes control plane과 worker를 함께 실행할 단일 
 | AMI 읽기 전용 속성 | HVM, EBS root device, ENA 활성 |
 | instance type filter | `모든 세대` 활성화 |
 | instance type | `t4g.small`, 2 vCPU, 2 GiB RAM |
-| key pair | `namc-sa-ec2` |
+| key pair | `example-staging-key` |
 | 구매 방식 | 별도 구매 옵션 `없음`인 On-Demand |
 
 Ubuntu Pro나 Marketplace 유료 image를 선택하지 않습니다. `t4g.micro`의 1 GiB 대신

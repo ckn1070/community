@@ -117,7 +117,7 @@ ConfigMap과 Secret만 `envFrom`으로 소비합니다. Migration Job에는 noti
 Base Service는 환경 공통 port contract을 소유하고 staging overlay가 `NodePort`로 patch합니다.
 고정 `nodePort`는 주지 않고 Kubernetes가 할당하게 하며, self-managed kubeadm·Calico
 overlay에서 LBC `instance` target이 node를 거쳐 Pod로 전달하는 경계입니다.
-Ingress는 `stg-api.ronams.com`, HTTP→HTTPS, certificate host discovery와 TLS policy를
+Ingress는 `stg-api.example.com`, HTTP→HTTPS, certificate host discovery와 TLS policy를
 소유하지만 controller release·IAM·certificate·DNS를 소유하지 않습니다. HPA·Cluster
 Autoscaler 자체는 현재 manifest에 포함하지 않습니다.
 

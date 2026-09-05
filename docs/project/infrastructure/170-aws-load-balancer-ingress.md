@@ -8,7 +8,7 @@ EC2 실행 순서는 [370 Staging 외부 HTTPS ingress 최초 구축 runbook](..
 ## 전체 mental model
 
 ```text
-stg-api.ronams.com
+stg-api.example.com
   Cloudflare DNS-only CNAME
     -> internet-facing ALB
        ├── :80  -> :443 redirect
@@ -47,7 +47,7 @@ AWS Console에서 controller-managed ALB·Target Group·listener·security group
 
 | 항목 | 현재 계약 | 이유·영향 |
 | --- | --- | --- |
-| Domain | `stg-api.ronams.com` | Staging API identity를 production과 분리합니다. |
+| Domain | `stg-api.example.com` | Staging API identity를 production과 분리합니다. |
 | ALB scheme | `internet-facing` | Public client가 직접 접근합니다. |
 | Listener | HTTP `80`, HTTPS `443` | `80`은 application으로 forward하지 않고 `443`으로 redirect합니다. |
 | TLS policy | `ELBSecurityPolicy-TLS13-1-2-Res-2021-06` | Security Hub ELB.17 권장 정책이며 TLS 1.0·1.1을 제외합니다. |
@@ -125,7 +125,7 @@ stg-car-community-k8s-node-role
 ECR pull과 LBC policy는 별도 customer-managed policy로 유지해 purpose·diff·rollback을
 분리합니다. LBC official policy는 exact release와 checksum을 기준으로 가져오고 official
 installation guide가 지정한 첫 security-group ingress statement에 exact staging VPC
-`vpc-0d3d5522a3c04861b` condition만 추가하고 그 statement의 `Resource: "*"`는
+`vpc-0123456789abcdef0` condition만 추가하고 그 statement의 `Resource: "*"`는
 보존합니다. 뒤의 ingress/revoke/delete + resource-tag `Null` statement를 포함한
 다른 official statement·resource·condition은 그대로 유지합니다.
 
@@ -167,7 +167,7 @@ providerID 수렴 절차를 다중 node 설계와 함께 재검토합니다.
 1. ACM public certificate를 `ap-northeast-2`에서 요청합니다.
 2. ACM이 제공한 validation CNAME을 Cloudflare에 DNS-only로 만듭니다.
 3. Certificate `Issued`를 확인하고 validation CNAME을 유지합니다.
-4. Ingress `spec.tls.hosts`와 rule host가 `stg-api.ronams.com`을 선언합니다.
+4. Ingress `spec.tls.hosts`와 rule host가 `stg-api.example.com`을 선언합니다.
 5. LBC가 host에 맞는 certificate를 탐색해 explicit HTTPS listener에 연결합니다.
 6. ALB DNS name이 생긴 뒤 Cloudflare `stg-api` CNAME을 DNS-only로 만듭니다.
 

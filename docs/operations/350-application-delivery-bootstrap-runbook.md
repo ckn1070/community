@@ -239,7 +239,7 @@ branch·PR 절차를 사용합니다.
 | 항목 | 설정 | 이유 |
 | --- | --- | --- |
 | 이름 | `car-community-argocd` | Repository와 용도를 식별 |
-| Homepage URL | `https://github.com/ckn1070/car-community` | 현재 source repository 표시 |
+| Homepage URL | `https://github.com/example-org/car-community` | 현재 source repository 표시 |
 | Callback·Setup URL, Device Flow | 비움·비활성 | 사용자 OAuth flow를 사용하지 않음 |
 | Webhook | 비활성 | 현재 polling을 사용하며 webhook endpoint가 없음 |
 | Repository permission | `Contents: Read-only` | Git clone에 필요한 최소 권한 |

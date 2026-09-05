@@ -15,7 +15,7 @@ Argo CD application delivery와 외부 HTTPS ingress까지 전체 구축 흐름�
 - **환경**: `stg`, AWS 서울 `ap-northeast-2`
 - **기반**: 수동 AWS resource, Ubuntu `arm64` EC2 한 대의 Kubernetes control plane·worker
 - **배포**: Private ECR exact digest와 Argo CD Core의 `deploy/overlays/stg` full sync
-- **외부 ingress**: Cloudflare DNS-only `stg-api.ronams.com`→internet-facing ALB→NodePort
+- **외부 ingress**: Cloudflare DNS-only `stg-api.example.com`→internet-facing ALB→NodePort
 - **필수 완료 결과**: AWS 기반, Kubernetes cluster, CI·image supply, Argo CD와 application이
   실제 환경에서 연결되고 최초 full sync·migration·workload 기술 검증과 public
   HTTPS→ALB→Pod E2E를 통과합니다.
@@ -31,9 +31,9 @@ Argo CD application delivery와 외부 HTTPS ingress까지 전체 구축 흐름�
 | 항목 | 현재 값 |
 | --- | --- |
 | 현재 milestone | Staging 단일 node 전체 구축 필수 결과 완료 |
-| Node·ingress platform 확인 | Primary ENI의 `stg-car-community-k8s-node-sg`에 cluster tag를 적용하고, EC2를 ECR pull·LBC policy가 연결된 `stg-car-community-k8s-node-role`로 전환했습니다. IMDSv2 required·hop limit `2`, public subnet ELB role tag와 `stg-api.ronams.com` ACM certificate `Issued`를 확인했습니다. LBC chart `3.5.0`, replica `1`, exact digest image, required CRD 7개 `Established`, HPA 부재, providerID `aws:///ap-northeast-2a/i-07fe84c38f1f31f1b`와 external load balancer 제외 label 해제를 확인했습니다. 새 role의 private ECR exact digest pull regression과 temporary namespace cleanup도 성공했습니다. |
-| GitOps·workload 확인 | AppProject는 `networking.k8s.io/Ingress`를 허용하고 Secret·wildcard를 허용하지 않으며, staging overlay render와 target API server-side dry-run이 성공했습니다. Ingress source를 포함한 revision `4a75d77cf58c2139ee81915bff8dd2a2db23ea8f`는 remote `main`에 반영됐고 CI·Sonar·image publish가 성공했습니다. Argo CD Application은 `Synced`·`Healthy`이고 condition은 없으며, Service는 NodePort `30503`, Ingress는 ALB hostname `k8s-carcommu-carcommu-d11f20047e-481537360.ap-northeast-2.elb.amazonaws.com`을 보고합니다. |
-| Public ingress E2E 확인 | 같은 ALB가 exact VPC와 public `2a`·`2b` subnet을 사용하고, HTTP `80`→HTTPS `443` redirect, exact TLS policy·ACM certificate, instance Target Group의 HTTP target `Healthy`를 확인했습니다. Frontend SG는 public `80`·`443`만 받고, node SG의 동적 NodePort `30503` source는 shared backend SG이며 public NodePort rule은 없습니다. DNS 전 ALB 직접 요청은 HTTPS readiness `200`과 HTTP `301`을 통과했습니다. Cloudflare DNS-only CNAME은 exact ALB hostname으로 수렴했고, public `stg-api.ronams.com`은 HTTPS readiness `200`, HTTP→HTTPS `301`, `CN=stg-api.ronams.com` Amazon certificate를 반환했습니다. |
+| Node·ingress platform 확인 | Primary ENI의 `stg-car-community-k8s-node-sg`에 cluster tag를 적용하고, EC2를 ECR pull·LBC policy가 연결된 `stg-car-community-k8s-node-role`로 전환했습니다. IMDSv2 required·hop limit `2`, public subnet ELB role tag와 `stg-api.example.com` ACM certificate `Issued`를 확인했습니다. LBC chart `3.5.0`, replica `1`, exact digest image, required CRD 7개 `Established`, HPA 부재, providerID `aws:///ap-northeast-2a/i-0123456789abcdef0`와 external load balancer 제외 label 해제를 확인했습니다. 새 role의 private ECR exact digest pull regression과 temporary namespace cleanup도 성공했습니다. |
+| GitOps·workload 확인 | AppProject는 `networking.k8s.io/Ingress`를 허용하고 Secret·wildcard를 허용하지 않으며, staging overlay render와 target API server-side dry-run이 성공했습니다. Ingress source를 포함한 revision `4a75d77cf58c2139ee81915bff8dd2a2db23ea8f`는 remote `main`에 반영됐고 CI·Sonar·image publish가 성공했습니다. Argo CD Application은 `Synced`·`Healthy`이고 condition은 없으며, Service는 NodePort `30503`, Ingress는 ALB hostname `example-staging-alb.ap-northeast-2.elb.amazonaws.com`을 보고합니다. |
+| Public ingress E2E 확인 | 같은 ALB가 exact VPC와 public `2a`·`2b` subnet을 사용하고, HTTP `80`→HTTPS `443` redirect, exact TLS policy·ACM certificate, instance Target Group의 HTTP target `Healthy`를 확인했습니다. Frontend SG는 public `80`·`443`만 받고, node SG의 동적 NodePort `30503` source는 shared backend SG이며 public NodePort rule은 없습니다. DNS 전 ALB 직접 요청은 HTTPS readiness `200`과 HTTP `301`을 통과했습니다. Cloudflare DNS-only CNAME은 exact ALB hostname으로 수렴했고, public `stg-api.example.com`은 HTTPS readiness `200`, HTTP→HTTPS `301`, `CN=stg-api.example.com` Amazon certificate를 반환했습니다. |
 | 다음 행동 | 필수 구축 결과에 남은 행동은 없습니다. 선택 후속 기능과 scenario-local backlog는 별도 승인 전 실행하지 않습니다. |
 | 현재 blocker | 없습니다. 필수 checklist와 전체 완료 조건을 모두 충족했습니다. |
 
@@ -322,7 +322,7 @@ live postcondition을 근거로만 완료합니다. 모든 세부 명령과 roll
   - **완료**: IMDS credential role name이 새 role과 exact입니다.
 - [x] **Public subnet discovery·ACM certificate**
   - **행동**: Public `2a`·`2b`에만 `kubernetes.io/role/elb=1`을 두고,
-    `ap-northeast-2`의 `stg-api.ronams.com` public certificate를 Cloudflare DNS-only
+    `ap-northeast-2`의 `stg-api.example.com` public certificate를 Cloudflare DNS-only
     validation CNAME으로 발급합니다.
   - **실행**: Public subnet tag와 route 확인은 AWS VPC Console, certificate 요청과
     `Issued` 확인은 AWS ACM Console, validation CNAME 생성은 Cloudflare Console에서
@@ -363,7 +363,7 @@ live postcondition을 근거로만 완료합니다. 모든 세부 명령과 roll
     readiness `200`·HTTP→HTTPS `301`·ACM certificate, Service NodePort `30503`, Argo CD
     revision `4a75d77cf58c2139ee81915bff8dd2a2db23ea8f`의 `Synced`·`Healthy`와 condition 부재를
     확인했습니다.
-  - **완료**: `stg-api.ronams.com` HTTPS `200`, HTTP→HTTPS `301`, target healthy,
+  - **완료**: `stg-api.example.com` HTTPS `200`, HTTP→HTTPS `301`, target healthy,
     DNS-only CNAME과 Argo `Synced`·`Healthy`를 모두 확인합니다.
 
 ### 선택 후속 기능 qualification
@@ -403,7 +403,7 @@ live postcondition을 근거로만 완료합니다. 모든 세부 명령과 roll
   연결됩니다.
 - 최초 full sync가 `Synced`·`Healthy`, runtime Pod Ready로 끝납니다.
 - New node profile·providerID·public subnet role tag·ACM·LBC prerequisite가 live 검증됩니다.
-- `stg-api.ronams.com` DNS-only→ALB→NodePort→Pod target이 healthy이고 HTTPS `200`,
+- `stg-api.example.com` DNS-only→ALB→NodePort→Pod target이 healthy이고 HTTPS `200`,
   HTTP→HTTPS `301`과 Argo `Synced`·`Healthy`가 같이 확인됩니다.
 
 대표 API·notification 기능 qualification과 최초 Super Admin은 위 선택 section에서 별도로

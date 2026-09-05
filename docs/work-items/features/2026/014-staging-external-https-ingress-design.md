@@ -35,7 +35,7 @@ control plane과 worker를 함께 수행하고, public subnet은 `ap-northeast-2
 - 배경: Domain은 Cloudflare에서 관리하지만 첫 staging ingress는 ALB와 origin의 동작을
   직접 분리해 검증해야 합니다.
 - 검토한 선택지: Cloudflare proxy, Cloudflare DNS-only, Route 53 migration
-- 선택: `stg-api.ronams.com` CNAME을 ALB DNS name으로 만들고 Cloudflare proxy는 끈
+- 선택: `stg-api.example.com` CNAME을 ALB DNS name으로 만들고 Cloudflare proxy는 끈
   DNS-only를 baseline으로 사용합니다.
 - 선택 근거: 최초 구축에서 TLS·header·timeout 실패 계층을 ALB와 application으로 제한하고,
   ACM certificate가 client TLS endpoint가 되게 합니다.
@@ -111,13 +111,13 @@ control plane과 worker를 함께 수행하고, public subnet은 `ap-northeast-2
 
 ### D6. HTTPS certificate와 listener
 
-- 배경: `stg-api.ronams.com`의 client TLS를 ALB에서 종료하고 HTTP를 암호화 경로로
+- 배경: `stg-api.example.com`의 client TLS를 ALB에서 종료하고 HTTP를 암호화 경로로
   수렴시켜야 합니다.
 - 검토한 선택지: Certificate ARN을 Git에 기록, Ingress host certificate discovery,
   Cloudflare edge certificate
 - 선택: `ap-northeast-2` ACM public certificate를 Cloudflare DNS CNAME으로 검증하고,
   validation CNAME을 유지합니다. Ingress는 `spec.tls.hosts`와 rule host에
-  `stg-api.ronams.com`을 두되 certificate ARN annotation은 두지 않습니다. Listener는
+  `stg-api.example.com`을 두되 certificate ARN annotation은 두지 않습니다. Listener는
   `[{"HTTP":80},{"HTTPS":443}]`을 명시하고 `80`을 `443`으로 redirect합니다.
 - 선택 근거: LBC의 host discovery로 certificate identity를 domain 계약에 결속하고 AWS
   account resource ARN을 Git에서 제거합니다. Validation CNAME 유지는 ACM 자동 갱신에

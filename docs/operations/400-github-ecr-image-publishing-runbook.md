@@ -19,7 +19,7 @@ identity·ARM64 build 선택은
 | --- | --- |
 | 언제 | Application source PR을 `main`에 merge한 뒤 exact deployment digest가 필요할 때 반복합니다. `deploy/**` 전용 변경에는 실행 결과만 관찰하고 새 digest를 기대하지 않습니다. |
 | 누가 | Pull request를 merge하고 GitHub Actions와 target ECR repository를 읽을 수 있는 운영자가 확인합니다. |
-| 어디서 | GitHub `ckn1070/car-community → Actions`와 AWS Console `ECR → car-community`입니다. |
+| 어디서 | GitHub `example-org/car-community → Actions`와 AWS Console `ECR → car-community`입니다. |
 | 무엇을 | GitHub의 `CI` 성공으로 자동 시작된 `Publish image` workflow를 관찰합니다. 수동 shell script를 실행하지 않습니다. |
 | 왜 | 성공한 exact source revision, immutable ECR tag와 배포할 digest를 하나의 증거로 결속하기 위해서입니다. |
 | 완료·재개 | Workflow summary와 ECR이 같은 digest를 가리키면 완료입니다. 실패하면 같은 revision의 해당 workflow 경계에서 재실행하거나 새 source PR로 복구합니다. |

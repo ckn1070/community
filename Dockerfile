@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.gradle \
 # runtime stage는 JRE base에 고정 UID/GID를 만들고 생성한 JAR를 실행할 production process를 정의합니다.
 FROM ${RUNTIME_IMAGE} AS runtime
 
-ARG SOURCE_URL=https://github.com/ckn1070/car-community
+ARG SOURCE_URL=https://github.com/example-org/car-community
 ARG REVISION
 ARG CREATED
 ARG SOURCE_DIRTY=false

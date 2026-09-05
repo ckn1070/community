@@ -19,7 +19,7 @@ identity·pull 관점의
 | --- | --- |
 | 언제 | ECR push role이 준비되고 GitHub Actions가 아직 그 role ARN을 받지 못한 최초 설정 시점입니다. |
 | 누가 | AWS IAM role을 조회하고 GitHub repository variable을 관리할 권한이 있는 운영자가 실행합니다. |
-| 어디서 | AWS Console의 IAM role 상세와 GitHub `ckn1070/car-community → Settings → Secrets and variables → Actions → Variables` 화면입니다. |
+| 어디서 | AWS Console의 IAM role 상세와 GitHub `example-org/car-community → Settings → Secrets and variables → Actions → Variables` 화면입니다. |
 | 무엇을 | Repository variable `AWS_ECR_PUSH_ROLE_ARN` 하나를 수동 생성합니다. Repository script는 없습니다. |
 | 왜 | Workflow source에 account별 role ARN이나 장기 AWS key를 저장하지 않고 OIDC role을 선택하기 위해서입니다. |
 | 완료·재개 | Variable 이름과 exact role ARN을 확인합니다. 실패하면 role ARN·권한을 확인한 뒤 같은 Console 단계부터 재개합니다. |
@@ -30,16 +30,16 @@ identity·pull 관점의
 - GitHub OIDC provider와 `car-community-github-ecr-push-role`의 trust·최소 push policy가
   [AWS ECR·IAM 최초 구성](130-ecr-iam-provisioning-runbook.md)에 따라 준비됐습니다.
 - AWS Console에서 위 push role의 exact ARN을 확인했습니다.
-- GitHub repository `ckn1070/car-community`의 Actions 설정을 변경할 권한이 있습니다.
+- GitHub repository `example-org/car-community`의 Actions 설정을 변경할 권한이 있습니다.
 
 Role ARN은 secret이 아니지만 account별 workflow 입력이므로 source에 고정하지 않습니다.
 Password나 AWS access key를 이 절차에 입력하지 않습니다.
 
 ## Repository variable 설정
 
-**실행 위치:** GitHub Web UI의 `ckn1070/car-community` repository
+**실행 위치:** GitHub Web UI의 `example-org/car-community` repository
 
-1. GitHub의 `ckn1070/car-community` repository를 엽니다.
+1. GitHub의 `example-org/car-community` repository를 엽니다.
 2. `Settings → Secrets and variables → Actions → Variables`로 이동합니다.
 3. `New repository variable`을 선택합니다.
 4. 이름에 `AWS_ECR_PUSH_ROLE_ARN`, 값에 AWS Console에서 확인한 exact push role ARN을

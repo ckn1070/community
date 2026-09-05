@@ -18,9 +18,9 @@ spec:
   ingressClassName: alb
   tls:
     - hosts:
-        - stg-api.ronams.com
+        - stg-api.example.com
   rules:
-    - host: stg-api.ronams.com
+    - host: stg-api.example.com
       http:
         paths:
           - path: /

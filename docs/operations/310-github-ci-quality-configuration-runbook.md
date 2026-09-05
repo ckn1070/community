@@ -15,8 +15,8 @@ branch governance 선택 이유는 [코드 품질 도구](../tech-stack/310-code
 | --- | --- |
 | 언제 | Repository에 Sonar 기반 `Application quality` 검증이 아직 없을 때 최초 한 번 실행합니다. 완료 뒤 token 교체에는 `530`을 사용합니다. |
 | 누가 | GitHub repository 설정과 SonarQube Cloud organization·project·token을 관리할 권한이 있는 운영자가 실행합니다. |
-| 어디서 | SonarQube Cloud Console과 GitHub `ckn1070/car-community`의 Settings·Actions 화면입니다. |
-| 선택 hardening 위치 | GitHub `ckn1070/car-community`의 Rulesets 화면입니다. |
+| 어디서 | SonarQube Cloud Console과 GitHub `example-org/car-community`의 Settings·Actions 화면입니다. |
+| 선택 hardening 위치 | GitHub `example-org/car-community`의 Rulesets 화면입니다. |
 | 무엇을 | Sonar project·scoped token·GitHub secret/variable과 `main` baseline을 아래 순서로 수동 설정합니다. Repository script는 없습니다. |
 | 왜 | 실제 게시·배포 입력인 `main` exact revision의 품질 결과를 신뢰할 수 있어야 하기 때문입니다. |
 | 완료·재개 | `main`의 `Application quality`, exact Sonar revision·Quality Gate를 확인합니다. 실패한 필수 번호 단계부터 재개합니다. |
@@ -94,7 +94,7 @@ CI scanner에는 `Execute Analysis`만 필요합니다. Private project Web API 
 
 ## 3. GitHub secret과 variable 저장
 
-**실행 위치:** GitHub Web UI의 `ckn1070/car-community` repository
+**실행 위치:** GitHub Web UI의 `example-org/car-community` repository
 
 GitHub repository **Settings → Secrets and variables → Actions**에서 다음을 저장합니다.
 
@@ -159,7 +159,7 @@ target baseline이 없으면 4단계를, project·revision·Quality Gate가 다�
 
 ## 6. Optional: `main` ruleset hardening
 
-**실행 위치:** GitHub Web UI의 `ckn1070/car-community → Settings → Rules → Rulesets`
+**실행 위치:** GitHub Web UI의 `example-org/car-community → Settings → Rules → Rulesets`
 
 독립 reviewer·GitHub 강제나 지원 plan이 실제로 필요해져 별도 결정한 경우에만 GitHub
 repository **Settings → Rules → Rulesets → New branch ruleset**에서 다음 계약을

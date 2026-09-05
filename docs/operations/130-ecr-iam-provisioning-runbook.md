@@ -19,9 +19,9 @@ Actor·trust·permission 분리와 image lifecycle 선택은
 
 - 현재 12자리 AWS account ID를 확인합니다. 아래 JSON의 `<AWS_ACCOUNT_ID>`는 실제 값으로
   바꾸되 문서 자체를 account별 값으로 수정하지 않습니다.
-- `gh auth status`로 현재 GitHub account가 `ckn1070/car-community`를 읽을 수 있는지
+- `gh auth status`로 현재 GitHub account가 `example-org/car-community`를 읽을 수 있는지
   확인하되 token 값을 출력하거나 복사하지 않습니다.
-- GitHub repository와 배포 branch는 `ckn1070/car-community`의 `main`입니다.
+- GitHub repository와 배포 branch는 `example-org/car-community`의 `main`입니다.
 - ECR repository는 environment 공용 application artifact를 저장하므로 이름에 `stg-`를
   붙이지 않습니다.
 - GitHub push role과 EC2 pull role을 재사용하지 않습니다. access key도 생성하지
@@ -115,13 +115,13 @@ provider 생성만으로 AWS 권한이 생기지 않았으며 다음 단계의 r
 Role을 만들기 직전에 GitHub repository의 현재 subject 형식을 읽습니다.
 
 ```sh
-gh api repos/ckn1070/car-community/actions/oidc/customization/sub \
+gh api repos/example-org/car-community/actions/oidc/customization/sub \
   --jq '{use_default, use_immutable_subject, include_claim_keys}'
 ```
 
 현재 repository는 `use_default=true`, `use_immutable_subject=false`이고 image publish job에
 GitHub Environment를 지정하지 않으므로 branch 기반 subject
-`repo:ckn1070/car-community:ref:refs/heads/main`을 사용합니다. 조회값이 다르거나
+`repo:example-org/car-community:ref:refs/heads/main`을 사용합니다. 조회값이 다르거나
 `.github/workflows/publish-image.yml`의 publish job에 `environment`가 추가됐다면 아래 trust를
 그대로 만들지 않고 [130 ECR·IAM 기반](../project/infrastructure/130-ecr-iam-foundation.md)의
 subject 변경 조건을 먼저 적용합니다.
@@ -137,7 +137,7 @@ Provider 생성 성공 안내의 `역할 할당 → 새 역할 생성`을 선택
 
 | 항목 | 입력값 |
 | --- | --- |
-| GitHub organization | `ckn1070` |
+| GitHub organization | `example-org` |
 | GitHub repository | `car-community` |
 | GitHub branch | `main` |
 
@@ -146,7 +146,7 @@ application을 배포하는 role이 아니라 환경 공용 ECR에 동일한 app
 게시하므로 `stg-`를 붙이지 않습니다. 설명은 다음과 같이 지정합니다.
 
 ```text
-Allows GitHub Actions on ckn1070/car-community main to push images to ECR car-community.
+Allows GitHub Actions on example-org/car-community main to push images to ECR car-community.
 ```
 
 생성 전 검토 화면의 trust policy가 다음 exact 계약과 같은지 확인합니다.
@@ -164,7 +164,7 @@ Allows GitHub Actions on ckn1070/car-community main to push images to ECR car-co
       "Condition": {
         "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:sub": "repo:ckn1070/car-community:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub": "repo:example-org/car-community:ref:refs/heads/main"
         }
       }
     }

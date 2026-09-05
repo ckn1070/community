@@ -1,7 +1,7 @@
 # Staging 외부 HTTPS ingress 최초 구축 runbook
 
 기존 staging kubeadm cluster와 Argo CD application에 AWS Load Balancer Controller를
-bootstrap하고 `stg-api.ronams.com`의 internet-facing ALB·HTTPS·DNS 경로를 최초로 만드는
+bootstrap하고 `stg-api.example.com`의 internet-facing ALB·HTTPS·DNS 경로를 최초로 만드는
 절차입니다.
 
 이 Runbook은 AWS IAM·subnet·ACM, controller 설치, AppProject permission, application
@@ -38,9 +38,9 @@ Repository source나 server-side dry-run만으로 외부 완료를 주장하지 
 
 | 항목 | Exact 값·source |
 | --- | --- |
-| AWS account | `355653384583` |
+| AWS account | `000000000000` |
 | Region | `ap-northeast-2` |
-| VPC | `vpc-0d3d5522a3c04861b` |
+| VPC | `vpc-0123456789abcdef0` |
 | Cluster | `stg-car-community-k8s` |
 | EC2 instance | AWS Console의 Name `stg-car-community-k8s-node-01`과 live instance ID를 대조 |
 | Node security group | Name `stg-car-community-k8s-node-sg`과 live SG ID를 대조 |
@@ -48,8 +48,8 @@ Repository source나 server-side dry-run만으로 외부 완료를 주장하지 
 | Node providerID | IMDSv2 instance ID·AZ로 만든 `aws:///<AZ>/<INSTANCE_ID>` |
 | New role/profile | `stg-car-community-k8s-node-role` |
 | Existing profile | `car-community-k8s-node-ecr-pull-role`; 교체 직전 current association ARN을 `2.4`에서 확보 |
-| ECR repository | `arn:aws:ecr:ap-northeast-2:355653384583:repository/car-community` |
-| Host | `stg-api.ronams.com` |
+| ECR repository | `arn:aws:ecr:ap-northeast-2:000000000000:repository/car-community` |
+| Host | `stg-api.example.com` |
 | TLS policy | `ELBSecurityPolicy-TLS13-1-2-Res-2021-06` |
 
 명령의 placeholder는 실행 전에 다음 authoritative source에서 채웁니다.
@@ -69,10 +69,10 @@ Subnet ID, ALB name·ARN·DNS와 managed SG ID는 생성 전 추측해 문서나
 
 ### 1.1 필수 — Primary ENI의 node SG 하나만 cluster SG로 선택
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 1. `EC2 → Instances → stg-car-community-k8s-node-01`을 엽니다.
-2. Instance의 VPC가 `vpc-0d3d5522a3c04861b`인지 확인합니다.
+2. Instance의 VPC가 `vpc-0123456789abcdef0`인지 확인합니다.
 3. `네트워킹 → 네트워크 인터페이스`에서 `디바이스 인덱스`가 `0`인 primary ENI를
    확인합니다.
 4. Primary ENI의 연결 SG에 `stg-car-community-k8s-node-sg`가 있는지 확인합니다.
@@ -206,7 +206,7 @@ Partial retry나 장애 진단에서 existing ACM certificate·ALB·Target Group
 
 ### 2.1 Exact ECR pull policy 생성
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 `IAM → Policies → Create policy → JSON`에서 다음 policy를 만들고 이름을
 `stg-car-community-ecr-pull-policy`로 지정합니다.
@@ -232,7 +232,7 @@ Console 기본 골격의 `Statement1`은 사용하지 않고, 각 statement의 �
         "ecr:BatchGetImage",
         "ecr:GetDownloadUrlForLayer"
       ],
-      "Resource": "arn:aws:ecr:ap-northeast-2:355653384583:repository/car-community"
+      "Resource": "arn:aws:ecr:ap-northeast-2:000000000000:repository/car-community"
     }
   ]
 }
@@ -297,7 +297,7 @@ Checksum이 `OK`가 아니거나 clipboard 복사 완료 문구가 없으면 AWS
 
 #### AWS Console — VPC scope condition 적용
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 AWS Console을 열어 둔 같은 macOS browser에서 `IAM → Policies → Create policy →
 JSON`으로 이동한 뒤 다음 순서대로 편집합니다.
@@ -333,7 +333,7 @@ JSON`으로 이동한 뒤 다음 순서대로 편집합니다.
   "Resource": "*",
   "Condition": {
     "ArnEquals": {
-      "ec2:Vpc": "arn:aws:ec2:ap-northeast-2:355653384583:vpc/vpc-0d3d5522a3c04861b"
+      "ec2:Vpc": "arn:aws:ec2:ap-northeast-2:000000000000:vpc/vpc-0123456789abcdef0"
     }
   }
 }
@@ -399,7 +399,7 @@ JSON`으로 이동한 뒤 다음 순서대로 편집합니다.
 
 ### 2.3 New EC2 role/profile 생성
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 AWS Console의 `IAM → Roles → Create role`에서 다음 순서로 생성합니다.
 
@@ -454,7 +454,7 @@ policy 중 하나라도 다르면 `2.4`절로 넘어가지 않습니다.
 
 #### AWS Console — profile association과 IMDS 설정
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 Association을 바꾸기 직전에
 `EC2 → Instances → stg-car-community-k8s-node-01 → Security → IAM role`에서 current profile이
@@ -554,7 +554,7 @@ role 이름과 temporary credential 경로는
 
 ## 3. Public subnet discovery 준비
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 VPC Console에서 VPC·AZ·CIDR을 대조해 public subnet 두 개의 exact ID를 선택합니다.
 
@@ -573,11 +573,11 @@ tag가 다른 cluster 이름을 가리키면 LBC filtering과 충돌할 수 있�
 
 ### 4.1 ACM public certificate 요청
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 #### 기존 요청 확인과 재개 위치 선택
 
-`Certificate Manager → 인증서(Certificates)`에서 domain이 `stg-api.ronams.com`인 certificate를
+`Certificate Manager → 인증서(Certificates)`에서 domain이 `stg-api.example.com`인 certificate를
 검색합니다. 이 조회는 일반 inventory가 아니라 같은 domain의 certificate를 중복 요청하지
 않고 현재 상태에서 재개하기 위한 필수 분기입니다.
 
@@ -588,7 +588,7 @@ tag가 다른 cluster 이름을 가리키면 LBC filtering과 충돌할 수 있�
 | Exact domain certificate가 `Issued` | 새로 요청하지 않고 기존 validation CNAME을 유지 | `5` |
 | Exact domain certificate가 `Failed` 또는 `Validation timed out` | 실패한 요청을 그대로 재사용하지 않고 DNS validation 실패 원인을 확인한 뒤 해당 요청을 삭제하고 신규 요청 | `4.2` |
 
-검색 결과에 wildcard `*.ronams.com`, root `ronams.com` 또는 다른 domain certificate만 있으면
+검색 결과에 wildcard `*.example.com`, root `example.com` 또는 다른 domain certificate만 있으면
 현재 exact domain certificate가 있는 것으로 계산하지 않습니다. Exact domain certificate가
 있지만 tags가 `project=car-community`, `environment=stg`, `managed-by=manual`과 다르면 새로
 만들거나 기존 것을 인수하지 않고 owner를 확인할 때까지 중단합니다.
@@ -600,7 +600,7 @@ tag가 다른 cluster 이름을 가리키면 LBC filtering과 충돌할 수 있�
 
 | Console 항목 | 선택값 |
 | --- | --- |
-| 완전히 정규화된 도메인 이름(Fully qualified domain name) | `stg-api.ronams.com` |
+| 완전히 정규화된 도메인 이름(Fully qualified domain name) | `stg-api.example.com` |
 | 내보내기 허용(Allow export) | **내보내기 비활성화(Disable export)** |
 | 검증 방법(Validation method) | **DNS 검증(DNS validation)** |
 | 키 알고리즘(Key algorithm) | **RSA 2048** |
@@ -627,9 +627,9 @@ private key 보관·배포 책임이 추가되므로 이 runbook에서는 선택
 
 ### 4.2 Cloudflare validation record
 
-**실행 위치:** Cloudflare Console의 `ronams.com` zone
+**실행 위치:** Cloudflare Console의 `example.com` zone
 
-Cloudflare `ronams.com → DNS → Records`에서 ACM이 제공한 CNAME을 그대로 생성합니다.
+Cloudflare `example.com → DNS → Records`에서 ACM이 제공한 CNAME을 그대로 생성합니다.
 
 - Type: `CNAME`
 - Name: ACM validation record name
@@ -638,11 +638,11 @@ Cloudflare `ronams.com → DNS → Records`에서 ACM이 제공한 CNAME을 그�
 - TTL: Auto
 
 Cloudflare UI가 zone suffix를 자동으로 붙이는지 preview를 확인해
-`ronams.com.ronams.com`처럼 중복되지 않게 합니다.
+`example.com.example.com`처럼 중복되지 않게 합니다.
 
 #### ACM Console — certificate 발급 상태 확인
 
-**실행 위치:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**실행 위치:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 ACM Console에서 certificate status가 `Issued`가 될 때까지 기다립니다. Validation CNAME은 발급 뒤에도 자동 renewal을 위해
 삭제하지 않습니다. `Issued` 전에 Ingress를 merge하지 않습니다.
@@ -680,7 +680,7 @@ EC2에서 exact VPC ID를 인자로 실행합니다.
 
 ```bash
 sudo /home/ubuntu/car-community-scripts/bootstrap/load-balancer/100-install-aws-load-balancer-controller.sh \
-  vpc-0d3d5522a3c04861b
+  vpc-0123456789abcdef0
 ```
 
 Script는 먼저 같은 IMDSv2 token으로 instance ID와 placement AZ를 조회해
@@ -901,14 +901,14 @@ Render에는 다음 계약이 있어야 합니다.
 - Service `type: NodePort`, 고정 `nodePort` 없음
 - Ingress class `alb`, scheme `internet-facing`, target type `instance`
 - Listener `80`·`443`, redirect `443`
-- Host와 TLS host `stg-api.ronams.com`
+- Host와 TLS host `stg-api.example.com`
 - Certificate ARN annotation 없음
 - TLS policy `ELBSecurityPolicy-TLS13-1-2-Res-2021-06`
 - Custom security group과 subnet ID annotation 없음
 
 ### 8.2 Normal GitOps approval
 
-**실행 위치:** GitHub Web UI의 `ckn1070/car-community` repository
+**실행 위치:** GitHub Web UI의 `example-org/car-community` repository
 
 Manifest 변경을 별도 deployment PR로 review·merge합니다. Source image build 변경과 섞지
 않고, repository의 현재 PR 운영 정책과
@@ -978,7 +978,7 @@ sudo KUBECONFIG=/etc/kubernetes/admin.conf \
 
 **시작 directory:** AWS Console은 해당 없음, API·CLI terminal은 제한 없음
 
-**기본 확인 경로:** AWS Console의 account `355653384583`, region `ap-northeast-2`
+**기본 확인 경로:** AWS Console의 account `000000000000`, region `ap-northeast-2`
 
 **필수 입력:** `9.1`의 `[2/2] Ingress ALB hostname`이 출력한 `<ALB_DNS_NAME>` 한 줄
 
@@ -991,13 +991,13 @@ read-only API·CLI로 확인해도 됩니다. Console·API·CLI 중 한 수단�
    선택합니다. 생성된 Load Balancer 이름이나 ARN을 입력으로 추측하지 않습니다.
 2. 선택한 ALB의 **Details**와 **Network mapping**에서 다음을 확인합니다.
    - Scheme: `Internet-facing`
-   - VPC: `vpc-0d3d5522a3c04861b`
+   - VPC: `vpc-0123456789abcdef0`
    - Availability Zones: `ap-northeast-2a`와 `ap-northeast-2b`의 기존 public subnet 두 개
 3. **Listeners and rules**에서 다음 두 listener와 rule을 확인합니다.
    - `HTTP:80`: HTTPS `443`으로 redirect, status code `HTTP_301`
-   - `HTTPS:443`: host `stg-api.ronams.com`, path `/*` rule이 Target Group으로 forward
+   - `HTTPS:443`: host `stg-api.example.com`, path `/*` rule이 Target Group으로 forward
    - `HTTPS:443 → Security`: policy
-     `ELBSecurityPolicy-TLS13-1-2-Res-2021-06`, certificate `stg-api.ronams.com`
+     `ELBSecurityPolicy-TLS13-1-2-Res-2021-06`, certificate `stg-api.example.com`
 4. `HTTPS:443`의 forward rule에 표시된 Target Group link를 엽니다. 생성된 Target Group
    이름과 port는 이 link에서 발견하는 동적 값이며 문서의 고정 입력이 아닙니다. 다음을
    확인하고 현재 target port를 `<TARGET_NODE_PORT>`로 기록합니다.
@@ -1041,7 +1041,7 @@ ALB나 Target Group으로 교체되면 `9.1`에서 새 hostname을 얻은 뒤 �
 
 `<ALB_DNS_NAME>`에는 `9.1`의 `[2/2] Ingress ALB hostname` 조회가 출력한 한 줄 전체를
 넣습니다. 이 값은 `k8s-...ap-northeast-2.elb.amazonaws.com` 형태의 AWS ALB DNS
-hostname이며, AWS Console의 Load Balancer 이름·ARN이나 `stg-api.ronams.com`을 넣지
+hostname이며, AWS Console의 Load Balancer 이름·ARN이나 `stg-api.example.com`을 넣지
 않습니다. 명령에 붙여 넣을 때 `<`와 `>`는 제거합니다.
 
 아래 block의 첫 줄에서 `9.1` 출력값을 한 번 입력하면 두 요청이 같은 ALB를 사용합니다.
@@ -1054,21 +1054,21 @@ alb_dns_name='<9.1 [2/2] 출력값>'
 # 확인: certificate 검증을 통과하고 HTTP 200
 printf '\n\n========== [1/2] ALB HTTPS readiness ==========\n\n'
 curl --fail --silent --show-error \
-  --connect-to "stg-api.ronams.com:443:${alb_dns_name}:443" \
-  https://stg-api.ronams.com/actuator/health/readiness
+  --connect-to "stg-api.example.com:443:${alb_dns_name}:443" \
+  https://stg-api.example.com/actuator/health/readiness
 
 # 2. ALB HTTP redirect 직접 요청
 # 확인: HTTP 301이며 Location이 HTTPS service endpoint
 printf '\n\n========== [2/2] ALB HTTP redirect ==========\n\n'
 curl --silent --show-error --head \
-  --connect-to "stg-api.ronams.com:80:${alb_dns_name}:80" \
-  http://stg-api.ronams.com/
+  --connect-to "stg-api.example.com:80:${alb_dns_name}:80" \
+  http://stg-api.example.com/
 
 unset alb_dns_name
 ```
 
 첫 요청은 certificate 검증을 우회하지 않고 HTTP `200`을 반환해야 합니다. 두 번째는 HTTP
-`301`이고 `Location` 값의 scheme·host·port가 HTTPS `stg-api.ronams.com:443`로 수렴해야
+`301`이고 `Location` 값의 scheme·host·port가 HTTPS `stg-api.example.com:443`로 수렴해야
 합니다. 표준 HTTPS port 표기를 생략한 response는 동일 endpoint로 해석합니다. 두 결과는
 Cloudflare CNAME 생성 직전의 필수 gate이며 실패하면 `10`절로 진행하지 않습니다.
 
@@ -1097,9 +1097,9 @@ controller log와 managed SG source/port 순서로 진단합니다. 필수 결�
 
 ### 10.1 Service CNAME 생성
 
-**실행 위치:** Cloudflare Console의 `ronams.com` zone
+**실행 위치:** Cloudflare Console의 `example.com` zone
 
-Cloudflare `ronams.com → DNS → Records`에서 다음 record를 만듭니다.
+Cloudflare `example.com → DNS → Records`에서 다음 record를 만듭니다.
 
 - Type: `CNAME`
 - Name: `stg-api`
@@ -1122,12 +1122,12 @@ Public resolver에서 확인합니다.
 # 1. Service CNAME target 조회
 # 확인: <ALB_DNS_NAME>으로 수렴
 printf '\n\n========== [1/2] Service CNAME ==========\n\n'
-dig +short CNAME stg-api.ronams.com
+dig +short CNAME stg-api.example.com
 
 # 2. Service hostname address 조회
 # 확인: ALB address이며 Cloudflare anycast IP가 아님
 printf '\n\n========== [2/2] Service DNS address ==========\n\n'
-dig +short stg-api.ronams.com
+dig +short stg-api.example.com
 ```
 
 1. CNAME 조회는 public record가 exact ALB를 가리키는지 확인합니다.
@@ -1148,20 +1148,20 @@ Cloudflare anycast IP가 아니라 ALB CNAME·address로 수렴해야 DNS-only b
 # 확인: HTTP 200
 printf '\n\n========== [1/3] Public HTTPS readiness ==========\n\n'
 curl --fail --silent --show-error \
-  https://stg-api.ronams.com/actuator/health/readiness
+  https://stg-api.example.com/actuator/health/readiness
 
 # 2. Public HTTP redirect 요청
 # 확인: HTTP 301이며 Location이 HTTPS service endpoint
 printf '\n\n========== [2/3] Public HTTP redirect ==========\n\n'
 curl --silent --show-error --head \
-  http://stg-api.ronams.com/
+  http://stg-api.example.com/
 
 # 3. Public certificate 조회
-# 확인: stg-api.ronams.com subject·issuer·유효기간
+# 확인: stg-api.example.com subject·issuer·유효기간
 printf '\n\n========== [3/3] Public TLS certificate ==========\n\n'
 openssl s_client \
-  -connect stg-api.ronams.com:443 \
-  -servername stg-api.ronams.com \
+  -connect stg-api.example.com:443 \
+  -servername stg-api.example.com \
   </dev/null 2>/dev/null \
 | openssl x509 -noout -subject -issuer -dates
 ```

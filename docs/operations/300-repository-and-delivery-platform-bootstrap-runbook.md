@@ -60,7 +60,7 @@ runbook의 완료 결과를 확인하고, 마지막으로 실패하거나 아직
 | 7 | [Argo CD Core 설치](340-argocd-core-installation-runbook.md) | Headless Core component와 CRD Ready |
 | 8 | [Application delivery 최초 bootstrap](350-application-delivery-bootstrap-runbook.md) | Runtime·migrator DB role, Git 밖 Namespace·네 Secret, Git-managed ConfigMap, read-only GitHub App credential, AppProject와 최초 Application `Synced`·`Healthy` |
 | 선택 9 | [Super Admin 최초 bootstrap](360-super-admin-bootstrap-runbook.md) | 최초 `ROLE_SUPER_ADMIN`, 초기 password 변경 `204`와 새 password 로그인 `201` |
-| 10 | [370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md) | Node platform role, LBC, ACM certificate, ALB·healthy target과 `stg-api.ronams.com` DNS-only HTTPS 경로 |
+| 10 | [370 Staging 외부 HTTPS ingress 최초 구축](370-staging-external-https-ingress-bootstrap-runbook.md) | Node platform role, LBC, ACM certificate, ALB·healthy target과 `stg-api.example.com` DNS-only HTTPS 경로 |
 
 EC2에 archive를 한 번에 전달하는 것과 실행 의존 순서는 다른 계약입니다. 예를 들어 Argo CD
 Core 설치 script가 이미 전달돼 있어도 Kubernetes bootstrap이 끝나기 전에는 실행하지
@@ -99,7 +99,7 @@ Core 설치 script가 이미 전달돼 있어도 Kubernetes bootstrap이 끝나�
 - Runtime·migrator DB role과 Git 밖 application prerequisite가 적용됐습니다.
 - `car-community-stg` Application이 fresh reconcile 뒤 `Synced`·`Healthy`입니다.
 - External ingress를 이번 최초 platform 범위에 포함했다면 controller Ready, target healthy,
-  HTTP→HTTPS redirect와 `stg-api.ronams.com`의 DNS·TLS를 `370`에서 확인합니다.
+  HTTP→HTTPS redirect와 `stg-api.example.com`의 DNS·TLS를 `370`에서 확인합니다.
 
 Local source·contract test는 AWS, GitHub, EC2와 Kubernetes의 live 결과를 대신하지 않습니다.
 최초 기반 구축 뒤 평소 image 게시·배포는 [반복 image 게시](400-github-ecr-image-publishing-runbook.md)와

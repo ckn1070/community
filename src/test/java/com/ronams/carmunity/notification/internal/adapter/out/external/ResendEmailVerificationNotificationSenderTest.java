@@ -29,13 +29,13 @@ class ResendEmailVerificationNotificationSenderTest {
 
     assertThat(gateway.options).hasSize(1);
     CreateEmailOptions options = gateway.options.getFirst();
-    assertThat(options.getFrom()).isEqualTo("no-reply@ronams.com");
+    assertThat(options.getFrom()).isEqualTo("no-reply@example.com");
     assertThat(options.getTo()).containsExactly("member@example.com");
     assertThat(options.getSubject()).isEqualTo("Carmunity 이메일 인증을 완료해 주세요");
     assertThat(options.getHtml())
-        .contains("https://app.ronams.com/verify-email?token=raw+token")
+        .contains("https://app.example.com/verify-email?token=raw+token")
         .contains("2026-06-29T00:30:00Z");
-    assertThat(options.getText()).contains("https://app.ronams.com/verify-email?token=raw+token");
+    assertThat(options.getText()).contains("https://app.example.com/verify-email?token=raw+token");
   }
 
   /** 5xx 같은 일시 provider 오류는 총 2회까지 즉시 재시도합니다. */
@@ -97,10 +97,10 @@ class ResendEmailVerificationNotificationSenderTest {
     return new ResendEmailVerificationNotificationSender(
         EmailNotificationProperties.of(
             "re_test",
-            "no-reply@ronams.com",
-            "https://app.ronams.com/verify-email",
-            "https://app.ronams.com/admin/invitations",
-            "https://app.ronams.com/reset-password"),
+            "no-reply@example.com",
+            "https://app.example.com/verify-email",
+            "https://app.example.com/admin/invitations",
+            "https://app.example.com/reset-password"),
         gateway);
   }
 

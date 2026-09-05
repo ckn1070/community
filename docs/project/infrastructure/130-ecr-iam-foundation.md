@@ -61,17 +61,17 @@ Provider 자체는 `car-community` 권한을 주지 않습니다. Role
 
 ```text
 aud = sts.amazonaws.com
-sub = repo:ckn1070/car-community:ref:refs/heads/main
+sub = repo:example-org/car-community:ref:refs/heads/main
 ```
 
 현재 repository는 2026-06-02에 생성됐고 GitHub OIDC 설정 조회 결과
 `use_default=true`, `use_immutable_subject=false`입니다. 현재 image publish job도 GitHub
 Environment를 사용하지 않으므로 이름·branch 기반 subject가 실제 계약입니다. Repository
-소유자 ID는 `80336539`, repository ID는 `1256891134`이며 immutable subject를 활성화하면
+소유자 ID는 `00000000`, repository ID는 `0000000000`이며 immutable subject를 활성화하면
 다음처럼 ID를 포함한 형식으로 trust를 함께 바꿔야 합니다.
 
 ```text
-repo:ckn1070@80336539/car-community@1256891134:ref:refs/heads/main
+repo:example-org@00000000/car-community@0000000000:ref:refs/heads/main
 ```
 
 GitHub Environment를 publish job에 지정하면 branch 부분 대신

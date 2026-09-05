@@ -25,7 +25,7 @@ Kubernetes workload
 ├── Application Deployment ─> RDS runtime access
 └── NodePort Service·Ingress ─> AWS Load Balancer Controller ─> ALB
 
-Cloudflare DNS-only stg-api.ronams.com ─> ALB HTTPS ─> NodePort ─> Pod
+Cloudflare DNS-only stg-api.example.com ─> ALB HTTPS ─> NodePort ─> Pod
 ```
 
 VPC는 address·route·DNS·security 경계를, EC2는 Kubernetes 실행 위치를, RDS는 application

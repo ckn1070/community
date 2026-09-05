@@ -195,8 +195,8 @@ test "${email_request_status}" = '202'
 다음을 사람이 별도로 확인해야 합니다.
 
 1. 입력한 실제 수신함에 새 메일이 도착합니다.
-2. 발신자는 승인된 `no-reply@ronams.com`입니다.
-3. 인증 URL은 승인된 `https://ronams.com`을 사용하며 `token` query를 포함합니다.
+2. 발신자는 승인된 `no-reply@example.com`입니다.
+3. 인증 URL은 승인된 `https://example.com`을 사용하며 `token` query를 포함합니다.
 
 메일 본문, recipient와 token을 issue, Git, scenario와 장기 log에 복사하지 않습니다.
 
@@ -273,7 +273,7 @@ printf '%s  %s\n' \
 | sha256sum --check
 CA_CHECK_STATUS=$?
 
-QUALIFICATION_DB_URL='postgresql://stg-car-community-postgres.cjemi62mqsl6.ap-northeast-2.rds.amazonaws.com:5432/carmunity?sslmode=verify-full'
+QUALIFICATION_DB_URL='postgresql://example-staging-postgres.ap-northeast-2.rds.amazonaws.com:5432/carmunity?sslmode=verify-full'
 if [[ "${RUNTIME_DB_USERNAME}" == 'carmunity_runtime' \
     && -n "${STG_DB_RUNTIME_PASSWORD}" \
     && -s "${QUALIFICATION_WORK_DIR}/ap-northeast-2-bundle.pem" \

@@ -54,7 +54,7 @@ request는 `330s`입니다. 다른 namespace owner, full 설치, 다른 image ve
 | caller·시점 | Core와 application bootstrap 완료, private repository·read-only GitHub App·non-empty staging overlay 준비 뒤 최초 한 번 실행합니다. |
 | 공개 입력 | `<GITHUB_APP_ID> <GITHUB_APP_INSTALLATION_ID>` 두 숫자 |
 | 비밀 입력 | GitHub App PEM key를 stdin으로만 전달하며 argument·environment·repository file로 받지 않습니다. |
-| repository | `https://github.com/ckn1070/car-community.git`, `main`, `deploy/overlays/stg` |
+| repository | `https://github.com/example-org/car-community.git`, `main`, `deploy/overlays/stg` |
 | 선언형 source | `manifests/car-community-appproject.yaml`, `manifests/car-community-stg-application.yaml` |
 | 직접 변경 | Repository Secret, application-controller StatefulSet Pod template generation annotation, Git에 추적된 AppProject·Application manifest의 server-side apply |
 | sync | `enabled`, `prune`, `selfHeal`, `allowEmpty: false`, notification rollout annotation ignore + `RespectIgnoreDifferences=true` |

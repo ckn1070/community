@@ -99,7 +99,7 @@ test_reads_exact_three_nul_fields_and_uses_fixed_database_url() (
     'runtime-password' \
     'migrator-password')
 
-  [[ "${DATABASE_URL}" == 'jdbc:postgresql://stg-car-community-postgres.cjemi62mqsl6.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem' ]] \
+  [[ "${DATABASE_URL}" == 'jdbc:postgresql://example-staging-postgres.ap-northeast-2.rds.amazonaws.com:5432/carmunity?currentSchema=public&sslmode=verify-full&sslrootcert=/etc/car-community/rds-ca/ap-northeast-2-bundle.pem' ]] \
     || fail_test "Staging DB URL은 Git에 확정한 exact 값이어야 합니다."
   [[ "${RUNTIME_PASSWORD}" == 'runtime-password' ]] \
     || fail_test "Runtime password field를 읽지 못했습니다."

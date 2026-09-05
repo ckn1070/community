@@ -12,7 +12,7 @@ project·secret·ruleset 구성은
 | --- | --- |
 | 언제 | Sonar SOT의 만료 예정·정기 교체·노출·무효화에 대응할 때 사용합니다. 최초 project 설정에는 사용하지 않습니다. |
 | 누가 | Sonar scoped token과 GitHub Actions secret을 관리하고 CI를 재실행할 권한이 있는 운영자가 실행합니다. |
-| 어디서 | SonarQube Cloud organization Console과 GitHub `ckn1070/car-community → Settings/Actions`입니다. |
+| 어디서 | SonarQube Cloud organization Console과 GitHub `example-org/car-community → Settings/Actions`입니다. |
 | 무엇을 | 새 scoped token 발급, `SONAR_TOKEN` 교체, latest `main` CI 재실행, 이전 token revoke를 수동 수행합니다. Repository script는 없습니다. |
 | 왜 | 새 token이 exact revision 분석에 실제 사용됐다는 증거를 확보한 뒤 이전 credential을 폐기하기 위해서입니다. |
 | 완료·재개 | `Application quality`와 같은 revision의 `Sonar way` 통과 뒤 이전 token 상태를 확인합니다. 실패하면 계획 교체 또는 사고 복구의 해당 번호부터 재개합니다. |

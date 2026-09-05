@@ -6,7 +6,7 @@ Done
 
 ## 목표 결과
 
-`stg-api.ronams.com`의 외부 HTTPS 요청을 AWS Application Load Balancer와 Kubernetes
+`stg-api.example.com`의 외부 HTTPS 요청을 AWS Application Load Balancer와 Kubernetes
 Ingress를 통해 staging `car-community` Service로 전달합니다.
 
 ```text
@@ -55,7 +55,7 @@ scenario에 기록한 live 완료 조건을 실제로 확인해 `Done`으로 전
 - Controller-managed frontend·shared backend security group
 - Primary ENI의 여러 SG 중 cluster tag exact-one으로 선택한
   `stg-car-community-k8s-node-sg` 경계
-- `stg-api.ronams.com`, HTTP→HTTPS와 ACM host discovery
+- `stg-api.example.com`, HTTP→HTTPS와 ACM host discovery
 - `ELBSecurityPolicy-TLS13-1-2-Res-2021-06`
 - Cloudflare DNS-only CNAME baseline
 - 기존 ECR-only profile에서 staging node platform role/profile로의 안전한 전환

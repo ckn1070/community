@@ -30,7 +30,7 @@
 | Architecture | `64비트(Arm)` | T4g 필수 | Graviton T4g 비용 이점을 사용하지만 x86 전용 binary·image는 실행할 수 없습니다. | x86-only dependency 발견 |
 | Instance type | 최초 `t4g.small` 2 GiB, live memory 4 GiB | 2 GiB는 실측 후 상향 | Argo reconcile·migration이 겹칠 때 2 GiB node에서 심한 memory·I/O pressure가 관찰돼 4 GiB로 늘렸습니다. 변경한 exact instance type은 현재 live source에서 다시 확인하지 않아 추측해 고정하지 않습니다. | OOM·memory pressure·지속 CPU 제한 관찰 또는 exact type inventory |
 | Type filter | `모든 세대` 활성 | 검색 표시일 뿐 | 최초 launch에서 `t4g.small`을 직접 찾으며 성능·과금에는 영향을 주지 않습니다. | 탐색 범위를 줄일 때 |
-| Key pair | `namc-sa-ec2` | 현재 SSH identity | AWS는 public key, 운영자는 private key를 보유합니다. Private key를 repository에 저장하지 않으며 분실하면 같은 pair로 접속할 수 없습니다. | SSM·다른 접속 방식 채택 |
+| Key pair | `example-staging-key` | 현재 SSH identity | AWS는 public key, 운영자는 private key를 보유합니다. Private key를 repository에 저장하지 않으며 분실하면 같은 pair로 접속할 수 없습니다. | SSM·다른 접속 방식 채택 |
 | 구매 방식 | On-Demand | 단일 control plane에 적합 | Spot 중단으로 cluster 전체가 멈추는 것을 피합니다. 장기 할인은 현재 사용량이 미확정입니다. | 중단 허용 workload 분리·장기 사용량 확정 |
 | CPU credit | `Standard` | 비용 상한 우선 | Baseline 초과 credit을 소진하면 CPU가 제한될 수 있지만 Unlimited 잉여 credit 비용을 허용하지 않습니다. | 지속 부하로 cluster가 느려짐 |
 
@@ -58,7 +58,7 @@ application image의 ARM64 호환이 보장되지는 않습니다. Software 요�
 | `t4g.large` 8 GiB | 더 큰 memory입니다. | 현재 실측 부하 근거가 없습니다. |
 | `t4g.xlarge` 4 vCPU·16 GiB | CPU·memory를 크게 늘립니다. | 현재 범위보다 큽니다. |
 | `t4g.2xlarge` 8 vCPU·32 GiB | 더 큰 ARM type입니다. | 현재 범위보다 큽니다. |
-| 새 key pair | 새 SSH key material을 만듭니다. | 기존 `namc-sa-ec2`와 private key가 있습니다. |
+| 새 key pair | 새 SSH key material을 만듭니다. | 기존 `example-staging-key`와 private key가 있습니다. |
 | Key pair 없이 launch | SSH key 없이 시작합니다. | 현재 SSH 성공이 완료 조건이며 SSM-only를 확정하지 않았습니다. |
 
 화면의 시간당 가격·`현재 세대`·vCPU·memory는 type과 시점·region에서 파생된 값이며 영구

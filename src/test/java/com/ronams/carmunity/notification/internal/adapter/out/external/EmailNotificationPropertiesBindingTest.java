@@ -19,10 +19,10 @@ class EmailNotificationPropertiesBindingTest {
     contextRunner
         .withPropertyValues(
             "carmunity.notification.email.resend.api-key=re_test",
-            "carmunity.notification.email.from=no-reply@ronams.com",
-            "carmunity.notification.email.verification.base-url=https://ronams.com",
-            "carmunity.notification.email.admin-invitation.base-url=https://ronams.com",
-            "carmunity.notification.email.password-reset.base-url=https://ronams.com")
+            "carmunity.notification.email.from=no-reply@example.com",
+            "carmunity.notification.email.verification.base-url=https://example.com",
+            "carmunity.notification.email.admin-invitation.base-url=https://example.com",
+            "carmunity.notification.email.password-reset.base-url=https://example.com")
         .run(
             context -> {
               assertThat(context).hasNotFailed();

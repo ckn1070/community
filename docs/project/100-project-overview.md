@@ -44,7 +44,7 @@ Carmunity backend는 프로젝트 골격을 만드는 초기 상태를 지나 ac
   `deploy/overlays/stg`를 read-only GitHub App으로 연결하는 script·runbook, 같은 immutable
   image를 사용하는 단일 migration PreSync Job과 Deployment·Service manifest가 구현됐습니다.
 - Staging public API를 위한 AWS Load Balancer Controller `3.5.0` bootstrap과
-  `stg-api.ronams.com`의 NodePort·Ingress desired state가 구현됐습니다. Internet-facing ALB,
+  `stg-api.example.com`의 NodePort·Ingress desired state가 구현됐습니다. Internet-facing ALB,
   ACM certificate와 Cloudflare DNS-only CNAME을 포함한 실제 환경의 현재 상태와 검증 결과는
   이 Reference/SOT에 복제하지 않고 Staging 전체 구축 시나리오에서 확인합니다.
 - 공개 DB URL·RDS CA·notification 설정은 Git/Kustomize가, runtime·migrator·auth·notification
