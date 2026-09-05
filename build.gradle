@@ -2,11 +2,11 @@
 plugins {
 	id 'java'
 	id 'jacoco'
-	id 'org.springframework.boot' version '4.0.6'
+	id 'org.springframework.boot' version '4.1.1'
 	id 'io.spring.dependency-management' version '1.1.7'
-	id 'com.diffplug.spotless' version '8.6.0'
-	id 'org.sonarqube' version '7.2.3.7755'
-	id 'org.jooq.jooq-codegen-gradle' version '3.19.32'
+	id 'com.diffplug.spotless' version '8.10.1'
+	id 'org.sonarqube' version '7.4.0.8496'
+	id 'org.jooq.jooq-codegen-gradle' version '3.21.7'
 }
 
 group = 'com.ronams'
@@ -24,7 +24,7 @@ repositories {
 
 dependencyManagement {
 	imports {
-		mavenBom 'org.springframework.modulith:spring-modulith-bom:2.1.0'
+		mavenBom 'org.springframework.modulith:spring-modulith-bom:2.1.1'
 	}
 }
 
@@ -46,14 +46,14 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.bouncycastle:bcprov-jdk18on:1.81'
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'
 	implementation 'org.flywaydb:flyway-database-postgresql'
-	implementation 'com.resend:resend-java:v4.15.0'
-	implementation platform('software.amazon.awssdk:bom:2.39.1')
+	implementation 'com.resend:resend-java:v4.18.0'
+	implementation platform('software.amazon.awssdk:bom:2.54.10')
 	implementation 'software.amazon.awssdk:s3'
 	implementation 'software.amazon.awssdk:sts'
 	implementation 'org.springframework.modulith:spring-modulith-api'
-	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
@@ -63,14 +63,14 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
-	testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.2'
+	testImplementation 'com.tngtech.archunit:archunit-junit5:1.5.0'
 	testImplementation platform('org.testcontainers:testcontainers-bom:2.0.5')
 	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
-	jooqCodegen 'org.jooq:jooq-meta-extensions:3.19.32'
+	jooqCodegen 'org.jooq:jooq-meta-extensions:3.21.7'
 }
 
 jooq {
