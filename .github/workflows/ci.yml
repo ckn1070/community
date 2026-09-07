@@ -31,21 +31,21 @@ jobs:
     steps:
       - name: Checkout
         # Sonar SCM 분석이 commit 이력을 사용하므로 shallow clone 대신 현재 ref의 전체 이력을 가져옵니다.
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 고정
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0 고정
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Java
         # repository와 Dockerfile이 사용하는 Temurin Java 21 toolchain을 GitHub 공식 Action으로 준비합니다.
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0 고정
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v5.5.0 고정
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Set up Gradle
         # 실제 Gradle version과 distribution checksum은 Wrapper가 소유하고, 이 Action은 Wrapper JAR 검증과 공개 구현인 basic cache를 준비합니다.
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0 고정
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.2.0 고정
         with:
           cache-provider: basic
           cache-read-only: ${{ github.event_name == 'pull_request' }}
