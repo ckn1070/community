@@ -31,21 +31,21 @@ jobs:
     steps:
       - name: Checkout
         # Sonar SCM 분석이 commit 이력을 사용하므로 shallow clone 대신 현재 ref의 전체 이력을 가져옵니다.
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0 고정
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.0 고정
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Java
         # repository와 Dockerfile이 사용하는 Temurin Java 21 toolchain을 GitHub 공식 Action으로 준비합니다.
-        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0 고정
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v5.5.0 고정
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Set up Gradle
         # 실제 Gradle version과 distribution checksum은 Wrapper가 소유하고, 이 Action은 Wrapper JAR 검증과 공개 구현인 basic cache를 준비합니다.
-        uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0 고정
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.2.0 고정
         with:
           cache-provider: basic
           cache-read-only: ${{ github.event_name == 'pull_request' }}
@@ -142,7 +142,7 @@ jobs:
       - name: Upload image publishing decision
         # Privileged workflow가 성공한 이 exact CI run의 전체 push 분류만 소비하도록 작은 artifact를 전달합니다.
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 고정
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.1 고정
         with:
           name: publish-image-change-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/publish-image-change/decision.env
